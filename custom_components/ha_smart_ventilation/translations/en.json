@@ -80,7 +80,10 @@
         "title": "Set up app notification",
         "description": "Required because you selected 'Home Assistant App' as a notification method.",
         "data": {
-          "mobile_notify_entity": "Notify entity/entities – multiple selection possible"
+          "mobile_targets": "Notify targets"
+        },
+        "data_description": {
+          "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
         }
       }
     },
@@ -174,7 +177,10 @@
         "title": "Edit app notification",
         "description": "Required because you selected 'Home Assistant App' as a notification method.",
         "data": {
-          "mobile_notify_entity": "Notify entity/entities – multiple selection possible"
+          "mobile_targets": "Notify targets"
+        },
+        "data_description": {
+          "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
         }
       }
     },

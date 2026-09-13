@@ -80,7 +80,10 @@
         "title": "App-Benachrichtigung einrichten",
         "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "mobile_notify_entity": "Notify-Entität(en) – Mehrfachauswahl möglich"
+          "mobile_targets": "Notify-Ziele"
+        },
+        "data_description": {
+          "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
         }
       }
     },
@@ -174,7 +177,10 @@
         "title": "App-Benachrichtigung bearbeiten",
         "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "mobile_notify_entity": "Notify-Entität(en) – Mehrfachauswahl möglich"
+          "mobile_targets": "Notify-Ziele"
+        },
+        "data_description": {
+          "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
         }
       }
     },
