@@ -18,6 +18,16 @@ Benachrichtigung ausgelöst – ganz ohne zusätzliche Automationen. Du kannst
 den binary_sensor zusätzlich in Dashboards, eigenen Automationen oder
 Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
 
+## Icon
+
+Die Integration bringt ihr eigenes Icon mit
+(`custom_components/ha_smart_ventilation/brand/icon.png` +
+`icon@2x.png`, `logo.png`, `logo@2x.png`). Seit Home Assistant 2026.3
+werden solche mitgelieferten Brand-Icons automatisch in den
+Integrationen sowie in HACS angezeigt – eine separate Pull Request an
+das `home-assistant/brands`-Repository ist für Custom Integrations
+nicht mehr nötig.
+
 ## Installation
 
 ### Über HACS (empfohlen)
@@ -39,27 +49,33 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
 
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
 2. Nach "Smart Ventilation" suchen
-3. Formular pro Raum ausfüllen:
+3. **Hauptformular** pro Raum ausfüllen:
    - **Raumname**
    - **Innentemperatur-Quelle**: eine `climate`-, `sensor`-, `number`- oder
      `input_number`-Entität
+   - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
+     `current_temperature` (Auswahl aus Liste oder eigener Text möglich).
+     Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
+     `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
+     Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
    - **Außentemperatur-Sensor** (Pflichtfeld – die Außentemperatur ist
      entscheidend dafür, ob Lüften überhaupt sinnvoll ist)
    - Optional: Luftfeuchtigkeits-Sensor, Fensterkontakt
    - Schwellenwerte zum Öffnen/Schließen
    - **Benachrichtigungsmethode(n)**: Sonos und/oder App – beides kann
      gleichzeitig aktiviert werden
-   - Je nach Auswahl: Sonos-Lautsprecher + TTS-Entität und/oder eine
-     `notify.*`-Entität (wird per Dropdown aus allen verfügbaren
-     Notify-Entitäten ausgewählt)
-4. **Nur wenn du eine climate-Entität gewählt hast**, folgt ein zweiter
-   Schritt: Auswahl des Temperatur-Attributs. Vorausgewählt ist
-   `current_temperature`; du kannst aus der Liste wählen oder einen
-   eigenen Attributnamen eintippen. Bei sensor-, number- oder
-   input_number-Entitäten entfällt dieser Schritt, da direkt der
-   Entitätszustand als Temperatur verwendet wird.
+4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
+   - Bei "Sonos": eigener Schritt für Sonos-Lautsprecher + TTS-Entität
+   - Bei "App": eigener Schritt für die `notify.*`-Entität (Dropdown mit
+     allen verfügbaren Notify-Entitäten)
 5. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
+
+> Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
+> der Eingabe ein-/ausblenden. Deshalb ist die Reihenfolge so gelöst, dass
+> die passenden Zusatzfelder direkt im nächsten Schritt nach der
+> Methodenauswahl erscheinen – aber jeweils nur, wenn die zugehörige
+> Methode wirklich ausgewählt wurde.
 
 ## Logik im Detail
 
