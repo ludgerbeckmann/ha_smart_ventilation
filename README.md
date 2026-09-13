@@ -3,7 +3,8 @@
 Eine Custom Integration, die pro Raum überwacht, ob gelüftet werden sollte –
 basierend auf der Innentemperatur, der Luftfeuchtigkeit und der
 Außentemperatur. Bei einem Zustandswechsel wird automatisch per
-**Sonos-Sprachausgabe** und/oder **Home Assistant App-Push** benachrichtigt.
+**Sprachausgabe** (z. B. Sonos, oder jede andere `media_player`-Entität) und/oder
+**Home Assistant App-Push** benachrichtigt.
 
 ## Was die Integration macht
 
@@ -49,24 +50,27 @@ nicht mehr nötig.
 
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
 2. Nach "Smart Ventilation" suchen
-3. **Hauptformular** pro Raum ausfüllen:
-   - **Raumname**
-   - **Innentemperatur-Quelle**: eine `climate`-, `sensor`-, `number`- oder
-     `input_number`-Entität
-   - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
-     `current_temperature` (Auswahl aus Liste oder eigener Text möglich).
-     Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
-     `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
-     Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
-   - **Außentemperatur-Sensor** (Pflichtfeld – die Außentemperatur ist
-     entscheidend dafür, ob Lüften überhaupt sinnvoll ist)
-   - Optional: Luftfeuchtigkeits-Sensor, Fensterkontakt
-   - Schwellenwerte zum Öffnen/Schließen
-   - **Benachrichtigungsmethode(n)**: Sonos und/oder App – beides kann
-     gleichzeitig aktiviert werden
+3. **Hauptformular** pro Raum ausfüllen (Raumname oben, darunter zwei
+   klappbare Abschnitte):
+   - **Abschnitt "Sensoren"**:
+     - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
+       `input_number`-Entität
+     - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
+       `current_temperature` (Auswahl aus Liste oder eigener Text möglich).
+       Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
+       `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
+       Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
+     - **Außentemperatur** (Pflichtfeld – entscheidend dafür, ob Lüften
+       überhaupt sinnvoll ist)
+     - Optional: Luftfeuchtigkeit, Fensterkontakt
+   - **Abschnitt "Parameter"**:
+     - Schwellenwerte zum Öffnen/Schließen
+     - **Benachrichtigungsmethoden**: Sprachausgabe und/oder App – beides kann
+       gleichzeitig aktiviert werden
 4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
-   - Bei "Sonos": eigener Schritt für **einen oder mehrere** Sonos-Lautsprecher
-     + eine TTS-Entität (gilt für alle gewählten Lautsprecher)
+   - Bei "Sprachausgabe": eigener Schritt für **einen oder mehrere** Lautsprecher
+     (`media_player`-Entitäten, z. B. Sonos) + eine TTS-Entität (gilt für alle
+     gewählten Lautsprecher)
    - Bei "App": eigener Schritt für **eine oder mehrere** `notify.*`-Entitäten
      (Dropdown mit Mehrfachauswahl, z. B. um mehrere Familienmitglieder oder
      Geräte gleichzeitig zu benachrichtigen)
@@ -106,8 +110,10 @@ ohne ihn zu löschen und neu anzulegen:
 
 - Die Integration reagiert direkt auf Zustandsänderungen (kein Polling),
   daher sehr geringe Systemlast.
-- Für Sonos wird der Standard-Service `tts.speak` verwendet – stelle sicher,
-  dass eine TTS-Integration (z. B. Google Translate, Piper) eingerichtet ist.
+- Für die Sprachausgabe wird der Standard-Service `tts.speak` verwendet – das
+  funktioniert mit jeder `media_player`-Entität, nicht nur mit Sonos. Stelle
+  sicher, dass eine TTS-Integration (z. B. Google Translate, Piper)
+  eingerichtet ist.
 - Für App-Benachrichtigungen wird `notify.send_message` auf die gewählte
   notify-Entität aufgerufen (benötigt Home Assistant 2024.9 oder neuer).
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
