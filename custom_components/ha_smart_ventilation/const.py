@@ -3,10 +3,11 @@
 DOMAIN = "ha_smart_ventilation"
 
 # Marker im Config-Entry-Data, der eine Entry als "Allgemeine Einstellungen"
-# statt als Raum kennzeichnet. Davon darf es maximal eine geben.
+# statt als Raum kennzeichnet. Davon darf es maximal eine geben. Der
+# angezeigte Name/Titel kommt - wie bei einem Raum - vom vom Nutzer
+# eingegebenen CONF_ROOM_NAME ("virtueller Raum").
 CONF_IS_GLOBAL = "is_global"
 GLOBAL_SETTINGS_UNIQUE_ID = "ha_smart_ventilation_global_settings"
-GLOBAL_SETTINGS_TITLE = "Allgemeine Einstellungen"
 # Schlüssel in hass.data[DOMAIN], unter dem die entry_id der globalen
 # Einstellungen (falls vorhanden) hinterlegt wird.
 GLOBAL_ENTRY_ID_KEY = "_global_entry_id"

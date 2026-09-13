@@ -57,7 +57,6 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DEHUMIDIFIER_DOMAINS,
     DOMAIN,
-    GLOBAL_SETTINGS_TITLE,
     GLOBAL_SETTINGS_UNIQUE_ID,
     NOTIFY_METHOD_MOBILE,
     NOTIFY_METHOD_SONOS,
@@ -73,10 +72,14 @@ SECTION_DEVICES = "devices"
 SECTION_PARAMETERS = "parameters"
 
 # Schwellenwerte und weitere Zahlen-Parameter mit Pfeil-hoch/-runter-Steuerung.
-# In den GLOBALEN Einstellungen immer mit Standardwert vorausgefüllt und beim
-# Leeren automatisch wieder aufgefüllt (siehe _threshold_selector /
-# _apply_threshold_defaults). Auf RAUM-Ebene dagegen echt optional (siehe
-# _override_selector) - leer bedeutet "globalen Wert verwenden".
+# Beim Bearbeiten der GLOBALEN Einstellungen immer mit Standardwert
+# vorausgefüllt und beim Leeren automatisch wieder aufgefüllt (siehe
+# _threshold_selector / _apply_threshold_defaults). Auf RAUM-Ebene dagegen
+# echt optional (siehe _override_selector) - leer bedeutet "globalen Wert
+# verwenden". Da eine neue globale Einstellung über dasselbe Formular wie ein
+# Raum angelegt wird, gilt beim Neuanlegen zunächst die Raum-Variante -
+# _apply_threshold_defaults() wird dann nachträglich beim Speichern
+# angewendet, falls es sich um die globalen Einstellungen handelt.
 _THRESHOLD_FIELDS = {
     CONF_TEMP_THRESHOLD_OPEN: (DEFAULT_TEMP_THRESHOLD_OPEN, -20, 40, 0.5, "°C"),
     CONF_TEMP_THRESHOLD_CLOSE: (DEFAULT_TEMP_THRESHOLD_CLOSE, -20, 40, 0.5, "°C"),
@@ -91,6 +94,21 @@ _THRESHOLD_FIELDS = {
     CONF_POWER_GRACE_PERIOD: (DEFAULT_POWER_GRACE_PERIOD, 0, 120, 5, "min"),
     CONF_TTS_VOLUME: (DEFAULT_TTS_VOLUME, 0, 100, 5, "%"),
 }
+
+# Die neun "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit dem
+# Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/power_grace_period
+# gehören beim Raum bewusst zum Geräte-Abschnitt, nicht hierher.
+_CORE_PARAMETER_KEYS = (
+    CONF_TEMP_THRESHOLD_OPEN,
+    CONF_TEMP_THRESHOLD_CLOSE,
+    CONF_HUMIDITY_THRESHOLD_OPEN,
+    CONF_HUMIDITY_THRESHOLD_CLOSE,
+    CONF_TEMP_MARGIN,
+    CONF_FROST_PROTECTION_TEMP,
+    CONF_WINTER_OUTDOOR_THRESHOLD,
+    CONF_MAX_OPEN_DURATION_WINTER,
+    CONF_REMINDER_INTERVAL,
+)
 
 
 def _entity_marker(
@@ -107,8 +125,9 @@ def _entity_marker(
 
 
 def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
-    """Für GLOBALE Einstellungen: immer vorausgefüllt, beim Leeren greift
-    automatisch wieder der Standardwert (siehe _apply_threshold_defaults)."""
+    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
+    globalen Einstellungen, wo beim Leeren automatisch wieder der
+    Standardwert greift (siehe _apply_threshold_defaults)."""
     defaults = defaults or {}
     default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
     current = defaults.get(key, default_value)
@@ -168,12 +187,13 @@ def _flatten_step_data(data: dict) -> dict:
     return flat
 
 
-def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
-    """Raum-Formular: Raumname, Benachrichtigungsmethode(n), danach drei
-    Abschnitte ('Sensoren', 'Parameter', 'Geräte' - Geräte-Abschnitt am
-    Ende, standardmäßig eingeklappt). Die Felder in 'Parameter' sowie
-    Leistungsschwelle/-verzögerung im Geräte-Abschnitt sind echt optional:
-    leer gelassen wird der Wert aus den globalen Einstellungen übernommen.
+def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
+    """Formular für einen Raum: Raumname, Benachrichtigungsmethode(n),
+    danach drei Abschnitte ('Sensoren', 'Parameter', 'Geräte' - Geräte-
+    Abschnitt am Ende, standardmäßig eingeklappt). Die Felder in 'Parameter'
+    sowie Leistungsschwelle/-verzögerung im Geräte-Abschnitt sind echt
+    optional: leer gelassen wird der Wert aus den allgemeinen Einstellungen
+    übernommen (siehe Eintrag "Smart Ventilation Options").
 
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
@@ -193,142 +213,141 @@ def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
     power_marker, power_sel = _override_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _override_selector(CONF_POWER_GRACE_PERIOD, defaults)
 
+    fields: dict = {
+        vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")): str,
+        vol.Required(
+            CONF_NOTIFY_METHOD,
+            default=defaults.get(CONF_NOTIFY_METHOD, [NOTIFY_METHOD_MOBILE]),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(
+                        value=NOTIFY_METHOD_SONOS,
+                        label="Sprachausgabe (z. B. Sonos)",
+                    ),
+                    selector.SelectOptionDict(
+                        value=NOTIFY_METHOD_MOBILE,
+                        label="Home Assistant Companion App (Push)",
+                    ),
+                ],
+                multiple=True,
+                mode=selector.SelectSelectorMode.LIST,
+            )
+        ),
+    }
+
+    fields[vol.Required(SECTION_SENSORS)] = section(
+        vol.Schema(
+            {
+                _entity_marker(
+                    CONF_TEMP_SOURCE_ENTITY, defaults
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=TEMP_SOURCE_DOMAINS)
+                ),
+                vol.Optional(
+                    CONF_TEMP_ATTRIBUTE,
+                    default=defaults.get(
+                        CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
+                    ),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=COMMON_TEMP_ATTRIBUTES,
+                        custom_value=True,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                _entity_marker(
+                    CONF_HUMIDITY_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                ),
+                _entity_marker(
+                    CONF_OUTDOOR_TEMP_ENTITY, defaults
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                ),
+                _entity_marker(
+                    CONF_WINDOW_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="binary_sensor")
+                ),
+            }
+        ),
+        {"collapsed": False},
+    )
+
+    fields[vol.Required(SECTION_PARAMETERS)] = section(
+        vol.Schema(
+            {
+                temp_open_marker: temp_open_sel,
+                temp_close_marker: temp_close_sel,
+                hum_open_marker: hum_open_sel,
+                hum_close_marker: hum_close_sel,
+                margin_marker: margin_sel,
+                frost_marker: frost_sel,
+                winter_marker: winter_sel,
+                duration_marker: duration_sel,
+                reminder_marker: reminder_sel,
+            }
+        ),
+        {"collapsed": False},
+    )
+
+    # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
+    # für einen Teil der Räume relevant
+    fields[vol.Required(SECTION_DEVICES)] = section(
+        vol.Schema(
+            {
+                _entity_marker(
+                    CONF_DEHUMIDIFIER_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=DEHUMIDIFIER_DOMAINS)
+                ),
+                _entity_marker(
+                    CONF_AC_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=AC_DOMAINS)
+                ),
+                _entity_marker(
+                    CONF_SHUTTER_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=SHUTTER_DOMAINS)
+                ),
+                _entity_marker(
+                    CONF_POWER_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                ),
+                power_marker: power_sel,
+                grace_marker: grace_sel,
+            }
+        ),
+        {"collapsed": True},
+    )
+
+    return vol.Schema(fields)
+
+
+def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
+    """Formular zum nachträglichen Bearbeiten der allgemeinen Einstellungen
+    (Options-Flow): Name, TTS-Wiedergabe, Leistungssensor, sowie die
+    Schwellenwertparameter in einem eigenen Abschnitt - analog zum
+    "Parameter"-Abschnitt bei den Raum-Einstellungen."""
+    defaults = defaults or {}
+    volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
+    power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
+    grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
+
+    parameter_fields = {}
+    for key in _CORE_PARAMETER_KEYS:
+        marker, sel = _threshold_selector(key, defaults)
+        parameter_fields[marker] = sel
+
     return vol.Schema(
         {
             vol.Required(
                 CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")
             ): str,
-            vol.Required(
-                CONF_NOTIFY_METHOD,
-                default=defaults.get(CONF_NOTIFY_METHOD, [NOTIFY_METHOD_MOBILE]),
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(
-                            value=NOTIFY_METHOD_SONOS,
-                            label="Sprachausgabe (z. B. Sonos)",
-                        ),
-                        selector.SelectOptionDict(
-                            value=NOTIFY_METHOD_MOBILE,
-                            label="Home Assistant Companion App (Push)",
-                        ),
-                    ],
-                    multiple=True,
-                    mode=selector.SelectSelectorMode.LIST,
-                )
-            ),
-            vol.Required(SECTION_SENSORS): section(
-                vol.Schema(
-                    {
-                        _entity_marker(
-                            CONF_TEMP_SOURCE_ENTITY, defaults
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain=TEMP_SOURCE_DOMAINS)
-                        ),
-                        vol.Optional(
-                            CONF_TEMP_ATTRIBUTE,
-                            default=defaults.get(
-                                CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
-                            ),
-                        ): selector.SelectSelector(
-                            selector.SelectSelectorConfig(
-                                options=COMMON_TEMP_ATTRIBUTES,
-                                custom_value=True,
-                                mode=selector.SelectSelectorMode.DROPDOWN,
-                            )
-                        ),
-                        _entity_marker(
-                            CONF_HUMIDITY_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain="sensor")
-                        ),
-                        _entity_marker(
-                            CONF_OUTDOOR_TEMP_ENTITY, defaults
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain="sensor")
-                        ),
-                        _entity_marker(
-                            CONF_WINDOW_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain="binary_sensor")
-                        ),
-                    }
-                ),
-                {"collapsed": False},
-            ),
-            vol.Required(SECTION_PARAMETERS): section(
-                vol.Schema(
-                    {
-                        temp_open_marker: temp_open_sel,
-                        temp_close_marker: temp_close_sel,
-                        hum_open_marker: hum_open_sel,
-                        hum_close_marker: hum_close_sel,
-                        margin_marker: margin_sel,
-                        frost_marker: frost_sel,
-                        winter_marker: winter_sel,
-                        duration_marker: duration_sel,
-                        reminder_marker: reminder_sel,
-                    }
-                ),
-                {"collapsed": False},
-            ),
-            # Ans Ende verschoben und standardmäßig eingeklappt, da optional
-            # und nur für einen Teil der Räume relevant
-            vol.Required(SECTION_DEVICES): section(
-                vol.Schema(
-                    {
-                        _entity_marker(
-                            CONF_DEHUMIDIFIER_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain=DEHUMIDIFIER_DOMAINS)
-                        ),
-                        _entity_marker(
-                            CONF_AC_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain=AC_DOMAINS)
-                        ),
-                        _entity_marker(
-                            CONF_SHUTTER_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain=SHUTTER_DOMAINS)
-                        ),
-                        _entity_marker(
-                            CONF_POWER_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain="sensor")
-                        ),
-                        power_marker: power_sel,
-                        grace_marker: grace_sel,
-                    }
-                ),
-                {"collapsed": True},
-            ),
-        }
-    )
-
-
-def _build_global_schema(defaults: dict | None = None) -> vol.Schema:
-    """Formular für die globalen (raumunabhängigen) Einstellungen: TTS-
-    Entität, Leistungssensor + zugehörige Parameter, sowie alle
-    Schwellenwerte/Parameter als raumweiter Standard. Diese Werte gelten für
-    jeden Raum, der das jeweilige Feld nicht selbst überschreibt."""
-    defaults = defaults or {}
-
-    temp_open_marker, temp_open_sel = _threshold_selector(CONF_TEMP_THRESHOLD_OPEN, defaults)
-    temp_close_marker, temp_close_sel = _threshold_selector(CONF_TEMP_THRESHOLD_CLOSE, defaults)
-    hum_open_marker, hum_open_sel = _threshold_selector(CONF_HUMIDITY_THRESHOLD_OPEN, defaults)
-    hum_close_marker, hum_close_sel = _threshold_selector(CONF_HUMIDITY_THRESHOLD_CLOSE, defaults)
-    margin_marker, margin_sel = _threshold_selector(CONF_TEMP_MARGIN, defaults)
-    frost_marker, frost_sel = _threshold_selector(CONF_FROST_PROTECTION_TEMP, defaults)
-    winter_marker, winter_sel = _threshold_selector(CONF_WINTER_OUTDOOR_THRESHOLD, defaults)
-    duration_marker, duration_sel = _threshold_selector(CONF_MAX_OPEN_DURATION_WINTER, defaults)
-    reminder_marker, reminder_sel = _threshold_selector(CONF_REMINDER_INTERVAL, defaults)
-    power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
-    grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
-    volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
-
-    return vol.Schema(
-        {
             _entity_marker(
                 CONF_TTS_ENTITY, defaults, required=False
             ): selector.EntitySelector(
@@ -362,15 +381,9 @@ def _build_global_schema(defaults: dict | None = None) -> vol.Schema:
             ),
             power_marker: power_sel,
             grace_marker: grace_sel,
-            temp_open_marker: temp_open_sel,
-            temp_close_marker: temp_close_sel,
-            hum_open_marker: hum_open_sel,
-            hum_close_marker: hum_close_sel,
-            margin_marker: margin_sel,
-            frost_marker: frost_sel,
-            winter_marker: winter_sel,
-            duration_marker: duration_sel,
-            reminder_marker: reminder_sel,
+            vol.Required(SECTION_PARAMETERS): section(
+                vol.Schema(parameter_fields), {"collapsed": False}
+            ),
         }
     )
 
@@ -504,18 +517,22 @@ class _NotifyFlowMixin:
         raise NotImplementedError
 
 
+def _validate_room_submission(defaults: dict) -> str | None:
+    """Prüft die Pflichtangaben für einen Raum. Gibt den Fehlerschlüssel
+    zurück oder None. Innentemperatur/Außentemperatur werden bereits vom
+    Formular selbst als Pflichtfeld erzwungen."""
+    if not defaults.get(CONF_NOTIFY_METHOD):
+        return "notify_method_required"
+    return None
+
+
 class SmartVentilationConfigFlow(
     config_entries.ConfigFlow, _NotifyFlowMixin, domain=DOMAIN
 ):
-    """Config Flow.
-
-    Einstieg über ein Menü:
-      - "Raum hinzufügen" - Ablauf wie gehabt (Raumname, Sensoren, Parameter,
-        Geräte, Benachrichtigungsmethode(n))
-      - "Allgemeine Einstellungen" - einmalig anlegbar, dient als Fallback
-        für alle Räume, die ein Parameter-/TTS-/Leistungsfeld nicht selbst
-        überschreiben. Verschwindet aus dem Menü, sobald einmal angelegt.
-    """
+    """Config Flow für Räume. Die allgemeinen Einstellungen ('Smart
+    Ventilation Options') werden NICHT über diesen nutzergesteuerten Flow
+    angelegt, sondern automatisch beim allerersten Start von Home Assistant
+    (siehe __init__.py: async_setup) über async_step_import."""
 
     VERSION = 1
 
@@ -526,32 +543,15 @@ class SmartVentilationConfigFlow(
     async def async_step_user(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Einstiegspunkt: Menü, falls die globalen Einstellungen noch nicht
-        existieren - sonst direkt weiter zum Raum-Formular."""
-        global_exists = any(
-            entry.data.get(CONF_IS_GLOBAL)
-            for entry in self.hass.config_entries.async_entries(DOMAIN)
-        )
-        if global_exists:
-            return await self.async_step_add_room()
-
-        return self.async_show_menu(
-            step_id="user",
-            menu_options=["add_room", "global_settings"],
-        )
-
-    async def async_step_add_room(
-        self, user_input: dict | None = None
-    ) -> config_entries.FlowResult:
         errors: dict[str, str] = {}
         defaults: dict | None = None
 
         if user_input is not None:
             defaults = _flatten_step_data(user_input)
-            methods = defaults.get(CONF_NOTIFY_METHOD) or []
+            error = _validate_room_submission(defaults)
 
-            if not methods:
-                errors["base"] = "notify_method_required"
+            if error:
+                errors["base"] = error
             else:
                 unique_id = (
                     f"{defaults[CONF_ROOM_NAME]}_"
@@ -561,30 +561,29 @@ class SmartVentilationConfigFlow(
                 self._abort_if_unique_id_configured()
 
                 self._data = defaults
-                self._pending_notify_methods = list(methods)
+                self._pending_notify_methods = list(defaults[CONF_NOTIFY_METHOD])
                 return await self._async_step_next()
 
         return self.async_show_form(
-            step_id="add_room",
-            data_schema=_build_user_schema(defaults),
+            step_id="user",
+            data_schema=_build_room_schema(defaults),
             errors=errors,
         )
 
-    async def async_step_global_settings(
+    async def async_step_import(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
+        """Wird ausschließlich intern von __init__.py (async_setup) beim
+        allerersten Start automatisch ausgelöst, um den Eintrag "Smart
+        Ventilation Options" anzulegen - keine Benutzerinteraktion, keine
+        eigene Formularanzeige."""
         await self.async_set_unique_id(GLOBAL_SETTINGS_UNIQUE_ID)
         self._abort_if_unique_id_configured()
 
-        if user_input is not None:
-            flat = _apply_threshold_defaults(_flatten_step_data(user_input))
-            flat[CONF_IS_GLOBAL] = True
-            return self.async_create_entry(title=GLOBAL_SETTINGS_TITLE, data=flat)
-
-        return self.async_show_form(
-            step_id="global_settings",
-            data_schema=_build_global_schema(None),
+        data = _apply_threshold_defaults(
+            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "Smart Ventilation Options"}
         )
+        return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 
     def _finish(self) -> config_entries.FlowResult:
         return self.async_create_entry(
@@ -601,8 +600,9 @@ class SmartVentilationConfigFlow(
 
 class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
     """Options-Flow: bearbeitet einen bestehenden Eintrag - je nachdem, ob es
-    sich um einen Raum oder um die globalen Einstellungen handelt, wird ein
-    anderes Formular gezeigt."""
+    sich um einen Raum oder um die allgemeinen Einstellungen handelt, wird
+    ein anderes Formular gezeigt. Der Typ selbst (Raum vs. allgemeine
+    Einstellungen) lässt sich nachträglich nicht mehr ändern."""
 
     def __init__(self) -> None:
         self._data: dict = {}
@@ -624,21 +624,20 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
 
         if user_input is not None:
             defaults = _flatten_step_data(user_input)
-            methods = defaults.get(CONF_NOTIFY_METHOD) or []
-
-            if not methods:
-                errors["base"] = "notify_method_required"
+            error = _validate_room_submission(defaults)
+            if error:
+                errors["base"] = error
             else:
                 # Bestehende Werte behalten, neue Eingaben überschreiben sie.
                 # Ein Feld, das jetzt leer gelassen wurde, entfernt eine
                 # zuvor gesetzte Raum-Override wieder (zurück auf "global").
                 self._data = {**current, **defaults}
-                self._pending_notify_methods = list(methods)
+                self._pending_notify_methods = list(defaults[CONF_NOTIFY_METHOD])
                 return await self._async_step_next()
 
         return self.async_show_form(
             step_id="room",
-            data_schema=_build_user_schema(defaults),
+            data_schema=_build_room_schema(defaults),
             errors=errors,
         )
 
@@ -651,13 +650,15 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
             flat = _apply_threshold_defaults(_flatten_step_data(user_input))
             flat[CONF_IS_GLOBAL] = True
             self.hass.config_entries.async_update_entry(
-                self.config_entry, data=flat, title=GLOBAL_SETTINGS_TITLE
+                self.config_entry,
+                data=flat,
+                title=flat.get(CONF_ROOM_NAME, self.config_entry.title),
             )
             return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="global",
-            data_schema=_build_global_schema(current),
+            data_schema=_build_global_edit_schema(current),
         )
 
     def _finish(self) -> config_entries.FlowResult:
