@@ -65,11 +65,26 @@ nicht mehr nötig.
    - **Benachrichtigungsmethode(n)**: Sonos und/oder App – beides kann
      gleichzeitig aktiviert werden
 4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
-   - Bei "Sonos": eigener Schritt für Sonos-Lautsprecher + TTS-Entität
-   - Bei "App": eigener Schritt für die `notify.*`-Entität (Dropdown mit
-     allen verfügbaren Notify-Entitäten)
+   - Bei "Sonos": eigener Schritt für **einen oder mehrere** Sonos-Lautsprecher
+     + eine TTS-Entität (gilt für alle gewählten Lautsprecher)
+   - Bei "App": eigener Schritt für **eine oder mehrere** `notify.*`-Entitäten
+     (Dropdown mit Mehrfachauswahl, z. B. um mehrere Familienmitglieder oder
+     Geräte gleichzeitig zu benachrichtigen)
 5. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
+
+## Bestehenden Raum bearbeiten
+
+Ein bereits eingerichteter Raum lässt sich jederzeit nachträglich anpassen,
+ohne ihn zu löschen und neu anzulegen:
+
+1. **Einstellungen → Geräte & Dienste → Smart Ventilation**
+2. Beim gewünschten Raum-Eintrag auf **Konfigurieren** klicken
+3. Es öffnet sich derselbe mehrstufige Ablauf wie beim Einrichten, diesmal
+   mit den aktuell gespeicherten Werten vorausgefüllt
+4. Nach dem Speichern wird der Raum automatisch mit den neuen Einstellungen
+   neu geladen – ein manueller Neustart von Home Assistant ist dafür nicht
+   nötig
 
 > Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
 > der Eingabe ein-/ausblenden. Deshalb ist die Reihenfolge so gelöst, dass
