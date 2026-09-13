@@ -56,9 +56,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
      - Optional: Luftfeuchtigkeit, Fensterkontakt
-   - **Abschnitt "Parameter"** (optional – **überschreibt** für diesen Raum
-     die allgemeinen Einstellungen; leer gelassen gilt der dort hinterlegte
-     Wert):
+   - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
+     **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
+     gelassen gilt der dort hinterlegte Wert):
      - Schwellenwerte zum Öffnen/Schließen sowie Toleranz-Marge,
        Frostschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer und
        Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
@@ -70,10 +70,10 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
        beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
        "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
-     - **Leistungssensor** (optional): überschreibt für diesen Raum den
-       Leistungssensor aus den allgemeinen Einstellungen, falls gesetzt
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
-       ebenfalls optionale Raum-Overrides
+       optionale Raum-Overrides der in "Smart Ventilation Options"
+       hinterlegten Werte (der Leistungssensor selbst ist nur dort
+       hinterlegbar, nicht mehr pro Raum)
 4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
    - Bei "Sprachausgabe": eigener Schritt für **einen oder mehrere** Lautsprecher
      (`media_player`-Entitäten, z. B. Sonos) + optional eine **eigene**
@@ -100,15 +100,17 @@ deinen Räumen auf. Dieser Eintrag erzeugt keine eigene Entität und keinen
 eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 
 **Bearbeiten:** Beim Eintrag "Smart Ventilation Options" auf
-**Konfigurieren** (Zahnrad-Symbol) klicken. Enthält:
+**Konfigurieren** (Zahnrad-Symbol) klicken. Zwei Abschnitte:
 
+**Abschnitt "Sensoren"**:
 - **Außentemperatur**: wird für **alle** Räume verwendet – kann seit
   dieser Version nicht mehr pro Raum überschrieben werden (dafür gibt es
   im Raum-Formular kein Feld mehr)
 - **Außen-Luftfeuchtigkeit** (optional, ebenfalls nur global): ist sie
   gesetzt, wird Lüften bei hoher Innen-Luftfeuchtigkeit nur noch empfohlen,
-  wenn es draußen auch trockener ist als drinnen – sonst würde Lüften die
-  Situation eher verschlimmern. Ohne diesen Sensor bleibt es beim bisherigen
+  wenn es draußen auch **absolut** (nicht nur relativ) trockener ist als
+  drinnen – siehe eigener Abschnitt "Absolute vs. relative
+  Luftfeuchtigkeit" unten. Ohne diesen Sensor bleibt es beim bisherigen
   Verhalten (Lüften bei hoher Innen-Luftfeuchtigkeit, unabhängig von der
   Außenluft)
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
@@ -117,12 +119,16 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
   die Lautsprecher **vor** der Ansage gesetzt werden
 - **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
-- **Leistungssensor** + **Mindest-Einspeiseleistung** + **Verzögerung bis
-  Abschalten**: Standardwerte für alle Räume, die keinen eigenen
-  Leistungssensor festlegen
-- Eigener **"Parameter"-Abschnitt** mit dem kompletten
-  Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder wie im
-  Raum-Parameter-Abschnitt) als raumweiter Standard
+- **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
+  im Raum-Formular auswählbar
+- **Mindest-Einspeiseleistung** + **Verzögerung bis Abschalten**:
+  Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
+  Werte selbst bleiben pro Raum überschreibbar, siehe Geräte-Abschnitt
+  im Raum-Formular)
+
+**Abschnitt "Parameter"**:
+- Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
+  wie im Raum-Parameter-Abschnitt) als raumweiter Standard
 
 Der **Name dieses Eintrags lässt sich hier bewusst nicht ändern** – dafür
 gibt es keinen praktischen Bedarf. Alle Zahlenfelder sind immer mit einem
@@ -137,15 +143,17 @@ greift beim Speichern automatisch wieder dieser Standardwert.
 > gesamte Integration deinstallieren oder den Eintrag manuell deaktivieren
 > statt zu löschen.
 
-**Zur Sortierung in der Integrationsliste:** Da Home Assistant mehrere
-Einträge einer Integration meist alphabetisch sortiert, würde
-"Smart Ventilation Options" bei den meisten Raumnamen (z. B. "Bad",
-"Büro", "Küche") nicht an erster Stelle erscheinen. Der Name trägt deshalb
-bewusst eine führende **"0 "** ("0 Smart Ventilation Options") – Ziffern
-sortieren in praktisch jeder Sortierlogik (auch sprachabhängigen) vor
-Buchstaben, anders als z. B. Sonderzeichen wie "!" oder "#", die von
-manchen Sortieralgorithmen ignoriert werden. Damit steht der Eintrag
-zuverlässig ganz oben in der Liste.
+**Zur Sortierung in der Integrationsliste:** Es gibt keinen zuverlässigen
+Trick, um "Smart Ventilation Options" in der Liste an eine bestimmte
+Stelle zu bringen. Ein früherer Versuch mit einer führenden Ziffer im
+Namen hat sich als wirkungslos erwiesen – die Reihenfolge mehrerer
+Einträge einer Integration richtet sich in Home Assistant offenbar nicht
+zuverlässig nach dem Namen (mehrfach von Nutzern als "wirkt zufällig"
+gemeldet), sondern vermutlich eher nach der Reihenfolge, in der die
+Einträge angelegt wurden. Da "Smart Ventilation Options" meist erst nach
+bereits bestehenden Räumen automatisch erzeugt wird, taucht er entsprechend
+oft weiter unten auf. Eine nachträgliche Änderung ist darüber nicht
+zuverlässig erreichbar.
 
 ## Bestehenden Eintrag bearbeiten
 
@@ -178,8 +186,9 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 - Innentemperatur ≥ "Schwelle zum Öffnen" **und** draußen mindestens um die
   Toleranz-Marge kühler ist als drinnen, **oder**
 - Luftfeuchtigkeit ≥ "Schwelle zum Öffnen" **und** (kein Außen-
-  Luftfeuchtigkeitssensor hinterlegt **oder** es ist draußen trockener als
-  drinnen)
+  Luftfeuchtigkeitssensor hinterlegt **oder** es draußen **absolut**
+  betrachtet trockener ist als drinnen – siehe "Absolute vs. relative
+  Luftfeuchtigkeit" unten)
 
 **Schließen** wird empfohlen, wenn:
 - Innentemperatur ≤ "Schwelle zum Schließen", **oder**
@@ -205,6 +214,35 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 **Nicht berücksichtigt** (bewusst, aktuell außerhalb des Funktionsumfangs):
 Regen und Windgeschwindigkeit.
+
+## Absolute vs. relative Luftfeuchtigkeit
+
+Der Außen-/Innenvergleich für die Feuchtigkeits-Öffnen-Bedingung nutzt
+bewusst **nicht** die relative Luftfeuchtigkeit (% RH), sondern rechnet
+daraus die **absolute** Luftfeuchtigkeit (g Wasser pro m³ Luft, über die
+Magnus-Formel aus Temperatur + relativer Feuchte) und vergleicht diese.
+
+**Warum das wichtig ist:** Relative Luftfeuchtigkeit ist stark
+temperaturabhängig - dieselbe Menge Wasser in der Luft ergibt bei kalter
+Luft eine hohe %-Zahl und bei warmer Luft eine niedrige, weil warme Luft
+viel mehr Feuchtigkeit aufnehmen kann. Praktisch relevantester Fall:
+
+- **Winter**: Draußen zeigt der Sensor oft 85–95 % RH bei wenigen Grad
+  Celsius an. Ein reiner %-Vergleich würde das als "draußen feuchter"
+  werten und vom Lüften abraten - dabei ist kalte Luft absolut gesehen
+  meist sehr trocken. Sobald sie hereinströmt und sich erwärmt, sinkt ihre
+  RH oft auf 20–30 %. Winterliches Stoßlüften ist deshalb in der Praxis
+  eine der wirksamsten Entfeuchtungsmethoden - mit einem reinen
+  RH%-Vergleich hätte die Integration genau davon abgeraten.
+- **Sommer**: Umgekehrt kann draußen bei Hitze ein niedrigerer RH%-Wert
+  gemessen werden als drinnen, obwohl die Luft absolut mehr Wasser enthält.
+  Ein reiner %-Vergleich hätte hier fälschlich zum Lüften geraten.
+
+Die Schwellenwerte zum Öffnen/Schließen selbst (im Parameter-Abschnitt)
+bleiben bewusst in % RH - das ist der Wert, der spürbar ist und der
+Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
+Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
+nutzt die berechnete absolute Feuchte.
 
 ## Geräte-Steuerung (Luftentfeuchter/Klimaanlage)
 
