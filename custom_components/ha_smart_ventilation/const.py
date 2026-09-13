@@ -16,6 +16,11 @@ CONF_NOTIFY_METHOD = "notify_method"
 CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
 CONF_MOBILE_NOTIFY_ENTITY = "mobile_notify_entity"
+CONF_PRESENCE_ENTITY = "presence_entity"
+# Liste von {mobile_notify_entity, presence_entity}-Paaren - ersetzt die
+# frühere gemeinsame Mehrfachauswahl, damit die Anwesenheitsprüfung pro
+# Person/Gerät statt pauschal für alle Notify-Ziele gilt.
+CONF_MOBILE_TARGETS = "mobile_targets"
 
 # Erweiterte Lüftungslogik
 CONF_TEMP_MARGIN = "temp_margin"
@@ -81,6 +86,10 @@ AC_DOMAINS = ["climate", "switch"]
 # Fenstersperre/Rollladen: entweder eine "cover"-Entität (auf/zu) oder eine
 # "switch"-Entität (1 = herunterfahren+sperren, 0 = hochfahren+entsperren).
 SHUTTER_DOMAINS = ["cover", "switch"]
+
+# Anwesenheitsprüfung für Push-Benachrichtigungen: person- oder
+# device_tracker-Entität.
+PRESENCE_DOMAINS = ["person", "device_tracker"]
 
 # Mindest-Einspeiseleistung (Watt), ab der ein Gerät eingeschaltet werden
 # darf, falls ein Leistungssensor konfiguriert ist. 0 = jede vorhandene

@@ -28,10 +28,12 @@ from .const import (
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_MIN_SURPLUS_POWER,
     CONF_MOBILE_NOTIFY_ENTITY,
+    CONF_MOBILE_TARGETS,
     CONF_NOTIFY_METHOD,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE_PERIOD,
+    CONF_PRESENCE_ENTITY,
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
     CONF_SHUTTER_ENTITY,
@@ -533,6 +535,31 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             return f"Erinnerung: Das Fenster im {room} sollte noch geöffnet sein."
         return f"Bitte das Fenster im {room} wieder schließen."
 
+    def _is_present(self, presence_entity: str | None) -> bool:
+        """Prüft, ob die zu einem Notify-Ziel gehörende Person/das Gerät
+        zuhause ist. Ohne Anwesenheits-Entität ist die Bedingung immer
+        erfüllt (Push wird wie bisher immer gesendet)."""
+        if not presence_entity:
+            return True
+        state = self.hass.states.get(presence_entity)
+        if state is None:
+            return True
+        return state.state == "home"
+
+    def _get_mobile_targets(self) -> list[dict]:
+        """Liefert die Liste der {mobile_notify_entity, presence_entity}-Paare.
+
+        Abwärtskompatibel: ältere Konfigurationen, die noch die frühere
+        flache Mehrfachauswahl (CONF_MOBILE_NOTIFY_ENTITY als Liste/String)
+        gespeichert haben, werden automatisch in die neue Struktur überführt
+        - ohne Anwesenheitsprüfung, also wie bisher immer gesendet.
+        """
+        targets = self._config.get(CONF_MOBILE_TARGETS)
+        if targets:
+            return list(targets)
+        legacy = self._as_list(self._config.get(CONF_MOBILE_NOTIFY_ENTITY))
+        return [{CONF_MOBILE_NOTIFY_ENTITY: entity_id} for entity_id in legacy]
+
     async def _notify(self, should_ventilate: bool, reason: str | None) -> None:
         """Verschickt die Benachrichtigung per Sprachausgabe und/oder App-Push.
 
@@ -566,19 +593,32 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                 )
 
         if NOTIFY_METHOD_MOBILE in methods:
-            notify_entities = self._as_list(self._config.get(CONF_MOBILE_NOTIFY_ENTITY))
-            if notify_entities:
-                await self.hass.services.async_call(
-                    "notify",
-                    "send_message",
-                    {
-                        "entity_id": notify_entities,
-                        "title": "Lüften",
-                        "message": message,
-                    },
-                    blocking=False,
-                )
-            else:
+            targets = self._get_mobile_targets()
+            if not targets:
                 _LOGGER.warning(
                     "Keine notify-Entität für Raum %s konfiguriert", room
                 )
+            else:
+                for target in targets:
+                    entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
+                    if not entity_id:
+                        continue
+                    presence_entity = target.get(CONF_PRESENCE_ENTITY)
+                    if self._is_present(presence_entity):
+                        await self.hass.services.async_call(
+                            "notify",
+                            "send_message",
+                            {
+                                "entity_id": entity_id,
+                                "title": "Lüften",
+                                "message": message,
+                            },
+                            blocking=False,
+                        )
+                    else:
+                        _LOGGER.debug(
+                            "Push an %s in Raum %s übersprungen - "
+                            "Person/Gerät nicht zuhause",
+                            entity_id,
+                            room,
+                        )

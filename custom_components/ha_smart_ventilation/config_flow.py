@@ -19,10 +19,12 @@ from .const import (
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_MIN_SURPLUS_POWER,
     CONF_MOBILE_NOTIFY_ENTITY,
+    CONF_MOBILE_TARGETS,
     CONF_NOTIFY_METHOD,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE_PERIOD,
+    CONF_PRESENCE_ENTITY,
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
     CONF_SHUTTER_ENTITY,
@@ -52,6 +54,7 @@ from .const import (
     DOMAIN,
     NOTIFY_METHOD_MOBILE,
     NOTIFY_METHOD_SONOS,
+    PRESENCE_DOMAINS,
     SHUTTER_DOMAINS,
     TEMP_SOURCE_DOMAINS,
 )
@@ -133,8 +136,10 @@ def _flatten_step_data(data: dict) -> dict:
 
 
 def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
-    """Hauptschritt: Benachrichtigungsmethode(n) + Raumname ganz am Anfang,
-    danach zwei Abschnitte ('Sensoren', 'Parameter').
+    """Hauptschritt: Raumname ganz am Anfang, danach die Benachrichtigungs-
+    methode(n) und drei Abschnitte ('Sensoren', 'Parameter', 'Geräte' - der
+    Geräte-Abschnitt steht zuletzt und ist standardmäßig eingeklappt, da er
+    optional ist und nur für einen Teil der Räume relevant sein dürfte).
 
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
@@ -156,7 +161,10 @@ def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
 
     return vol.Schema(
         {
-            # Eigenständig, ganz am Anfang des Formulars
+            # Raumname ganz am Anfang des Formulars
+            vol.Required(
+                CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")
+            ): str,
             vol.Required(
                 CONF_NOTIFY_METHOD,
                 default=defaults.get(CONF_NOTIFY_METHOD, [NOTIFY_METHOD_MOBILE]),
@@ -176,9 +184,6 @@ def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
                     mode=selector.SelectSelectorMode.LIST,
                 )
             ),
-            vol.Required(
-                CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")
-            ): str,
             vol.Required(SECTION_SENSORS): section(
                 vol.Schema(
                     {
@@ -223,6 +228,24 @@ def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
                 ),
                 {"collapsed": False},
             ),
+            vol.Required(SECTION_PARAMETERS): section(
+                vol.Schema(
+                    {
+                        temp_open_marker: temp_open_sel,
+                        temp_close_marker: temp_close_sel,
+                        hum_open_marker: hum_open_sel,
+                        hum_close_marker: hum_close_sel,
+                        margin_marker: margin_sel,
+                        frost_marker: frost_sel,
+                        winter_marker: winter_sel,
+                        duration_marker: duration_sel,
+                        reminder_marker: reminder_sel,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            # Ans Ende verschoben und standardmäßig eingeklappt, da optional
+            # und nur für einen Teil der Räume relevant
             vol.Required(SECTION_DEVICES): section(
                 vol.Schema(
                     {
@@ -252,22 +275,6 @@ def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
                 ),
                 {"collapsed": True},
             ),
-            vol.Required(SECTION_PARAMETERS): section(
-                vol.Schema(
-                    {
-                        temp_open_marker: temp_open_sel,
-                        temp_close_marker: temp_close_sel,
-                        hum_open_marker: hum_open_sel,
-                        hum_close_marker: hum_close_sel,
-                        margin_marker: margin_sel,
-                        frost_marker: frost_sel,
-                        winter_marker: winter_sel,
-                        duration_marker: duration_sel,
-                        reminder_marker: reminder_sel,
-                    }
-                ),
-                {"collapsed": False},
-            ),
         }
     )
 
@@ -288,14 +295,42 @@ def _build_sonos_schema(defaults: dict | None = None) -> vol.Schema:
 
 
 def _build_mobile_schema(defaults: dict | None = None) -> vol.Schema:
+    """App-Benachrichtigung: Liste von Notify-Ziel + optionaler Anwesenheits-
+    Entität. Jedes Ziel kann individuell an eine Person/ein Gerät gekoppelt
+    werden - die Push-Nachricht geht an ein Ziel nur, wenn die zugehörige
+    Anwesenheits-Entität (falls gesetzt) 'home' meldet.
+    """
+    defaults = defaults or {}
+    current_targets = defaults.get(CONF_MOBILE_TARGETS) or []
+
     return vol.Schema(
         {
-            # Mehrfachauswahl: mehrere notify.* Entitäten (z. B. mehrere
-            # Familienmitglieder/Geräte) gleichzeitig benachrichtigen
-            _entity_marker(
-                CONF_MOBILE_NOTIFY_ENTITY, defaults
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="notify", multiple=True)
+            vol.Required(
+                CONF_MOBILE_TARGETS, default=current_targets
+            ): selector.ObjectSelector(
+                selector.ObjectSelectorConfig(
+                    multiple=True,
+                    label_field=CONF_MOBILE_NOTIFY_ENTITY,
+                    description_field=CONF_PRESENCE_ENTITY,
+                    fields={
+                        CONF_MOBILE_NOTIFY_ENTITY: {
+                            "label": "Notify-Entität",
+                            "required": True,
+                            "selector": selector.EntitySelector(
+                                selector.EntitySelectorConfig(domain="notify")
+                            ),
+                        },
+                        CONF_PRESENCE_ENTITY: {
+                            "label": "Anwesenheits-Entität (optional)",
+                            "required": False,
+                            "selector": selector.EntitySelector(
+                                selector.EntitySelectorConfig(
+                                    domain=PRESENCE_DOMAINS
+                                )
+                            ),
+                        },
+                    },
+                )
             ),
         }
     )
@@ -338,10 +373,15 @@ class _NotifyFlowMixin:
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            if not user_input.get(CONF_MOBILE_NOTIFY_ENTITY):
+            targets = user_input.get(CONF_MOBILE_TARGETS) or []
+            valid_targets = [
+                t for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+            ]
+            if not valid_targets:
                 errors["base"] = "mobile_config_missing"
             else:
                 self._data.update(user_input)
+                self._data[CONF_MOBILE_TARGETS] = valid_targets
                 return await self._async_step_next()
 
         return self.async_show_form(
