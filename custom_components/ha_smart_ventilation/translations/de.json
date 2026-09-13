@@ -5,24 +5,42 @@
         "title": "Smart Ventilation – Raum hinzufügen",
         "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen).",
         "data": {
-          "room_name": "Raumname",
-          "temperature_source_entity": "Innentemperatur-Quelle (climate, sensor, number oder input_number)",
-          "temperature_attribute": "Temperatur-Attribut (nur relevant bei climate-Entitäten)",
-          "humidity_entity": "Luftfeuchtigkeits-Sensor (optional)",
-          "outdoor_temp_entity": "Außentemperatur-Sensor",
-          "window_entity": "Fensterkontakt (optional)",
-          "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
-          "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
-          "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
-          "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
-          "notify_method": "Benachrichtigungsmethode(n)"
+          "room_name": "Raumname"
+        },
+        "sections": {
+          "sensors": {
+            "name": "Sensoren",
+            "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
+            "data": {
+              "temperature_source_entity": "Innentemperatur",
+              "temperature_attribute": "Temperatur-Attribut",
+              "humidity_entity": "Luftfeuchtigkeit (optional)",
+              "outdoor_temp_entity": "Außentemperatur",
+              "window_entity": "Fensterkontakt (optional)"
+            },
+            "data_description": {
+              "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
+              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde"
+            }
+          },
+          "parameters": {
+            "name": "Parameter",
+            "description": "Schwellenwerte für das Lüften sowie die Benachrichtigungsmethoden.",
+            "data": {
+              "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
+              "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
+              "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
+              "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
+              "notify_method": "Benachrichtigungsmethoden"
+            }
+          }
         }
       },
       "notify_sonos": {
-        "title": "Sonos-Benachrichtigung einrichten",
-        "description": "Diese Angaben sind nötig, da du 'Sonos' als Benachrichtigungsmethode ausgewählt hast.",
+        "title": "Sprachausgabe einrichten",
+        "description": "Diese Angaben sind nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "sonos_entity": "Sonos-Lautsprecher (media_player) – Mehrfachauswahl möglich",
+          "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
           "tts_entity": "TTS-Entität"
         }
       },
@@ -30,7 +48,7 @@
         "title": "App-Benachrichtigung einrichten",
         "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "mobile_notify_entity": "Notify-Entität(en) (notify.*) – Mehrfachauswahl möglich"
+          "mobile_notify_entity": "Notify-Entität(en) – Mehrfachauswahl möglich"
         }
       }
     },
@@ -49,24 +67,42 @@
         "title": "Smart Ventilation – Raum bearbeiten",
         "description": "Bestehende Einstellungen für diesen Raum anpassen.",
         "data": {
-          "room_name": "Raumname",
-          "temperature_source_entity": "Innentemperatur-Quelle (climate, sensor, number oder input_number)",
-          "temperature_attribute": "Temperatur-Attribut (nur relevant bei climate-Entitäten)",
-          "humidity_entity": "Luftfeuchtigkeits-Sensor (optional)",
-          "outdoor_temp_entity": "Außentemperatur-Sensor",
-          "window_entity": "Fensterkontakt (optional)",
-          "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
-          "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
-          "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
-          "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
-          "notify_method": "Benachrichtigungsmethode(n)"
+          "room_name": "Raumname"
+        },
+        "sections": {
+          "sensors": {
+            "name": "Sensoren",
+            "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
+            "data": {
+              "temperature_source_entity": "Innentemperatur",
+              "temperature_attribute": "Temperatur-Attribut",
+              "humidity_entity": "Luftfeuchtigkeit (optional)",
+              "outdoor_temp_entity": "Außentemperatur",
+              "window_entity": "Fensterkontakt (optional)"
+            },
+            "data_description": {
+              "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
+              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde"
+            }
+          },
+          "parameters": {
+            "name": "Parameter",
+            "description": "Schwellenwerte für das Lüften sowie die Benachrichtigungsmethoden.",
+            "data": {
+              "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
+              "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
+              "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
+              "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
+              "notify_method": "Benachrichtigungsmethoden"
+            }
+          }
         }
       },
       "notify_sonos": {
-        "title": "Sonos-Benachrichtigung bearbeiten",
-        "description": "Diese Angaben sind nötig, da du 'Sonos' als Benachrichtigungsmethode ausgewählt hast.",
+        "title": "Sprachausgabe bearbeiten",
+        "description": "Diese Angaben sind nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "sonos_entity": "Sonos-Lautsprecher (media_player) – Mehrfachauswahl möglich",
+          "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
           "tts_entity": "TTS-Entität"
         }
       },
@@ -74,7 +110,7 @@
         "title": "App-Benachrichtigung bearbeiten",
         "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "mobile_notify_entity": "Notify-Entität(en) (notify.*) – Mehrfachauswahl möglich"
+          "mobile_notify_entity": "Notify-Entität(en) – Mehrfachauswahl möglich"
         }
       }
     },

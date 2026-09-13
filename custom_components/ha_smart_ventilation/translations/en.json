@@ -5,24 +5,42 @@
         "title": "Smart Ventilation – Add room",
         "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration).",
         "data": {
-          "room_name": "Room name",
-          "temperature_source_entity": "Indoor temperature source (climate, sensor, number or input_number)",
-          "temperature_attribute": "Temperature attribute (only relevant for climate entities)",
-          "humidity_entity": "Humidity sensor (optional)",
-          "outdoor_temp_entity": "Outdoor temperature sensor",
-          "window_entity": "Window contact sensor (optional)",
-          "temp_threshold_open": "Temperature threshold to open (°C)",
-          "temp_threshold_close": "Temperature threshold to close (°C)",
-          "humidity_threshold_open": "Humidity threshold to open (%)",
-          "humidity_threshold_close": "Humidity threshold to close (%)",
-          "notify_method": "Notification method(s)"
+          "room_name": "Room name"
+        },
+        "sections": {
+          "sensors": {
+            "name": "Sensors",
+            "description": "Which entities provide the measurements for this room?",
+            "data": {
+              "temperature_source_entity": "Indoor temperature",
+              "temperature_attribute": "Temperature attribute",
+              "humidity_entity": "Humidity (optional)",
+              "outdoor_temp_entity": "Outdoor temperature",
+              "window_entity": "Window contact sensor (optional)"
+            },
+            "data_description": {
+              "temperature_source_entity": "A climate, sensor, number or input_number entity",
+              "temperature_attribute": "Only relevant if a climate entity was selected above"
+            }
+          },
+          "parameters": {
+            "name": "Parameters",
+            "description": "Thresholds for ventilation and the notification method(s).",
+            "data": {
+              "temp_threshold_open": "Temperature threshold to open (°C)",
+              "temp_threshold_close": "Temperature threshold to close (°C)",
+              "humidity_threshold_open": "Humidity threshold to open (%)",
+              "humidity_threshold_close": "Humidity threshold to close (%)",
+              "notify_method": "Notification methods"
+            }
+          }
         }
       },
       "notify_sonos": {
-        "title": "Set up Sonos notification",
-        "description": "Required because you selected 'Sonos' as a notification method.",
+        "title": "Set up voice announcement",
+        "description": "Required because you selected 'Voice announcement (e.g. Sonos)' as a notification method.",
         "data": {
-          "sonos_entity": "Sonos speaker(s) (media_player) – multiple selection possible",
+          "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
           "tts_entity": "TTS entity"
         }
       },
@@ -30,7 +48,7 @@
         "title": "Set up app notification",
         "description": "Required because you selected 'Home Assistant App' as a notification method.",
         "data": {
-          "mobile_notify_entity": "Notify entity/entities (notify.*) – multiple selection possible"
+          "mobile_notify_entity": "Notify entity/entities – multiple selection possible"
         }
       }
     },
@@ -49,24 +67,42 @@
         "title": "Smart Ventilation – Edit room",
         "description": "Adjust the existing settings for this room.",
         "data": {
-          "room_name": "Room name",
-          "temperature_source_entity": "Indoor temperature source (climate, sensor, number or input_number)",
-          "temperature_attribute": "Temperature attribute (only relevant for climate entities)",
-          "humidity_entity": "Humidity sensor (optional)",
-          "outdoor_temp_entity": "Outdoor temperature sensor",
-          "window_entity": "Window contact sensor (optional)",
-          "temp_threshold_open": "Temperature threshold to open (°C)",
-          "temp_threshold_close": "Temperature threshold to close (°C)",
-          "humidity_threshold_open": "Humidity threshold to open (%)",
-          "humidity_threshold_close": "Humidity threshold to close (%)",
-          "notify_method": "Notification method(s)"
+          "room_name": "Room name"
+        },
+        "sections": {
+          "sensors": {
+            "name": "Sensors",
+            "description": "Which entities provide the measurements for this room?",
+            "data": {
+              "temperature_source_entity": "Indoor temperature",
+              "temperature_attribute": "Temperature attribute",
+              "humidity_entity": "Humidity (optional)",
+              "outdoor_temp_entity": "Outdoor temperature",
+              "window_entity": "Window contact sensor (optional)"
+            },
+            "data_description": {
+              "temperature_source_entity": "A climate, sensor, number or input_number entity",
+              "temperature_attribute": "Only relevant if a climate entity was selected above"
+            }
+          },
+          "parameters": {
+            "name": "Parameters",
+            "description": "Thresholds for ventilation and the notification method(s).",
+            "data": {
+              "temp_threshold_open": "Temperature threshold to open (°C)",
+              "temp_threshold_close": "Temperature threshold to close (°C)",
+              "humidity_threshold_open": "Humidity threshold to open (%)",
+              "humidity_threshold_close": "Humidity threshold to close (%)",
+              "notify_method": "Notification methods"
+            }
+          }
         }
       },
       "notify_sonos": {
-        "title": "Edit Sonos notification",
-        "description": "Required because you selected 'Sonos' as a notification method.",
+        "title": "Edit voice announcement",
+        "description": "Required because you selected 'Voice announcement (e.g. Sonos)' as a notification method.",
         "data": {
-          "sonos_entity": "Sonos speaker(s) (media_player) – multiple selection possible",
+          "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
           "tts_entity": "TTS entity"
         }
       },
@@ -74,7 +110,7 @@
         "title": "Edit app notification",
         "description": "Required because you selected 'Home Assistant App' as a notification method.",
         "data": {
-          "mobile_notify_entity": "Notify entity/entities (notify.*) – multiple selection possible"
+          "mobile_notify_entity": "Notify entity/entities – multiple selection possible"
         }
       }
     },
