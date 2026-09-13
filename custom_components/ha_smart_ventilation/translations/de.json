@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Smart Ventilation – Raum hinzufügen",
+        "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen).",
+        "data": {
+          "room_name": "Raumname",
+          "temperature_source_entity": "Innentemperatur-Quelle (climate, sensor, number oder input_number)",
+          "humidity_entity": "Luftfeuchtigkeits-Sensor (optional)",
+          "outdoor_temp_entity": "Außentemperatur-Sensor",
+          "window_entity": "Fensterkontakt (optional)",
+          "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
+          "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
+          "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
+          "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
+          "notify_method": "Benachrichtigungsmethode(n)",
+          "sonos_entity": "Sonos-Lautsprecher (media_player)",
+          "tts_entity": "TTS-Entität",
+          "mobile_notify_entity": "Notify-Entität (notify.*)"
+        }
+      },
+      "attribute": {
+        "title": "Temperatur-Attribut auswählen",
+        "description": "Die gewählte Entität ist eine climate-Entität. Welches Attribut enthält die aktuelle Temperatur? Du kannst einen Eintrag auswählen oder einen eigenen Attributnamen eintippen.",
+        "data": {
+          "temperature_attribute": "Temperatur-Attribut"
+        }
+      }
+    },
+    "error": {
+      "sonos_config_missing": "Für Sonos-Benachrichtigung müssen Lautsprecher und TTS-Entität angegeben werden.",
+      "mobile_config_missing": "Für App-Benachrichtigung muss eine notify-Entität angegeben werden.",
+      "notify_method_required": "Bitte mindestens eine Benachrichtigungsmethode auswählen."
+    },
+    "abort": {
+      "already_configured": "Dieser Raum ist mit dieser Temperaturquelle bereits konfiguriert."
+    }
+  }
+}
