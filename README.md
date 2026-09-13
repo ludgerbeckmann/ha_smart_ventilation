@@ -68,10 +68,9 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
 2. Nach "Smart Ventilation" suchen
 3. **Hauptformular** pro Raum ausfüllen:
-   - **Benachrichtigungsmethoden** (ganz oben, eigenständig): Sprachausgabe
-     und/oder Home Assistant Companion App – beides kann gleichzeitig
-     aktiviert werden
-   - **Raumname**
+   - **Raumname** (ganz oben)
+   - **Benachrichtigungsmethoden**: Sprachausgabe und/oder Home Assistant
+     Companion App – beides kann gleichzeitig aktiviert werden
    - **Abschnitt "Sensoren"**:
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
@@ -83,7 +82,13 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
      - **Außentemperatur** (Pflichtfeld – entscheidend dafür, ob Lüften
        überhaupt sinnvoll ist)
      - Optional: Luftfeuchtigkeit, Fensterkontakt
-   - **Abschnitt "Geräte" (optional, eingeklappt)**:
+   - **Abschnitt "Parameter"**:
+     - Schwellenwerte zum Öffnen/Schließen – Zahlenfelder mit
+       Pfeil-hoch/-runter-Steuerung, vorausgefüllt mit einem sinnvollen
+       Standardwert. Wird ein Feld komplett geleert, greift beim Speichern
+       automatisch wieder der Standardwert (24 °C / 21 °C bzw. 60 % / 50 %)
+   - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
+     Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität
      - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
@@ -96,18 +101,19 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
      - **Verzögerung bis Abschalten**: nur relevant, wenn ein Leistungssensor
        gewählt ist – ein bereits laufendes Gerät wird erst nach dieser Zeit
        dauerhaft zu geringer Einspeisung abgeschaltet
-   - **Abschnitt "Parameter"**:
-     - Schwellenwerte zum Öffnen/Schließen – Zahlenfelder mit
-       Pfeil-hoch/-runter-Steuerung, vorausgefüllt mit einem sinnvollen
-       Standardwert. Wird ein Feld komplett geleert, greift beim Speichern
-       automatisch wieder der Standardwert (24 °C / 21 °C bzw. 60 % / 50 %)
 4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
    - Bei "Sprachausgabe": eigener Schritt für **einen oder mehrere** Lautsprecher
      (`media_player`-Entitäten, z. B. Sonos) + eine TTS-Entität (gilt für alle
      gewählten Lautsprecher)
-   - Bei "Home Assistant Companion App": eigener Schritt für **eine oder
-     mehrere** `notify.*`-Entitäten (Dropdown mit Mehrfachauswahl, z. B. um
-     mehrere Familienmitglieder oder Geräte gleichzeitig zu benachrichtigen)
+   - Bei "Home Assistant Companion App": eigener Schritt mit einer Liste von
+     **Notify-Zielen**. Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
+     optional eine **Anwesenheits-Entität** (`person` oder `device_tracker`,
+     individuell pro Ziel). Ist bei einem Eintrag eine Anwesenheits-Entität
+     gesetzt, erhält genau dieses Ziel die Push-Nachricht nur, wenn die
+     Person/das Gerät zuhause ist - andere Ziele ohne Anwesenheits-Entität
+     erhalten sie weiterhin immer. So lässt sich z. B. konfigurieren: "an
+     Person A nur, wenn sie zuhause ist" und gleichzeitig "an Person B immer".
+     Über "Hinzufügen" lassen sich beliebig viele Ziele ergänzen.
 5. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
