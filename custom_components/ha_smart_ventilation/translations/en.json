@@ -7,6 +7,7 @@
         "data": {
           "room_name": "Room name",
           "temperature_source_entity": "Indoor temperature source (climate, sensor, number or input_number)",
+          "temperature_attribute": "Temperature attribute (only relevant for climate entities)",
           "humidity_entity": "Humidity sensor (optional)",
           "outdoor_temp_entity": "Outdoor temperature sensor",
           "window_entity": "Window contact sensor (optional)",
@@ -14,17 +15,22 @@
           "temp_threshold_close": "Temperature threshold to close (°C)",
           "humidity_threshold_open": "Humidity threshold to open (%)",
           "humidity_threshold_close": "Humidity threshold to close (%)",
-          "notify_method": "Notification method(s)",
-          "sonos_entity": "Sonos speaker (media_player)",
-          "tts_entity": "TTS entity",
-          "mobile_notify_entity": "Notify entity (notify.*)"
+          "notify_method": "Notification method(s)"
         }
       },
-      "attribute": {
-        "title": "Select temperature attribute",
-        "description": "The selected entity is a climate entity. Which attribute holds the current temperature? Pick an entry or type your own attribute name.",
+      "notify_sonos": {
+        "title": "Set up Sonos notification",
+        "description": "Required because you selected 'Sonos' as a notification method.",
         "data": {
-          "temperature_attribute": "Temperature attribute"
+          "sonos_entity": "Sonos speaker (media_player)",
+          "tts_entity": "TTS entity"
+        }
+      },
+      "notify_mobile": {
+        "title": "Set up app notification",
+        "description": "Required because you selected 'Home Assistant App' as a notification method.",
+        "data": {
+          "mobile_notify_entity": "Notify entity (notify.*)"
         }
       }
     },
