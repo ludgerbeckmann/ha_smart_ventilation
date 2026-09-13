@@ -2,6 +2,15 @@
 
 DOMAIN = "ha_smart_ventilation"
 
+# Marker im Config-Entry-Data, der eine Entry als "Allgemeine Einstellungen"
+# statt als Raum kennzeichnet. Davon darf es maximal eine geben.
+CONF_IS_GLOBAL = "is_global"
+GLOBAL_SETTINGS_UNIQUE_ID = "ha_smart_ventilation_global_settings"
+GLOBAL_SETTINGS_TITLE = "Allgemeine Einstellungen"
+# Schlüssel in hass.data[DOMAIN], unter dem die entry_id der globalen
+# Einstellungen (falls vorhanden) hinterlegt wird.
+GLOBAL_ENTRY_ID_KEY = "_global_entry_id"
+
 CONF_ROOM_NAME = "room_name"
 CONF_TEMP_SOURCE_ENTITY = "temperature_source_entity"
 CONF_TEMP_ATTRIBUTE = "temperature_attribute"
@@ -21,6 +30,14 @@ CONF_PRESENCE_ENTITY = "presence_entity"
 # frühere gemeinsame Mehrfachauswahl, damit die Anwesenheitsprüfung pro
 # Person/Gerät statt pauschal für alle Notify-Ziele gilt.
 CONF_MOBILE_TARGETS = "mobile_targets"
+
+# TTS-Wiedergabe (nur global einstellbar, nicht pro Raum überschreibbar)
+CONF_TTS_VOLUME = "tts_volume"
+CONF_TTS_PLAYBACK_MODE = "tts_playback_mode"
+TTS_PLAYBACK_MODE_PAUSE = "pause"
+TTS_PLAYBACK_MODE_OVERLAY = "overlay"
+DEFAULT_TTS_VOLUME = 40  # Prozent
+DEFAULT_TTS_PLAYBACK_MODE = TTS_PLAYBACK_MODE_OVERLAY
 
 # Erweiterte Lüftungslogik
 CONF_TEMP_MARGIN = "temp_margin"

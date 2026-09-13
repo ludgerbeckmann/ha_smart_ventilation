@@ -44,6 +44,8 @@ from .const import (
     CONF_TEMP_THRESHOLD_CLOSE,
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TTS_ENTITY,
+    CONF_TTS_PLAYBACK_MODE,
+    CONF_TTS_VOLUME,
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     DEFAULT_FROST_PROTECTION_TEMP,
@@ -53,9 +55,14 @@ from .const import (
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_TEMP_ATTRIBUTE,
     DEFAULT_TEMP_MARGIN,
+    DEFAULT_TTS_PLAYBACK_MODE,
+    DEFAULT_TTS_VOLUME,
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
+    DOMAIN,
+    GLOBAL_ENTRY_ID_KEY,
     NOTIFY_METHOD_MOBILE,
     NOTIFY_METHOD_SONOS,
+    TTS_PLAYBACK_MODE_PAUSE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -171,6 +178,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
     def _handle_tick(self, now) -> None:
         self.hass.async_create_task(self._evaluate())
 
+    def _global_config(self) -> dict:
+        """Liefert die Daten der globalen Einstellungen (falls vorhanden)."""
+        domain_data = self.hass.data.get(DOMAIN, {})
+        global_entry_id = domain_data.get(GLOBAL_ENTRY_ID_KEY)
+        if not global_entry_id:
+            return {}
+        return domain_data.get(global_entry_id) or {}
+
+    def _effective(self, key: str, hardcoded_default):
+        """Ermittelt den wirksamen Wert für ein überschreibbares Feld:
+        1. Raum-Override (falls im Raum gesetzt), sonst
+        2. globale Einstellung (falls vorhanden und gesetzt), sonst
+        3. fest einprogrammierter Standardwert.
+        """
+        room_value = self._config.get(key)
+        if room_value not in (None, ""):
+            return room_value
+        global_value = self._global_config().get(key)
+        if global_value not in (None, ""):
+            return global_value
+        return hardcoded_default
+
     def _get_float_state(self, entity_id: str | None) -> float | None:
         if not entity_id:
             return None
@@ -209,21 +238,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
         outdoor_temp = self._get_float_state(self._config[CONF_OUTDOOR_TEMP_ENTITY])
 
-        temp_open = self._config[CONF_TEMP_THRESHOLD_OPEN]
-        temp_close = self._config[CONF_TEMP_THRESHOLD_CLOSE]
-        hum_open = self._config[CONF_HUMIDITY_THRESHOLD_OPEN]
-        hum_close = self._config[CONF_HUMIDITY_THRESHOLD_CLOSE]
-        margin = self._config.get(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
-        frost_temp = self._config.get(
-            CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP
-        )
-        winter_threshold = self._config.get(
+        temp_open = self._effective(CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN)
+        temp_close = self._effective(CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE)
+        hum_open = self._effective(CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN)
+        hum_close = self._effective(CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE)
+        margin = self._effective(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
+        frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
+        winter_threshold = self._effective(
             CONF_WINTER_OUTDOOR_THRESHOLD, DEFAULT_WINTER_OUTDOOR_THRESHOLD
         )
-        max_duration = self._config.get(
+        max_duration = self._effective(
             CONF_MAX_OPEN_DURATION_WINTER, DEFAULT_MAX_OPEN_DURATION_WINTER
         )
-        reminder_interval = self._config.get(
+        reminder_interval = self._effective(
             CONF_REMINDER_INTERVAL, DEFAULT_REMINDER_INTERVAL
         )
 
@@ -350,15 +377,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
     def _check_power_ok(self) -> bool:
         """Prüft, ob genug Einspeiseleistung für den Gerätestart vorhanden ist.
 
-        Ohne konfigurierten Leistungssensor ist die Bedingung immer erfüllt.
-        Gilt ausschließlich fürs Einschalten - das Ausschalten ist davon
-        nie abhängig.
+        Leistungssensor und Mindestschwelle können pro Raum überschrieben
+        werden, fallen sonst auf die globalen Einstellungen zurück. Ohne
+        Leistungssensor (weder Raum noch global) ist die Bedingung immer
+        erfüllt. Gilt ausschließlich fürs Einschalten - das Ausschalten ist
+        davon nie abhängig.
         """
-        power_entity = self._config.get(CONF_POWER_ENTITY)
+        power_entity = self._effective(CONF_POWER_ENTITY, None)
         if not power_entity:
             return True
         power_value = self._get_float_state(power_entity)
-        min_power = self._config.get(CONF_MIN_SURPLUS_POWER, DEFAULT_MIN_SURPLUS_POWER)
+        min_power = self._effective(CONF_MIN_SURPLUS_POWER, DEFAULT_MIN_SURPLUS_POWER)
         return power_value is not None and power_value >= min_power
 
     async def _set_device_state(self, entity_id: str, turn_on: bool) -> None:
@@ -431,9 +460,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             return
 
         current = getattr(self, state_attr)
-        power_entity_configured = bool(self._config.get(CONF_POWER_ENTITY))
+        power_entity_configured = bool(self._effective(CONF_POWER_ENTITY, None))
         power_ok = self._check_power_ok()
-        grace_minutes = self._config.get(
+        grace_minutes = self._effective(
             CONF_POWER_GRACE_PERIOD, DEFAULT_POWER_GRACE_PERIOD
         )
 
@@ -560,6 +589,65 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         legacy = self._as_list(self._config.get(CONF_MOBILE_NOTIFY_ENTITY))
         return [{CONF_MOBILE_NOTIFY_ENTITY: entity_id} for entity_id in legacy]
 
+    async def _play_tts(
+        self, sonos_entities: list[str], tts_entity: str, message: str
+    ) -> None:
+        """Spielt die Ansage ab - inkl. global konfigurierter Lautstärke und
+        Pausieren/Überlagern der vorhandenen Wiedergabe.
+
+        Hinweis: `tts.speak` selbst unterstützt keine Lautstärkeangabe: die
+        Lautstärke wird deshalb vorher separat per media_player.volume_set
+        gesetzt und danach NICHT automatisch zurückgesetzt. Beim Pausieren
+        wird die vorherige Wiedergabe ebenfalls nicht automatisch
+        fortgesetzt - das ist plattformübergreifend nicht zuverlässig lösbar.
+        """
+        volume_percent = self._effective(CONF_TTS_VOLUME, DEFAULT_TTS_VOLUME)
+        playback_mode = self._effective(CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE)
+
+        try:
+            await self.hass.services.async_call(
+                "media_player",
+                "volume_set",
+                {
+                    "entity_id": sonos_entities,
+                    "volume_level": max(0.0, min(100.0, float(volume_percent))) / 100,
+                },
+                blocking=False,
+            )
+        except (HomeAssistantError, TypeError, ValueError):
+            _LOGGER.debug(
+                "Konnte Lautstärke für %s nicht setzen (Raum %s)",
+                sonos_entities,
+                self._config[CONF_ROOM_NAME],
+            )
+
+        if playback_mode == TTS_PLAYBACK_MODE_PAUSE:
+            try:
+                await self.hass.services.async_call(
+                    "media_player",
+                    "media_pause",
+                    {"entity_id": sonos_entities},
+                    blocking=False,
+                )
+            except HomeAssistantError:
+                # Best effort - z. B. wenn gerade nichts läuft/pausierbar ist
+                _LOGGER.debug(
+                    "Konnte Wiedergabe auf %s nicht pausieren (Raum %s)",
+                    sonos_entities,
+                    self._config[CONF_ROOM_NAME],
+                )
+
+        await self.hass.services.async_call(
+            "tts",
+            "speak",
+            {
+                "entity_id": tts_entity,
+                "media_player_entity_id": sonos_entities,
+                "message": message,
+            },
+            blocking=False,
+        )
+
     async def _notify(self, should_ventilate: bool, reason: str | None) -> None:
         """Verschickt die Benachrichtigung per Sprachausgabe und/oder App-Push.
 
@@ -573,18 +661,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
 
         if NOTIFY_METHOD_SONOS in methods:
             sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
-            tts_entity = self._config.get(CONF_TTS_ENTITY)
+            tts_entity = self._effective(CONF_TTS_ENTITY, None)
             if sonos_entities and tts_entity:
-                await self.hass.services.async_call(
-                    "tts",
-                    "speak",
-                    {
-                        "entity_id": tts_entity,
-                        "media_player_entity_id": sonos_entities,
-                        "message": message,
-                    },
-                    blocking=False,
-                )
+                await self._play_tts(sonos_entities, tts_entity, message)
             else:
                 _LOGGER.warning(
                     "Sprachausgabe konfiguriert, aber Lautsprecher- oder "
