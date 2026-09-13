@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from datetime import timedelta
 
 from homeassistant.components.binary_sensor import (
@@ -209,6 +210,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             return global_value
         return hardcoded_default
 
+    @staticmethod
+    def _absolute_humidity(temp_c: float, rh_percent: float) -> float:
+        """Berechnet die absolute Luftfeuchtigkeit (g/m³) aus Temperatur (°C)
+        und relativer Luftfeuchtigkeit (%) über die Magnus-Formel.
+
+        Wird für den Außen-/Innenvergleich benötigt: relative Luftfeuchtigkeit
+        allein ist irreführend, da kalte Luft bei hoher RH% trotzdem absolut
+        sehr trocken sein kann (klassischer Winter-Lüften-Effekt) und warme
+        Luft bei niedriger RH% absolut trotzdem mehr Wasser enthalten kann.
+        """
+        saturation_vapor_pressure = 6.112 * math.exp(
+            (17.62 * temp_c) / (243.12 + temp_c)
+        )
+        vapor_pressure = (rh_percent / 100) * saturation_vapor_pressure
+        return 216.7 * vapor_pressure / (273.15 + temp_c)
+
     def _get_float_state(self, entity_id: str | None) -> float | None:
         if not entity_id:
             return None
@@ -281,11 +298,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         )
         # --- Öffnen wegen Feuchtigkeit nur, wenn es draußen auch trockener
         # ist als drinnen - sonst würde Lüften die Situation verschlimmern.
-        # Ohne Außen-Luftfeuchtigkeitssensor wird das (wie bisher) nicht
-        # geprüft und einfach angenommen, dass Lüften hilft.
-        outdoor_drier_enough = outdoor_humidity is None or (
-            humidity is not None and outdoor_humidity < humidity
-        )
+        # Vergleich über ABSOLUTE Luftfeuchtigkeit (g/m³), nicht über die
+        # relative: kalte Luft mit hoher RH% ist absolut oft trotzdem sehr
+        # trocken (typischer Winter-Lüften-Effekt) - ein reiner RH%-Vergleich
+        # würde in diesem, praktisch sehr häufigen Fall fälschlich vom
+        # Lüften abraten. Ohne Außen-Luftfeuchtigkeitssensor (oder fehlenden
+        # Temperaturwerten) wird das wie bisher nicht geprüft und einfach
+        # angenommen, dass Lüften hilft.
+        outdoor_drier_enough = True
+        if (
+            outdoor_humidity is not None
+            and humidity is not None
+            and indoor_temp is not None
+            and outdoor_temp is not None
+        ):
+            indoor_abs_humidity = self._absolute_humidity(indoor_temp, humidity)
+            outdoor_abs_humidity = self._absolute_humidity(outdoor_temp, outdoor_humidity)
+            outdoor_drier_enough = outdoor_abs_humidity < indoor_abs_humidity
         open_by_temp = temp_needs_open and outdoor_cooler_enough
         open_by_humidity = humidity_needs_open and outdoor_drier_enough
         should_open = (open_by_temp or open_by_humidity) and not frost_block

@@ -286,7 +286,7 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 reminder_marker: reminder_sel,
             }
         ),
-        {"collapsed": False},
+        {"collapsed": True},
     )
 
     # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
@@ -308,11 +308,6 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                     CONF_SHUTTER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain=SHUTTER_DOMAINS)
-                ),
-                _entity_marker(
-                    CONF_POWER_ENTITY, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor")
                 ),
                 power_marker: power_sel,
                 grace_marker: grace_sel,
@@ -342,49 +337,56 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
 
     return vol.Schema(
         {
-            _entity_marker(
-                CONF_OUTDOOR_TEMP_ENTITY, defaults, required=False
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="sensor")
-            ),
-            _entity_marker(
-                CONF_OUTDOOR_HUMIDITY_ENTITY, defaults, required=False
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="sensor")
-            ),
-            _entity_marker(
-                CONF_TTS_ENTITY, defaults, required=False
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="tts")
-            ),
-            volume_marker: volume_sel,
-            vol.Required(
-                CONF_TTS_PLAYBACK_MODE,
-                default=defaults.get(
-                    CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE
+            vol.Required(SECTION_SENSORS): section(
+                vol.Schema(
+                    {
+                        _entity_marker(
+                            CONF_OUTDOOR_TEMP_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="sensor")
+                        ),
+                        _entity_marker(
+                            CONF_OUTDOOR_HUMIDITY_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="sensor")
+                        ),
+                        _entity_marker(
+                            CONF_TTS_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="tts")
+                        ),
+                        volume_marker: volume_sel,
+                        vol.Required(
+                            CONF_TTS_PLAYBACK_MODE,
+                            default=defaults.get(
+                                CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE
+                            ),
+                        ): selector.SelectSelector(
+                            selector.SelectSelectorConfig(
+                                options=[
+                                    selector.SelectOptionDict(
+                                        value=TTS_PLAYBACK_MODE_OVERLAY,
+                                        label="Vorhandene Wiedergabe überlagern",
+                                    ),
+                                    selector.SelectOptionDict(
+                                        value=TTS_PLAYBACK_MODE_PAUSE,
+                                        label="Vorhandene Wiedergabe pausieren",
+                                    ),
+                                ],
+                                mode=selector.SelectSelectorMode.LIST,
+                            )
+                        ),
+                        _entity_marker(
+                            CONF_POWER_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="sensor")
+                        ),
+                        power_marker: power_sel,
+                        grace_marker: grace_sel,
+                    }
                 ),
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(
-                            value=TTS_PLAYBACK_MODE_OVERLAY,
-                            label="Vorhandene Wiedergabe überlagern",
-                        ),
-                        selector.SelectOptionDict(
-                            value=TTS_PLAYBACK_MODE_PAUSE,
-                            label="Vorhandene Wiedergabe pausieren",
-                        ),
-                    ],
-                    mode=selector.SelectSelectorMode.LIST,
-                )
+                {"collapsed": False},
             ),
-            _entity_marker(
-                CONF_POWER_ENTITY, defaults, required=False
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="sensor")
-            ),
-            power_marker: power_sel,
-            grace_marker: grace_sel,
             vol.Required(SECTION_PARAMETERS): section(
                 vol.Schema(parameter_fields), {"collapsed": False}
             ),
@@ -585,7 +587,7 @@ class SmartVentilationConfigFlow(
         self._abort_if_unique_id_configured()
 
         data = _apply_threshold_defaults(
-            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "0 Smart Ventilation Options"}
+            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "Smart Ventilation Options"}
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 
