@@ -160,11 +160,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             self.async_write_ha_state()
             await self._notify(new_state)
 
+    @staticmethod
+    def _as_list(value) -> list:
+        """Normalisiert Config-Werte zu einer Liste (abwärtskompatibel zu
+        älteren Konfigurationen, die noch einen einzelnen String speichern)."""
+        if not value:
+            return []
+        if isinstance(value, str):
+            return [value]
+        return list(value)
+
     async def _notify(self, should_ventilate: bool) -> None:
         """Verschickt die Benachrichtigung per Sonos-TTS und/oder App-Push.
 
-        Beide Methoden können gleichzeitig konfiguriert sein - in dem Fall
-        werden auch beide ausgelöst.
+        Beide Methoden können gleichzeitig konfiguriert sein, und jede
+        Methode kann mehrere Ziel-Entitäten haben (mehrere Sonos-Lautsprecher
+        bzw. mehrere notify.*-Entitäten) - in dem Fall werden alle bedient.
         """
         room = self._config[CONF_ROOM_NAME]
         message = (
@@ -176,15 +187,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         methods = self._config.get(CONF_NOTIFY_METHOD) or []
 
         if NOTIFY_METHOD_SONOS in methods:
-            sonos_entity = self._config.get(CONF_SONOS_ENTITY)
+            sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
             tts_entity = self._config.get(CONF_TTS_ENTITY)
-            if sonos_entity and tts_entity:
+            if sonos_entities and tts_entity:
                 await self.hass.services.async_call(
                     "tts",
                     "speak",
                     {
                         "entity_id": tts_entity,
-                        "media_player_entity_id": sonos_entity,
+                        "media_player_entity_id": sonos_entities,
                         "message": message,
                     },
                     blocking=False,
@@ -197,13 +208,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                 )
 
         if NOTIFY_METHOD_MOBILE in methods:
-            notify_entity = self._config.get(CONF_MOBILE_NOTIFY_ENTITY)
-            if notify_entity:
+            notify_entities = self._as_list(self._config.get(CONF_MOBILE_NOTIFY_ENTITY))
+            if notify_entities:
                 await self.hass.services.async_call(
                     "notify",
                     "send_message",
                     {
-                        "entity_id": notify_entity,
+                        "entity_id": notify_entities,
                         "title": "Lüften",
                         "message": message,
                     },

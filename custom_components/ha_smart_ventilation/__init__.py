@@ -1,4 +1,4 @@
-"""Smart Lüftungsassistent - Home Assistant Integration."""
+"""Smart Ventilation - Home Assistant Integration."""
 from __future__ import annotations
 
 import logging
