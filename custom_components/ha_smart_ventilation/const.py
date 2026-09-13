@@ -17,6 +17,21 @@ CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
 CONF_MOBILE_NOTIFY_ENTITY = "mobile_notify_entity"
 
+# Erweiterte Lüftungslogik
+CONF_TEMP_MARGIN = "temp_margin"
+CONF_FROST_PROTECTION_TEMP = "frost_protection_temp"
+CONF_WINTER_OUTDOOR_THRESHOLD = "winter_outdoor_threshold"
+CONF_MAX_OPEN_DURATION_WINTER = "max_open_duration_winter_minutes"
+CONF_REMINDER_INTERVAL = "reminder_interval_minutes"
+
+# Optionale Geräte-Steuerung
+CONF_DEHUMIDIFIER_ENTITY = "dehumidifier_entity"
+CONF_AC_ENTITY = "ac_entity"
+CONF_SHUTTER_ENTITY = "shutter_entity"
+CONF_POWER_ENTITY = "power_entity"
+CONF_MIN_SURPLUS_POWER = "min_surplus_power_watts"
+CONF_POWER_GRACE_PERIOD = "power_grace_period_minutes"
+
 NOTIFY_METHOD_SONOS = "sonos"
 NOTIFY_METHOD_MOBILE = "mobile_app"
 
@@ -36,3 +51,43 @@ DEFAULT_TEMP_THRESHOLD_OPEN = 24.0
 DEFAULT_TEMP_THRESHOLD_CLOSE = 21.0
 DEFAULT_HUMIDITY_THRESHOLD_OPEN = 60.0
 DEFAULT_HUMIDITY_THRESHOLD_CLOSE = 50.0
+
+# Toleranz-Marge (°C) bei allen Außen-/Innentemperatur-Vergleichen, um
+# Flackern der Empfehlung bei Werten nahe der Schwelle zu vermeiden.
+DEFAULT_TEMP_MARGIN = 1.0
+
+# Unterhalb dieser Außentemperatur wird nie geöffnet (Frostschutz); ein
+# bereits geöffneter Zustand wird sofort auf "Schließen" gesetzt.
+DEFAULT_FROST_PROTECTION_TEMP = 0.0
+
+# Unterhalb dieser Außentemperatur gilt die Situation als "Winter" - dann
+# greift die maximale Öffnungsdauer, um Wärmeverlust zu begrenzen.
+DEFAULT_WINTER_OUTDOOR_THRESHOLD = 5.0
+
+# Maximale Dauer (Minuten), die bei "Winter"-Bedingungen geöffnet bleiben darf,
+# bevor automatisch zum Schließen aufgefordert wird.
+DEFAULT_MAX_OPEN_DURATION_WINTER = 20
+
+# Erinnerungsintervall (Minuten), falls die Empfehlung ignoriert wird.
+# 0 = deaktiviert.
+DEFAULT_REMINDER_INTERVAL = 0
+
+# Domains, aus denen ein Luftentfeuchter bzw. eine Klimaanlage gewählt werden
+# kann. "switch" deckt einfache Steckdosen-gesteuerte Geräte ab, "humidifier"
+# native HA-Luftentfeuchter-Entitäten, "climate" native Klimaanlagen.
+DEHUMIDIFIER_DOMAINS = ["switch", "humidifier"]
+AC_DOMAINS = ["climate", "switch"]
+
+# Fenstersperre/Rollladen: entweder eine "cover"-Entität (auf/zu) oder eine
+# "switch"-Entität (1 = herunterfahren+sperren, 0 = hochfahren+entsperren).
+SHUTTER_DOMAINS = ["cover", "switch"]
+
+# Mindest-Einspeiseleistung (Watt), ab der ein Gerät eingeschaltet werden
+# darf, falls ein Leistungssensor konfiguriert ist. 0 = jede vorhandene
+# Einspeisung reicht aus. Gilt nur für das Einschalten, nicht fürs Ausschalten.
+DEFAULT_MIN_SURPLUS_POWER = 0.0
+
+# Verzögerung (Minuten), bevor ein bereits laufendes Gerät wegen dauerhaft zu
+# geringer Einspeisung abgeschaltet wird. Verhindert Abschalten bei kurzen
+# Einspeise-Schwankungen (z. B. vorbeiziehende Wolke).
+DEFAULT_POWER_GRACE_PERIOD = 15
