@@ -56,7 +56,6 @@
               "dehumidifier_entity": "Luftentfeuchter",
               "ac_entity": "Klimaanlage",
               "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
-              "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
@@ -64,7 +63,6 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "power_entity": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur mit einer Angabe (hier oder dort) wird die Mindest-Einspeiseleistung geprüft",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten",
               "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
             }
@@ -159,7 +157,6 @@
               "dehumidifier_entity": "Luftentfeuchter",
               "ac_entity": "Klimaanlage",
               "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
-              "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
@@ -167,7 +164,6 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "power_entity": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur mit einer Angabe (hier oder dort) wird die Mindest-Einspeiseleistung geprüft",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten",
               "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
             }
@@ -177,27 +173,31 @@
       "global": {
         "title": "Smart Ventilation Options bearbeiten",
         "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben. Der Name dieses Eintrags lässt sich hier nicht ändern.",
-        "data": {
-          "outdoor_temp_entity": "Außentemperatur",
-          "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
-          "tts_entity": "TTS-Entität",
-          "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
-          "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
-          "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
-          "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-          "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
-        },
-        "data_description": {
-          "outdoor_temp_entity": "Wird für alle Räume verwendet - kann nicht mehr pro Raum überschrieben werden",
-          "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen",
-          "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
-          "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
-          "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
-          "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
-          "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
-          "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe"
-        },
         "sections": {
+          "sensors": {
+            "name": "Sensoren",
+            "description": "Sensoren und Wiedergabe-Einstellungen als raumweiter Standard.",
+            "data": {
+              "outdoor_temp_entity": "Außentemperatur",
+              "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
+              "tts_entity": "TTS-Entität",
+              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
+              "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+            },
+            "data_description": {
+              "outdoor_temp_entity": "Wird für alle Räume verwendet - kann nicht mehr pro Raum überschrieben werden",
+              "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen",
+              "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
+              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
+              "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
+              "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
+              "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
+              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe"
+            }
+          },
           "parameters": {
             "name": "Parameter",
             "description": "Diese Schwellenwerte gelten als raumweiter Standard.",
