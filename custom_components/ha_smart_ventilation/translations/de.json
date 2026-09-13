@@ -5,10 +5,23 @@
         "title": "Smart Ventilation – Raum hinzufügen",
         "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"Smart Ventilation Options\" (Konfigurieren).",
         "data": {
-          "room_name": "Raumname",
-          "notify_method": "Benachrichtigungsmethoden"
+          "room_name": "Raumname"
         },
         "sections": {
+          "notify": {
+            "name": "Benachrichtigungsmethoden",
+            "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
+            "data": {
+              "sonos_enabled": "Sprachausgabe aktivieren (z. B. Sonos)",
+              "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "mobile_enabled": "Home Assistant Companion App aktivieren (Push)",
+              "mobile_targets": "Notify-Ziele"
+            },
+            "data_description": {
+              "sonos_entity": "Nur relevant, wenn 'Sprachausgabe aktivieren' oben angehakt ist",
+              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
+            }
+          },
           "sensors": {
             "name": "Sensoren",
             "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
@@ -68,27 +81,6 @@
             }
           }
         }
-      },
-      "notify_sonos": {
-        "title": "Sprachausgabe einrichten",
-        "description": "Diese Angabe ist nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
-        "data": {
-          "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-          "tts_entity": "TTS-Entität (optional)"
-        },
-        "data_description": {
-          "tts_entity": "Leer = TTS-Entität aus \"Smart Ventilation Options\" verwenden"
-        }
-      },
-      "notify_mobile": {
-        "title": "App-Benachrichtigung einrichten",
-        "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
-        "data": {
-          "mobile_targets": "Notify-Ziele"
-        },
-        "data_description": {
-          "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
-        }
       }
     },
     "error": {
@@ -106,10 +98,23 @@
         "title": "Smart Ventilation – Raum bearbeiten",
         "description": "Bestehende Einstellungen für diesen Raum anpassen.",
         "data": {
-          "room_name": "Raumname",
-          "notify_method": "Benachrichtigungsmethoden"
+          "room_name": "Raumname"
         },
         "sections": {
+          "notify": {
+            "name": "Benachrichtigungsmethoden",
+            "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
+            "data": {
+              "sonos_enabled": "Sprachausgabe aktivieren (z. B. Sonos)",
+              "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "mobile_enabled": "Home Assistant Companion App aktivieren (Push)",
+              "mobile_targets": "Notify-Ziele"
+            },
+            "data_description": {
+              "sonos_entity": "Nur relevant, wenn 'Sprachausgabe aktivieren' oben angehakt ist",
+              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
+            }
+          },
           "sensors": {
             "name": "Sensoren",
             "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
@@ -172,7 +177,7 @@
       },
       "global": {
         "title": "Smart Ventilation Options bearbeiten",
-        "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben. Der Name dieses Eintrags lässt sich hier nicht ändern.",
+        "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben.",
         "sections": {
           "sensors": {
             "name": "Sensoren",
@@ -220,27 +225,6 @@
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
             }
           }
-        }
-      },
-      "notify_sonos": {
-        "title": "Sprachausgabe bearbeiten",
-        "description": "Diese Angabe ist nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
-        "data": {
-          "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-          "tts_entity": "TTS-Entität (optional)"
-        },
-        "data_description": {
-          "tts_entity": "Leer = TTS-Entität aus \"Smart Ventilation Options\" verwenden"
-        }
-      },
-      "notify_mobile": {
-        "title": "App-Benachrichtigung bearbeiten",
-        "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
-        "data": {
-          "mobile_targets": "Notify-Ziele"
-        },
-        "data_description": {
-          "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
         }
       }
     },

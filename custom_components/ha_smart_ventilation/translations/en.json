@@ -5,10 +5,23 @@
         "title": "Smart Ventilation – Add room",
         "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration). Cross-room defaults live under the automatically created \"Smart Ventilation Options\" entry (Configure).",
         "data": {
-          "room_name": "Room name",
-          "notify_method": "Notification methods"
+          "room_name": "Room name"
         },
         "sections": {
+          "notify": {
+            "name": "Notification methods",
+            "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
+            "data": {
+              "sonos_enabled": "Enable voice announcement (e.g. Sonos)",
+              "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "mobile_enabled": "Enable Home Assistant Companion App (push)",
+              "mobile_targets": "Notify targets"
+            },
+            "data_description": {
+              "sonos_entity": "Only relevant if 'Enable voice announcement' above is checked",
+              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
+            }
+          },
           "sensors": {
             "name": "Sensors",
             "description": "Which entities provide the measurements for this room?",
@@ -68,27 +81,6 @@
             }
           }
         }
-      },
-      "notify_sonos": {
-        "title": "Set up voice announcement",
-        "description": "Required because you selected 'Voice announcement (e.g. Sonos)' as a notification method.",
-        "data": {
-          "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
-          "tts_entity": "TTS entity (optional)"
-        },
-        "data_description": {
-          "tts_entity": "Empty = use the TTS entity from \"Smart Ventilation Options\""
-        }
-      },
-      "notify_mobile": {
-        "title": "Set up app notification",
-        "description": "Required because you selected 'Home Assistant App' as a notification method.",
-        "data": {
-          "mobile_targets": "Notify targets"
-        },
-        "data_description": {
-          "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
-        }
       }
     },
     "error": {
@@ -106,10 +98,23 @@
         "title": "Smart Ventilation – Edit room",
         "description": "Adjust the existing settings for this room.",
         "data": {
-          "room_name": "Room name",
-          "notify_method": "Notification methods"
+          "room_name": "Room name"
         },
         "sections": {
+          "notify": {
+            "name": "Notification methods",
+            "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
+            "data": {
+              "sonos_enabled": "Enable voice announcement (e.g. Sonos)",
+              "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "mobile_enabled": "Enable Home Assistant Companion App (push)",
+              "mobile_targets": "Notify targets"
+            },
+            "data_description": {
+              "sonos_entity": "Only relevant if 'Enable voice announcement' above is checked",
+              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
+            }
+          },
           "sensors": {
             "name": "Sensors",
             "description": "Which entities provide the measurements for this room?",
@@ -172,7 +177,7 @@
       },
       "global": {
         "title": "Edit Smart Ventilation Options",
-        "description": "These values act as the default for every room that doesn't override the respective field itself. The name of this entry cannot be changed here.",
+        "description": "These values act as the default for every room that doesn't override the respective field itself.",
         "sections": {
           "sensors": {
             "name": "Sensors",
@@ -220,27 +225,6 @@
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
             }
           }
-        }
-      },
-      "notify_sonos": {
-        "title": "Edit voice announcement",
-        "description": "Required because you selected 'Voice announcement (e.g. Sonos)' as a notification method.",
-        "data": {
-          "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
-          "tts_entity": "TTS entity (optional)"
-        },
-        "data_description": {
-          "tts_entity": "Empty = use the TTS entity from \"Smart Ventilation Options\""
-        }
-      },
-      "notify_mobile": {
-        "title": "Edit app notification",
-        "description": "Required because you selected 'Home Assistant App' as a notification method.",
-        "data": {
-          "mobile_targets": "Notify targets"
-        },
-        "data_description": {
-          "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
         }
       }
     },
