@@ -19,33 +19,6 @@ Benachrichtigung ausgelöst – ganz ohne zusätzliche Automationen. Du kannst
 den binary_sensor zusätzlich in Dashboards, eigenen Automationen oder
 Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
 
-## Icon
-
-Die Integration bringt ihr eigenes Icon mit – an zwei Stellen, für zwei
-unterschiedliche Zwecke:
-
-- `custom_components/ha_smart_ventilation/brand/` – wird seit Home Assistant
-  2026.3 automatisch für die normale Home-Assistant-Oberfläche genutzt
-  (Einstellungen → Geräte & Dienste, Entitäten, etc.). Eine separate Pull
-  Request an das `home-assistant/brands`-Repository ist dafür nicht mehr
-  nötig.
-- `brand/` im Repository-Wurzelverzeichnis – wird zusätzlich von **HACS
-  selbst** erwartet (für den HACS-Store und den Download-Dialog), laut
-  [HACS-Dokumentation](https://www.hacs.xyz/docs/publish/integration/).
-
-Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
-`logo.png`, `logo@2x.png`).
-
-> Hinweis: Auch mit beiden Ordnern korrekt vorhanden kann es aktuell
-> vorkommen, dass HACS im Store/Download-Dialog trotzdem "icon not
-> available" anzeigt – das liegt an einem bekannten, noch offenen Fehler in
-> der HACS-Oberfläche (siehe
-> [hacs/integration#5171](https://github.com/hacs/integration/issues/5171)
-> und [#5223](https://github.com/hacs/integration/issues/5223)), bei dem
-> HACS weiterhin eine veraltete CDN-Adresse statt der lokalen Icons abfragt.
-> In der normalen Home-Assistant-Oberfläche wird das Icon davon nicht
-> beeinträchtigt.
-
 ## Installation
 
 ### Über HACS (empfohlen)
@@ -82,8 +55,6 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
        Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
-     - **Außentemperatur** (Pflichtfeld – entscheidend dafür, ob Lüften
-       überhaupt sinnvoll ist)
      - Optional: Luftfeuchtigkeit, Fensterkontakt
    - **Abschnitt "Parameter"** (optional – **überschreibt** für diesen Raum
      die allgemeinen Einstellungen; leer gelassen gilt der dort hinterlegte
@@ -131,7 +102,15 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 **Bearbeiten:** Beim Eintrag "Smart Ventilation Options" auf
 **Konfigurieren** (Zahnrad-Symbol) klicken. Enthält:
 
-- **Name**: umbenennbar, falls gewünscht
+- **Außentemperatur**: wird für **alle** Räume verwendet – kann seit
+  dieser Version nicht mehr pro Raum überschrieben werden (dafür gibt es
+  im Raum-Formular kein Feld mehr)
+- **Außen-Luftfeuchtigkeit** (optional, ebenfalls nur global): ist sie
+  gesetzt, wird Lüften bei hoher Innen-Luftfeuchtigkeit nur noch empfohlen,
+  wenn es draußen auch trockener ist als drinnen – sonst würde Lüften die
+  Situation eher verschlimmern. Ohne diesen Sensor bleibt es beim bisherigen
+  Verhalten (Lüften bei hoher Innen-Luftfeuchtigkeit, unabhängig von der
+  Außenluft)
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
   für die Sprachausgabe festlegt
 - **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
@@ -145,9 +124,10 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
   Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder wie im
   Raum-Parameter-Abschnitt) als raumweiter Standard
 
-Alle Zahlenfelder sind hier immer mit einem sinnvollen Standardwert
-vorausgefüllt – wird ein Feld komplett geleert, greift beim Speichern
-automatisch wieder dieser Standardwert.
+Der **Name dieses Eintrags lässt sich hier bewusst nicht ändern** – dafür
+gibt es keinen praktischen Bedarf. Alle Zahlenfelder sind immer mit einem
+sinnvollen Standardwert vorausgefüllt – wird ein Feld komplett geleert,
+greift beim Speichern automatisch wieder dieser Standardwert.
 
 > Home Assistant erlaubt es grundsätzlich, jeden Integrations-Eintrag über
 > die Oberfläche zu löschen – das lässt sich nicht unterbinden. Löschst du
@@ -156,6 +136,16 @@ automatisch wieder dieser Standardwert.
 > sein. Willst du ihn stattdessen dauerhaft loswerden, müsstest du die
 > gesamte Integration deinstallieren oder den Eintrag manuell deaktivieren
 > statt zu löschen.
+
+**Zur Sortierung in der Integrationsliste:** Da Home Assistant mehrere
+Einträge einer Integration meist alphabetisch sortiert, würde
+"Smart Ventilation Options" bei den meisten Raumnamen (z. B. "Bad",
+"Büro", "Küche") nicht an erster Stelle erscheinen. Der Name trägt deshalb
+bewusst eine führende **"0 "** ("0 Smart Ventilation Options") – Ziffern
+sortieren in praktisch jeder Sortierlogik (auch sprachabhängigen) vor
+Buchstaben, anders als z. B. Sonderzeichen wie "!" oder "#", die von
+manchen Sortieralgorithmen ignoriert werden. Damit steht der Eintrag
+zuverlässig ganz oben in der Liste.
 
 ## Bestehenden Eintrag bearbeiten
 
@@ -187,7 +177,9 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 **Öffnen** wird empfohlen, wenn (und Frostschutz nicht greift):
 - Innentemperatur ≥ "Schwelle zum Öffnen" **und** draußen mindestens um die
   Toleranz-Marge kühler ist als drinnen, **oder**
-- Luftfeuchtigkeit ≥ "Schwelle zum Öffnen"
+- Luftfeuchtigkeit ≥ "Schwelle zum Öffnen" **und** (kein Außen-
+  Luftfeuchtigkeitssensor hinterlegt **oder** es ist draußen trockener als
+  drinnen)
 
 **Schließen** wird empfohlen, wenn:
 - Innentemperatur ≤ "Schwelle zum Schließen", **oder**
@@ -248,7 +240,13 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
 ## Hinweise
 
 - Die Integration reagiert direkt auf Zustandsänderungen (kein Polling),
-  daher sehr geringe Systemlast.
+  daher sehr geringe Systemlast. **Ausnahme:** Die Außentemperatur kommt
+  ausschließlich aus "Smart Ventilation Options" und wird beim Start jedes
+  Raums direkt mitverfolgt – ändert sich aber die dort hinterlegte
+  Sensor-**Auswahl** selbst (nicht nur ihr Messwert), wirkt sich das erst
+  beim nächsten 5-Minuten-Tick des Raums aus. Dasselbe gilt für den
+  Leistungssensor, falls dieser nur global (nicht zusätzlich im Raum)
+  gesetzt ist.
 - Für die Sprachausgabe wird der Standard-Service `tts.speak` verwendet – das
   funktioniert mit jeder `media_player`-Entität, nicht nur mit Sonos. Stelle
   sicher, dass eine TTS-Integration (z. B. Google Translate, Piper)
