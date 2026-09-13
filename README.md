@@ -67,7 +67,14 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
 
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
 2. Nach "Smart Ventilation" suchen
-3. **Hauptformular** pro Raum ausfüllen:
+3. **Beim allerersten Mal** erscheint ein Menü mit zwei Optionen (danach,
+   sobald die globalen Einstellungen einmal angelegt wurden, entfällt das
+   Menü und es geht direkt mit Schritt 4 weiter):
+   - **"Allgemeine Einstellungen"** (empfohlen, zuerst einrichten): siehe
+     eigener Abschnitt unten. Kann später jederzeit über **Konfigurieren**
+     angepasst werden.
+   - **"Raum hinzufügen"**: der eigentliche Raum-Einrichtungsablauf
+4. **Hauptformular** pro Raum ausfüllen:
    - **Raumname** (ganz oben)
    - **Benachrichtigungsmethoden**: Sprachausgabe und/oder Home Assistant
      Companion App – beides kann gleichzeitig aktiviert werden
@@ -82,11 +89,14 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
      - **Außentemperatur** (Pflichtfeld – entscheidend dafür, ob Lüften
        überhaupt sinnvoll ist)
      - Optional: Luftfeuchtigkeit, Fensterkontakt
-   - **Abschnitt "Parameter"**:
-     - Schwellenwerte zum Öffnen/Schließen – Zahlenfelder mit
-       Pfeil-hoch/-runter-Steuerung, vorausgefüllt mit einem sinnvollen
-       Standardwert. Wird ein Feld komplett geleert, greift beim Speichern
-       automatisch wieder der Standardwert (24 °C / 21 °C bzw. 60 % / 50 %)
+   - **Abschnitt "Parameter"** (optional – **überschreibt** für diesen Raum
+     die globalen Einstellungen; leer gelassen gilt der globale Wert):
+     - Schwellenwerte zum Öffnen/Schließen sowie Toleranz-Marge,
+       Frostschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer und
+       Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung.
+       Anders als in den globalen Einstellungen wird hier **kein**
+       Standardwert erzwungen: leer bleibt leer und bedeutet "globalen Wert
+       verwenden"
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
      Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
@@ -95,16 +105,15 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
        `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
        beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
        "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
-     - **Leistungssensor** (optional): z. B. aktuelle Einspeiseleistung
-     - **Mindest-Einspeiseleistung**: nur relevant, wenn ein Leistungssensor
-       gewählt ist – blockiert das Einschalten, bis genug Überschuss da ist
-     - **Verzögerung bis Abschalten**: nur relevant, wenn ein Leistungssensor
-       gewählt ist – ein bereits laufendes Gerät wird erst nach dieser Zeit
-       dauerhaft zu geringer Einspeisung abgeschaltet
-4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
+     - **Leistungssensor** (optional): überschreibt für diesen Raum den
+       globalen Leistungssensor, falls gesetzt
+     - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
+       ebenfalls optionale Raum-Overrides der globalen Werte
+5. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
    - Bei "Sprachausgabe": eigener Schritt für **einen oder mehrere** Lautsprecher
-     (`media_player`-Entitäten, z. B. Sonos) + eine TTS-Entität (gilt für alle
-     gewählten Lautsprecher)
+     (`media_player`-Entitäten, z. B. Sonos) + optional eine **eigene**
+     TTS-Entität für diesen Raum (leer = TTS-Entität aus den globalen
+     Einstellungen)
    - Bei "Home Assistant Companion App": eigener Schritt mit einer Liste von
      **Notify-Zielen**. Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
      optional eine **Anwesenheits-Entität** (`person` oder `device_tracker`,
@@ -114,8 +123,35 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
      erhalten sie weiterhin immer. So lässt sich z. B. konfigurieren: "an
      Person A nur, wenn sie zuhause ist" und gleichzeitig "an Person B immer".
      Über "Hinzufügen" lassen sich beliebig viele Ziele ergänzen.
-5. Für weitere Räume den Vorgang wiederholen (Integration erneut
+6. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
+
+## Allgemeine Einstellungen
+
+Eine besondere, einmalig anlegbare Integrations-Instanz ("Allgemeine
+Einstellungen") dient als raumübergreifender Standard. Enthält:
+
+- **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
+  für die Sprachausgabe festlegt
+- **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
+  die Lautsprecher **vor** der Ansage gesetzt werden
+- **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
+  Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
+- **Leistungssensor** + **Mindest-Einspeiseleistung** + **Verzögerung bis
+  Abschalten**: Standardwerte für alle Räume, die keinen eigenen
+  Leistungssensor festlegen
+- Der komplette **Schwellenwerte-/Parameter-Satz** (dieselben Felder wie im
+  Raum-Parameter-Abschnitt) als raumweiter Standard
+
+Zugriff: **Einstellungen → Geräte & Dienste → Allgemeine Einstellungen →
+Konfigurieren**. Anders als bei den Raum-Feldern sind hier alle
+Zahlenfelder immer mit einem sinnvollen Standardwert vorausgefüllt – wird
+ein Feld komplett geleert, greift beim Speichern automatisch wieder dieser
+Standardwert.
+
+> Ohne angelegte globale Einstellungen funktioniert alles wie zuvor: jeder
+> Raum nutzt dann die fest einprogrammierten Standardwerte. Die globalen
+> Einstellungen sind rein optional.
 
 ## Bestehenden Raum bearbeiten
 
@@ -135,6 +171,11 @@ ohne ihn zu löschen und neu anzulegen:
 > die passenden Zusatzfelder direkt im nächsten Schritt nach der
 > Methodenauswahl erscheinen – aber jeweils nur, wenn die zugehörige
 > Methode wirklich ausgewählt wurde.
+>
+> Änderungen an den globalen Einstellungen wirken sich auf alle Räume ohne
+> eigenen Override aus - allerdings nicht sofort, sondern spätestens beim
+> nächsten 5-Minuten-Tick jedes Raums (kein sofortiger Reload aller
+> Raum-Entitäten).
 
 ## Logik im Detail
 
@@ -207,6 +248,17 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
   funktioniert mit jeder `media_player`-Entität, nicht nur mit Sonos. Stelle
   sicher, dass eine TTS-Integration (z. B. Google Translate, Piper)
   eingerichtet ist.
+- **Lautstärke der Ansage**: `tts.speak` selbst unterstützt keine
+  Lautstärkeangabe. Die in den globalen Einstellungen konfigurierte
+  Lautstärke wird deshalb vorher separat per `media_player.volume_set`
+  gesetzt und **danach nicht automatisch zurückgesetzt** - die Lautsprecher
+  bleiben auf dieser Lautstärke stehen.
+- **Pausieren vs. Überlagern**: Im Modus "Pausieren" wird die vorhandene
+  Wiedergabe vor der Ansage pausiert, aber **nicht automatisch
+  fortgesetzt** - ein zuverlässiges automatisches Fortsetzen ist
+  plattformübergreifend (über alle `media_player`-Integrationen hinweg)
+  nicht robust lösbar. "Überlagern" (Standard) spielt die Ansage einfach
+  direkt über die laufende Wiedergabe.
 - Für App-Benachrichtigungen wird `notify.send_message` auf die gewählte
   notify-Entität aufgerufen (benötigt Home Assistant 2024.9 oder neuer).
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
