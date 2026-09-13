@@ -5,6 +5,7 @@
         "title": "Smart Ventilation – Raum hinzufügen",
         "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen).",
         "data": {
+          "notify_method": "Benachrichtigungsmethoden",
           "room_name": "Raumname"
         },
         "sections": {
@@ -25,13 +26,44 @@
           },
           "parameters": {
             "name": "Parameter",
-            "description": "Schwellenwerte für das Lüften sowie die Benachrichtigungsmethoden.",
+            "description": "Schwellenwerte sowie erweiterte Einstellungen für Frostschutz, Winter- und Sommer-Logik.",
             "data": {
-              "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
-              "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
-              "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
-              "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
-              "notify_method": "Benachrichtigungsmethoden"
+              "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
+              "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
+              "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen",
+              "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen",
+              "temp_margin": "Toleranz-Marge",
+              "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
+              "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
+              "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+              "reminder_interval_minutes": "Erinnerungsintervall"
+            },
+            "data_description": {
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+            }
+          },
+          "devices": {
+            "name": "Geräte (optional)",
+            "description": "Luftentfeuchter und/oder Klimaanlage, die automatisch gestartet und gestoppt werden.",
+            "data": {
+              "dehumidifier_entity": "Luftentfeuchter",
+              "ac_entity": "Klimaanlage",
+              "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+            },
+            "data_description": {
+              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "power_entity": "Optional: nur mit dieser Angabe wird die Mindest-Einspeiseleistung geprüft",
+              "min_surplus_power_watts": "Gilt nur fürs Einschalten, nicht fürs Ausschalten. Nur relevant, wenn ein Leistungssensor gewählt ist",
+              "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
+              "power_grace_period_minutes": "Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Nur relevant, wenn ein Leistungssensor gewählt ist"
             }
           }
         }
@@ -67,6 +99,7 @@
         "title": "Smart Ventilation – Raum bearbeiten",
         "description": "Bestehende Einstellungen für diesen Raum anpassen.",
         "data": {
+          "notify_method": "Benachrichtigungsmethoden",
           "room_name": "Raumname"
         },
         "sections": {
@@ -87,13 +120,44 @@
           },
           "parameters": {
             "name": "Parameter",
-            "description": "Schwellenwerte für das Lüften sowie die Benachrichtigungsmethoden.",
+            "description": "Schwellenwerte sowie erweiterte Einstellungen für Frostschutz, Winter- und Sommer-Logik.",
             "data": {
-              "temp_threshold_open": "Temperatur-Schwelle zum Öffnen (°C)",
-              "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
-              "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
-              "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
-              "notify_method": "Benachrichtigungsmethoden"
+              "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
+              "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
+              "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen",
+              "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen",
+              "temp_margin": "Toleranz-Marge",
+              "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
+              "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
+              "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+              "reminder_interval_minutes": "Erinnerungsintervall"
+            },
+            "data_description": {
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+            }
+          },
+          "devices": {
+            "name": "Geräte (optional)",
+            "description": "Luftentfeuchter und/oder Klimaanlage, die automatisch gestartet und gestoppt werden.",
+            "data": {
+              "dehumidifier_entity": "Luftentfeuchter",
+              "ac_entity": "Klimaanlage",
+              "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+            },
+            "data_description": {
+              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "power_entity": "Optional: nur mit dieser Angabe wird die Mindest-Einspeiseleistung geprüft",
+              "min_surplus_power_watts": "Gilt nur fürs Einschalten, nicht fürs Ausschalten. Nur relevant, wenn ein Leistungssensor gewählt ist",
+              "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
+              "power_grace_period_minutes": "Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Nur relevant, wenn ein Leistungssensor gewählt ist"
             }
           }
         }

@@ -5,6 +5,7 @@
         "title": "Smart Ventilation – Add room",
         "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration).",
         "data": {
+          "notify_method": "Notification methods",
           "room_name": "Room name"
         },
         "sections": {
@@ -25,13 +26,44 @@
           },
           "parameters": {
             "name": "Parameters",
-            "description": "Thresholds for ventilation and the notification method(s).",
+            "description": "Thresholds plus advanced settings for frost protection, winter and summer logic.",
             "data": {
-              "temp_threshold_open": "Temperature threshold to open (°C)",
-              "temp_threshold_close": "Temperature threshold to close (°C)",
-              "humidity_threshold_open": "Humidity threshold to open (%)",
-              "humidity_threshold_close": "Humidity threshold to close (%)",
-              "notify_method": "Notification methods"
+              "temp_threshold_open": "Temperature threshold to open",
+              "temp_threshold_close": "Temperature threshold to close",
+              "humidity_threshold_open": "Humidity threshold to open",
+              "humidity_threshold_close": "Humidity threshold to close",
+              "temp_margin": "Tolerance margin",
+              "frost_protection_temp": "Frost protection limit (outdoor temperature)",
+              "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
+              "max_open_duration_winter_minutes": "Max. open duration in winter",
+              "reminder_interval_minutes": "Reminder interval"
+            },
+            "data_description": {
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+            }
+          },
+          "devices": {
+            "name": "Devices (optional)",
+            "description": "Dehumidifier and/or air conditioner that are started and stopped automatically.",
+            "data": {
+              "dehumidifier_entity": "Dehumidifier",
+              "ac_entity": "Air conditioner",
+              "power_entity": "Power sensor (e.g. grid feed-in)",
+              "min_surplus_power_watts": "Minimum surplus power to turn on",
+              "shutter_entity": "Shutter / window lock (with air conditioner)",
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
+            },
+            "data_description": {
+              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "power_entity": "Optional: the minimum surplus power is only checked if this is set",
+              "min_surplus_power_watts": "Only applies to turning on, never to turning off. Only relevant if a power sensor is selected",
+              "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
+              "power_grace_period_minutes": "A running device is only turned off for insufficient power once it has stayed low for this long. Only relevant if a power sensor is selected"
             }
           }
         }
@@ -67,6 +99,7 @@
         "title": "Smart Ventilation – Edit room",
         "description": "Adjust the existing settings for this room.",
         "data": {
+          "notify_method": "Notification methods",
           "room_name": "Room name"
         },
         "sections": {
@@ -87,13 +120,44 @@
           },
           "parameters": {
             "name": "Parameters",
-            "description": "Thresholds for ventilation and the notification method(s).",
+            "description": "Thresholds plus advanced settings for frost protection, winter and summer logic.",
             "data": {
-              "temp_threshold_open": "Temperature threshold to open (°C)",
-              "temp_threshold_close": "Temperature threshold to close (°C)",
-              "humidity_threshold_open": "Humidity threshold to open (%)",
-              "humidity_threshold_close": "Humidity threshold to close (%)",
-              "notify_method": "Notification methods"
+              "temp_threshold_open": "Temperature threshold to open",
+              "temp_threshold_close": "Temperature threshold to close",
+              "humidity_threshold_open": "Humidity threshold to open",
+              "humidity_threshold_close": "Humidity threshold to close",
+              "temp_margin": "Tolerance margin",
+              "frost_protection_temp": "Frost protection limit (outdoor temperature)",
+              "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
+              "max_open_duration_winter_minutes": "Max. open duration in winter",
+              "reminder_interval_minutes": "Reminder interval"
+            },
+            "data_description": {
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+            }
+          },
+          "devices": {
+            "name": "Devices (optional)",
+            "description": "Dehumidifier and/or air conditioner that are started and stopped automatically.",
+            "data": {
+              "dehumidifier_entity": "Dehumidifier",
+              "ac_entity": "Air conditioner",
+              "power_entity": "Power sensor (e.g. grid feed-in)",
+              "min_surplus_power_watts": "Minimum surplus power to turn on",
+              "shutter_entity": "Shutter / window lock (with air conditioner)",
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
+            },
+            "data_description": {
+              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "power_entity": "Optional: the minimum surplus power is only checked if this is set",
+              "min_surplus_power_watts": "Only applies to turning on, never to turning off. Only relevant if a power sensor is selected",
+              "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
+              "power_grace_period_minutes": "A running device is only turned off for insufficient power once it has stayed low for this long. Only relevant if a power sensor is selected"
             }
           }
         }
