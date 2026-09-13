@@ -2,17 +2,11 @@
   "config": {
     "step": {
       "user": {
-        "menu_options": {
-          "add_room": "Add room",
-          "global_settings": "Global settings"
-        }
-      },
-      "add_room": {
         "title": "Smart Ventilation – Add room",
-        "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration).",
+        "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration). Cross-room defaults live under the automatically created \"Smart Ventilation Options\" entry (Configure).",
         "data": {
-          "notify_method": "Notification methods",
-          "room_name": "Room name"
+          "room_name": "Room name",
+          "notify_method": "Notification methods"
         },
         "sections": {
           "sensors": {
@@ -32,7 +26,7 @@
           },
           "parameters": {
             "name": "Parameters",
-            "description": "Optional - overrides the global settings for this room. Left empty, the global value applies (Settings → Devices & Services → Global Settings → Configure).",
+            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Ventilation Options → Configure).",
             "data": {
               "temp_threshold_open": "Temperature threshold to open",
               "temp_threshold_close": "Temperature threshold to close",
@@ -45,15 +39,15 @@
               "reminder_interval_minutes": "Reminder interval"
             },
             "data_description": {
-              "temp_threshold_open": "Empty = use the global setting",
-              "temp_threshold_close": "Empty = use the global setting",
-              "humidity_threshold_open": "Empty = use the global setting",
-              "humidity_threshold_close": "Empty = use the global setting",
-              "temp_margin": "Empty = use the global setting. Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-              "frost_protection_temp": "Empty = use the global setting. Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-              "winter_outdoor_threshold": "Empty = use the global setting. Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-              "max_open_duration_winter_minutes": "Empty = use the global setting. Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Empty = use the global setting. Recurring reminder if the recommendation is ignored. 0 = disabled"
+              "temp_threshold_open": "Empty = use the value from the global settings",
+              "temp_threshold_close": "Empty = use the value from the global settings",
+              "humidity_threshold_open": "Empty = use the value from the global settings",
+              "humidity_threshold_close": "Empty = use the value from the global settings",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
             }
           },
           "devices": {
@@ -71,45 +65,11 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
-              "power_entity": "Empty = use the global setting. The minimum surplus power is only checked if this (here or globally) is set",
-              "min_surplus_power_watts": "Empty = use the global setting. Only applies to turning on, never to turning off",
-              "power_grace_period_minutes": "Empty = use the global setting. A running device is only turned off for insufficient power once it has stayed low for this long"
+              "power_entity": "Empty = use the value from the global settings. The minimum surplus power is only checked if this (here or there) is set",
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long"
             }
           }
-        }
-      },
-      "global_settings": {
-        "title": "Smart Ventilation – Global Settings",
-        "description": "These values act as the default for every room that doesn't override the respective field itself.",
-        "data": {
-          "tts_entity": "TTS entity",
-          "tts_volume": "Playback volume for voice announcements",
-          "tts_playback_mode": "Existing playback when announcing",
-          "power_entity": "Power sensor (e.g. grid feed-in)",
-          "min_surplus_power_watts": "Minimum surplus power to turn on",
-          "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
-          "temp_threshold_open": "Temperature threshold to open",
-          "temp_threshold_close": "Temperature threshold to close",
-          "humidity_threshold_open": "Humidity threshold to open",
-          "humidity_threshold_close": "Humidity threshold to close",
-          "temp_margin": "Tolerance margin",
-          "frost_protection_temp": "Frost protection limit (outdoor temperature)",
-          "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
-          "max_open_duration_winter_minutes": "Max. open duration in winter",
-          "reminder_interval_minutes": "Reminder interval"
-        },
-        "data_description": {
-          "tts_entity": "Used when a room doesn't set its own TTS entity",
-          "tts_volume": "Volume the speakers are set to before the announcement (not automatically restored afterwards)",
-          "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
-          "power_entity": "Used when a room doesn't set its own power sensor",
-          "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
-          "power_grace_period_minutes": "Default delay for all rooms without their own setting",
-          "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-          "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-          "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-          "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-          "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
         }
       },
       "notify_sonos": {
@@ -120,7 +80,7 @@
           "tts_entity": "TTS entity (optional)"
         },
         "data_description": {
-          "tts_entity": "Empty = use the TTS entity from the global settings"
+          "tts_entity": "Empty = use the TTS entity from \"Smart Ventilation Options\""
         }
       },
       "notify_mobile": {
@@ -149,8 +109,8 @@
         "title": "Smart Ventilation – Edit room",
         "description": "Adjust the existing settings for this room.",
         "data": {
-          "notify_method": "Notification methods",
-          "room_name": "Room name"
+          "room_name": "Room name",
+          "notify_method": "Notification methods"
         },
         "sections": {
           "sensors": {
@@ -170,7 +130,7 @@
           },
           "parameters": {
             "name": "Parameters",
-            "description": "Optional - overrides the global settings for this room. Left empty, the global value applies (Settings → Devices & Services → Global Settings → Configure).",
+            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Ventilation Options → Configure).",
             "data": {
               "temp_threshold_open": "Temperature threshold to open",
               "temp_threshold_close": "Temperature threshold to close",
@@ -183,15 +143,15 @@
               "reminder_interval_minutes": "Reminder interval"
             },
             "data_description": {
-              "temp_threshold_open": "Empty = use the global setting",
-              "temp_threshold_close": "Empty = use the global setting",
-              "humidity_threshold_open": "Empty = use the global setting",
-              "humidity_threshold_close": "Empty = use the global setting",
-              "temp_margin": "Empty = use the global setting. Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-              "frost_protection_temp": "Empty = use the global setting. Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-              "winter_outdoor_threshold": "Empty = use the global setting. Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-              "max_open_duration_winter_minutes": "Empty = use the global setting. Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Empty = use the global setting. Recurring reminder if the recommendation is ignored. 0 = disabled"
+              "temp_threshold_open": "Empty = use the value from the global settings",
+              "temp_threshold_close": "Empty = use the value from the global settings",
+              "humidity_threshold_open": "Empty = use the value from the global settings",
+              "humidity_threshold_close": "Empty = use the value from the global settings",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
             }
           },
           "devices": {
@@ -209,45 +169,57 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
-              "power_entity": "Empty = use the global setting. The minimum surplus power is only checked if this (here or globally) is set",
-              "min_surplus_power_watts": "Empty = use the global setting. Only applies to turning on, never to turning off",
-              "power_grace_period_minutes": "Empty = use the global setting. A running device is only turned off for insufficient power once it has stayed low for this long"
+              "power_entity": "Empty = use the value from the global settings. The minimum surplus power is only checked if this (here or there) is set",
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long"
             }
           }
         }
       },
       "global": {
-        "title": "Edit global settings",
-        "description": "These values act as the default for every room that doesn't override the respective field itself.",
+        "title": "Edit Smart Ventilation Options",
+        "description": "These values act as the default for every room that doesn't override the respective field itself. This entry was created automatically on first start.",
         "data": {
+          "room_name": "Name",
           "tts_entity": "TTS entity",
           "tts_volume": "Playback volume for voice announcements",
           "tts_playback_mode": "Existing playback when announcing",
           "power_entity": "Power sensor (e.g. grid feed-in)",
           "min_surplus_power_watts": "Minimum surplus power to turn on",
-          "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
-          "temp_threshold_open": "Temperature threshold to open",
-          "temp_threshold_close": "Temperature threshold to close",
-          "humidity_threshold_open": "Humidity threshold to open",
-          "humidity_threshold_close": "Humidity threshold to close",
-          "temp_margin": "Tolerance margin",
-          "frost_protection_temp": "Frost protection limit (outdoor temperature)",
-          "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
-          "max_open_duration_winter_minutes": "Max. open duration in winter",
-          "reminder_interval_minutes": "Reminder interval"
+          "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
         },
         "data_description": {
+          "room_name": "Display name for this entry",
           "tts_entity": "Used when a room doesn't set its own TTS entity",
           "tts_volume": "Volume the speakers are set to before the announcement (not automatically restored afterwards)",
           "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
           "power_entity": "Used when a room doesn't set its own power sensor",
           "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
-          "power_grace_period_minutes": "Default delay for all rooms without their own setting",
-          "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-          "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-          "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-          "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-          "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+          "power_grace_period_minutes": "Default delay for all rooms without their own setting"
+        },
+        "sections": {
+          "parameters": {
+            "name": "Parameters",
+            "description": "These thresholds act as the room-wide default.",
+            "data": {
+              "temp_threshold_open": "Temperature threshold to open",
+              "temp_threshold_close": "Temperature threshold to close",
+              "humidity_threshold_open": "Humidity threshold to open",
+              "humidity_threshold_close": "Humidity threshold to close",
+              "temp_margin": "Tolerance margin",
+              "frost_protection_temp": "Frost protection limit (outdoor temperature)",
+              "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
+              "max_open_duration_winter_minutes": "Max. open duration in winter",
+              "reminder_interval_minutes": "Reminder interval"
+            },
+            "data_description": {
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+            }
+          }
         }
       },
       "notify_sonos": {
@@ -258,7 +230,7 @@
           "tts_entity": "TTS entity (optional)"
         },
         "data_description": {
-          "tts_entity": "Empty = use the TTS entity from the global settings"
+          "tts_entity": "Empty = use the TTS entity from \"Smart Ventilation Options\""
         }
       },
       "notify_mobile": {
