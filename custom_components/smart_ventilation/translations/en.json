@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Smart Ventilation Assistant – Add room",
+        "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration).",
+        "data": {
+          "room_name": "Room name",
+          "climate_entity": "Thermostat (climate) entity",
+          "temperature_attribute": "Temperature attribute of the climate entity",
+          "humidity_entity": "Humidity sensor (optional)",
+          "outdoor_temp_entity": "Outdoor temperature sensor (optional)",
+          "window_entity": "Window contact sensor (optional)",
+          "temp_threshold_open": "Temperature threshold to open (°C)",
+          "temp_threshold_close": "Temperature threshold to close (°C)",
+          "humidity_threshold_open": "Humidity threshold to open (%)",
+          "humidity_threshold_close": "Humidity threshold to close (%)",
+          "notify_method": "Notification method",
+          "sonos_entity": "Sonos speaker (media_player)",
+          "tts_entity": "TTS entity",
+          "mobile_notify_service": "Notify service (e.g. mobile_app_pixel7)"
+        }
+      }
+    },
+    "error": {
+      "sonos_config_missing": "Sonos notification requires both a speaker and a TTS entity.",
+      "mobile_config_missing": "App notification requires a notify service."
+    },
+    "abort": {
+      "already_configured": "This room is already configured with this climate entity."
+    }
+  }
+}
