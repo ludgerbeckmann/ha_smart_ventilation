@@ -2,6 +2,12 @@
   "config": {
     "step": {
       "user": {
+        "menu_options": {
+          "add_room": "Raum hinzufügen",
+          "global_settings": "Allgemeine Einstellungen"
+        }
+      },
+      "add_room": {
         "title": "Smart Ventilation – Raum hinzufügen",
         "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen).",
         "data": {
@@ -26,7 +32,7 @@
           },
           "parameters": {
             "name": "Parameter",
-            "description": "Schwellenwerte sowie erweiterte Einstellungen für Frostschutz, Winter- und Sommer-Logik.",
+            "description": "Optional - überschreibt für diesen Raum die globalen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → Allgemeine Einstellungen → Konfigurieren).",
             "data": {
               "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
               "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
@@ -39,11 +45,15 @@
               "reminder_interval_minutes": "Erinnerungsintervall"
             },
             "data_description": {
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+              "temp_threshold_open": "Leer = globale Einstellung verwenden",
+              "temp_threshold_close": "Leer = globale Einstellung verwenden",
+              "humidity_threshold_open": "Leer = globale Einstellung verwenden",
+              "humidity_threshold_close": "Leer = globale Einstellung verwenden",
+              "temp_margin": "Leer = globale Einstellung verwenden. Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
+              "frost_protection_temp": "Leer = globale Einstellung verwenden. Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+              "winter_outdoor_threshold": "Leer = globale Einstellung verwenden. Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+              "max_open_duration_winter_minutes": "Leer = globale Einstellung verwenden. Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+              "reminder_interval_minutes": "Leer = globale Einstellung verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
             }
           },
           "devices": {
@@ -52,28 +62,65 @@
             "data": {
               "dehumidifier_entity": "Luftentfeuchter",
               "ac_entity": "Klimaanlage",
+              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
             "data_description": {
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "power_entity": "Optional: nur mit dieser Angabe wird die Mindest-Einspeiseleistung geprüft",
-              "min_surplus_power_watts": "Gilt nur fürs Einschalten, nicht fürs Ausschalten. Nur relevant, wenn ein Leistungssensor gewählt ist",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "power_grace_period_minutes": "Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Nur relevant, wenn ein Leistungssensor gewählt ist"
+              "power_entity": "Leer = globale Einstellung verwenden. Nur mit einer Angabe (hier oder global) wird die Mindest-Einspeiseleistung geprüft",
+              "min_surplus_power_watts": "Leer = globale Einstellung verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten",
+              "power_grace_period_minutes": "Leer = globale Einstellung verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
             }
           }
         }
       },
+      "global_settings": {
+        "title": "Smart Ventilation – Allgemeine Einstellungen",
+        "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben.",
+        "data": {
+          "tts_entity": "TTS-Entität",
+          "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+          "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
+          "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
+          "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+          "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
+          "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
+          "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
+          "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen",
+          "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen",
+          "temp_margin": "Toleranz-Marge",
+          "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
+          "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
+          "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+          "reminder_interval_minutes": "Erinnerungsintervall"
+        },
+        "data_description": {
+          "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
+          "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
+          "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
+          "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
+          "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
+          "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
+          "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
+          "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+          "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+          "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+          "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+        }
+      },
       "notify_sonos": {
         "title": "Sprachausgabe einrichten",
-        "description": "Diese Angaben sind nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
+        "description": "Diese Angabe ist nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
           "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-          "tts_entity": "TTS-Entität"
+          "tts_entity": "TTS-Entität (optional)"
+        },
+        "data_description": {
+          "tts_entity": "Leer = TTS-Entität aus den globalen Einstellungen verwenden"
         }
       },
       "notify_mobile": {
@@ -88,7 +135,7 @@
       }
     },
     "error": {
-      "sonos_config_missing": "Für Sonos-Benachrichtigung müssen Lautsprecher und TTS-Entität angegeben werden.",
+      "sonos_config_missing": "Für Sprachausgabe muss mindestens ein Lautsprecher angegeben werden.",
       "mobile_config_missing": "Für App-Benachrichtigung muss eine notify-Entität angegeben werden.",
       "notify_method_required": "Bitte mindestens eine Benachrichtigungsmethode auswählen."
     },
@@ -98,7 +145,7 @@
   },
   "options": {
     "step": {
-      "init": {
+      "room": {
         "title": "Smart Ventilation – Raum bearbeiten",
         "description": "Bestehende Einstellungen für diesen Raum anpassen.",
         "data": {
@@ -123,7 +170,7 @@
           },
           "parameters": {
             "name": "Parameter",
-            "description": "Schwellenwerte sowie erweiterte Einstellungen für Frostschutz, Winter- und Sommer-Logik.",
+            "description": "Optional - überschreibt für diesen Raum die globalen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → Allgemeine Einstellungen → Konfigurieren).",
             "data": {
               "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
               "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
@@ -136,11 +183,15 @@
               "reminder_interval_minutes": "Erinnerungsintervall"
             },
             "data_description": {
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+              "temp_threshold_open": "Leer = globale Einstellung verwenden",
+              "temp_threshold_close": "Leer = globale Einstellung verwenden",
+              "humidity_threshold_open": "Leer = globale Einstellung verwenden",
+              "humidity_threshold_close": "Leer = globale Einstellung verwenden",
+              "temp_margin": "Leer = globale Einstellung verwenden. Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
+              "frost_protection_temp": "Leer = globale Einstellung verwenden. Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+              "winter_outdoor_threshold": "Leer = globale Einstellung verwenden. Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+              "max_open_duration_winter_minutes": "Leer = globale Einstellung verwenden. Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+              "reminder_interval_minutes": "Leer = globale Einstellung verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
             }
           },
           "devices": {
@@ -149,28 +200,65 @@
             "data": {
               "dehumidifier_entity": "Luftentfeuchter",
               "ac_entity": "Klimaanlage",
+              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
             "data_description": {
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "power_entity": "Optional: nur mit dieser Angabe wird die Mindest-Einspeiseleistung geprüft",
-              "min_surplus_power_watts": "Gilt nur fürs Einschalten, nicht fürs Ausschalten. Nur relevant, wenn ein Leistungssensor gewählt ist",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "power_grace_period_minutes": "Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Nur relevant, wenn ein Leistungssensor gewählt ist"
+              "power_entity": "Leer = globale Einstellung verwenden. Nur mit einer Angabe (hier oder global) wird die Mindest-Einspeiseleistung geprüft",
+              "min_surplus_power_watts": "Leer = globale Einstellung verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten",
+              "power_grace_period_minutes": "Leer = globale Einstellung verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
             }
           }
         }
       },
+      "global": {
+        "title": "Allgemeine Einstellungen bearbeiten",
+        "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben.",
+        "data": {
+          "tts_entity": "TTS-Entität",
+          "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+          "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
+          "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
+          "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+          "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
+          "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
+          "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
+          "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen",
+          "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen",
+          "temp_margin": "Toleranz-Marge",
+          "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
+          "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
+          "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+          "reminder_interval_minutes": "Erinnerungsintervall"
+        },
+        "data_description": {
+          "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
+          "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
+          "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
+          "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
+          "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
+          "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
+          "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
+          "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+          "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+          "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+          "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+        }
+      },
       "notify_sonos": {
         "title": "Sprachausgabe bearbeiten",
-        "description": "Diese Angaben sind nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
+        "description": "Diese Angabe ist nötig, da du 'Sprachausgabe (z. B. Sonos)' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
           "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-          "tts_entity": "TTS-Entität"
+          "tts_entity": "TTS-Entität (optional)"
+        },
+        "data_description": {
+          "tts_entity": "Leer = TTS-Entität aus den globalen Einstellungen verwenden"
         }
       },
       "notify_mobile": {
@@ -185,7 +273,7 @@
       }
     },
     "error": {
-      "sonos_config_missing": "Für Sonos-Benachrichtigung müssen Lautsprecher und TTS-Entität angegeben werden.",
+      "sonos_config_missing": "Für Sprachausgabe muss mindestens ein Lautsprecher angegeben werden.",
       "mobile_config_missing": "Für App-Benachrichtigung muss eine notify-Entität angegeben werden.",
       "notify_method_required": "Bitte mindestens eine Benachrichtigungsmethode auswählen."
     }
