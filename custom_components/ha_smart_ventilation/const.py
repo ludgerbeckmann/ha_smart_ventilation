@@ -17,6 +17,9 @@ CONF_TEMP_SOURCE_ENTITY = "temperature_source_entity"
 CONF_TEMP_ATTRIBUTE = "temperature_attribute"
 CONF_HUMIDITY_ENTITY = "humidity_entity"
 CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
+# Nur in den globalen Einstellungen ("Smart Ventilation Options") verfügbar,
+# nicht pro Raum überschreibbar - wie CONF_OUTDOOR_TEMP_ENTITY.
+CONF_OUTDOOR_HUMIDITY_ENTITY = "outdoor_humidity_entity"
 CONF_WINDOW_ENTITY = "window_entity"
 CONF_TEMP_THRESHOLD_OPEN = "temp_threshold_open"
 CONF_TEMP_THRESHOLD_CLOSE = "temp_threshold_close"

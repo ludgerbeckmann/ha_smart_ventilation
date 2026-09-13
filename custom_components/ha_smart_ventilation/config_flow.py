@@ -22,6 +22,7 @@ from .const import (
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
     CONF_NOTIFY_METHOD,
+    CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE_PERIOD,
@@ -262,11 +263,6 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                     selector.EntitySelectorConfig(domain="sensor")
                 ),
                 _entity_marker(
-                    CONF_OUTDOOR_TEMP_ENTITY, defaults
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor")
-                ),
-                _entity_marker(
                     CONF_WINDOW_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="binary_sensor")
@@ -330,9 +326,10 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
 
 def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     """Formular zum nachträglichen Bearbeiten der allgemeinen Einstellungen
-    (Options-Flow): Name, TTS-Wiedergabe, Leistungssensor, sowie die
-    Schwellenwertparameter in einem eigenen Abschnitt - analog zum
-    "Parameter"-Abschnitt bei den Raum-Einstellungen."""
+    (Options-Flow): Außentemperatur, TTS-Wiedergabe, Leistungssensor, sowie
+    die Schwellenwertparameter in einem eigenen Abschnitt - analog zum
+    "Parameter"-Abschnitt bei den Raum-Einstellungen. Der Name/Titel dieses
+    Eintrags ist hier bewusst NICHT änderbar (nicht notwendig)."""
     defaults = defaults or {}
     volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
@@ -345,9 +342,16 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
 
     return vol.Schema(
         {
-            vol.Required(
-                CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")
-            ): str,
+            _entity_marker(
+                CONF_OUTDOOR_TEMP_ENTITY, defaults, required=False
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor")
+            ),
+            _entity_marker(
+                CONF_OUTDOOR_HUMIDITY_ENTITY, defaults, required=False
+            ): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain="sensor")
+            ),
             _entity_marker(
                 CONF_TTS_ENTITY, defaults, required=False
             ): selector.EntitySelector(
@@ -581,7 +585,7 @@ class SmartVentilationConfigFlow(
         self._abort_if_unique_id_configured()
 
         data = _apply_threshold_defaults(
-            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "Smart Ventilation Options"}
+            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "0 Smart Ventilation Options"}
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 
@@ -649,10 +653,14 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
         if user_input is not None:
             flat = _apply_threshold_defaults(_flatten_step_data(user_input))
             flat[CONF_IS_GLOBAL] = True
+            # Name/Titel bleibt unverändert - im Formular nicht mehr editierbar
+            flat[CONF_ROOM_NAME] = current.get(
+                CONF_ROOM_NAME, self.config_entry.title
+            )
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=flat,
-                title=flat.get(CONF_ROOM_NAME, self.config_entry.title),
+                title=self.config_entry.title,
             )
             return self.async_create_entry(title="", data={})
 

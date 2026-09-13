@@ -16,7 +16,6 @@
               "temperature_source_entity": "Innentemperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
-              "outdoor_temp_entity": "Außentemperatur",
               "window_entity": "Fensterkontakt (optional)"
             },
             "data_description": {
@@ -120,7 +119,6 @@
               "temperature_source_entity": "Innentemperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
-              "outdoor_temp_entity": "Außentemperatur",
               "window_entity": "Fensterkontakt (optional)"
             },
             "data_description": {
@@ -178,9 +176,10 @@
       },
       "global": {
         "title": "Smart Ventilation Options bearbeiten",
-        "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben. Dieser Eintrag wurde beim ersten Start automatisch angelegt.",
+        "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben. Der Name dieses Eintrags lässt sich hier nicht ändern.",
         "data": {
-          "room_name": "Name",
+          "outdoor_temp_entity": "Außentemperatur",
+          "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
           "tts_entity": "TTS-Entität",
           "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
           "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
@@ -189,7 +188,8 @@
           "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
         },
         "data_description": {
-          "room_name": "Anzeigename dieses Eintrags",
+          "outdoor_temp_entity": "Wird für alle Räume verwendet - kann nicht mehr pro Raum überschrieben werden",
+          "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen",
           "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
           "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
           "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",

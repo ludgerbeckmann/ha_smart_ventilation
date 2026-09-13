@@ -30,6 +30,7 @@ from .const import (
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
     CONF_NOTIFY_METHOD,
+    CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE_PERIOD,
@@ -144,14 +145,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Beobachtet relevante Entitäten und berechnet initialen Zustand."""
-        tracked = [
-            self._config[CONF_TEMP_SOURCE_ENTITY],
-            self._config[CONF_OUTDOOR_TEMP_ENTITY],
-        ]
+        tracked = [self._config[CONF_TEMP_SOURCE_ENTITY]]
         for key in (CONF_HUMIDITY_ENTITY, CONF_WINDOW_ENTITY, CONF_POWER_ENTITY):
             value = self._config.get(key)
             if value:
                 tracked.append(value)
+
+        # Außentemperatur/-luftfeuchtigkeit kommen ausschließlich aus "Smart
+        # Ventilation Options" - direkt verfolgen, falls beim Hinzufügen
+        # bereits gesetzt (siehe Hinweis in der README zur Reaktivität bei
+        # reiner Startreihenfolge-Abhängigkeit).
+        outdoor_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+        if outdoor_entity:
+            tracked.append(outdoor_entity)
+        outdoor_humidity_entity = self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
+        if outdoor_humidity_entity:
+            tracked.append(outdoor_humidity_entity)
 
         self.async_on_remove(
             async_track_state_change_event(self.hass, tracked, self._handle_state_change)
@@ -236,7 +245,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         """Prüft alle Bedingungen und aktualisiert ggf. den Zustand."""
         indoor_temp = self._get_indoor_temperature()
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
-        outdoor_temp = self._get_float_state(self._config[CONF_OUTDOOR_TEMP_ENTITY])
+        outdoor_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+        outdoor_temp = self._get_float_state(outdoor_entity)
+        outdoor_humidity_entity = self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
+        outdoor_humidity = self._get_float_state(outdoor_humidity_entity)
 
         temp_open = self._effective(CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN)
         temp_close = self._effective(CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE)
@@ -267,8 +279,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         outdoor_cooler_enough = outdoor_temp is None or (
             indoor_temp is not None and outdoor_temp <= indoor_temp - margin
         )
+        # --- Öffnen wegen Feuchtigkeit nur, wenn es draußen auch trockener
+        # ist als drinnen - sonst würde Lüften die Situation verschlimmern.
+        # Ohne Außen-Luftfeuchtigkeitssensor wird das (wie bisher) nicht
+        # geprüft und einfach angenommen, dass Lüften hilft.
+        outdoor_drier_enough = outdoor_humidity is None or (
+            humidity is not None and outdoor_humidity < humidity
+        )
         open_by_temp = temp_needs_open and outdoor_cooler_enough
-        open_by_humidity = humidity_needs_open
+        open_by_humidity = humidity_needs_open and outdoor_drier_enough
         should_open = (open_by_temp or open_by_humidity) and not frost_block
 
         # --- Schließen: Sommer-Fall (draußen wieder spürbar wärmer) ---
@@ -278,7 +297,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             and outdoor_temp >= indoor_temp + margin
         )
         close_by_summer_outdoor = (
-            self._attr_is_on and outdoor_warmer_again and not humidity_needs_open
+            self._attr_is_on and outdoor_warmer_again and not open_by_humidity
         )
 
         # --- Schließen: Winter-Höchstdauer ---
