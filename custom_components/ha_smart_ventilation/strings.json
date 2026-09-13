@@ -7,6 +7,7 @@
         "data": {
           "room_name": "Raumname",
           "temperature_source_entity": "Innentemperatur-Quelle (climate, sensor, number oder input_number)",
+          "temperature_attribute": "Temperatur-Attribut (nur relevant bei climate-Entitäten)",
           "humidity_entity": "Luftfeuchtigkeits-Sensor (optional)",
           "outdoor_temp_entity": "Außentemperatur-Sensor",
           "window_entity": "Fensterkontakt (optional)",
@@ -14,17 +15,22 @@
           "temp_threshold_close": "Temperatur-Schwelle zum Schließen (°C)",
           "humidity_threshold_open": "Feuchtigkeits-Schwelle zum Öffnen (%)",
           "humidity_threshold_close": "Feuchtigkeits-Schwelle zum Schließen (%)",
-          "notify_method": "Benachrichtigungsmethode(n)",
-          "sonos_entity": "Sonos-Lautsprecher (media_player)",
-          "tts_entity": "TTS-Entität",
-          "mobile_notify_entity": "Notify-Entität (notify.*)"
+          "notify_method": "Benachrichtigungsmethode(n)"
         }
       },
-      "attribute": {
-        "title": "Temperatur-Attribut auswählen",
-        "description": "Die gewählte Entität ist eine climate-Entität. Welches Attribut enthält die aktuelle Temperatur? Du kannst einen Eintrag auswählen oder einen eigenen Attributnamen eintippen.",
+      "notify_sonos": {
+        "title": "Sonos-Benachrichtigung einrichten",
+        "description": "Diese Angaben sind nötig, da du 'Sonos' als Benachrichtigungsmethode ausgewählt hast.",
         "data": {
-          "temperature_attribute": "Temperatur-Attribut"
+          "sonos_entity": "Sonos-Lautsprecher (media_player)",
+          "tts_entity": "TTS-Entität"
+        }
+      },
+      "notify_mobile": {
+        "title": "App-Benachrichtigung einrichten",
+        "description": "Diese Angabe ist nötig, da du 'Home Assistant App' als Benachrichtigungsmethode ausgewählt hast.",
+        "data": {
+          "mobile_notify_entity": "Notify-Entität (notify.*)"
         }
       }
     },
