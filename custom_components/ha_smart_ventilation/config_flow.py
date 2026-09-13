@@ -19,6 +19,7 @@ from .const import (
     CONF_IS_GLOBAL,
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_MIN_SURPLUS_POWER,
+    CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
     CONF_NOTIFY_METHOD,
@@ -30,6 +31,7 @@ from .const import (
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
     CONF_SHUTTER_ENTITY,
+    CONF_SONOS_ENABLED,
     CONF_SONOS_ENTITY,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
@@ -68,6 +70,7 @@ from .const import (
     TTS_PLAYBACK_MODE_PAUSE,
 )
 
+SECTION_NOTIFY = "notify"
 SECTION_SENSORS = "sensors"
 SECTION_DEVICES = "devices"
 SECTION_PARAMETERS = "parameters"
@@ -77,10 +80,7 @@ SECTION_PARAMETERS = "parameters"
 # vorausgefüllt und beim Leeren automatisch wieder aufgefüllt (siehe
 # _threshold_selector / _apply_threshold_defaults). Auf RAUM-Ebene dagegen
 # echt optional (siehe _override_selector) - leer bedeutet "globalen Wert
-# verwenden". Da eine neue globale Einstellung über dasselbe Formular wie ein
-# Raum angelegt wird, gilt beim Neuanlegen zunächst die Raum-Variante -
-# _apply_threshold_defaults() wird dann nachträglich beim Speichern
-# angewendet, falls es sich um die globalen Einstellungen handelt.
+# verwenden".
 _THRESHOLD_FIELDS = {
     CONF_TEMP_THRESHOLD_OPEN: (DEFAULT_TEMP_THRESHOLD_OPEN, -20, 40, 0.5, "°C"),
     CONF_TEMP_THRESHOLD_CLOSE: (DEFAULT_TEMP_THRESHOLD_CLOSE, -20, 40, 0.5, "°C"),
@@ -181,7 +181,7 @@ def _flatten_step_data(data: dict) -> dict:
     """Führt die verschachtelten Sections wieder zu einem flachen Dict
     zusammen. Sections sind nur eine visuelle Gruppierung im Formular -
     intern arbeiten wir weiterhin mit einem flachen dict."""
-    section_keys = (SECTION_SENSORS, SECTION_DEVICES, SECTION_PARAMETERS)
+    section_keys = (SECTION_NOTIFY, SECTION_SENSORS, SECTION_DEVICES, SECTION_PARAMETERS)
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
         flat.update(data.get(key) or {})
@@ -189,12 +189,21 @@ def _flatten_step_data(data: dict) -> dict:
 
 
 def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
-    """Formular für einen Raum: Raumname, Benachrichtigungsmethode(n),
-    danach drei Abschnitte ('Sensoren', 'Parameter', 'Geräte' - Geräte-
-    Abschnitt am Ende, standardmäßig eingeklappt). Die Felder in 'Parameter'
-    sowie Leistungsschwelle/-verzögerung im Geräte-Abschnitt sind echt
-    optional: leer gelassen wird der Wert aus den allgemeinen Einstellungen
-    übernommen (siehe Eintrag "Smart Ventilation Options").
+    """Formular für einen Raum: Raumname, danach vier Abschnitte
+    ('Benachrichtigungsmethoden', 'Sensoren', 'Parameter', 'Geräte' -
+    Parameter und Geräte standardmäßig eingeklappt, da optional).
+
+    Im Abschnitt "Benachrichtigungsmethoden" aktiviert je eine Checkbox
+    Sprachausgabe bzw. App-Benachrichtigung; die zugehörigen Felder stehen
+    direkt darunter im selben Abschnitt (Home-Assistant-Formulare können
+    Felder nicht abhängig von einer Checkbox ein-/ausblenden - sie sind
+    daher immer sichtbar, werden aber nur ausgewertet, wenn die jeweilige
+    Checkbox aktiviert ist).
+
+    Die Felder in 'Parameter' sowie Leistungsschwelle/-verzögerung im
+    Geräte-Abschnitt sind echt optional: leer gelassen wird der Wert aus
+    den allgemeinen Einstellungen übernommen (siehe Eintrag "Smart
+    Ventilation Options").
 
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
@@ -214,28 +223,66 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     power_marker, power_sel = _override_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _override_selector(CONF_POWER_GRACE_PERIOD, defaults)
 
+    # Abwärtskompatibilität: ältere Einträge kennen die Checkboxen noch
+    # nicht, sondern nur die frühere CONF_NOTIFY_METHOD-Liste - daraus den
+    # Vorbelegungs-Status ableiten, falls die Checkbox-Werte selbst fehlen.
+    stored_methods = defaults.get(CONF_NOTIFY_METHOD) or []
+    sonos_enabled_default = defaults.get(
+        CONF_SONOS_ENABLED, NOTIFY_METHOD_SONOS in stored_methods
+    )
+    mobile_enabled_default = defaults.get(
+        CONF_MOBILE_ENABLED, NOTIFY_METHOD_MOBILE in stored_methods
+    )
+
     fields: dict = {
         vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")): str,
-        vol.Required(
-            CONF_NOTIFY_METHOD,
-            default=defaults.get(CONF_NOTIFY_METHOD, [NOTIFY_METHOD_MOBILE]),
-        ): selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=[
-                    selector.SelectOptionDict(
-                        value=NOTIFY_METHOD_SONOS,
-                        label="Sprachausgabe (z. B. Sonos)",
-                    ),
-                    selector.SelectOptionDict(
-                        value=NOTIFY_METHOD_MOBILE,
-                        label="Home Assistant Companion App (Push)",
-                    ),
-                ],
-                multiple=True,
-                mode=selector.SelectSelectorMode.LIST,
-            )
-        ),
     }
+
+    fields[vol.Required(SECTION_NOTIFY)] = section(
+        vol.Schema(
+            {
+                vol.Optional(
+                    CONF_SONOS_ENABLED, default=sonos_enabled_default
+                ): selector.BooleanSelector(),
+                _entity_marker(
+                    CONF_SONOS_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="media_player", multiple=True)
+                ),
+                vol.Optional(
+                    CONF_MOBILE_ENABLED, default=mobile_enabled_default
+                ): selector.BooleanSelector(),
+                vol.Optional(
+                    CONF_MOBILE_TARGETS, default=defaults.get(CONF_MOBILE_TARGETS) or []
+                ): selector.ObjectSelector(
+                    selector.ObjectSelectorConfig(
+                        multiple=True,
+                        label_field=CONF_MOBILE_NOTIFY_ENTITY,
+                        description_field=CONF_PRESENCE_ENTITY,
+                        fields={
+                            CONF_MOBILE_NOTIFY_ENTITY: {
+                                "label": "Notify-Entität",
+                                "required": True,
+                                "selector": selector.EntitySelector(
+                                    selector.EntitySelectorConfig(domain="notify")
+                                ),
+                            },
+                            CONF_PRESENCE_ENTITY: {
+                                "label": "Anwesenheits-Entität (optional)",
+                                "required": False,
+                                "selector": selector.EntitySelector(
+                                    selector.EntitySelectorConfig(
+                                        domain=PRESENCE_DOMAINS
+                                    )
+                                ),
+                            },
+                        },
+                    )
+                ),
+            }
+        ),
+        {"collapsed": False},
+    )
 
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
@@ -321,10 +368,10 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
 
 def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     """Formular zum nachträglichen Bearbeiten der allgemeinen Einstellungen
-    (Options-Flow): Außentemperatur, TTS-Wiedergabe, Leistungssensor, sowie
-    die Schwellenwertparameter in einem eigenen Abschnitt - analog zum
+    (Options-Flow): Sensoren/TTS-Wiedergabe/Leistungssensor in einem
+    Abschnitt, die Schwellenwertparameter in einem eigenen - analog zum
     "Parameter"-Abschnitt bei den Raum-Einstellungen. Der Name/Titel dieses
-    Eintrags ist hier bewusst NICHT änderbar (nicht notwendig)."""
+    Eintrags ist hier bewusst nicht änderbar (nicht notwendig)."""
     defaults = defaults or {}
     volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
@@ -394,157 +441,40 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     )
 
 
-def _build_sonos_schema(defaults: dict | None = None) -> vol.Schema:
-    return vol.Schema(
-        {
-            # Mehrfachauswahl: Ansage kann gleichzeitig auf mehreren
-            # Lautsprechern erfolgen
-            _entity_marker(CONF_SONOS_ENTITY, defaults): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="media_player", multiple=True)
-            ),
-            # Optional: leer = TTS-Entität aus den globalen Einstellungen
-            _entity_marker(
-                CONF_TTS_ENTITY, defaults, required=False
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="tts")
-            ),
-        }
-    )
-
-
-def _build_mobile_schema(defaults: dict | None = None) -> vol.Schema:
-    """App-Benachrichtigung: Liste von Notify-Ziel + optionaler Anwesenheits-
-    Entität. Jedes Ziel kann individuell an eine Person/ein Gerät gekoppelt
-    werden - die Push-Nachricht geht an ein Ziel nur, wenn die zugehörige
-    Anwesenheits-Entität (falls gesetzt) 'home' meldet.
-    """
-    defaults = defaults or {}
-    current_targets = defaults.get(CONF_MOBILE_TARGETS) or []
-
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_MOBILE_TARGETS, default=current_targets
-            ): selector.ObjectSelector(
-                selector.ObjectSelectorConfig(
-                    multiple=True,
-                    label_field=CONF_MOBILE_NOTIFY_ENTITY,
-                    description_field=CONF_PRESENCE_ENTITY,
-                    fields={
-                        CONF_MOBILE_NOTIFY_ENTITY: {
-                            "label": "Notify-Entität",
-                            "required": True,
-                            "selector": selector.EntitySelector(
-                                selector.EntitySelectorConfig(domain="notify")
-                            ),
-                        },
-                        CONF_PRESENCE_ENTITY: {
-                            "label": "Anwesenheits-Entität (optional)",
-                            "required": False,
-                            "selector": selector.EntitySelector(
-                                selector.EntitySelectorConfig(
-                                    domain=PRESENCE_DOMAINS
-                                )
-                            ),
-                        },
-                    },
-                )
-            ),
-        }
-    )
-
-
-class _NotifyFlowMixin:
-    """Gemeinsame Schrittlogik für Config- und Options-Flow (nur für Räume -
-    die globalen Einstellungen durchlaufen keine Benachrichtigungsschritte).
-
-    Nach dem Hauptschritt werden - abhängig von der Auswahl bei
-    CONF_NOTIFY_METHOD - nacheinander nur die passenden Folgeschritte
-    gezeigt (Sprachausgabe und/oder App).
-    """
-
-    _data: dict
-    _pending_notify_methods: list[str]
-
-    async def async_step_notify_sonos(
-        self, user_input: dict | None = None
-    ) -> config_entries.FlowResult:
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            if not user_input.get(CONF_SONOS_ENTITY):
-                errors["base"] = "sonos_config_missing"
-            else:
-                self._data.update(user_input)
-                return await self._async_step_next()
-
-        return self.async_show_form(
-            step_id="notify_sonos",
-            data_schema=_build_sonos_schema(self._data),
-            errors=errors,
-        )
-
-    async def async_step_notify_mobile(
-        self, user_input: dict | None = None
-    ) -> config_entries.FlowResult:
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            targets = user_input.get(CONF_MOBILE_TARGETS) or []
-            valid_targets = [
-                t for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)
-            ]
-            if not valid_targets:
-                errors["base"] = "mobile_config_missing"
-            else:
-                self._data.update(user_input)
-                self._data[CONF_MOBILE_TARGETS] = valid_targets
-                return await self._async_step_next()
-
-        return self.async_show_form(
-            step_id="notify_mobile",
-            data_schema=_build_mobile_schema(self._data),
-            errors=errors,
-        )
-
-    async def _async_step_next(self) -> config_entries.FlowResult:
-        """Arbeitet die noch offenen Benachrichtigungsschritte der Reihe nach ab."""
-        if NOTIFY_METHOD_SONOS in self._pending_notify_methods:
-            self._pending_notify_methods.remove(NOTIFY_METHOD_SONOS)
-            return await self.async_step_notify_sonos()
-
-        if NOTIFY_METHOD_MOBILE in self._pending_notify_methods:
-            self._pending_notify_methods.remove(NOTIFY_METHOD_MOBILE)
-            return await self.async_step_notify_mobile()
-
-        return self._finish()
-
-    def _finish(self) -> config_entries.FlowResult:
-        raise NotImplementedError
-
-
 def _validate_room_submission(defaults: dict) -> str | None:
-    """Prüft die Pflichtangaben für einen Raum. Gibt den Fehlerschlüssel
-    zurück oder None. Innentemperatur/Außentemperatur werden bereits vom
+    """Prüft die Angaben zu den Benachrichtigungsmethoden und leitet daraus
+    CONF_NOTIFY_METHOD ab (Liste, für binary_sensor.py). Gibt den
+    Fehlerschlüssel zurück oder None. Innentemperatur wird bereits vom
     Formular selbst als Pflichtfeld erzwungen."""
-    if not defaults.get(CONF_NOTIFY_METHOD):
+    methods: list[str] = []
+
+    if defaults.get(CONF_SONOS_ENABLED):
+        if not defaults.get(CONF_SONOS_ENTITY):
+            return "sonos_config_missing"
+        methods.append(NOTIFY_METHOD_SONOS)
+
+    if defaults.get(CONF_MOBILE_ENABLED):
+        targets = defaults.get(CONF_MOBILE_TARGETS) or []
+        valid_targets = [t for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)]
+        if not valid_targets:
+            return "mobile_config_missing"
+        defaults[CONF_MOBILE_TARGETS] = valid_targets
+        methods.append(NOTIFY_METHOD_MOBILE)
+
+    if not methods:
         return "notify_method_required"
+
+    defaults[CONF_NOTIFY_METHOD] = methods
     return None
 
 
-class SmartVentilationConfigFlow(
-    config_entries.ConfigFlow, _NotifyFlowMixin, domain=DOMAIN
-):
+class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config Flow für Räume. Die allgemeinen Einstellungen ('Smart
     Ventilation Options') werden NICHT über diesen nutzergesteuerten Flow
     angelegt, sondern automatisch beim allerersten Start von Home Assistant
     (siehe __init__.py: async_setup) über async_step_import."""
 
     VERSION = 1
-
-    def __init__(self) -> None:
-        self._data: dict = {}
-        self._pending_notify_methods: list[str] = []
 
     async def async_step_user(
         self, user_input: dict | None = None
@@ -566,9 +496,9 @@ class SmartVentilationConfigFlow(
                 await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured()
 
-                self._data = defaults
-                self._pending_notify_methods = list(defaults[CONF_NOTIFY_METHOD])
-                return await self._async_step_next()
+                return self.async_create_entry(
+                    title=defaults[CONF_ROOM_NAME], data=defaults
+                )
 
         return self.async_show_form(
             step_id="user",
@@ -591,11 +521,6 @@ class SmartVentilationConfigFlow(
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 
-    def _finish(self) -> config_entries.FlowResult:
-        return self.async_create_entry(
-            title=self._data[CONF_ROOM_NAME], data=self._data
-        )
-
     @staticmethod
     @callback
     def async_get_options_flow(
@@ -604,15 +529,11 @@ class SmartVentilationConfigFlow(
         return SmartVentilationOptionsFlow()
 
 
-class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
+class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
     """Options-Flow: bearbeitet einen bestehenden Eintrag - je nachdem, ob es
     sich um einen Raum oder um die allgemeinen Einstellungen handelt, wird
     ein anderes Formular gezeigt. Der Typ selbst (Raum vs. allgemeine
     Einstellungen) lässt sich nachträglich nicht mehr ändern."""
-
-    def __init__(self) -> None:
-        self._data: dict = {}
-        self._pending_notify_methods: list[str] = []
 
     async def async_step_init(
         self, user_input: dict | None = None
@@ -637,9 +558,13 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
                 # Bestehende Werte behalten, neue Eingaben überschreiben sie.
                 # Ein Feld, das jetzt leer gelassen wurde, entfernt eine
                 # zuvor gesetzte Raum-Override wieder (zurück auf "global").
-                self._data = {**current, **defaults}
-                self._pending_notify_methods = list(defaults[CONF_NOTIFY_METHOD])
-                return await self._async_step_next()
+                new_data = {**current, **defaults}
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                    title=new_data[CONF_ROOM_NAME],
+                )
+                return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="room",
@@ -655,7 +580,7 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
         if user_input is not None:
             flat = _apply_threshold_defaults(_flatten_step_data(user_input))
             flat[CONF_IS_GLOBAL] = True
-            # Name/Titel bleibt unverändert - im Formular nicht mehr editierbar
+            # Name/Titel bleibt unverändert - im Formular nicht editierbar
             flat[CONF_ROOM_NAME] = current.get(
                 CONF_ROOM_NAME, self.config_entry.title
             )
@@ -670,15 +595,3 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
             step_id="global",
             data_schema=_build_global_edit_schema(current),
         )
-
-    def _finish(self) -> config_entries.FlowResult:
-        self.hass.config_entries.async_update_entry(
-            self.config_entry,
-            data=self._data,
-            title=self._data[CONF_ROOM_NAME],
-        )
-        # Options-Flows speichern selbst keine eigenen "options" - die
-        # eigentliche Aktualisierung ist bereits über async_update_entry
-        # oben erfolgt. Der registrierte update_listener sorgt für den
-        # automatischen Reload der Integration mit den neuen Werten.
-        return self.async_create_entry(title="", data={})

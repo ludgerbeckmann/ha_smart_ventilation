@@ -28,6 +28,10 @@ CONF_HUMIDITY_THRESHOLD_CLOSE = "humidity_threshold_close"
 CONF_NOTIFY_METHOD = "notify_method"
 CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
+# Aktivierungs-Checkboxen im Raum-Formular (Abschnitt "Benachrichtigungs-
+# methoden") - ersetzen die frühere Mehrfachauswahl als eigenständiges Feld.
+CONF_SONOS_ENABLED = "sonos_enabled"
+CONF_MOBILE_ENABLED = "mobile_enabled"
 CONF_MOBILE_NOTIFY_ENTITY = "mobile_notify_entity"
 CONF_PRESENCE_ENTITY = "presence_entity"
 # Liste von {mobile_notify_entity, presence_entity}-Paaren - ersetzt die
