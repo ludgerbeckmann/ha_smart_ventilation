@@ -65,16 +65,12 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
 
 ## Einrichtung
 
+### Raum hinzufügen
+
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
-2. Nach "Smart Ventilation" suchen
-3. **Beim allerersten Mal** erscheint ein Menü mit zwei Optionen (danach,
-   sobald die globalen Einstellungen einmal angelegt wurden, entfällt das
-   Menü und es geht direkt mit Schritt 4 weiter):
-   - **"Allgemeine Einstellungen"** (empfohlen, zuerst einrichten): siehe
-     eigener Abschnitt unten. Kann später jederzeit über **Konfigurieren**
-     angepasst werden.
-   - **"Raum hinzufügen"**: der eigentliche Raum-Einrichtungsablauf
-4. **Hauptformular** pro Raum ausfüllen:
+2. Nach "Smart Ventilation" suchen – es öffnet sich direkt das
+   Raum-Formular
+3. **Hauptformular** ausfüllen:
    - **Raumname** (ganz oben)
    - **Benachrichtigungsmethoden**: Sprachausgabe und/oder Home Assistant
      Companion App – beides kann gleichzeitig aktiviert werden
@@ -90,13 +86,11 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
        überhaupt sinnvoll ist)
      - Optional: Luftfeuchtigkeit, Fensterkontakt
    - **Abschnitt "Parameter"** (optional – **überschreibt** für diesen Raum
-     die globalen Einstellungen; leer gelassen gilt der globale Wert):
+     die allgemeinen Einstellungen; leer gelassen gilt der dort hinterlegte
+     Wert):
      - Schwellenwerte zum Öffnen/Schließen sowie Toleranz-Marge,
        Frostschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer und
-       Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung.
-       Anders als in den globalen Einstellungen wird hier **kein**
-       Standardwert erzwungen: leer bleibt leer und bedeutet "globalen Wert
-       verwenden"
+       Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
      Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
@@ -106,14 +100,14 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
        beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
        "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
      - **Leistungssensor** (optional): überschreibt für diesen Raum den
-       globalen Leistungssensor, falls gesetzt
+       Leistungssensor aus den allgemeinen Einstellungen, falls gesetzt
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
-       ebenfalls optionale Raum-Overrides der globalen Werte
-5. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
+       ebenfalls optionale Raum-Overrides
+4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
    - Bei "Sprachausgabe": eigener Schritt für **einen oder mehrere** Lautsprecher
      (`media_player`-Entitäten, z. B. Sonos) + optional eine **eigene**
-     TTS-Entität für diesen Raum (leer = TTS-Entität aus den globalen
-     Einstellungen)
+     TTS-Entität für diesen Raum (leer = TTS-Entität aus "Smart Ventilation
+     Options")
    - Bei "Home Assistant Companion App": eigener Schritt mit einer Liste von
      **Notify-Zielen**. Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
      optional eine **Anwesenheits-Entität** (`person` oder `device_tracker`,
@@ -123,14 +117,21 @@ Beide Ordner enthalten dieselben Dateien (`icon.png`, `icon@2x.png`,
      erhalten sie weiterhin immer. So lässt sich z. B. konfigurieren: "an
      Person A nur, wenn sie zuhause ist" und gleichzeitig "an Person B immer".
      Über "Hinzufügen" lassen sich beliebig viele Ziele ergänzen.
-6. Für weitere Räume den Vorgang wiederholen (Integration erneut
+5. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
-## Allgemeine Einstellungen
+### Allgemeine Einstellungen ("Smart Ventilation Options")
 
-Eine besondere, einmalig anlegbare Integrations-Instanz ("Allgemeine
-Einstellungen") dient als raumübergreifender Standard. Enthält:
+Direkt beim ersten Start der Integration wird **automatisch**, ganz ohne
+Zutun, ein zusätzlicher Eintrag namens **"Smart Ventilation Options"**
+angelegt – er taucht unter **Einstellungen → Geräte & Dienste** neben
+deinen Räumen auf. Dieser Eintrag erzeugt keine eigene Entität und keinen
+eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 
+**Bearbeiten:** Beim Eintrag "Smart Ventilation Options" auf
+**Konfigurieren** (Zahnrad-Symbol) klicken. Enthält:
+
+- **Name**: umbenennbar, falls gewünscht
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
   für die Sprachausgabe festlegt
 - **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
@@ -140,31 +141,35 @@ Einstellungen") dient als raumübergreifender Standard. Enthält:
 - **Leistungssensor** + **Mindest-Einspeiseleistung** + **Verzögerung bis
   Abschalten**: Standardwerte für alle Räume, die keinen eigenen
   Leistungssensor festlegen
-- Der komplette **Schwellenwerte-/Parameter-Satz** (dieselben Felder wie im
+- Eigener **"Parameter"-Abschnitt** mit dem kompletten
+  Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder wie im
   Raum-Parameter-Abschnitt) als raumweiter Standard
 
-Zugriff: **Einstellungen → Geräte & Dienste → Allgemeine Einstellungen →
-Konfigurieren**. Anders als bei den Raum-Feldern sind hier alle
-Zahlenfelder immer mit einem sinnvollen Standardwert vorausgefüllt – wird
-ein Feld komplett geleert, greift beim Speichern automatisch wieder dieser
-Standardwert.
+Alle Zahlenfelder sind hier immer mit einem sinnvollen Standardwert
+vorausgefüllt – wird ein Feld komplett geleert, greift beim Speichern
+automatisch wieder dieser Standardwert.
 
-> Ohne angelegte globale Einstellungen funktioniert alles wie zuvor: jeder
-> Raum nutzt dann die fest einprogrammierten Standardwerte. Die globalen
-> Einstellungen sind rein optional.
+> Home Assistant erlaubt es grundsätzlich, jeden Integrations-Eintrag über
+> die Oberfläche zu löschen – das lässt sich nicht unterbinden. Löschst du
+> "Smart Ventilation Options" trotzdem, wird er **automatisch sofort wieder
+> neu angelegt** (mit den Standardwerten) – er soll ja immer vorhanden
+> sein. Willst du ihn stattdessen dauerhaft loswerden, müsstest du die
+> gesamte Integration deinstallieren oder den Eintrag manuell deaktivieren
+> statt zu löschen.
 
-## Bestehenden Raum bearbeiten
+## Bestehenden Eintrag bearbeiten
 
-Ein bereits eingerichteter Raum lässt sich jederzeit nachträglich anpassen,
-ohne ihn zu löschen und neu anzulegen:
+Ein bereits eingerichteter Raum – oder "Smart Ventilation Options" – lässt
+sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
-1. **Einstellungen → Geräte & Dienste → Smart Ventilation**
-2. Beim gewünschten Raum-Eintrag auf **Konfigurieren** klicken
-3. Es öffnet sich derselbe mehrstufige Ablauf wie beim Einrichten, diesmal
-   mit den aktuell gespeicherten Werten vorausgefüllt
-4. Nach dem Speichern wird der Raum automatisch mit den neuen Einstellungen
-   neu geladen – ein manueller Neustart von Home Assistant ist dafür nicht
-   nötig
+1. **Einstellungen → Geräte & Dienste → Smart Ventilation** (bzw. der von
+   dir vergebene Name)
+2. Beim gewünschten Eintrag auf **Konfigurieren** klicken
+3. Es öffnet sich das passende Formular, mit den aktuell gespeicherten
+   Werten vorausgefüllt
+4. Nach dem Speichern wird der Eintrag automatisch mit den neuen
+   Einstellungen neu geladen – ein manueller Neustart von Home Assistant
+   ist dafür nicht nötig
 
 > Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
 > der Eingabe ein-/ausblenden. Deshalb ist die Reihenfolge so gelöst, dass
