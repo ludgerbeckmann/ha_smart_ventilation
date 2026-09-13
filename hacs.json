@@ -1,0 +1,6 @@
+{
+  "name": "Smart Lüftungsassistent",
+  "render_readme": true,
+  "domains": ["climate", "sensor", "binary_sensor", "media_player", "tts", "notify"],
+  "homeassistant": "2024.1.0"
+}
