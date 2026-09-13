@@ -5,6 +5,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 
 from .const import (
@@ -34,6 +35,9 @@ from .const import (
     TEMP_SOURCE_DOMAINS,
 )
 
+SECTION_SENSORS = "sensors"
+SECTION_PARAMETERS = "parameters"
+
 
 def _entity_marker(
     key: str, defaults: dict | None, required: bool = True
@@ -48,10 +52,18 @@ def _entity_marker(
     return marker_cls(key)
 
 
+def _flatten_step_data(data: dict) -> dict:
+    """Führt die verschachtelten 'sensors'/'parameters'-Sections wieder zu
+    einem flachen Dict zusammen. Sections sind nur eine visuelle Gruppierung
+    im Formular - intern arbeiten wir weiterhin mit einem flachen dict."""
+    flat = {k: v for k, v in data.items() if k not in (SECTION_SENSORS, SECTION_PARAMETERS)}
+    flat.update(data.get(SECTION_SENSORS) or {})
+    flat.update(data.get(SECTION_PARAMETERS) or {})
+    return flat
+
+
 def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
-    """Hauptschritt: Raum, Temperaturquelle, Schwellenwerte, Benachrichtigungs-
-    methode(n). Die konkreten Zugangsdaten für Sonos/App folgen in eigenen
-    Schritten - je nachdem, was hier ausgewählt wird.
+    """Hauptschritt: Raumname + zwei Abschnitte ('Sensoren', 'Parameter').
 
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
@@ -63,76 +75,103 @@ def _build_user_schema(defaults: dict | None = None) -> vol.Schema:
             vol.Required(
                 CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")
             ): str,
-            _entity_marker(CONF_TEMP_SOURCE_ENTITY, defaults): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain=TEMP_SOURCE_DOMAINS)
-            ),
-            # Immer sichtbar (nicht nur bei climate-Entitäten). Wird zur
-            # Laufzeit nur ausgewertet, wenn die gewählte Entität tatsächlich
-            # eine climate-Entität mit passendem Attribut ist - bei anderen
-            # Entitäten (sensor, number, input_number) wird der Wert ignoriert
-            # und stattdessen direkt der Entitätszustand verwendet.
-            vol.Optional(
-                CONF_TEMP_ATTRIBUTE,
-                default=defaults.get(CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE),
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=COMMON_TEMP_ATTRIBUTES,
-                    custom_value=True,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            ),
-            _entity_marker(
-                CONF_HUMIDITY_ENTITY, defaults, required=False
-            ): selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor")),
-            _entity_marker(CONF_OUTDOOR_TEMP_ENTITY, defaults): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="sensor")
-            ),
-            _entity_marker(
-                CONF_WINDOW_ENTITY, defaults, required=False
-            ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="binary_sensor")
-            ),
-            vol.Optional(
-                CONF_TEMP_THRESHOLD_OPEN,
-                default=defaults.get(
-                    CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN
-                ),
-            ): vol.Coerce(float),
-            vol.Optional(
-                CONF_TEMP_THRESHOLD_CLOSE,
-                default=defaults.get(
-                    CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE
-                ),
-            ): vol.Coerce(float),
-            vol.Optional(
-                CONF_HUMIDITY_THRESHOLD_OPEN,
-                default=defaults.get(
-                    CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
-                ),
-            ): vol.Coerce(float),
-            vol.Optional(
-                CONF_HUMIDITY_THRESHOLD_CLOSE,
-                default=defaults.get(
-                    CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
-                ),
-            ): vol.Coerce(float),
-            vol.Required(
-                CONF_NOTIFY_METHOD,
-                default=defaults.get(CONF_NOTIFY_METHOD, [NOTIFY_METHOD_MOBILE]),
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(
-                            value=NOTIFY_METHOD_SONOS, label="Sonos (Sprachausgabe)"
+            vol.Required(SECTION_SENSORS): section(
+                vol.Schema(
+                    {
+                        _entity_marker(
+                            CONF_TEMP_SOURCE_ENTITY, defaults
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain=TEMP_SOURCE_DOMAINS)
                         ),
-                        selector.SelectOptionDict(
-                            value=NOTIFY_METHOD_MOBILE,
-                            label="Home Assistant App (Push)",
+                        # Immer sichtbar (nicht nur bei climate-Entitäten). Wird
+                        # zur Laufzeit nur ausgewertet, wenn die gewählte
+                        # Entität tatsächlich eine climate-Entität ist - bei
+                        # anderen Entitäten wird der Wert ignoriert und
+                        # stattdessen direkt der Entitätszustand verwendet.
+                        vol.Optional(
+                            CONF_TEMP_ATTRIBUTE,
+                            default=defaults.get(
+                                CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
+                            ),
+                        ): selector.SelectSelector(
+                            selector.SelectSelectorConfig(
+                                options=COMMON_TEMP_ATTRIBUTES,
+                                custom_value=True,
+                                mode=selector.SelectSelectorMode.DROPDOWN,
+                            )
                         ),
-                    ],
-                    multiple=True,
-                    mode=selector.SelectSelectorMode.LIST,
-                )
+                        _entity_marker(
+                            CONF_HUMIDITY_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="sensor")
+                        ),
+                        _entity_marker(
+                            CONF_OUTDOOR_TEMP_ENTITY, defaults
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="sensor")
+                        ),
+                        _entity_marker(
+                            CONF_WINDOW_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="binary_sensor")
+                        ),
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(SECTION_PARAMETERS): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            CONF_TEMP_THRESHOLD_OPEN,
+                            default=defaults.get(
+                                CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN
+                            ),
+                        ): vol.Coerce(float),
+                        vol.Optional(
+                            CONF_TEMP_THRESHOLD_CLOSE,
+                            default=defaults.get(
+                                CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE
+                            ),
+                        ): vol.Coerce(float),
+                        vol.Optional(
+                            CONF_HUMIDITY_THRESHOLD_OPEN,
+                            default=defaults.get(
+                                CONF_HUMIDITY_THRESHOLD_OPEN,
+                                DEFAULT_HUMIDITY_THRESHOLD_OPEN,
+                            ),
+                        ): vol.Coerce(float),
+                        vol.Optional(
+                            CONF_HUMIDITY_THRESHOLD_CLOSE,
+                            default=defaults.get(
+                                CONF_HUMIDITY_THRESHOLD_CLOSE,
+                                DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
+                            ),
+                        ): vol.Coerce(float),
+                        vol.Required(
+                            CONF_NOTIFY_METHOD,
+                            default=defaults.get(
+                                CONF_NOTIFY_METHOD, [NOTIFY_METHOD_MOBILE]
+                            ),
+                        ): selector.SelectSelector(
+                            selector.SelectSelectorConfig(
+                                options=[
+                                    selector.SelectOptionDict(
+                                        value=NOTIFY_METHOD_SONOS,
+                                        label="Sprachausgabe (z. B. Sonos)",
+                                    ),
+                                    selector.SelectOptionDict(
+                                        value=NOTIFY_METHOD_MOBILE,
+                                        label="Home Assistant App (Push)",
+                                    ),
+                                ],
+                                multiple=True,
+                                mode=selector.SelectSelectorMode.LIST,
+                            )
+                        ),
+                    }
+                ),
+                {"collapsed": False},
             ),
         }
     )
@@ -238,7 +277,7 @@ class SmartVentilationConfigFlow(
     """Config Flow: pro Durchlauf wird ein neuer Raum eingerichtet.
 
     Ablauf:
-      1. user            - Grunddaten + Auswahl der Benachrichtigungsmethode(n)
+      1. user            - Sensoren + Parameter (inkl. Benachrichtigungsmethoden)
       2. notify_sonos     - nur falls "Sonos" ausgewählt wurde
       3. notify_mobile    - nur falls "App" ausgewählt wurde
       4. Eintrag wird angelegt
@@ -254,27 +293,29 @@ class SmartVentilationConfigFlow(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
         errors: dict[str, str] = {}
+        defaults: dict | None = None
 
         if user_input is not None:
-            methods = user_input.get(CONF_NOTIFY_METHOD) or []
+            defaults = _flatten_step_data(user_input)
+            methods = defaults.get(CONF_NOTIFY_METHOD) or []
 
             if not methods:
                 errors["base"] = "notify_method_required"
             else:
                 unique_id = (
-                    f"{user_input[CONF_ROOM_NAME]}_"
-                    f"{user_input[CONF_TEMP_SOURCE_ENTITY]}"
+                    f"{defaults[CONF_ROOM_NAME]}_"
+                    f"{defaults[CONF_TEMP_SOURCE_ENTITY]}"
                 )
                 await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured()
 
-                self._data = user_input
+                self._data = defaults
                 self._pending_notify_methods = list(methods)
                 return await self._async_step_next()
 
         return self.async_show_form(
             step_id="user",
-            data_schema=_build_user_schema(user_input),
+            data_schema=_build_user_schema(defaults),
             errors=errors,
         )
 
@@ -307,21 +348,23 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow, _NotifyFlowMixin):
     ) -> config_entries.FlowResult:
         errors: dict[str, str] = {}
         current = dict(self.config_entry.data)
+        defaults = current
 
         if user_input is not None:
-            methods = user_input.get(CONF_NOTIFY_METHOD) or []
+            defaults = _flatten_step_data(user_input)
+            methods = defaults.get(CONF_NOTIFY_METHOD) or []
 
             if not methods:
                 errors["base"] = "notify_method_required"
             else:
                 # Bestehende Werte behalten, neue Eingaben überschreiben sie
-                self._data = {**current, **user_input}
+                self._data = {**current, **defaults}
                 self._pending_notify_methods = list(methods)
                 return await self._async_step_next()
 
         return self.async_show_form(
             step_id="init",
-            data_schema=_build_user_schema(user_input or current),
+            data_schema=_build_user_schema(defaults),
             errors=errors,
         )
 
