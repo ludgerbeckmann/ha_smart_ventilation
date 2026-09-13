@@ -42,11 +42,24 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
 
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
 2. Nach "Smart Ventilation" suchen – es öffnet sich direkt das
-   Raum-Formular
+   Raum-Formular (ein einziger Schritt, keine Folgeseiten mehr)
 3. **Hauptformular** ausfüllen:
    - **Raumname** (ganz oben)
-   - **Benachrichtigungsmethoden**: Sprachausgabe und/oder Home Assistant
-     Companion App – beides kann gleichzeitig aktiviert werden
+   - **Abschnitt "Benachrichtigungsmethoden"**:
+     - **Sprachausgabe aktivieren** (Checkbox) – direkt darunter: **Lautsprecher**
+       (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl). Die
+       TTS-Entität selbst kommt ausschließlich aus "Smart Ventilation
+       Options" und ist hier nicht mehr auswählbar
+     - **Home Assistant Companion App aktivieren** (Checkbox) – direkt
+       darunter: eine Liste von **Notify-Zielen**. Pro Eintrag: eine
+       `notify.*`-Entität (Pflicht, falls die Checkbox aktiv ist) und
+       optional eine **Anwesenheits-Entität** (`person` oder
+       `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
+       genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
+       zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
+       ergänzen
+     - Mindestens eine der beiden Checkboxen muss aktiviert und vollständig
+       ausgefüllt sein
    - **Abschnitt "Sensoren"**:
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
@@ -74,21 +87,7 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        optionale Raum-Overrides der in "Smart Ventilation Options"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort
        hinterlegbar, nicht mehr pro Raum)
-4. **Folgeschritte** (erscheinen automatisch nur, wenn passend ausgewählt):
-   - Bei "Sprachausgabe": eigener Schritt für **einen oder mehrere** Lautsprecher
-     (`media_player`-Entitäten, z. B. Sonos) + optional eine **eigene**
-     TTS-Entität für diesen Raum (leer = TTS-Entität aus "Smart Ventilation
-     Options")
-   - Bei "Home Assistant Companion App": eigener Schritt mit einer Liste von
-     **Notify-Zielen**. Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
-     optional eine **Anwesenheits-Entität** (`person` oder `device_tracker`,
-     individuell pro Ziel). Ist bei einem Eintrag eine Anwesenheits-Entität
-     gesetzt, erhält genau dieses Ziel die Push-Nachricht nur, wenn die
-     Person/das Gerät zuhause ist - andere Ziele ohne Anwesenheits-Entität
-     erhalten sie weiterhin immer. So lässt sich z. B. konfigurieren: "an
-     Person A nur, wenn sie zuhause ist" und gleichzeitig "an Person B immer".
-     Über "Hinzufügen" lassen sich beliebig viele Ziele ergänzen.
-5. Für weitere Räume den Vorgang wiederholen (Integration erneut
+4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
 ### Allgemeine Einstellungen ("Smart Ventilation Options")
@@ -130,10 +129,9 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard
 
-Der **Name dieses Eintrags lässt sich hier bewusst nicht ändern** – dafür
-gibt es keinen praktischen Bedarf. Alle Zahlenfelder sind immer mit einem
-sinnvollen Standardwert vorausgefüllt – wird ein Feld komplett geleert,
-greift beim Speichern automatisch wieder dieser Standardwert.
+Alle Zahlenfelder sind immer mit einem sinnvollen Standardwert vorausgefüllt
+– wird ein Feld komplett geleert, greift beim Speichern automatisch wieder
+dieser Standardwert.
 
 > Home Assistant erlaubt es grundsätzlich, jeden Integrations-Eintrag über
 > die Oberfläche zu löschen – das lässt sich nicht unterbinden. Löschst du
@@ -170,10 +168,9 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
    ist dafür nicht nötig
 
 > Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
-> der Eingabe ein-/ausblenden. Deshalb ist die Reihenfolge so gelöst, dass
-> die passenden Zusatzfelder direkt im nächsten Schritt nach der
-> Methodenauswahl erscheinen – aber jeweils nur, wenn die zugehörige
-> Methode wirklich ausgewählt wurde.
+> der Eingabe ein-/ausblenden. Die Felder für Sprachausgabe bzw. App im
+> Abschnitt "Benachrichtigungsmethoden" sind deshalb immer sichtbar, werden
+> aber nur ausgewertet, wenn die jeweilige Checkbox aktiviert ist.
 >
 > Änderungen an den globalen Einstellungen wirken sich auf alle Räume ohne
 > eigenen Override aus - allerdings nicht sofort, sondern spätestens beim
