@@ -125,3 +125,11 @@ DEFAULT_MIN_SURPLUS_POWER = 0.0
 # geringer Einspeisung abgeschaltet wird. Verhindert Abschalten bei kurzen
 # Einspeise-Schwankungen (z. B. vorbeiziehende Wolke).
 DEFAULT_POWER_GRACE_PERIOD = 15
+
+# Priorität bei Konflikt zwischen Winter-Höchstdauer und noch bestehendem
+# Feuchtigkeits-Lüftungsbedarf. True (Standard) = Luftfeuchtigkeit hat
+# Vorrang (Winter-Höchstdauer wird bei Bedarf ignoriert). False = die
+# Winter-Höchstdauer wird strikt durchgesetzt, auch bei noch hoher
+# Luftfeuchtigkeit. Frostschutz hat davon unabhängig immer Vorrang.
+CONF_HUMIDITY_PRIORITY_OVER_DURATION = "humidity_priority_over_duration"
+DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION = True

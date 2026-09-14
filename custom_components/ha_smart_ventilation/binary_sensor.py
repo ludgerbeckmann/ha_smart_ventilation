@@ -24,6 +24,7 @@ from .const import (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HUMIDITY_ENTITY,
+    CONF_HUMIDITY_PRIORITY_OVER_DURATION,
     CONF_HUMIDITY_THRESHOLD_CLOSE,
     CONF_HUMIDITY_THRESHOLD_OPEN,
     CONF_MAX_OPEN_DURATION_WINTER,
@@ -51,6 +52,7 @@ from .const import (
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
     DEFAULT_MAX_OPEN_DURATION_WINTER,
@@ -230,6 +232,24 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         vapor_pressure = (rh_percent / 100) * saturation_vapor_pressure
         return 216.7 * vapor_pressure / (273.15 + temp_c)
 
+    def _window_action_needed(self, target_open: bool) -> bool:
+        """Prüft, ob eine Benachrichtigung überhaupt nötig ist, oder ob das
+        Fenster laut Fensterkontakt-Sensor bereits im gewünschten Zustand ist.
+
+        Ohne konfigurierten Fensterkontakt (oder bei unbekanntem/
+        unverfügbarem Zustand) wird sicherheitshalber immer benachrichtigt.
+        Erwartete Konvention: Zustand "on" = Fenster offen, "off" = zu
+        (Standard bei binary_sensor mit device_class window/door/opening).
+        """
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        if not window_entity:
+            return True
+        state = self.hass.states.get(window_entity)
+        if state is None or state.state not in ("on", "off"):
+            return True
+        is_open = state.state == "on"
+        return is_open != target_open
+
     def _get_float_state(self, entity_id: str | None) -> float | None:
         if not entity_id:
             return None
@@ -334,6 +354,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         )
 
         # --- Schließen: Winter-Höchstdauer ---
+        # Ob dabei ein noch bestehender Feuchtigkeits-Lüftungsbedarf Vorrang
+        # hat (Standard) oder die Höchstdauer strikt durchgesetzt wird, ist
+        # konfigurierbar (Raum-Override möglich, sonst globale Einstellung).
+        humidity_priority = self._effective(
+            CONF_HUMIDITY_PRIORITY_OVER_DURATION,
+            DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
+        )
         winter_conditions = outdoor_temp is not None and outdoor_temp <= winter_threshold
         open_duration_minutes = None
         if self._attr_is_on and self._open_since is not None:
@@ -345,13 +372,20 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             and winter_conditions
             and open_duration_minutes is not None
             and open_duration_minutes >= max_duration
+            and not (humidity_priority and open_by_humidity)
         )
 
         # --- Schließen: Frostschutz erzwingt sofortiges Schließen ---
         close_by_frost = self._attr_is_on and frost_block
 
+        # Reine Temperatur-Schließbedingung nicht anwenden, solange die
+        # Luftfeuchtigkeit noch Lüftungsbedarf anzeigt - sonst würde direkt
+        # im Anschluss wieder eine "bitte öffnen"-Empfehlung wegen der
+        # Feuchtigkeit folgen (Schließen-dann-sofort-wieder-Öffnen-Flackern).
+        close_by_temp = temp_needs_close and not open_by_humidity
+
         should_close = (
-            temp_needs_close
+            close_by_temp
             or humidity_needs_close
             or close_by_summer_outdoor
             or close_by_duration
@@ -372,7 +406,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                 reason = "duration"
             elif humidity_needs_close:
                 reason = "humidity"
-            elif temp_needs_close:
+            elif close_by_temp:
                 reason = "temp"
             elif close_by_summer_outdoor:
                 reason = "outdoor_warmer"
@@ -383,9 +417,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                 self._open_since = dt_util.utcnow()
             else:
                 self._open_since = None
-            self._last_notified_at = dt_util.utcnow()
             self.async_write_ha_state()
-            await self._notify(new_state, reason)
+            if self._window_action_needed(new_state):
+                self._last_notified_at = dt_util.utcnow()
+                await self._notify(new_state, reason)
+            else:
+                # Fensterkontakt zeigt bereits den gewünschten Zustand
+                # (offen/geschlossen) - keine Benachrichtigung nötig.
+                self._last_notified_at = None
             await self._update_devices(
                 temp_needs_open=temp_needs_open,
                 temp_needs_close=temp_needs_close,
@@ -404,13 +443,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         )
 
         # Kein Zustandswechsel - ggf. Erinnerung, falls die Empfehlung seit
-        # längerem aktiv ist und ignoriert wird.
+        # längerem aktiv ist und ignoriert wird. Zeigt der Fensterkontakt
+        # (falls konfiguriert) bereits den gewünschten Zustand, wird nicht
+        # erinnert - das Fenster wurde ja offensichtlich schon entsprechend
+        # bedient.
         if (
             self._attr_is_on
             and reminder_interval
             and reminder_interval > 0
-            and self._last_notified_at is not None
+            and self._window_action_needed(True)
         ):
+            if self._last_notified_at is None:
+                self._last_notified_at = dt_util.utcnow()
             elapsed = (dt_util.utcnow() - self._last_notified_at).total_seconds() / 60
             if elapsed >= reminder_interval:
                 self._last_notified_at = dt_util.utcnow()

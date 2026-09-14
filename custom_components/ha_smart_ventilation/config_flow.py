@@ -14,6 +14,7 @@ from .const import (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HUMIDITY_ENTITY,
+    CONF_HUMIDITY_PRIORITY_OVER_DURATION,
     CONF_HUMIDITY_THRESHOLD_CLOSE,
     CONF_HUMIDITY_THRESHOLD_OPEN,
     CONF_IS_GLOBAL,
@@ -45,6 +46,7 @@ from .const import (
     CONF_WINTER_OUTDOOR_THRESHOLD,
     COMMON_TEMP_ATTRIBUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
     DEFAULT_MAX_OPEN_DURATION_WINTER,
@@ -167,6 +169,31 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
     return marker, field_selector
 
 
+def _tri_state_bool_selector(
+    key: str, defaults: dict | None, yes_label: str, no_label: str
+) -> tuple[vol.Marker, object]:
+    """Für RAUM-Einstellungen: echte Ja/Nein/Leer-Auswahl (Dropdown) für
+    einen booleschen Override. Leer = die globale Einstellung gilt - anders
+    als ein normaler Ein/Aus-Schalter kann ein Dropdown auch 'nichts
+    ausgewählt' darstellen."""
+    defaults = defaults or {}
+    current = defaults.get(key)
+    kwargs = {}
+    if current is not None:
+        kwargs["default"] = "true" if current else "false"
+    marker = vol.Optional(key, **kwargs)
+    field_selector = selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[
+                selector.SelectOptionDict(value="true", label=yes_label),
+                selector.SelectOptionDict(value="false", label=no_label),
+            ],
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+    return marker, field_selector
+
+
 def _apply_threshold_defaults(data: dict) -> dict:
     """Füllt geleerte Schwellenwert-Felder mit ihrem Standardwert auf.
     Wird ausschließlich für die globalen Einstellungen verwendet - auf
@@ -185,6 +212,13 @@ def _flatten_step_data(data: dict) -> dict:
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
         flat.update(data.get(key) or {})
+
+    # Tri-State-Dropdown liefert "true"/"false" als String - in echtes bool
+    # umwandeln (fehlt der Schlüssel, bleibt er unberührt = "global nutzen")
+    priority_value = flat.get(CONF_HUMIDITY_PRIORITY_OVER_DURATION)
+    if priority_value in ("true", "false"):
+        flat[CONF_HUMIDITY_PRIORITY_OVER_DURATION] = priority_value == "true"
+
     return flat
 
 
@@ -222,6 +256,12 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     reminder_marker, reminder_sel = _override_selector(CONF_REMINDER_INTERVAL, defaults)
     power_marker, power_sel = _override_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _override_selector(CONF_POWER_GRACE_PERIOD, defaults)
+    priority_marker, priority_sel = _tri_state_bool_selector(
+        CONF_HUMIDITY_PRIORITY_OVER_DURATION,
+        defaults,
+        yes_label="Ja – Luftfeuchtigkeit hat Vorrang",
+        no_label="Nein – Winter-Höchstdauer hat Vorrang",
+    )
 
     # Abwärtskompatibilität: ältere Einträge kennen die Checkboxen noch
     # nicht, sondern nur die frühere CONF_NOTIFY_METHOD-Liste - daraus den
@@ -330,6 +370,7 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 frost_marker: frost_sel,
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
+                priority_marker: priority_sel,
                 reminder_marker: reminder_sel,
             }
         ),
@@ -381,6 +422,16 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     for key in _CORE_PARAMETER_KEYS:
         marker, sel = _threshold_selector(key, defaults)
         parameter_fields[marker] = sel
+
+    parameter_fields[
+        vol.Required(
+            CONF_HUMIDITY_PRIORITY_OVER_DURATION,
+            default=defaults.get(
+                CONF_HUMIDITY_PRIORITY_OVER_DURATION,
+                DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
+            ),
+        )
+    ] = selector.BooleanSelector()
 
     return vol.Schema(
         {
