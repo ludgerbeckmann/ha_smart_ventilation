@@ -32,6 +32,7 @@ CONF_TTS_ENTITY = "tts_entity"
 # methoden") - ersetzen die frühere Mehrfachauswahl als eigenständiges Feld.
 CONF_SONOS_ENABLED = "sonos_enabled"
 CONF_MOBILE_ENABLED = "mobile_enabled"
+CONF_PERSISTENT_ENABLED = "persistent_enabled"
 CONF_MOBILE_NOTIFY_ENTITY = "mobile_notify_entity"
 CONF_PRESENCE_ENTITY = "presence_entity"
 # Liste von {mobile_notify_entity, presence_entity}-Paaren - ersetzt die
@@ -64,6 +65,7 @@ CONF_POWER_GRACE_PERIOD = "power_grace_period_minutes"
 
 NOTIFY_METHOD_SONOS = "sonos"
 NOTIFY_METHOD_MOBILE = "mobile_app"
+NOTIFY_METHOD_PERSISTENT = "persistent"
 
 # Entitäten, die als Innentemperatur-Quelle ausgewählt werden können.
 # "climate" nutzt ein Attribut (siehe CONF_TEMP_ATTRIBUTE), alle anderen

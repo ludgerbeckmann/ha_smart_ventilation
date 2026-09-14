@@ -69,6 +69,7 @@ from .const import (
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     NOTIFY_METHOD_MOBILE,
+    NOTIFY_METHOD_PERSISTENT,
     NOTIFY_METHOD_SONOS,
     TTS_PLAYBACK_MODE_PAUSE,
 )
@@ -122,6 +123,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
 
         self._open_since = None
         self._last_notified_at = None
+        self._last_reason: str | None = None
         self._unsub_tick = None
 
         # Zuletzt kommandierter Soll-Zustand der optionalen Geräte.
@@ -136,14 +138,44 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
+        indoor_temp = self._get_indoor_temperature()
+        humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
+        outdoor_temp = self._get_float_state(self._effective(CONF_OUTDOOR_TEMP_ENTITY, None))
+        outdoor_humidity = self._get_float_state(
+            self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
+        )
+
         attrs = {
             "raum": self._config[CONF_ROOM_NAME],
             "temperatur_quelle": self._config[CONF_TEMP_SOURCE_ENTITY],
+            "innentemperatur": indoor_temp,
+            "schwelle_temperatur_oeffnen": self._effective(
+                CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN
+            ),
+            "schwelle_temperatur_schliessen": self._effective(
+                CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE
+            ),
         }
+        if outdoor_temp is not None:
+            attrs["aussentemperatur"] = outdoor_temp
+        if self._config.get(CONF_HUMIDITY_ENTITY):
+            attrs["luftfeuchtigkeit"] = humidity
+            attrs["schwelle_feuchtigkeit_oeffnen"] = self._effective(
+                CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
+            )
+            attrs["schwelle_feuchtigkeit_schliessen"] = self._effective(
+                CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
+            )
+        if outdoor_humidity is not None:
+            attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
         if self._config.get(CONF_TEMP_ATTRIBUTE):
             attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
         if self._open_since is not None:
             attrs["empfehlung_aktiv_seit"] = self._open_since.isoformat()
+        if self._last_notified_at is not None:
+            attrs["letzte_benachrichtigung"] = self._last_notified_at.isoformat()
+        if self._last_reason is not None:
+            attrs["letzter_grund"] = self._last_reason
         if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
             attrs["luftentfeuchter_an"] = bool(self._dehumidifier_state)
         if self._config.get(CONF_AC_ENTITY):
@@ -413,6 +445,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
 
         if new_state != self._attr_is_on:
             self._attr_is_on = new_state
+            self._last_reason = reason
             if new_state:
                 self._open_since = dt_util.utcnow()
             else:
@@ -745,11 +778,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         )
 
     async def _notify(self, should_ventilate: bool, reason: str | None) -> None:
-        """Verschickt die Benachrichtigung per Sprachausgabe und/oder App-Push.
+        """Verschickt die Benachrichtigung per Sprachausgabe, App-Push
+        und/oder persistenter Web-Benachrichtigung.
 
-        Beide Methoden können gleichzeitig konfiguriert sein, und jede
-        Methode kann mehrere Ziel-Entitäten haben (mehrere Lautsprecher bzw.
-        mehrere notify.*-Entitäten) - in dem Fall werden alle bedient.
+        Alle Methoden können gleichzeitig konfiguriert sein, und jede
+        Methode (außer der Web-Benachrichtigung) kann mehrere Ziel-
+        Entitäten haben (mehrere Lautsprecher bzw. mehrere
+        notify.*-Entitäten) - in dem Fall werden alle bedient.
         """
         room = self._config[CONF_ROOM_NAME]
         message = self._build_message(should_ventilate, reason)
@@ -797,3 +832,29 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                             entity_id,
                             room,
                         )
+
+        if NOTIFY_METHOD_PERSISTENT in methods:
+            notification_id = f"smart_ventilation_{self._entry.entry_id}"
+            if should_ventilate:
+                # Erstellt die Benachrichtigung oder aktualisiert eine
+                # bereits vorhandene mit derselben notification_id (z. B.
+                # bei einer Erinnerung) - keine Duplikate im Verlauf.
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "create",
+                    {
+                        "notification_id": notification_id,
+                        "title": "Lüften",
+                        "message": message,
+                    },
+                    blocking=False,
+                )
+            else:
+                # Löst die Benachrichtigung automatisch auf, sobald sich
+                # die Empfehlung erledigt hat.
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "dismiss",
+                    {"notification_id": notification_id},
+                    blocking=False,
+                )

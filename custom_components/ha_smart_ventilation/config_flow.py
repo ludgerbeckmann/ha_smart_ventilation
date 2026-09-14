@@ -26,6 +26,7 @@ from .const import (
     CONF_NOTIFY_METHOD,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
+    CONF_PERSISTENT_ENABLED,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE_PERIOD,
     CONF_PRESENCE_ENTITY,
@@ -64,6 +65,7 @@ from .const import (
     DOMAIN,
     GLOBAL_SETTINGS_UNIQUE_ID,
     NOTIFY_METHOD_MOBILE,
+    NOTIFY_METHOD_PERSISTENT,
     NOTIFY_METHOD_SONOS,
     PRESENCE_DOMAINS,
     SHUTTER_DOMAINS,
@@ -273,6 +275,9 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     mobile_enabled_default = defaults.get(
         CONF_MOBILE_ENABLED, NOTIFY_METHOD_MOBILE in stored_methods
     )
+    persistent_enabled_default = defaults.get(
+        CONF_PERSISTENT_ENABLED, NOTIFY_METHOD_PERSISTENT in stored_methods
+    )
 
     fields: dict = {
         vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")): str,
@@ -319,6 +324,9 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                         },
                     )
                 ),
+                vol.Optional(
+                    CONF_PERSISTENT_ENABLED, default=persistent_enabled_default
+                ): selector.BooleanSelector(),
             }
         ),
         {"collapsed": False},
@@ -511,6 +519,9 @@ def _validate_room_submission(defaults: dict) -> str | None:
             return "mobile_config_missing"
         defaults[CONF_MOBILE_TARGETS] = valid_targets
         methods.append(NOTIFY_METHOD_MOBILE)
+
+    if defaults.get(CONF_PERSISTENT_ENABLED):
+        methods.append(NOTIFY_METHOD_PERSISTENT)
 
     if not methods:
         return "notify_method_required"
