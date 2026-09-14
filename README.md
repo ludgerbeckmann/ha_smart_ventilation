@@ -58,8 +58,13 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
        zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
        ergänzen
-     - Mindestens eine der beiden Checkboxen muss aktiviert und vollständig
-       ausgefüllt sein
+     - **Persistente Benachrichtigung (Weboberfläche)** (Checkbox) – keine
+       weiteren Felder nötig. Erstellt eine dauerhafte Benachrichtigung im
+       Home-Assistant-Benachrichtigungsbereich (Glocken-Symbol), solange die
+       Empfehlung aktiv ist, und löst sich automatisch wieder auf, sobald
+       sie sich erledigt hat
+     - Mindestens eine der drei Checkboxen muss aktiviert (und, falls nötig,
+       vollständig ausgefüllt) sein
    - **Abschnitt "Sensoren"**:
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
@@ -325,6 +330,63 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
   einschaltet, und wieder deaktiviert, sobald sie ausschaltet. Unterstützt
   sowohl `cover`-Entitäten (auf/zu) als auch `switch`-Entitäten (an =
   herunterfahren + gesperrt, aus = hochfahren + entsperrt).
+
+## Attribute für eine Statusübersicht
+
+Jede `binary_sensor.lueften_empfohlen_<raum>`-Entität liefert zusätzlich zum
+reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
+→ Zustände, oder nutzbar in eigenen Dashboards/Templates):
+
+| Attribut | Bedeutung |
+|---|---|
+| `raum` | Raumname |
+| `innentemperatur` | aktueller Messwert |
+| `aussentemperatur` | aktueller Messwert (aus "Smart Ventilation Optionen") |
+| `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
+| `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
+| `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
+| `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
+| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `frost`, `duration`, `outdoor_warmer`) |
+| `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
+| `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
+
+Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
+wann der aktuelle Öffnen/Schließen-Status gilt.
+
+### Beispiel-Dashboard-Karte (Statusübersicht aller Räume)
+
+Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
+mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
+ohne zusätzliche Custom Cards:
+
+```yaml
+type: markdown
+title: Lüftungsübersicht
+content: >
+  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit',
+     'frost': 'Frostschutz', 'duration': 'Winter-Höchstdauer',
+     'outdoor_warmer': 'Außen wärmer'} %}
+  {% for s in states.binary_sensor
+     | selectattr('attributes.raum', 'defined')
+     | sort(attribute='attributes.raum') %}
+  ### {{ '🟢 Öffnen' if s.state == 'on' else '⚪ Zu' }} — {{ s.attributes.raum }}
+
+  | | Wert | Öffnen ab | Schließen ab |
+  |---|---|---|---|
+  | 🌡️ Temperatur | {{ s.attributes.innentemperatur | round(1) if s.attributes.innentemperatur is not none else '–' }} °C | {{ s.attributes.schwelle_temperatur_oeffnen }} °C | {{ s.attributes.schwelle_temperatur_schliessen }} °C |
+  {%- if s.attributes.luftfeuchtigkeit is defined %}
+  | 💧 Feuchte | {{ s.attributes.luftfeuchtigkeit | round(0) if s.attributes.luftfeuchtigkeit is not none else '–' }} % | {{ s.attributes.schwelle_feuchtigkeit_oeffnen }} % | {{ s.attributes.schwelle_feuchtigkeit_schliessen }} % |
+  {%- endif %}
+
+  Zuletzt geändert: {{ relative_time(s.last_changed) }}{% if s.attributes.letzter_grund %} ({{ grund_text.get(s.attributes.letzter_grund, s.attributes.letzter_grund) }}){% endif %}
+
+  ---
+  {% endfor %}
+```
+
+Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
+YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
+über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
 
 ## Hinweise
 
