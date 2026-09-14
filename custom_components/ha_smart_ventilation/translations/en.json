@@ -15,10 +15,12 @@
               "sonos_enabled": "Voice announcement (e.g. Sonos)",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App (push)",
-              "mobile_targets": "Notification targets"
+              "mobile_targets": "Notification targets",
+              "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
-              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
+              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
+              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved"
             }
           },
           "sensors": {
@@ -109,10 +111,12 @@
               "sonos_enabled": "Voice announcement (e.g. Sonos)",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App (push)",
-              "mobile_targets": "Notification targets"
+              "mobile_targets": "Notification targets",
+              "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
-              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
+              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
+              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved"
             }
           },
           "sensors": {

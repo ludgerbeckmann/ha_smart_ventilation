@@ -15,10 +15,12 @@
               "sonos_enabled": "Sprachausgabe (z. B. Sonos)",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App (Push)",
-              "mobile_targets": "Benachrichtigungsziele"
+              "mobile_targets": "Benachrichtigungsziele",
+              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
-              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
+              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
+              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat"
             }
           },
           "sensors": {
@@ -109,10 +111,12 @@
               "sonos_enabled": "Sprachausgabe (z. B. Sonos)",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App (Push)",
-              "mobile_targets": "Benachrichtigungsziele"
+              "mobile_targets": "Benachrichtigungsziele",
+              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
-              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
+              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
+              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat"
             }
           },
           "sensors": {
