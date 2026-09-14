@@ -12,13 +12,12 @@
             "name": "Notification methods",
             "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
             "data": {
-              "sonos_enabled": "Enable voice announcement (e.g. Sonos)",
+              "sonos_enabled": "Voice announcement (e.g. Sonos)",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
-              "mobile_enabled": "Enable Home Assistant Companion App (push)",
-              "mobile_targets": "Notify targets"
+              "mobile_enabled": "Home Assistant Companion App (push)",
+              "mobile_targets": "Notification targets"
             },
             "data_description": {
-              "sonos_entity": "Only relevant if 'Enable voice announcement' above is checked",
               "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
             }
           },
@@ -105,13 +104,12 @@
             "name": "Notification methods",
             "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
             "data": {
-              "sonos_enabled": "Enable voice announcement (e.g. Sonos)",
+              "sonos_enabled": "Voice announcement (e.g. Sonos)",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
-              "mobile_enabled": "Enable Home Assistant Companion App (push)",
-              "mobile_targets": "Notify targets"
+              "mobile_enabled": "Home Assistant Companion App (push)",
+              "mobile_targets": "Notification targets"
             },
             "data_description": {
-              "sonos_entity": "Only relevant if 'Enable voice announcement' above is checked",
               "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent."
             }
           },

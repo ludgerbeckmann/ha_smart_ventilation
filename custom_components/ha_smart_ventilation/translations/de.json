@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Smart Ventilation – Raum hinzufügen",
-        "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"Smart Ventilation Options\" (Konfigurieren).",
+        "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"- Smart Ventilation Optionen -\" (Konfigurieren).",
         "data": {
           "room_name": "Raumname"
         },
@@ -12,13 +12,12 @@
             "name": "Benachrichtigungsmethoden",
             "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
             "data": {
-              "sonos_enabled": "Sprachausgabe aktivieren (z. B. Sonos)",
+              "sonos_enabled": "Sprachausgabe (z. B. Sonos)",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-              "mobile_enabled": "Home Assistant Companion App aktivieren (Push)",
-              "mobile_targets": "Notify-Ziele"
+              "mobile_enabled": "Home Assistant Companion App (Push)",
+              "mobile_targets": "Benachrichtigungsziele"
             },
             "data_description": {
-              "sonos_entity": "Nur relevant, wenn 'Sprachausgabe aktivieren' oben angehakt ist",
               "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
             }
           },
@@ -26,7 +25,7 @@
             "name": "Sensoren",
             "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
             "data": {
-              "temperature_source_entity": "Innentemperatur",
+              "temperature_source_entity": "Temperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
               "window_entity": "Fensterkontakt (optional)"
@@ -38,7 +37,7 @@
           },
           "parameters": {
             "name": "Parameter",
-            "description": "Optional - überschreibt für diesen Raum die allgemeinen Einstellungen. Leer gelassen gilt der dort hinterlegte Wert (Einstellungen → Geräte & Dienste → Smart Ventilation Options → Konfigurieren).",
+            "description": "Optional - überschreibt für diesen Raum die allgemeinen Einstellungen. Leer gelassen gilt der dort hinterlegte Wert (Einstellungen → Geräte & Dienste → - Smart Ventilation Optionen - → Konfigurieren).",
             "data": {
               "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
               "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
@@ -105,13 +104,12 @@
             "name": "Benachrichtigungsmethoden",
             "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
             "data": {
-              "sonos_enabled": "Sprachausgabe aktivieren (z. B. Sonos)",
+              "sonos_enabled": "Sprachausgabe (z. B. Sonos)",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-              "mobile_enabled": "Home Assistant Companion App aktivieren (Push)",
-              "mobile_targets": "Notify-Ziele"
+              "mobile_enabled": "Home Assistant Companion App (Push)",
+              "mobile_targets": "Benachrichtigungsziele"
             },
             "data_description": {
-              "sonos_entity": "Nur relevant, wenn 'Sprachausgabe aktivieren' oben angehakt ist",
               "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet."
             }
           },
@@ -119,7 +117,7 @@
             "name": "Sensoren",
             "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
             "data": {
-              "temperature_source_entity": "Innentemperatur",
+              "temperature_source_entity": "Temperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
               "window_entity": "Fensterkontakt (optional)"
@@ -131,7 +129,7 @@
           },
           "parameters": {
             "name": "Parameter",
-            "description": "Optional - überschreibt für diesen Raum die allgemeinen Einstellungen. Leer gelassen gilt der dort hinterlegte Wert (Einstellungen → Geräte & Dienste → Smart Ventilation Options → Konfigurieren).",
+            "description": "Optional - überschreibt für diesen Raum die allgemeinen Einstellungen. Leer gelassen gilt der dort hinterlegte Wert (Einstellungen → Geräte & Dienste → - Smart Ventilation Optionen - → Konfigurieren).",
             "data": {
               "temp_threshold_open": "Temperatur-Schwelle zum Öffnen",
               "temp_threshold_close": "Temperatur-Schwelle zum Schließen",
@@ -176,14 +174,14 @@
         }
       },
       "global": {
-        "title": "Smart Ventilation Options bearbeiten",
+        "title": "- Smart Ventilation Optionen - bearbeiten",
         "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben.",
         "sections": {
           "sensors": {
             "name": "Sensoren",
             "description": "Sensoren und Wiedergabe-Einstellungen als raumweiter Standard.",
             "data": {
-              "outdoor_temp_entity": "Außentemperatur",
+              "outdoor_temp_entity": "Außen-Temperatur",
               "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
               "tts_entity": "TTS-Entität",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
