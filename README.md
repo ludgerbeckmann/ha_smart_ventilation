@@ -46,12 +46,12 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
 3. **Hauptformular** ausfüllen:
    - **Raumname** (ganz oben)
    - **Abschnitt "Benachrichtigungsmethoden"**:
-     - **Sprachausgabe aktivieren** (Checkbox) – direkt darunter: **Lautsprecher**
+     - **Sprachausgabe** (Checkbox) – direkt darunter: **Lautsprecher**
        (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl). Die
        TTS-Entität selbst kommt ausschließlich aus "Smart Ventilation
        Options" und ist hier nicht mehr auswählbar
-     - **Home Assistant Companion App aktivieren** (Checkbox) – direkt
-       darunter: eine Liste von **Notify-Zielen**. Pro Eintrag: eine
+     - **Home Assistant Companion App** (Checkbox) – direkt
+       darunter: eine Liste von **Benachrichtigungszielen**. Pro Eintrag: eine
        `notify.*`-Entität (Pflicht, falls die Checkbox aktiv ist) und
        optional eine **Anwesenheits-Entität** (`person` oder
        `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
@@ -84,21 +84,21 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
        "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
-       optionale Raum-Overrides der in "Smart Ventilation Options"
+       optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort
        hinterlegbar, nicht mehr pro Raum)
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
-### Allgemeine Einstellungen ("Smart Ventilation Options")
+### Allgemeine Einstellungen ("- Smart Ventilation Optionen -")
 
 Direkt beim ersten Start der Integration wird **automatisch**, ganz ohne
-Zutun, ein zusätzlicher Eintrag namens **"Smart Ventilation Options"**
+Zutun, ein zusätzlicher Eintrag namens **"- Smart Ventilation Optionen -"**
 angelegt – er taucht unter **Einstellungen → Geräte & Dienste** neben
 deinen Räumen auf. Dieser Eintrag erzeugt keine eigene Entität und keinen
 eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 
-**Bearbeiten:** Beim Eintrag "Smart Ventilation Options" auf
+**Bearbeiten:** Beim Eintrag "- Smart Ventilation Optionen -" auf
 **Konfigurieren** (Zahnrad-Symbol) klicken. Zwei Abschnitte:
 
 **Abschnitt "Sensoren"**:
@@ -135,27 +135,27 @@ dieser Standardwert.
 
 > Home Assistant erlaubt es grundsätzlich, jeden Integrations-Eintrag über
 > die Oberfläche zu löschen – das lässt sich nicht unterbinden. Löschst du
-> "Smart Ventilation Options" trotzdem, wird er **automatisch sofort wieder
+> "- Smart Ventilation Optionen -" trotzdem, wird er **automatisch sofort wieder
 > neu angelegt** (mit den Standardwerten) – er soll ja immer vorhanden
 > sein. Willst du ihn stattdessen dauerhaft loswerden, müsstest du die
 > gesamte Integration deinstallieren oder den Eintrag manuell deaktivieren
 > statt zu löschen.
 
 **Zur Sortierung in der Integrationsliste:** Es gibt keinen zuverlässigen
-Trick, um "Smart Ventilation Options" in der Liste an eine bestimmte
+Trick, um "- Smart Ventilation Optionen -" in der Liste an eine bestimmte
 Stelle zu bringen. Ein früherer Versuch mit einer führenden Ziffer im
 Namen hat sich als wirkungslos erwiesen – die Reihenfolge mehrerer
 Einträge einer Integration richtet sich in Home Assistant offenbar nicht
 zuverlässig nach dem Namen (mehrfach von Nutzern als "wirkt zufällig"
 gemeldet), sondern vermutlich eher nach der Reihenfolge, in der die
-Einträge angelegt wurden. Da "Smart Ventilation Options" meist erst nach
+Einträge angelegt wurden. Da "- Smart Ventilation Optionen -" meist erst nach
 bereits bestehenden Räumen automatisch erzeugt wird, taucht er entsprechend
 oft weiter unten auf. Eine nachträgliche Änderung ist darüber nicht
 zuverlässig erreichbar.
 
 ## Bestehenden Eintrag bearbeiten
 
-Ein bereits eingerichteter Raum – oder "Smart Ventilation Options" – lässt
+Ein bereits eingerichteter Raum – oder "- Smart Ventilation Optionen -" – lässt
 sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 1. **Einstellungen → Geräte & Dienste → Smart Ventilation** (bzw. der von
@@ -276,7 +276,7 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
 
 - Die Integration reagiert direkt auf Zustandsänderungen (kein Polling),
   daher sehr geringe Systemlast. **Ausnahme:** Die Außentemperatur kommt
-  ausschließlich aus "Smart Ventilation Options" und wird beim Start jedes
+  ausschließlich aus "- Smart Ventilation Optionen -" und wird beim Start jedes
   Raums direkt mitverfolgt – ändert sich aber die dort hinterlegte
   Sensor-**Auswahl** selbst (nicht nur ihr Messwert), wirkt sich das erst
   beim nächsten 5-Minuten-Tick des Raums aus. Dasselbe gilt für den
