@@ -30,11 +30,13 @@
               "temperature_source_entity": "Temperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
-              "window_entity": "Fensterkontakt (optional)"
+              "window_entity": "Fensterkontakt (optional)",
+              "no_window": "Dieser Raum hat kein Fenster"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
-              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde"
+              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
+              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
           },
           "parameters": {
@@ -126,11 +128,13 @@
               "temperature_source_entity": "Temperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
-              "window_entity": "Fensterkontakt (optional)"
+              "window_entity": "Fensterkontakt (optional)",
+              "no_window": "Dieser Raum hat kein Fenster"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
-              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde"
+              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
+              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
           },
           "parameters": {

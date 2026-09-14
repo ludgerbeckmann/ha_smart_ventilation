@@ -30,11 +30,13 @@
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Humidity (optional)",
-              "window_entity": "Window contact sensor (optional)"
+              "window_entity": "Window contact sensor (optional)",
+              "no_window": "This room has no window"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
-              "temperature_attribute": "Only relevant if a climate entity was selected above"
+              "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
             }
           },
           "parameters": {
@@ -126,11 +128,13 @@
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Humidity (optional)",
-              "window_entity": "Window contact sensor (optional)"
+              "window_entity": "Window contact sensor (optional)",
+              "no_window": "This room has no window"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
-              "temperature_attribute": "Only relevant if a climate entity was selected above"
+              "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
             }
           },
           "parameters": {

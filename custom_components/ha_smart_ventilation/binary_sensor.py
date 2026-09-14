@@ -23,6 +23,7 @@ from .const import (
     CONF_AC_ENTITY,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
     CONF_HUMIDITY_PRIORITY_OVER_DURATION,
     CONF_HUMIDITY_THRESHOLD_CLOSE,
@@ -156,6 +157,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                 CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE
             ),
         }
+        if self._config.get(CONF_NO_WINDOW, False):
+            # Nur gesetzt, wenn "kein Fenster" - Standardfall (Fenster
+            # vorhanden) fügt bewusst nichts hinzu, um bestehende Dashboards
+            # nicht zu verändern.
+            attrs["hat_fenster"] = False
         if outdoor_temp is not None:
             attrs["aussentemperatur"] = outdoor_temp
         if self._config.get(CONF_HUMIDITY_ENTITY):
@@ -338,6 +344,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         reminder_interval = self._effective(
             CONF_REMINDER_INTERVAL, DEFAULT_REMINDER_INTERVAL
         )
+        has_window = not self._config.get(CONF_NO_WINDOW, False)
 
         # --- Grundbedingungen ---
         humidity_needs_open = humidity is not None and humidity >= hum_open
@@ -373,6 +380,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             outdoor_drier_enough = outdoor_abs_humidity < indoor_abs_humidity
         open_by_temp = temp_needs_open and outdoor_cooler_enough
         open_by_humidity = humidity_needs_open and outdoor_drier_enough
+
+        # Ohne Fenster in diesem Raum gibt es grundsätzlich nichts zu öffnen
+        # oder zu schließen - die Empfehlungs-/Benachrichtigungslogik entfällt
+        # komplett. Die oben berechneten temp_needs_*/humidity_needs_*-Flags
+        # bleiben aber unverändert für die Geräte-Steuerung (Luftentfeuchter/
+        # Klimaanlage) nutzbar, die weiter unten unabhängig davon läuft.
+        if not has_window:
+            if self._attr_is_on:
+                self._attr_is_on = False
+                self._open_since = None
+                self._last_reason = None
+                self._last_notified_at = None
+                self.async_write_ha_state()
+            await self._update_devices(
+                temp_needs_open=temp_needs_open,
+                temp_needs_close=temp_needs_close,
+                humidity_needs_open=humidity_needs_open,
+                humidity_needs_close=humidity_needs_close,
+                outdoor_cooler_enough=outdoor_cooler_enough,
+            )
+            return
+
         should_open = (open_by_temp or open_by_humidity) and not frost_block
 
         # --- Schließen: Sommer-Fall (draußen wieder spürbar wärmer) ---

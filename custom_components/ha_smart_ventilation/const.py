@@ -15,6 +15,12 @@ GLOBAL_ENTRY_ID_KEY = "_global_entry_id"
 CONF_ROOM_NAME = "room_name"
 CONF_TEMP_SOURCE_ENTITY = "temperature_source_entity"
 CONF_TEMP_ATTRIBUTE = "temperature_attribute"
+# Standard False (bestehende Räume verhalten sich unverändert - sie haben
+# ein Fenster). True = dieser Raum hat KEIN Fenster - es werden nie
+# Öffnen-/Schließen-Benachrichtigungen erzeugt, die Geräte-Steuerung
+# (Luftentfeuchter/Klimaanlage) läuft trotzdem normal anhand der
+# Sensorwerte weiter.
+CONF_NO_WINDOW = "no_window"
 CONF_HUMIDITY_ENTITY = "humidity_entity"
 CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
 # Nur in den globalen Einstellungen ("Smart Ventilation Options") verfügbar,

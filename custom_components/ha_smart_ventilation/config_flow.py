@@ -13,6 +13,7 @@ from .const import (
     CONF_AC_ENTITY,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
     CONF_HUMIDITY_PRIORITY_OVER_DURATION,
     CONF_HUMIDITY_THRESHOLD_CLOSE,
@@ -335,6 +336,9 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
             {
+                vol.Optional(
+                    CONF_NO_WINDOW, default=defaults.get(CONF_NO_WINDOW, False)
+                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_TEMP_SOURCE_ENTITY, defaults
                 ): selector.EntitySelector(
@@ -523,7 +527,9 @@ def _validate_room_submission(defaults: dict) -> str | None:
     if defaults.get(CONF_PERSISTENT_ENABLED):
         methods.append(NOTIFY_METHOD_PERSISTENT)
 
-    if not methods:
+    # Ohne Fenster werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt -
+    # dann ist keine Benachrichtigungsmethode zwingend erforderlich.
+    if not methods and not defaults.get(CONF_NO_WINDOW, False):
         return "notify_method_required"
 
     defaults[CONF_NOTIFY_METHOD] = methods

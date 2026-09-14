@@ -66,6 +66,13 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      - Mindestens eine der drei Checkboxen muss aktiviert (und, falls nötig,
        vollständig ausgefüllt) sein
    - **Abschnitt "Sensoren"**:
+     - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
+       werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
+       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter
+       oder Klimaanlage anhand der Sensorwerte gesteuert werden sollen (siehe
+       Abschnitt "Geräte" weiter unten). Die Geräte-Steuerung läuft davon
+       unabhängig weiter, unabhängig vom Fenster-Status. Bei "an" ist auch
+       keine Benachrichtigungsmethode mehr zwingend erforderlich
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
      - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
@@ -75,7 +82,8 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
      - Optional: Luftfeuchtigkeit, **Fensterkontakt** (unterdrückt
        Benachrichtigungen, sobald das Fenster laut Sensor bereits im
-       empfohlenen Zustand ist - siehe eigener Abschnitt unten)
+       empfohlenen Zustand ist - siehe eigener Abschnitt unten; nur relevant,
+       wenn "Dieser Raum hat kein Fenster" deaktiviert ist)
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert):
@@ -349,6 +357,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `frost`, `duration`, `outdoor_warmer`) |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
+| `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
 wann der aktuelle Öffnen/Schließen-Status gilt.
@@ -378,7 +387,7 @@ content: >
   | 💧 Feuchte | {{ s.attributes.luftfeuchtigkeit | round(0) if s.attributes.luftfeuchtigkeit is not none else '–' }} % | {{ s.attributes.schwelle_feuchtigkeit_oeffnen }} % | {{ s.attributes.schwelle_feuchtigkeit_schliessen }} % |
   {%- endif %}
 
-  Zuletzt geändert: {{ relative_time(s.last_changed) }}{% if s.attributes.letzter_grund %} ({{ grund_text.get(s.attributes.letzter_grund, s.attributes.letzter_grund) }}){% endif %}
+  Zuletzt geändert: {{ relative_time(s.last_changed) }}{% if s.attributes.letzter_grund is defined %} ({{ grund_text.get(s.attributes.letzter_grund, s.attributes.letzter_grund) }}){% endif %}
 
   ---
   {% endfor %}
@@ -419,3 +428,22 @@ YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
   sie informiert nur. Falls du motorisierte Fenster hast, kannst du den
   `binary_sensor` als Trigger in einer eigenen Automation verwenden, um
   `cover.open_cover` / `cover.close_cover` aufzurufen.
+
+## Releases automatisch erstellen (nur für Entwicklung/Maintenance)
+
+Zwei GitHub-Actions-Dateien im `.github`-Ordner automatisieren das
+Release-Management dieses Repositories:
+
+- **`.github/release.yml`**: Kategorisiert die Release Notes anhand von
+  PR-Labels (🚀 Neue Funktionen, 🐛 Fehlerbehebungen, 📚 Dokumentation,
+  🧹 Sonstiges).
+- **`.github/workflows/auto-release.yml`**: Erstellt bei jeder Änderung an
+  der Versionsnummer in `custom_components/ha_smart_ventilation/manifest.json`
+  auf dem `main`-Branch automatisch einen passenden Git-Tag (`vX.Y.Z`) und
+  ein GitHub-Release mit automatisch generierten Notes - nutzt dabei die
+  Kategorisierung aus `release.yml`. Existiert der Tag bereits, passiert
+  nichts (kein doppeltes Release).
+
+Der Ablauf bei einer neuen Version ist damit: Code ändern → Version in
+`manifest.json` hochzählen → auf `main` pushen. Tag und Release entstehen
+automatisch, ohne manuellen Schritt auf GitHub.
