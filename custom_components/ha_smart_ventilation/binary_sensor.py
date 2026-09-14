@@ -177,6 +177,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
         if self._config.get(CONF_TEMP_ATTRIBUTE):
             attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
+        if self._config.get(CONF_WINDOW_ENTITY):
+            attrs["fensterkontakt_entity"] = self._config[CONF_WINDOW_ENTITY]
         if self._open_since is not None:
             attrs["empfehlung_aktiv_seit"] = self._open_since.isoformat()
         if self._last_notified_at is not None:

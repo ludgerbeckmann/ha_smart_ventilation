@@ -359,6 +359,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
+| `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
 wann der aktuelle Öffnen/Schließen-Status gilt.
@@ -373,33 +374,84 @@ ohne zusätzliche Custom Cards:
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit',
-     'frost': 'Frostschutz', 'duration': 'Winter-Höchstdauer',
-     'outdoor_warmer': 'Außen wärmer'} %}
-  {% for s in states.binary_sensor
-     | selectattr('attributes.raum', 'defined')
-     | sort(attribute='attributes.raum') %}
-  {% set humidity_line = ('\n| 💧 Feuchte | ' ~ (s.attributes.luftfeuchtigkeit | round(0) | string if s.attributes.luftfeuchtigkeit is not none else '–') ~ ' % | ' ~ (s.attributes.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | ' ~ (s.attributes.schwelle_feuchtigkeit_schliessen | string) ~ ' % |') if s.attributes.luftfeuchtigkeit is defined else '' %}
-  {% set dehum_text = ('💨 Luftentfeuchter ' ~ ('🟢 an' if s.attributes.luftentfeuchter_an else '⚪ aus')) if s.attributes.luftentfeuchter_an is defined else '' %}
-  {% set ac_text = ('❄️ Klimaanlage ' ~ ('🟢 an' if s.attributes.klimaanlage_an else '⚪ aus')) if s.attributes.klimaanlage_an is defined else '' %}
-  {% set sep = ' · ' if (dehum_text and ac_text) else '' %}
-  {% set devices_text = dehum_text ~ sep ~ ac_text %}
-  {% set devices_line = ('\n\nGeräte: ' ~ devices_text) if devices_text else '' %}
-  {% set grund = grund_text.get(s.attributes.letzter_grund, s.attributes.letzter_grund) if s.attributes.letzter_grund is defined else '' %}
-  {% set entry = '### ' ~ ('🟢 Öffnen' if s.state == 'on' else '⚪ Zu') ~ ' — ' ~ s.attributes.raum ~ '\n\n| | Wert | Öffnen ab | Schließen ab |\n|---|---|---|---|\n| 🌡️ Temperatur | ' ~ (s.attributes.innentemperatur | round(1) | string if s.attributes.innentemperatur is not none else '–') ~ ' °C | ' ~ (s.attributes.schwelle_temperatur_oeffnen | string) ~ ' °C | ' ~ (s.attributes.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ humidity_line ~ devices_line ~ '\n\nZuletzt geändert: ' ~ relative_time(s.last_changed) ~ (' (' ~ grund ~ ')' if grund else '') %}
-  {{ ('\n\n<hr>\n\n' if not loop.first else '') ~ entry }}
+  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'frost': 'Frostschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
+  {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
+  {% set a = s.attributes %}
+  {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚪ Schließen' %}
+  {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
+  {% set temp_val = (a.innentemperatur | round(1) | string) if a.innentemperatur is not none else '–' %}
+  {% set diff_sec = (now() - s.last_changed).total_seconds() | int %}
+  {% set diff_min = (diff_sec / 60) | int %}
+  {% set diff_hr = (diff_sec / 3600) | int %}
+  {% set diff_day = (diff_sec / 86400) | int %}
+  {% set rel_time = 'gerade eben' %}
+  {% if diff_day >= 1 %}
+  {% set rel_time = 'vor ' ~ diff_day ~ (' Tag' if diff_day == 1 else ' Tagen') %}
+  {% elif diff_hr >= 1 %}
+  {% set rel_time = 'vor ' ~ diff_hr ~ (' Stunde' if diff_hr == 1 else ' Stunden') %}
+  {% elif diff_min >= 1 %}
+  {% set rel_time = 'vor ' ~ diff_min ~ (' Minute' if diff_min == 1 else ' Minuten') %}
+  {% endif %}
+  {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
+  {% set window_line = '' %}
+  {% if window_entity %}
+  {% set w = states(window_entity) %}
+  {% set window_state_text = '🪟 Offen' if w == 'on' else ('🪟 Geschlossen' if w == 'off' else '🪟 Unbekannt') %}
+  {% set window_line = '\nFenster: ' ~ window_state_text %}
+  {% endif %}
+  {% set hum_row = '' %}
+  {% if a.luftfeuchtigkeit is defined %}
+  {% set hum_val = (a.luftfeuchtigkeit | round(0) | string) if a.luftfeuchtigkeit is not none else '–' %}
+  {% set hum_row = '\n| 💧 Luftfeuchtigkeit | ' ~ hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
+  {% endif %}
+  {% set dev1 = '' %}
+  {% if a.luftentfeuchter_an is defined %}
+  {% set dev1 = '💨 Luftentfeuchter ' ~ ('🟢 an' if a.luftentfeuchter_an else '⚪ aus') %}
+  {% endif %}
+  {% set dev2 = '' %}
+  {% if a.klimaanlage_an is defined %}
+  {% set dev2 = '❄️ Klimaanlage ' ~ ('🟢 an' if a.klimaanlage_an else '⚪ aus') %}
+  {% endif %}
+  {% set dev_sep = ' · ' if (dev1 != '' and dev2 != '') else '' %}
+  {% set dev_line = '' %}
+  {% if dev1 != '' or dev2 != '' %}
+  {% set dev_line = '\n\nGeräte: ' ~ dev1 ~ dev_sep ~ dev2 %}
+  {% endif %}
+  {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
+  {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '' %}
+  {% set grund_suffix = ' (' ~ grund_label ~ ')' if grund_label else '' %}
+  {% set header = '### ' ~ a.raum %}
+  {% set status_line = 'Empfehlung: ' ~ status_icon ~ window_line %}
+  {% set table1 = '| | Wert | Öffnen ab | Schließen ab |' %}
+  {% set table2 = '|---|---|---|---|' %}
+  {% set table3 = '| 🌡️ Temperatur | ' ~ temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' %}
+  {% set changed = 'Zuletzt geändert: ' ~ rel_time ~ ' → ' ~ change_action ~ grund_suffix %}
+  {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
+  {{ sep_before ~ header ~ '\n\n' ~ status_line ~ '\n\n' ~ table1 ~ '\n' ~ table2 ~ '\n' ~ table3 ~ hum_row ~ dev_line ~ '\n\n' ~ changed }}
   {% endfor %}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
 YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
 über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
-Die "Geräte"-Zeile erscheint nur bei Räumen, bei denen tatsächlich ein
-Luftentfeuchter und/oder eine Klimaanlage konfiguriert ist. Sowohl die
-Zeilenumbrüche als auch die Raum-Trennung (`<hr>` statt `---`) sind
-bewusst **als Teil des Textinhalts** in die `~`-Verkettung eingebettet,
-nicht als Leerzeilen im Vorlagentext - damit ist die Karte unabhängig
-davon, wie Home Assistants Jinja-Umgebung Vorlagen-Whitespace behandelt.
+Der Raumname steht jetzt als alleinige Überschrift, direkt darunter zwei
+Statuszeilen: die **Empfehlung** (öffnen/schließen) und - nur falls ein
+Fensterkontakt konfiguriert ist - der **tatsächliche Fensterzustand**
+laut Sensor. Die "Geräte"-Zeile erscheint nur bei Räumen, bei denen
+tatsächlich ein Luftentfeuchter und/oder eine Klimaanlage konfiguriert
+ist. Die Schwellenwerte sind mit `>`/`<` versehen (öffnen **oberhalb**,
+schließen **unterhalb** des jeweiligen Werts), und "Zuletzt geändert"
+zeigt zusätzlich, in welche Richtung zuletzt gewechselt wurde. Die
+verstrichene Zeit wird **selbst berechnet und auf Deutsch ausgegeben**
+("vor 3 Stunden" statt "3 hours") - Home Assistants eingebaute
+`relative_time()`-Funktion liefert die Zeiteinheiten fest auf Englisch,
+unabhängig von der App-Sprache. Die Vorlage ist bewusst in viele kurze,
+einfache Einzelschritte zerlegt (statt weniger sehr langer, tief
+verschachtelter Zeilen) - das macht sie robuster gegenüber
+Kopier-/Einfügeproblemen und leichter zu debuggen, falls doch einmal ein
+Fehler auftritt. Diese Version wurde sowohl gegen eine echte
+YAML-Faltung (`content: >`) als auch gegen Home Assistants sandboxed
+Jinja-Umgebung getestet.
 
 ## Hinweise
 
