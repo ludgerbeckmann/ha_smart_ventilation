@@ -47,7 +47,8 @@
               "frost_protection_temp": "Frost protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "reminder_interval_minutes": "Reminder interval"
+              "reminder_interval_minutes": "Reminder interval",
+              "humidity_priority_over_duration": "Priority for winter max duration"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings",
@@ -58,7 +59,8 @@
               "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless."
             }
           },
           "devices": {
@@ -139,7 +141,8 @@
               "frost_protection_temp": "Frost protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "reminder_interval_minutes": "Reminder interval"
+              "reminder_interval_minutes": "Reminder interval",
+              "humidity_priority_over_duration": "Priority for winter max duration"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings",
@@ -150,7 +153,8 @@
               "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless."
             }
           },
           "devices": {
@@ -213,14 +217,16 @@
               "frost_protection_temp": "Frost protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "reminder_interval_minutes": "Reminder interval"
+              "reminder_interval_minutes": "Reminder interval",
+              "humidity_priority_over_duration": "Humidity takes priority over winter max duration"
             },
             "data_description": {
               "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
               "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled"
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
+              "humidity_priority_over_duration": "On (default): if humidity still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity. Frost protection always takes priority regardless."
             }
           }
         }

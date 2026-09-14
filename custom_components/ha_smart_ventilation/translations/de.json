@@ -47,7 +47,8 @@
               "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
-              "reminder_interval_minutes": "Erinnerungsintervall"
+              "reminder_interval_minutes": "Erinnerungsintervall",
+              "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer"
             },
             "data_description": {
               "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
@@ -58,7 +59,8 @@
               "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
+              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang."
             }
           },
           "devices": {
@@ -139,7 +141,8 @@
               "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
-              "reminder_interval_minutes": "Erinnerungsintervall"
+              "reminder_interval_minutes": "Erinnerungsintervall",
+              "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer"
             },
             "data_description": {
               "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
@@ -150,7 +153,8 @@
               "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
+              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang."
             }
           },
           "devices": {
@@ -213,14 +217,16 @@
               "frost_protection_temp": "Frostschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
-              "reminder_interval_minutes": "Erinnerungsintervall"
+              "reminder_interval_minutes": "Erinnerungsintervall",
+              "humidity_priority_over_duration": "Luftfeuchtigkeit hat Vorrang vor Winter-Höchstdauer"
             },
             "data_description": {
               "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
               "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert"
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
+              "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit. Frostschutz hat davon unabhängig immer Vorrang."
             }
           }
         }
