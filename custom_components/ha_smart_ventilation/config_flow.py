@@ -517,7 +517,7 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         data = _apply_threshold_defaults(
-            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "Smart Ventilation Options"}
+            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "- Smart Ventilation Optionen -"}
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 
