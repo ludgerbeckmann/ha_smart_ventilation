@@ -336,9 +336,6 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
             {
-                vol.Optional(
-                    CONF_NO_WINDOW, default=defaults.get(CONF_NO_WINDOW, False)
-                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_TEMP_SOURCE_ENTITY, defaults
                 ): selector.EntitySelector(
@@ -361,6 +358,9 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="sensor")
                 ),
+                vol.Optional(
+                    CONF_NO_WINDOW, default=defaults.get(CONF_NO_WINDOW, False)
+                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_WINDOW_ENTITY, defaults, required=False
                 ): selector.EntitySelector(

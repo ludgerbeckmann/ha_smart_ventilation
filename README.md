@@ -66,13 +66,6 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      - Mindestens eine der drei Checkboxen muss aktiviert (und, falls nötig,
        vollständig ausgefüllt) sein
    - **Abschnitt "Sensoren"**:
-     - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
-       werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
-       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter
-       oder Klimaanlage anhand der Sensorwerte gesteuert werden sollen (siehe
-       Abschnitt "Geräte" weiter unten). Die Geräte-Steuerung läuft davon
-       unabhängig weiter, unabhängig vom Fenster-Status. Bei "an" ist auch
-       keine Benachrichtigungsmethode mehr zwingend erforderlich
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
      - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
@@ -80,10 +73,18 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
-     - Optional: Luftfeuchtigkeit, **Fensterkontakt** (unterdrückt
-       Benachrichtigungen, sobald das Fenster laut Sensor bereits im
-       empfohlenen Zustand ist - siehe eigener Abschnitt unten; nur relevant,
-       wenn "Dieser Raum hat kein Fenster" deaktiviert ist)
+     - Optional: Luftfeuchtigkeit
+     - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
+       werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
+       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter
+       oder Klimaanlage anhand der Sensorwerte gesteuert werden sollen (siehe
+       Abschnitt "Geräte" weiter unten). Die Geräte-Steuerung läuft davon
+       unabhängig weiter, unabhängig vom Fenster-Status. Bei "an" ist auch
+       keine Benachrichtigungsmethode mehr zwingend erforderlich
+     - **Fensterkontakt** (optional; unterdrückt Benachrichtigungen, sobald
+       das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
+       eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
+       Fenster" deaktiviert ist)
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert):
@@ -378,35 +379,50 @@ content: >
   {% for s in states.binary_sensor
      | selectattr('attributes.raum', 'defined')
      | sort(attribute='attributes.raum') %}
-  ### {{ '🟢 Öffnen' if s.state == 'on' else '⚪ Zu' }} — {{ s.attributes.raum }}
-
-  | | Wert | Öffnen ab | Schließen ab |
-  |---|---|---|---|
-  | 🌡️ Temperatur | {{ s.attributes.innentemperatur | round(1) if s.attributes.innentemperatur is not none else '–' }} °C | {{ s.attributes.schwelle_temperatur_oeffnen }} °C | {{ s.attributes.schwelle_temperatur_schliessen }} °C |
-  {%- if s.attributes.luftfeuchtigkeit is defined %}
-  | 💧 Feuchte | {{ s.attributes.luftfeuchtigkeit | round(0) if s.attributes.luftfeuchtigkeit is not none else '–' }} % | {{ s.attributes.schwelle_feuchtigkeit_oeffnen }} % | {{ s.attributes.schwelle_feuchtigkeit_schliessen }} % |
-  {%- endif %}
-
-  Zuletzt geändert: {{ relative_time(s.last_changed) }}{% if s.attributes.letzter_grund is defined %} ({{ grund_text.get(s.attributes.letzter_grund, s.attributes.letzter_grund) }}){% endif %}
-
-  ---
+  {% set humidity_line = ('\n| 💧 Feuchte | ' ~ (s.attributes.luftfeuchtigkeit | round(0) | string if s.attributes.luftfeuchtigkeit is not none else '–') ~ ' % | ' ~ (s.attributes.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | ' ~ (s.attributes.schwelle_feuchtigkeit_schliessen | string) ~ ' % |') if s.attributes.luftfeuchtigkeit is defined else '' %}
+  {% set dehum_text = ('💨 Luftentfeuchter ' ~ ('🟢 an' if s.attributes.luftentfeuchter_an else '⚪ aus')) if s.attributes.luftentfeuchter_an is defined else '' %}
+  {% set ac_text = ('❄️ Klimaanlage ' ~ ('🟢 an' if s.attributes.klimaanlage_an else '⚪ aus')) if s.attributes.klimaanlage_an is defined else '' %}
+  {% set sep = ' · ' if (dehum_text and ac_text) else '' %}
+  {% set devices_text = dehum_text ~ sep ~ ac_text %}
+  {% set devices_line = ('\n\nGeräte: ' ~ devices_text) if devices_text else '' %}
+  {% set grund = grund_text.get(s.attributes.letzter_grund, s.attributes.letzter_grund) if s.attributes.letzter_grund is defined else '' %}
+  {% set entry = '### ' ~ ('🟢 Öffnen' if s.state == 'on' else '⚪ Zu') ~ ' — ' ~ s.attributes.raum ~ '\n\n| | Wert | Öffnen ab | Schließen ab |\n|---|---|---|---|\n| 🌡️ Temperatur | ' ~ (s.attributes.innentemperatur | round(1) | string if s.attributes.innentemperatur is not none else '–') ~ ' °C | ' ~ (s.attributes.schwelle_temperatur_oeffnen | string) ~ ' °C | ' ~ (s.attributes.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ humidity_line ~ devices_line ~ '\n\nZuletzt geändert: ' ~ relative_time(s.last_changed) ~ (' (' ~ grund ~ ')' if grund else '') %}
+  {{ ('\n\n<hr>\n\n' if not loop.first else '') ~ entry }}
   {% endfor %}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
 YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
 über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
+Die "Geräte"-Zeile erscheint nur bei Räumen, bei denen tatsächlich ein
+Luftentfeuchter und/oder eine Klimaanlage konfiguriert ist. Sowohl die
+Zeilenumbrüche als auch die Raum-Trennung (`<hr>` statt `---`) sind
+bewusst **als Teil des Textinhalts** in die `~`-Verkettung eingebettet,
+nicht als Leerzeilen im Vorlagentext - damit ist die Karte unabhängig
+davon, wie Home Assistants Jinja-Umgebung Vorlagen-Whitespace behandelt.
 
 ## Hinweise
 
 - Die Integration reagiert direkt auf Zustandsänderungen (kein Polling),
-  daher sehr geringe Systemlast. **Ausnahme:** Die Außentemperatur kommt
+  daher sehr geringe Systemlast. Die angezeigten Attribute (aktuelle
+  Temperatur/Luftfeuchtigkeit etc.) werden bei jeder Neubewertung aktuell
+  gehalten - auch wenn sich der Empfehlungsstatus selbst dabei nicht
+  ändert. **Ausnahme:** Die Außentemperatur kommt
   ausschließlich aus "- Smart Ventilation Optionen -" und wird beim Start jedes
   Raums direkt mitverfolgt – ändert sich aber die dort hinterlegte
   Sensor-**Auswahl** selbst (nicht nur ihr Messwert), wirkt sich das erst
   beim nächsten 5-Minuten-Tick des Raums aus. Dasselbe gilt für den
   Leistungssensor, falls dieser nur global (nicht zusätzlich im Raum)
   gesetzt ist.
+- **Neustart-sicher**: Der Empfehlungsstatus ("Lüften empfohlen: ja/nein")
+  wird über Neustarts von Home Assistant hinweg wiederhergestellt
+  (`RestoreEntity`). Ohne diesen Mechanismus würde jede Entität nach einem
+  Neustart immer bei "nein" beginnen und bei aktuell noch zutreffenden
+  Bedingungen einen scheinbaren Zustandswechsel erkennen - mit einer
+  überflüssigen erneuten Benachrichtigung, obwohl sich nichts geändert hat.
+  Hat sich während der Ausfallzeit tatsächlich etwas geändert (z. B. wurde
+  das Fenster manuell geöffnet), wird das weiterhin korrekt erkannt und
+  gemeldet.
 - Für die Sprachausgabe wird der Standard-Service `tts.speak` verwendet – das
   funktioniert mit jeder `media_player`-Entität, nicht nur mit Sonos. Stelle
   sicher, dass eine TTS-Integration (z. B. Google Translate, Piper)

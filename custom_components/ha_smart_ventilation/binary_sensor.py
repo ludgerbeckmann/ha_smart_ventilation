@@ -17,6 +17,7 @@ from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
 )
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -91,7 +92,7 @@ async def async_setup_entry(
     async_add_entities([SmartVentilationBinarySensor(hass, entry)])
 
 
-class SmartVentilationBinarySensor(BinarySensorEntity):
+class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     """True = Lüften wird gerade empfohlen (Fenster sollte offen sein).
 
     Berücksichtigte Logik:
@@ -189,7 +190,30 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
         return attrs
 
     async def async_added_to_hass(self) -> None:
-        """Beobachtet relevante Entitäten und berechnet initialen Zustand."""
+        """Beobachtet relevante Entitäten und stellt zunächst den Zustand
+        von vor einem Neustart wieder her (RestoreEntity) - ohne das würde
+        jede Neubewertung nach einem Neustart immer von "aus" ausgehen und
+        bei aktuell noch gültigen Bedingungen fälschlich einen Zustands-
+        wechsel (und damit eine Benachrichtigung) auslösen, obwohl sich
+        nichts geändert hat.
+        """
+        await super().async_added_to_hass()
+
+        last_state = await self.async_get_last_state()
+        if last_state is not None:
+            self._attr_is_on = last_state.state == "on"
+            attrs = last_state.attributes
+            if "empfehlung_aktiv_seit" in attrs:
+                self._open_since = dt_util.parse_datetime(
+                    attrs["empfehlung_aktiv_seit"]
+                )
+            if "letzter_grund" in attrs:
+                self._last_reason = attrs["letzter_grund"]
+            if "luftentfeuchter_an" in attrs:
+                self._dehumidifier_state = bool(attrs["luftentfeuchter_an"])
+            if "klimaanlage_an" in attrs:
+                self._ac_state = bool(attrs["klimaanlage_an"])
+
         tracked = [self._config[CONF_TEMP_SOURCE_ENTITY]]
         for key in (CONF_HUMIDITY_ENTITY, CONF_WINDOW_ENTITY, CONF_POWER_ENTITY):
             value = self._config.get(key)
@@ -392,7 +416,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
                 self._open_since = None
                 self._last_reason = None
                 self._last_notified_at = None
-                self.async_write_ha_state()
+            # Immer schreiben (nicht nur bei Zustandswechsel), damit die
+            # angezeigten Attribute (z. B. aktuelle Luftfeuchtigkeit) stets
+            # den aktuellen Sensorwert zeigen und nicht auf dem Stand des
+            # letzten Wechsels "einfrieren".
+            self.async_write_ha_state()
             await self._update_devices(
                 temp_needs_open=temp_needs_open,
                 temp_needs_close=temp_needs_close,
@@ -503,6 +531,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity):
             humidity_needs_close=humidity_needs_close,
             outdoor_cooler_enough=outdoor_cooler_enough,
         )
+
+        # Immer schreiben (nicht nur bei Zustandswechsel), damit die
+        # angezeigten Attribute (z. B. aktuelle Temperatur/Luftfeuchtigkeit)
+        # stets den aktuellen Sensorwert zeigen und nicht auf dem Stand des
+        # letzten Wechsels "einfrieren".
+        self.async_write_ha_state()
 
         # Kein Zustandswechsel - ggf. Erinnerung, falls die Empfehlung seit
         # längerem aktiv ist und ignoriert wird. Zeigt der Fensterkontakt
