@@ -68,7 +68,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
-     - Optional: Luftfeuchtigkeit, Fensterkontakt
+     - Optional: Luftfeuchtigkeit, **Fensterkontakt** (unterdrückt
+       Benachrichtigungen, sobald das Fenster laut Sensor bereits im
+       empfohlenen Zustand ist - siehe eigener Abschnitt unten)
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert):
@@ -188,16 +190,49 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
   Luftfeuchtigkeit" unten)
 
 **Schließen** wird empfohlen, wenn:
-- Innentemperatur ≤ "Schwelle zum Schließen", **oder**
+- Innentemperatur ≤ "Schwelle zum Schließen" – *außer* es wird gerade noch
+  aus Feuchtigkeitsgründen gelüftet (siehe "Vorrang der Luftfeuchtigkeit"
+  unten), **oder**
 - Luftfeuchtigkeit ≤ "Schwelle zum Schließen", **oder**
 - **Sommer-Fall**: draußen ist mittlerweile mindestens um die Toleranz-Marge
   wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeitsgründen
   gelüftet, **oder**
 - **Winter-Höchstdauer**: es herrschen "Winter"-Bedingungen (Außentemperatur
   unter der Winter-Schwelle) **und** die Empfehlung ist bereits länger als die
-  eingestellte Höchstdauer aktiv, **oder**
+  eingestellte Höchstdauer aktiv – *außer* die Einstellung "Luftfeuchtigkeit
+  hat Vorrang vor Winter-Höchstdauer" ist aktiv (Standard) **und** es wird
+  gerade noch aus Feuchtigkeitsgründen gelüftet, **oder**
 - **Frostschutz**: die Außentemperatur ist auf/unter die Frostschutz-Grenze
-  gefallen (greift sofort, unabhängig von allen anderen Bedingungen)
+  gefallen (greift sofort, unabhängig von allen anderen Bedingungen,
+  **auch** falls noch aus Feuchtigkeitsgründen gelüftet wird - Frostschutz
+  hat immer Vorrang)
+
+**Vorrang der Luftfeuchtigkeit:** Reine Temperatur- und Winter-Höchstdauer-
+Gründe schließen das Fenster nicht, solange die Luftfeuchtigkeit noch über
+der "Schwelle zum Öffnen" liegt (und Lüften laut Außen-Luftfeuchtigkeits-
+Vergleich noch helfen würde) - sonst würde direkt im Anschluss wieder eine
+Öffnen-Empfehlung wegen der Feuchtigkeit folgen. Einzige Ausnahme:
+Frostschutz hat immer Vorrang vor der Luftfeuchtigkeit.
+
+**Konfigurierbare Priorität bei Winter-Höchstdauer:** Der neue Parameter
+"Luftfeuchtigkeit hat Vorrang vor Winter-Höchstdauer" legt fest, wie
+dieser Konflikt aufgelöst wird:
+- **An (Standard)**: Luftfeuchtigkeit gewinnt – die Winter-Höchstdauer wird
+  bei noch bestehendem Feuchtigkeits-Lüftungsbedarf ignoriert, das Fenster
+  bleibt offen (Schimmelvermeidung vor Wärmeverlust-Begrenzung)
+- **Aus**: die Winter-Höchstdauer wird strikt durchgesetzt, auch bei noch
+  hoher Luftfeuchtigkeit (Wärmeverlust-Begrenzung vor Schimmelvermeidung)
+
+In den globalen Einstellungen ("Smart Ventilation Optionen") als fester
+Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
+(leer = globalen Wert verwenden). Frostschutz hat davon unabhängig immer
+Vorrang, unabhängig von dieser Einstellung.
+
+Die reine Temperatur-Schließbedingung berücksichtigt einen noch
+bestehenden Feuchtigkeits-Lüftungsbedarf dagegen immer (nicht
+konfigurierbar) - ein Schließen nur wegen erreichter Zieltemperatur,
+gefolgt von einem sofortigen erneuten Öffnen wegen der Luftfeuchtigkeit,
+ergäbe so gut wie nie Sinn.
 
 **Zusätzlich:**
 - **Frostschutz** verhindert außerdem grundsätzlich das Öffnen, solange die
@@ -211,6 +246,25 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 **Nicht berücksichtigt** (bewusst, aktuell außerhalb des Funktionsumfangs):
 Regen und Windgeschwindigkeit.
+
+## Fensterkontakt und Benachrichtigungen
+
+Ist im Abschnitt "Sensoren" ein Fensterkontakt hinterlegt, wird sein
+Zustand vor jeder Benachrichtigung geprüft:
+
+- **Öffnen-Empfehlung**: Wird nur verschickt, wenn der Fensterkontakt
+  aktuell "zu" meldet. Zeigt er bereits "offen" (Zustand `on`), wird keine
+  Benachrichtigung gesendet - das Fenster ist ja schon offen.
+- **Schließen-Empfehlung**: Umgekehrt - wird nur verschickt, wenn der
+  Fensterkontakt aktuell "offen" meldet.
+- **Erinnerung**: Wird ebenfalls unterdrückt, sobald der Fensterkontakt den
+  empfohlenen Zustand bereits erreicht hat.
+
+Erwartete Konvention des Sensors: `on` = Fenster offen, `off` = Fenster zu
+(Standard bei `binary_sensor`-Entitäten mit `device_class` `window`,
+`door` oder `opening`). Ohne hinterlegten Fensterkontakt - oder bei
+unbekanntem/nicht verfügbarem Sensorzustand - wird sicherheitshalber
+weiterhin immer benachrichtigt, wie bisher.
 
 ## Absolute vs. relative Luftfeuchtigkeit
 
