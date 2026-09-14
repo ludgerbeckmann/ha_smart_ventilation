@@ -24,7 +24,6 @@ from .const import (
     CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
-    CONF_NOTIFY_METHOD,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PERSISTENT_ENABLED,
@@ -65,9 +64,6 @@ from .const import (
     DEHUMIDIFIER_DOMAINS,
     DOMAIN,
     GLOBAL_SETTINGS_UNIQUE_ID,
-    NOTIFY_METHOD_MOBILE,
-    NOTIFY_METHOD_PERSISTENT,
-    NOTIFY_METHOD_SONOS,
     PRESENCE_DOMAINS,
     SHUTTER_DOMAINS,
     TEMP_SOURCE_DOMAINS,
@@ -218,9 +214,15 @@ def _flatten_step_data(data: dict) -> dict:
 
     # Tri-State-Dropdown liefert "true"/"false" als String - in echtes bool
     # umwandeln (fehlt der Schlüssel, bleibt er unberührt = "global nutzen")
-    priority_value = flat.get(CONF_HUMIDITY_PRIORITY_OVER_DURATION)
-    if priority_value in ("true", "false"):
-        flat[CONF_HUMIDITY_PRIORITY_OVER_DURATION] = priority_value == "true"
+    for tri_state_key in (
+        CONF_HUMIDITY_PRIORITY_OVER_DURATION,
+        CONF_SONOS_ENABLED,
+        CONF_MOBILE_ENABLED,
+        CONF_PERSISTENT_ENABLED,
+    ):
+        value = flat.get(tri_state_key)
+        if value in ("true", "false"):
+            flat[tri_state_key] = value == "true"
 
     return flat
 
@@ -266,18 +268,17 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
         no_label="Nein – Winter-Höchstdauer hat Vorrang",
     )
 
-    # Abwärtskompatibilität: ältere Einträge kennen die Checkboxen noch
-    # nicht, sondern nur die frühere CONF_NOTIFY_METHOD-Liste - daraus den
-    # Vorbelegungs-Status ableiten, falls die Checkbox-Werte selbst fehlen.
-    stored_methods = defaults.get(CONF_NOTIFY_METHOD) or []
-    sonos_enabled_default = defaults.get(
-        CONF_SONOS_ENABLED, NOTIFY_METHOD_SONOS in stored_methods
+    # Die drei Benachrichtigungsmethoden sind jetzt überschreibbare
+    # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
+    # "Smart Ventilation Optionen" (siehe _tri_state_bool_selector).
+    sonos_marker, sonos_sel = _tri_state_bool_selector(
+        CONF_SONOS_ENABLED, defaults, yes_label="Ja", no_label="Nein"
     )
-    mobile_enabled_default = defaults.get(
-        CONF_MOBILE_ENABLED, NOTIFY_METHOD_MOBILE in stored_methods
+    mobile_marker, mobile_sel = _tri_state_bool_selector(
+        CONF_MOBILE_ENABLED, defaults, yes_label="Ja", no_label="Nein"
     )
-    persistent_enabled_default = defaults.get(
-        CONF_PERSISTENT_ENABLED, NOTIFY_METHOD_PERSISTENT in stored_methods
+    persistent_marker, persistent_sel = _tri_state_bool_selector(
+        CONF_PERSISTENT_ENABLED, defaults, yes_label="Ja", no_label="Nein"
     )
 
     fields: dict = {
@@ -287,17 +288,13 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     fields[vol.Required(SECTION_NOTIFY)] = section(
         vol.Schema(
             {
-                vol.Optional(
-                    CONF_SONOS_ENABLED, default=sonos_enabled_default
-                ): selector.BooleanSelector(),
+                sonos_marker: sonos_sel,
                 _entity_marker(
                     CONF_SONOS_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="media_player", multiple=True)
                 ),
-                vol.Optional(
-                    CONF_MOBILE_ENABLED, default=mobile_enabled_default
-                ): selector.BooleanSelector(),
+                mobile_marker: mobile_sel,
                 vol.Optional(
                     CONF_MOBILE_TARGETS, default=defaults.get(CONF_MOBILE_TARGETS) or []
                 ): selector.ObjectSelector(
@@ -325,9 +322,7 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                         },
                     )
                 ),
-                vol.Optional(
-                    CONF_PERSISTENT_ENABLED, default=persistent_enabled_default
-                ): selector.BooleanSelector(),
+                persistent_marker: persistent_sel,
             }
         ),
         {"collapsed": False},
@@ -493,6 +488,55 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ),
                         power_marker: power_sel,
                         grace_marker: grace_sel,
+                        vol.Required(
+                            CONF_SONOS_ENABLED,
+                            default=defaults.get(CONF_SONOS_ENABLED, False),
+                        ): selector.BooleanSelector(),
+                        _entity_marker(
+                            CONF_SONOS_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(
+                                domain="media_player", multiple=True
+                            )
+                        ),
+                        vol.Required(
+                            CONF_MOBILE_ENABLED,
+                            default=defaults.get(CONF_MOBILE_ENABLED, False),
+                        ): selector.BooleanSelector(),
+                        vol.Optional(
+                            CONF_MOBILE_TARGETS,
+                            default=defaults.get(CONF_MOBILE_TARGETS) or [],
+                        ): selector.ObjectSelector(
+                            selector.ObjectSelectorConfig(
+                                multiple=True,
+                                label_field=CONF_MOBILE_NOTIFY_ENTITY,
+                                description_field=CONF_PRESENCE_ENTITY,
+                                fields={
+                                    CONF_MOBILE_NOTIFY_ENTITY: {
+                                        "label": "Notify-Entität",
+                                        "required": True,
+                                        "selector": selector.EntitySelector(
+                                            selector.EntitySelectorConfig(
+                                                domain="notify"
+                                            )
+                                        ),
+                                    },
+                                    CONF_PRESENCE_ENTITY: {
+                                        "label": "Anwesenheits-Entität (optional)",
+                                        "required": False,
+                                        "selector": selector.EntitySelector(
+                                            selector.EntitySelectorConfig(
+                                                domain=PRESENCE_DOMAINS
+                                            )
+                                        ),
+                                    },
+                                },
+                            )
+                        ),
+                        vol.Required(
+                            CONF_PERSISTENT_ENABLED,
+                            default=defaults.get(CONF_PERSISTENT_ENABLED, False),
+                        ): selector.BooleanSelector(),
                     }
                 ),
                 {"collapsed": False},
@@ -505,34 +549,17 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
 
 
 def _validate_room_submission(defaults: dict) -> str | None:
-    """Prüft die Angaben zu den Benachrichtigungsmethoden und leitet daraus
-    CONF_NOTIFY_METHOD ab (Liste, für binary_sensor.py). Gibt den
-    Fehlerschlüssel zurück oder None. Innentemperatur wird bereits vom
+    """Bereinigt die Benachrichtigungs-Zieleinträge. Gibt keinen Fehler mehr
+    zurück, da jede der drei Methoden jetzt leer gelassen werden kann (=
+    globale Einstellung aus "Smart Ventilation Optionen" gilt) - fehlende
+    Ziel-Entitäten führen zur Laufzeit nur zu einem Log-Hinweis, nicht zu
+    einem blockierenden Formularfehler. Innentemperatur wird bereits vom
     Formular selbst als Pflichtfeld erzwungen."""
-    methods: list[str] = []
-
-    if defaults.get(CONF_SONOS_ENABLED):
-        if not defaults.get(CONF_SONOS_ENTITY):
-            return "sonos_config_missing"
-        methods.append(NOTIFY_METHOD_SONOS)
-
-    if defaults.get(CONF_MOBILE_ENABLED):
-        targets = defaults.get(CONF_MOBILE_TARGETS) or []
-        valid_targets = [t for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)]
-        if not valid_targets:
-            return "mobile_config_missing"
-        defaults[CONF_MOBILE_TARGETS] = valid_targets
-        methods.append(NOTIFY_METHOD_MOBILE)
-
-    if defaults.get(CONF_PERSISTENT_ENABLED):
-        methods.append(NOTIFY_METHOD_PERSISTENT)
-
-    # Ohne Fenster werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt -
-    # dann ist keine Benachrichtigungsmethode zwingend erforderlich.
-    if not methods and not defaults.get(CONF_NO_WINDOW, False):
-        return "notify_method_required"
-
-    defaults[CONF_NOTIFY_METHOD] = methods
+    targets = defaults.get(CONF_MOBILE_TARGETS)
+    if targets:
+        defaults[CONF_MOBILE_TARGETS] = [
+            t for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+        ]
     return None
 
 
@@ -652,6 +679,12 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
             flat[CONF_ROOM_NAME] = current.get(
                 CONF_ROOM_NAME, self.config_entry.title
             )
+            if flat.get(CONF_MOBILE_TARGETS):
+                flat[CONF_MOBILE_TARGETS] = [
+                    t
+                    for t in flat[CONF_MOBILE_TARGETS]
+                    if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+                ]
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=flat,

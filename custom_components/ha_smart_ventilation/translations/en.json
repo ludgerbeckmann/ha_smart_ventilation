@@ -12,15 +12,18 @@
             "name": "Notification methods",
             "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
             "data": {
-              "sonos_enabled": "Voice announcement (e.g. Sonos)",
+              "sonos_enabled": "Voice announcement",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
-              "mobile_enabled": "Home Assistant Companion App (push)",
+              "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
-              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
-              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved"
+              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
+              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
+              "sonos_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
+              "sonos_entity": "Empty = use the global speakers from \"Smart Ventilation Options\""
             }
           },
           "sensors": {
@@ -88,11 +91,6 @@
         }
       }
     },
-    "error": {
-      "sonos_config_missing": "Voice announcement requires at least one speaker.",
-      "mobile_config_missing": "App notification requires a notify entity.",
-      "notify_method_required": "Please select at least one notification method."
-    },
     "abort": {
       "already_configured": "This room is already configured with this temperature source."
     }
@@ -110,15 +108,18 @@
             "name": "Notification methods",
             "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
             "data": {
-              "sonos_enabled": "Voice announcement (e.g. Sonos)",
+              "sonos_enabled": "Voice announcement",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
-              "mobile_enabled": "Home Assistant Companion App (push)",
+              "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
-              "mobile_targets": "Only relevant if 'Enable Home Assistant Companion App' above is checked. One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
-              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved"
+              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
+              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
+              "sonos_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
+              "sonos_entity": "Empty = use the global speakers from \"Smart Ventilation Options\""
             }
           },
           "sensors": {
@@ -200,7 +201,12 @@
               "tts_playback_mode": "Existing playback when announcing",
               "power_entity": "Power sensor (e.g. grid feed-in)",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
-              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
+              "sonos_enabled": "Voice announcement",
+              "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "mobile_enabled": "Home Assistant Companion App",
+              "mobile_targets": "Notification targets",
+              "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
               "outdoor_temp_entity": "Used for all rooms - can no longer be overridden per room",
@@ -210,7 +216,9 @@
               "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
               "power_entity": "Used when a room doesn't set its own power sensor",
               "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
-              "power_grace_period_minutes": "Default delay for all rooms without their own setting"
+              "power_grace_period_minutes": "Default delay for all rooms without their own setting",
+              "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
+              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved"
             }
           },
           "parameters": {
@@ -239,11 +247,6 @@
           }
         }
       }
-    },
-    "error": {
-      "sonos_config_missing": "Voice announcement requires at least one speaker.",
-      "mobile_config_missing": "App notification requires a notify entity.",
-      "notify_method_required": "Please select at least one notification method."
     }
   }
 }

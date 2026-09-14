@@ -31,17 +31,19 @@ from .const import (
     CONF_HUMIDITY_THRESHOLD_OPEN,
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_MIN_SURPLUS_POWER,
+    CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
-    CONF_NOTIFY_METHOD,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
+    CONF_PERSISTENT_ENABLED,
     CONF_POWER_ENTITY,
     CONF_POWER_GRACE_PERIOD,
     CONF_PRESENCE_ENTITY,
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
     CONF_SHUTTER_ENTITY,
+    CONF_SONOS_ENABLED,
     CONF_SONOS_ENTITY,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
@@ -70,9 +72,6 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
-    NOTIFY_METHOD_MOBILE,
-    NOTIFY_METHOD_PERSISTENT,
-    NOTIFY_METHOD_SONOS,
     TTS_PLAYBACK_MODE_PAUSE,
 )
 
@@ -175,6 +174,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if outdoor_humidity is not None:
             attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
+        if humidity is not None and indoor_temp is not None:
+            attrs["absolute_luftfeuchtigkeit"] = round(
+                self._absolute_humidity(indoor_temp, humidity), 1
+            )
+        if outdoor_humidity is not None and outdoor_temp is not None:
+            attrs["aussen_absolute_luftfeuchtigkeit"] = round(
+                self._absolute_humidity(outdoor_temp, outdoor_humidity), 1
+            )
         if self._config.get(CONF_TEMP_ATTRIBUTE):
             attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
         if self._config.get(CONF_WINDOW_ENTITY):
@@ -279,6 +286,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if global_value not in (None, ""):
             return global_value
         return hardcoded_default
+
+    def _effective_list(self, key: str) -> list:
+        """Wie _effective(), aber für Listen: eine leere Liste zählt
+        (anders als bei _effective()) als 'nicht gesetzt' und führt zum
+        Fallback auf die globale Einstellung."""
+        room_value = self._config.get(key)
+        if room_value:
+            return list(room_value)
+        global_value = self._global_config().get(key)
+        return list(global_value) if global_value else []
 
     @staticmethod
     def _absolute_humidity(temp_c: float, rh_percent: float) -> float:
@@ -770,16 +787,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         return state.state == "home"
 
     def _get_mobile_targets(self) -> list[dict]:
-        """Liefert die Liste der {mobile_notify_entity, presence_entity}-Paare.
+        """Liefert die Liste der {mobile_notify_entity, presence_entity}-Paare
+        - Raum-Override falls gesetzt, sonst die globale Liste.
 
         Abwärtskompatibel: ältere Konfigurationen, die noch die frühere
         flache Mehrfachauswahl (CONF_MOBILE_NOTIFY_ENTITY als Liste/String)
         gespeichert haben, werden automatisch in die neue Struktur überführt
         - ohne Anwesenheitsprüfung, also wie bisher immer gesendet.
         """
-        targets = self._config.get(CONF_MOBILE_TARGETS)
+        targets = self._effective_list(CONF_MOBILE_TARGETS)
         if targets:
-            return list(targets)
+            return targets
         legacy = self._as_list(self._config.get(CONF_MOBILE_NOTIFY_ENTITY))
         return [{CONF_MOBILE_NOTIFY_ENTITY: entity_id} for entity_id in legacy]
 
@@ -846,28 +864,38 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         """Verschickt die Benachrichtigung per Sprachausgabe, App-Push
         und/oder persistenter Web-Benachrichtigung.
 
-        Alle Methoden können gleichzeitig konfiguriert sein, und jede
-        Methode (außer der Web-Benachrichtigung) kann mehrere Ziel-
-        Entitäten haben (mehrere Lautsprecher bzw. mehrere
-        notify.*-Entitäten) - in dem Fall werden alle bedient.
+        Ob eine Methode aktiv ist, wird bei jedem Aufruf live über
+        _effective() ermittelt (Raum-Override, sonst globale Einstellung) -
+        genau wie bei den Schwellenwerten. Änderungen an den globalen
+        Benachrichtigungseinstellungen wirken sich also auch auf Räume aus,
+        die dafür keinen eigenen Override gesetzt haben, ohne dass der Raum
+        neu gespeichert werden muss.
+
+        Alle Methoden können gleichzeitig aktiv sein, und jede Methode
+        (außer der Web-Benachrichtigung) kann mehrere Ziel-Entitäten haben
+        (mehrere Lautsprecher bzw. mehrere notify.*-Entitäten) - in dem
+        Fall werden alle bedient.
         """
         room = self._config[CONF_ROOM_NAME]
         message = self._build_message(should_ventilate, reason)
-        methods = self._config.get(CONF_NOTIFY_METHOD) or []
 
-        if NOTIFY_METHOD_SONOS in methods:
-            sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
+        sonos_enabled = self._effective(CONF_SONOS_ENABLED, False)
+        mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
+        persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
+
+        if sonos_enabled:
+            sonos_entities = self._as_list(self._effective_list(CONF_SONOS_ENTITY))
             tts_entity = self._effective(CONF_TTS_ENTITY, None)
             if sonos_entities and tts_entity:
                 await self._play_tts(sonos_entities, tts_entity, message)
             else:
                 _LOGGER.warning(
-                    "Sprachausgabe konfiguriert, aber Lautsprecher- oder "
+                    "Sprachausgabe aktiviert, aber Lautsprecher- oder "
                     "TTS-Entity fehlt (%s)",
                     room,
                 )
 
-        if NOTIFY_METHOD_MOBILE in methods:
+        if mobile_enabled:
             targets = self._get_mobile_targets()
             if not targets:
                 _LOGGER.warning(
@@ -898,7 +926,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                             room,
                         )
 
-        if NOTIFY_METHOD_PERSISTENT in methods:
+        if persistent_enabled:
             notification_id = f"smart_ventilation_{self._entry.entry_id}"
             if should_ventilate:
                 # Erstellt die Benachrichtigung oder aktualisiert eine

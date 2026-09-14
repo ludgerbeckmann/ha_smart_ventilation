@@ -45,26 +45,31 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
    Raum-Formular (ein einziger Schritt, keine Folgeseiten mehr)
 3. **Hauptformular** ausfüllen:
    - **Raumname** (ganz oben)
-   - **Abschnitt "Benachrichtigungsmethoden"**:
-     - **Sprachausgabe** (Checkbox) – direkt darunter: **Lautsprecher**
-       (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl). Die
-       TTS-Entität selbst kommt ausschließlich aus "Smart Ventilation
-       Options" und ist hier nicht mehr auswählbar
-     - **Home Assistant Companion App** (Checkbox) – direkt
-       darunter: eine Liste von **Benachrichtigungszielen**. Pro Eintrag: eine
-       `notify.*`-Entität (Pflicht, falls die Checkbox aktiv ist) und
+   - **Abschnitt "Benachrichtigungsmethoden"** (alle drei Methoden jetzt
+     global mit Raum-Override - jedes Dropdown kennt **Ja / Nein / leer**,
+     leer = globale Einstellung aus "Smart Ventilation Optionen" gilt):
+     - **Sprachausgabe** (Ja/Nein/leer) – direkt darunter: **Lautsprecher**
+       (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl; leer =
+       globale Lautsprecher verwenden). Die TTS-Entität selbst kommt
+       ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
+       auswählbar
+     - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
+       eine Liste von **Benachrichtigungszielen** (leer = globale Ziele
+       verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
        optional eine **Anwesenheits-Entität** (`person` oder
        `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
        genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
        zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
        ergänzen
-     - **Persistente Benachrichtigung (Weboberfläche)** (Checkbox) – keine
-       weiteren Felder nötig. Erstellt eine dauerhafte Benachrichtigung im
-       Home-Assistant-Benachrichtigungsbereich (Glocken-Symbol), solange die
-       Empfehlung aktiv ist, und löst sich automatisch wieder auf, sobald
-       sie sich erledigt hat
-     - Mindestens eine der drei Checkboxen muss aktiviert (und, falls nötig,
-       vollständig ausgefüllt) sein
+     - **Persistente Benachrichtigung (Weboberfläche)** (Ja/Nein/leer) –
+       keine weiteren Felder nötig. Erstellt eine dauerhafte Benachrichtigung
+       im Home-Assistant-Benachrichtigungsbereich (Glocken-Symbol), solange
+       die Empfehlung aktiv ist, und löst sich automatisch wieder auf,
+       sobald sie sich erledigt hat
+     - Es gibt keine Pflicht mehr, hier etwas auszufüllen - lässt du alles
+       leer, gilt komplett die globale Einstellung. Fehlt am Ende sowohl
+       raum- als auch global eine gültige Ziel-Entität für eine aktivierte
+       Methode, erscheint nur ein Log-Hinweis, das Formular blockiert nicht
    - **Abschnitt "Sensoren"**:
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
@@ -140,6 +145,13 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
   Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
   Werte selbst bleiben pro Raum überschreibbar, siehe Geräte-Abschnitt
   im Raum-Formular)
+- **Sprachausgabe** + **Lautsprecher**: globaler Standard für alle Räume,
+  die dafür keinen eigenen Ja/Nein/Ziel-Override im Abschnitt
+  "Benachrichtigungsmethoden" gesetzt haben
+- **Home Assistant Companion App** + **Benachrichtigungsziele**: ebenso
+  globaler Standard, pro Raum überschreibbar
+- **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
+  Standard, pro Raum überschreibbar
 
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
@@ -354,6 +366,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
+| `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `frost`, `duration`, `outdoor_warmer`) |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
@@ -377,9 +390,11 @@ content: >
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'frost': 'Frostschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
-  {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚪ Schließen' %}
+  {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚫ Schließen' %}
   {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set temp_val = (a.innentemperatur | round(1) | string) if a.innentemperatur is not none else '–' %}
+  {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string) if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
+  {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set diff_sec = (now() - s.last_changed).total_seconds() | int %}
   {% set diff_min = (diff_sec / 60) | int %}
   {% set diff_hr = (diff_sec / 3600) | int %}
@@ -396,21 +411,27 @@ content: >
   {% set window_line = '' %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
-  {% set window_state_text = '🪟 Offen' if w == 'on' else ('🪟 Geschlossen' if w == 'off' else '🪟 Unbekannt') %}
+  {% set window_state_text = '🟢 Offen' if w == 'on' else ('⚫ Geschlossen' if w == 'off' else 'Unbekannt') %}
   {% set window_line = '\nFenster: ' ~ window_state_text %}
   {% endif %}
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string) if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_row = '\n| 💧 Luftfeuchtigkeit | ' ~ hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
+  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' % | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
+  {% endif %}
+  {% set abs_row = '' %}
+  {% if a.absolute_luftfeuchtigkeit is defined or a.aussen_absolute_luftfeuchtigkeit is defined %}
+  {% set abs_in = (a.absolute_luftfeuchtigkeit | string) if a.absolute_luftfeuchtigkeit is defined else '–' %}
+  {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string) if a.aussen_absolute_luftfeuchtigkeit is defined else '–' %}
+  {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' g/m³ | ' ~ abs_out ~ ' g/m³ | – | – |' %}
   {% endif %}
   {% set dev1 = '' %}
   {% if a.luftentfeuchter_an is defined %}
-  {% set dev1 = '💨 Luftentfeuchter ' ~ ('🟢 an' if a.luftentfeuchter_an else '⚪ aus') %}
+  {% set dev1 = 'Luftentfeuchter ' ~ ('🟢 an' if a.luftentfeuchter_an else '⚫ aus') %}
   {% endif %}
   {% set dev2 = '' %}
   {% if a.klimaanlage_an is defined %}
-  {% set dev2 = '❄️ Klimaanlage ' ~ ('🟢 an' if a.klimaanlage_an else '⚪ aus') %}
+  {% set dev2 = 'Klimaanlage ' ~ ('🟢 an' if a.klimaanlage_an else '⚫ aus') %}
   {% endif %}
   {% set dev_sep = ' · ' if (dev1 != '' and dev2 != '') else '' %}
   {% set dev_line = '' %}
@@ -422,31 +443,35 @@ content: >
   {% set grund_suffix = ' (' ~ grund_label ~ ')' if grund_label else '' %}
   {% set header = '### ' ~ a.raum %}
   {% set status_line = 'Empfehlung: ' ~ status_icon ~ window_line %}
-  {% set table1 = '| | Wert | Öffnen ab | Schließen ab |' %}
-  {% set table2 = '|---|---|---|---|' %}
-  {% set table3 = '| 🌡️ Temperatur | ' ~ temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' %}
+  {% set table1 = '| | Innen | Außen | Öffnen ab | Schließen ab |' %}
+  {% set table2 = '|---|---|---|---|---|' %}
+  {% set table3 = '| Temperatur | ' ~ temp_val ~ ' °C | ' ~ outdoor_temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' %}
   {% set changed = 'Zuletzt geändert: ' ~ rel_time ~ ' → ' ~ change_action ~ grund_suffix %}
   {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
-  {{ sep_before ~ header ~ '\n\n' ~ status_line ~ '\n\n' ~ table1 ~ '\n' ~ table2 ~ '\n' ~ table3 ~ hum_row ~ dev_line ~ '\n\n' ~ changed }}
+  {{ sep_before ~ header ~ '\n\n' ~ status_line ~ dev_line ~ '\n\n' ~ changed ~ '\n\n' ~ table1 ~ '\n' ~ table2 ~ '\n' ~ table3 ~ hum_row ~ abs_row }}
   {% endfor %}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
 YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
 über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
-Der Raumname steht jetzt als alleinige Überschrift, direkt darunter zwei
-Statuszeilen: die **Empfehlung** (öffnen/schließen) und - nur falls ein
-Fensterkontakt konfiguriert ist - der **tatsächliche Fensterzustand**
-laut Sensor. Die "Geräte"-Zeile erscheint nur bei Räumen, bei denen
-tatsächlich ein Luftentfeuchter und/oder eine Klimaanlage konfiguriert
-ist. Die Schwellenwerte sind mit `>`/`<` versehen (öffnen **oberhalb**,
-schließen **unterhalb** des jeweiligen Werts), und "Zuletzt geändert"
-zeigt zusätzlich, in welche Richtung zuletzt gewechselt wurde. Die
-verstrichene Zeit wird **selbst berechnet und auf Deutsch ausgegeben**
-("vor 3 Stunden" statt "3 hours") - Home Assistants eingebaute
-`relative_time()`-Funktion liefert die Zeiteinheiten fest auf Englisch,
-unabhängig von der App-Sprache. Die Vorlage ist bewusst in viele kurze,
-einfache Einzelschritte zerlegt (statt weniger sehr langer, tief
+Aufbau pro Raum: **Raumname** als Überschrift, darunter **Empfehlung**
+und - falls Fensterkontakt konfiguriert - der **tatsächliche
+Fensterzustand**, darunter ggf. die **Geräte**-Zeile, dann **Zuletzt
+geändert**, und ganz am Ende die **Tabelle** mit Innen-/Außenwerten,
+Schwellenwerten und - falls berechenbar - der **absoluten
+Luftfeuchtigkeit** (g/m³, ohne eigene Schwellenwerte, da rein informativ
+und nur der Öffnen-/Innen-Außen-Vergleich davon abhängt, siehe Abschnitt
+"Absolute vs. relative Luftfeuchtigkeit"). Icons dienen ausschließlich zur
+**Status-Signalisierung** (🟢 = an/offen, ⚫ = aus/geschlossen) - rein
+dekorative Icons sind bewusst entfernt. Die Schwellenwerte sind mit `>`/`<`
+versehen (öffnen **oberhalb**, schließen **unterhalb** des jeweiligen
+Werts), und "Zuletzt geändert" zeigt zusätzlich, in welche Richtung zuletzt
+gewechselt wurde. Die verstrichene Zeit wird **selbst berechnet und auf
+Deutsch ausgegeben** ("vor 3 Stunden" statt "3 hours") - Home Assistants
+eingebaute `relative_time()`-Funktion liefert die Zeiteinheiten fest auf
+Englisch, unabhängig von der App-Sprache. Die Vorlage ist bewusst in viele
+kurze, einfache Einzelschritte zerlegt (statt weniger sehr langer, tief
 verschachtelter Zeilen) - das macht sie robuster gegenüber
 Kopier-/Einfügeproblemen und leichter zu debuggen, falls doch einmal ein
 Fehler auftritt. Diese Version wurde sowohl gegen eine echte
@@ -455,6 +480,14 @@ Jinja-Umgebung getestet.
 
 ## Hinweise
 
+- **Umstieg auf globale Benachrichtigungsziele**: Bestehende Räume, die
+  bereits eigene Werte für Sprachausgabe/App/Persistent gesetzt hatten,
+  funktionieren unverändert weiter (ihre bisherigen Ja/Nein-Werte gelten
+  jetzt einfach als expliziter Raum-Override). Neu ist nur, dass sich diese
+  Felder jetzt auch komplett leer lassen lassen, um stattdessen die
+  globale Einstellung zu übernehmen. Um einen bereits konfigurierten Raum
+  auf "globale Einstellung nutzen" umzustellen, musst du das entsprechende
+  Dropdown im Formular einmal manuell auf die leere Option zurücksetzen.
 - Die Integration reagiert direkt auf Zustandsänderungen (kein Polling),
   daher sehr geringe Systemlast. Die angezeigten Attribute (aktuelle
   Temperatur/Luftfeuchtigkeit etc.) werden bei jeder Neubewertung aktuell

@@ -12,15 +12,18 @@
             "name": "Benachrichtigungsmethoden",
             "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
             "data": {
-              "sonos_enabled": "Sprachausgabe (z. B. Sonos)",
+              "sonos_enabled": "Sprachausgabe",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-              "mobile_enabled": "Home Assistant Companion App (Push)",
+              "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
-              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
-              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat"
+              "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
+              "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
+              "sonos_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
+              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
+              "sonos_entity": "Leer = globale Lautsprecher aus \"Smart Ventilation Optionen\" verwenden"
             }
           },
           "sensors": {
@@ -88,11 +91,6 @@
         }
       }
     },
-    "error": {
-      "sonos_config_missing": "Für Sprachausgabe muss mindestens ein Lautsprecher angegeben werden.",
-      "mobile_config_missing": "Für App-Benachrichtigung muss eine notify-Entität angegeben werden.",
-      "notify_method_required": "Bitte mindestens eine Benachrichtigungsmethode auswählen."
-    },
     "abort": {
       "already_configured": "Dieser Raum ist mit dieser Temperaturquelle bereits konfiguriert."
     }
@@ -110,15 +108,18 @@
             "name": "Benachrichtigungsmethoden",
             "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
             "data": {
-              "sonos_enabled": "Sprachausgabe (z. B. Sonos)",
+              "sonos_enabled": "Sprachausgabe",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
-              "mobile_enabled": "Home Assistant Companion App (Push)",
+              "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
-              "mobile_targets": "Nur relevant, wenn 'Home Assistant Companion App aktivieren' oben angehakt ist. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
-              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat"
+              "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
+              "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
+              "sonos_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
+              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
+              "sonos_entity": "Leer = globale Lautsprecher aus \"Smart Ventilation Optionen\" verwenden"
             }
           },
           "sensors": {
@@ -200,7 +201,12 @@
               "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
               "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
+              "sonos_enabled": "Sprachausgabe",
+              "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "mobile_enabled": "Home Assistant Companion App",
+              "mobile_targets": "Benachrichtigungsziele",
+              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
               "outdoor_temp_entity": "Wird für alle Räume verwendet - kann nicht mehr pro Raum überschrieben werden",
@@ -210,7 +216,9 @@
               "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
               "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
               "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
-              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe"
+              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
+              "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
+              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat"
             }
           },
           "parameters": {
@@ -239,11 +247,6 @@
           }
         }
       }
-    },
-    "error": {
-      "sonos_config_missing": "Für Sprachausgabe muss mindestens ein Lautsprecher angegeben werden.",
-      "mobile_config_missing": "Für App-Benachrichtigung muss eine notify-Entität angegeben werden.",
-      "notify_method_required": "Bitte mindestens eine Benachrichtigungsmethode auswählen."
     }
   }
 }
