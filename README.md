@@ -373,6 +373,9 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
+| `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn Sprachausgabe effektiv aktiv ist (Raum-Override oder geerbt von "Smart Ventilation Optionen") |
+| `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
+| `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
 wann der aktuelle Öffnen/Schließen-Status gilt.
@@ -390,38 +393,37 @@ content: >
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'frost': 'Frostschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
+  {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
+  {% set never_triggered = s.state == 'off' and a.letzter_grund is not defined %}
+  {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
   {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚫ Schließen' %}
   {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
+  {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string) if a.innentemperatur is not none else '–' %}
+  {% set temp_val = ('<span style="color: orange;">' ~ temp_val ~ '</span>') if grund_code == 'temp' else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string) if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
-  {% set diff_sec = (now() - s.last_changed).total_seconds() | int %}
-  {% set diff_min = (diff_sec / 60) | int %}
-  {% set diff_hr = (diff_sec / 3600) | int %}
-  {% set diff_day = (diff_sec / 86400) | int %}
-  {% set rel_time = 'gerade eben' %}
-  {% if diff_day >= 1 %}
-  {% set rel_time = 'vor ' ~ diff_day ~ (' Tag' if diff_day == 1 else ' Tagen') %}
-  {% elif diff_hr >= 1 %}
-  {% set rel_time = 'vor ' ~ diff_hr ~ (' Stunde' if diff_hr == 1 else ' Stunden') %}
-  {% elif diff_min >= 1 %}
-  {% set rel_time = 'vor ' ~ diff_min ~ (' Minute' if diff_min == 1 else ' Minuten') %}
-  {% endif %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_line = '' %}
+  {% set match_icon = '' %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = '🟢 Offen' if w == 'on' else ('⚫ Geschlossen' if w == 'off' else 'Unbekannt') %}
   {% set window_line = '\nFenster: ' ~ window_state_text %}
+  {% if not no_window and not never_triggered and w in ['on', 'off'] %}
+  {% set is_match = (s.state == 'on') == (w == 'on') %}
+  {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
+  {% endif %}
   {% endif %}
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string) if a.luftfeuchtigkeit is not none else '–' %}
+  {% set hum_val = ('<span style="color: orange;">' ~ hum_val ~ '</span>') if grund_code == 'humidity' else hum_val %}
   {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' % | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
   {% endif %}
   {% set abs_row = '' %}
-  {% if a.absolute_luftfeuchtigkeit is defined or a.aussen_absolute_luftfeuchtigkeit is defined %}
-  {% set abs_in = (a.absolute_luftfeuchtigkeit | string) if a.absolute_luftfeuchtigkeit is defined else '–' %}
+  {% if a.absolute_luftfeuchtigkeit is defined %}
+  {% set abs_in = (a.absolute_luftfeuchtigkeit | string) %}
   {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string) if a.aussen_absolute_luftfeuchtigkeit is defined else '–' %}
   {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' g/m³ | ' ~ abs_out ~ ' g/m³ | – | – |' %}
   {% endif %}
@@ -438,43 +440,69 @@ content: >
   {% if dev1 != '' or dev2 != '' %}
   {% set dev_line = '\n\nGeräte: ' ~ dev1 ~ dev_sep ~ dev2 %}
   {% endif %}
-  {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '' %}
   {% set grund_suffix = ' (' ~ grund_label ~ ')' if grund_label else '' %}
-  {% set header = '### ' ~ a.raum %}
-  {% set status_line = 'Empfehlung: ' ~ status_icon ~ window_line %}
+  {% set header = '### ' ~ match_icon ~ a.raum %}
+  {% set empfehlung_text = 'Kein Lüftungsbedarf' if never_triggered else (status_icon) %}
+  {% set status_line = '' if no_window else ('Empfehlung: ' ~ empfehlung_text ~ window_line) %}
   {% set table1 = '| | Innen | Außen | Öffnen ab | Schließen ab |' %}
   {% set table2 = '|---|---|---|---|---|' %}
   {% set table3 = '| Temperatur | ' ~ temp_val ~ ' °C | ' ~ outdoor_temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' %}
-  {% set changed = 'Zuletzt geändert: ' ~ rel_time ~ ' → ' ~ change_action ~ grund_suffix %}
+  {% set changed_line = '' if never_triggered else ('\n\nZuletzt geändert: ' ~ changed_time ~ ' → ' ~ change_action ~ grund_suffix) %}
+  {% set n1 = 'Sprachausgabe' %}
+  {% set n1_status = '🟢 an' if a.sprachausgabe_aktiv is defined else '⚫ aus' %}
+  {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
+  {% set n2 = 'App-Benachrichtigung' %}
+  {% set n2_status = '🟢 an' if a.app_aktiv is defined else '⚫ aus' %}
+  {% set n2_ziel = (a.app_ziele | join(', ')) if a.app_ziele is defined else '–' %}
+  {% set n3 = 'Persistente Benachrichtigung' %}
+  {% set n3_status = '🟢 an' if a.persistent_aktiv is defined else '⚫ aus' %}
+  {% set n3_ziel = '–' %}
+  {% set notify_table = '\n\n| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
   {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
-  {{ sep_before ~ header ~ '\n\n' ~ status_line ~ dev_line ~ '\n\n' ~ changed ~ '\n\n' ~ table1 ~ '\n' ~ table2 ~ '\n' ~ table3 ~ hum_row ~ abs_row }}
+  {{ sep_before ~ header ~ '\n\n' ~ status_line ~ dev_line ~ changed_line ~ '\n\n' ~ table1 ~ '\n' ~ table2 ~ '\n' ~ table3 ~ hum_row ~ abs_row ~ notify_table }}
   {% endfor %}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
 YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
 über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
-Aufbau pro Raum: **Raumname** als Überschrift, darunter **Empfehlung**
-und - falls Fensterkontakt konfiguriert - der **tatsächliche
-Fensterzustand**, darunter ggf. die **Geräte**-Zeile, dann **Zuletzt
-geändert**, und ganz am Ende die **Tabelle** mit Innen-/Außenwerten,
-Schwellenwerten und - falls berechenbar - der **absoluten
-Luftfeuchtigkeit** (g/m³, ohne eigene Schwellenwerte, da rein informativ
-und nur der Öffnen-/Innen-Außen-Vergleich davon abhängt, siehe Abschnitt
-"Absolute vs. relative Luftfeuchtigkeit"). Icons dienen ausschließlich zur
-**Status-Signalisierung** (🟢 = an/offen, ⚫ = aus/geschlossen) - rein
-dekorative Icons sind bewusst entfernt. Die Schwellenwerte sind mit `>`/`<`
-versehen (öffnen **oberhalb**, schließen **unterhalb** des jeweiligen
-Werts), und "Zuletzt geändert" zeigt zusätzlich, in welche Richtung zuletzt
-gewechselt wurde. Die verstrichene Zeit wird **selbst berechnet und auf
-Deutsch ausgegeben** ("vor 3 Stunden" statt "3 hours") - Home Assistants
-eingebaute `relative_time()`-Funktion liefert die Zeiteinheiten fest auf
-Englisch, unabhängig von der App-Sprache. Die Vorlage ist bewusst in viele
-kurze, einfache Einzelschritte zerlegt (statt weniger sehr langer, tief
-verschachtelter Zeilen) - das macht sie robuster gegenüber
-Kopier-/Einfügeproblemen und leichter zu debuggen, falls doch einmal ein
-Fehler auftritt. Diese Version wurde sowohl gegen eine echte
+
+**Neu: Uhrzeit statt relativer Zeit.** "Zuletzt geändert" zeigt jetzt
+Datum + Uhrzeit (`15.09. 05:52`) statt "vor X Stunden" - über Home
+Assistants `as_local()`-Funktion, damit die Zeitzone korrekt
+berücksichtigt wird.
+
+**Neu: Tabelle "Benachrichtigungsmethoden".** Zeigt für jeden Raum, welche
+der drei Methoden (Sprachausgabe, App-Benachrichtigung, Persistente
+Benachrichtigung) **tatsächlich aktiv** ist - inklusive Raum-Override und
+globaler Vererbung, genau das, was auch wirklich beim nächsten Auslösen
+verschickt würde - sowie die konkreten Ziele (Lautsprecher- bzw.
+Notify-Entitäten). Steht am Ende jedes Raum-Blocks.
+
+Aufbau pro Raum: **Ampel-Punkt** (🟢/🔴, nur bei Räumen mit Fenster **und**
+konfiguriertem Fensterkontakt **und** einer bereits ausgelösten Empfehlung)
+direkt vor dem **Raumnamen** als Überschrift, darunter **Empfehlung** und
+der **tatsächliche Fensterzustand**, darunter ggf. die **Geräte**-Zeile,
+dann **Zuletzt geändert**, die **Werte-Tabelle** (Innen-/Außenwerte,
+Schwellenwerte, ggf. absolute Luftfeuchtigkeit) und ganz am Ende die
+**Benachrichtigungsmethoden-Tabelle**.
+
+**Ampel-Punkt-Logik:** 🟢 wenn Empfehlung und tatsächlicher Fensterzustand
+übereinstimmen, 🔴 bei Abweichung. Ein Raum, der noch **nie** in den
+"Öffnen"-Zustand gewechselt ist, zeigt **"Kein Lüftungsbedarf"** statt der
+irreführenden Empfehlung "Schließen" - ohne Ampel-Punkt und ohne "Zuletzt
+geändert"-Zeile. War Temperatur oder Luftfeuchtigkeit der Grund für den
+letzten Wechsel, wird der entsprechende Innen-Wert in der Werte-Tabelle
+**orange** hervorgehoben. Icons dienen ausschließlich zur
+**Status-Signalisierung** (🟢 = an/offen/übereinstimmend, ⚫ = aus/
+geschlossen, 🔴 = Abweichung) - rein dekorative Icons sind bewusst
+entfernt. Die Schwellenwerte sind mit `>`/`<` versehen (öffnen
+**oberhalb**, schließen **unterhalb** des jeweiligen Werts). Die Vorlage
+ist bewusst in viele kurze, einfache Einzelschritte zerlegt (statt weniger
+sehr langer, tief verschachtelter Zeilen) - das macht sie robuster
+gegenüber Kopier-/Einfügeproblemen und leichter zu debuggen, falls doch
+einmal ein Fehler auftritt. Diese Version wurde sowohl gegen eine echte
 YAML-Faltung (`content: >`) als auch gegen Home Assistants sandboxed
 Jinja-Umgebung getestet.
 
@@ -499,6 +527,15 @@ Jinja-Umgebung getestet.
   beim nächsten 5-Minuten-Tick des Raums aus. Dasselbe gilt für den
   Leistungssensor, falls dieser nur global (nicht zusätzlich im Raum)
   gesetzt ist.
+- **Konservativ bei kurzzeitig nicht verfügbaren Außensensoren**: Sind
+  Außentemperatur- und/oder Außen-Luftfeuchtigkeitssensor konfiguriert,
+  aber gerade nicht verfügbar (z. B. während Home Assistant startet oder
+  stoppt und andere Integrationen noch laden/entladen), werden die davon
+  abhängigen Öffnen-Bedingungen und der Frostschutz **konservativ**
+  behandelt (kein Öffnen, ggf. Frostschutz blockiert vorsorglich) - nicht
+  permissiv, wie es bei komplett fehlender Konfiguration der Fall ist.
+  Das verhindert Fehlalarme durch kurzzeitige Sensor-Ausfälle beim
+  Neustart.
 - **Neustart-sicher**: Der Empfehlungsstatus ("Lüften empfohlen: ja/nein")
   wird über Neustarts von Home Assistant hinweg wiederhergestellt
   (`RestoreEntity`). Ohne diesen Mechanismus würde jede Entität nach einem

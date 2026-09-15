@@ -186,6 +186,26 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
         if self._config.get(CONF_WINDOW_ENTITY):
             attrs["fensterkontakt_entity"] = self._config[CONF_WINDOW_ENTITY]
+
+        # Effektiv wirksame Benachrichtigungsmethoden (Raum-Override oder
+        # geerbt von "Smart Ventilation Optionen") - für Dashboards, die
+        # anzeigen wollen, worüber ein Raum tatsächlich benachrichtigt.
+        if self._effective(CONF_SONOS_ENABLED, False):
+            attrs["sprachausgabe_aktiv"] = True
+            sonos_entities = self._as_list(self._effective_list(CONF_SONOS_ENTITY))
+            if sonos_entities:
+                attrs["sprachausgabe_lautsprecher"] = sonos_entities
+        if self._effective(CONF_MOBILE_ENABLED, False):
+            attrs["app_aktiv"] = True
+            app_targets = [
+                t.get(CONF_MOBILE_NOTIFY_ENTITY)
+                for t in self._get_mobile_targets()
+                if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+            ]
+            if app_targets:
+                attrs["app_ziele"] = app_targets
+        if self._effective(CONF_PERSISTENT_ENABLED, False):
+            attrs["persistent_aktiv"] = True
         if self._open_since is not None:
             attrs["empfehlung_aktiv_seit"] = self._open_since.isoformat()
         if self._last_notified_at is not None:
@@ -396,11 +416,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         temp_needs_close = indoor_temp is not None and indoor_temp <= temp_close
 
         # --- Frostschutz: harte Grenze ---
-        frost_block = outdoor_temp is not None and outdoor_temp <= frost_temp
+        # Ist ein Außentemperatur-Sensor konfiguriert, aber aktuell nicht
+        # verfügbar (z. B. während Home Assistant startet/stoppt, wenn
+        # andere Integrationen noch laden), wird sicherheitshalber so
+        # getan, als könnte Frost vorliegen (blockiert das Öffnen) - statt
+        # das fälschlich wie "kein Sensor konfiguriert" zu behandeln.
+        frost_block = outdoor_entity is not None and (
+            outdoor_temp is None or outdoor_temp <= frost_temp
+        )
 
         # --- Öffnen: drinnen zu warm UND draußen spürbar kühler ---
-        outdoor_cooler_enough = outdoor_temp is None or (
-            indoor_temp is not None and outdoor_temp <= indoor_temp - margin
+        # Kein Außentemperatur-Sensor konfiguriert = wie bisher permissiv
+        # (Vergleich entfällt, Lüften wird angenommen zu helfen). Ist aber
+        # ein Sensor konfiguriert und nur gerade nicht verfügbar, wird das
+        # KONSERVATIV behandelt (kein Öffnen auf dieser Basis) - sonst
+        # könnte eine kurzzeitige Nichtverfügbarkeit (z. B. beim Neustart
+        # von Home Assistant) fälschlich eine Öffnen-Empfehlung samt
+        # Benachrichtigung auslösen, nur weil der Vergleich mangels Daten
+        # übersprungen wird.
+        outdoor_cooler_enough = outdoor_entity is None or (
+            outdoor_temp is not None
+            and indoor_temp is not None
+            and outdoor_temp <= indoor_temp - margin
         )
         # --- Öffnen wegen Feuchtigkeit nur, wenn es draußen auch trockener
         # ist als drinnen - sonst würde Lüften die Situation verschlimmern.
@@ -408,19 +445,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # relative: kalte Luft mit hoher RH% ist absolut oft trotzdem sehr
         # trocken (typischer Winter-Lüften-Effekt) - ein reiner RH%-Vergleich
         # würde in diesem, praktisch sehr häufigen Fall fälschlich vom
-        # Lüften abraten. Ohne Außen-Luftfeuchtigkeitssensor (oder fehlenden
-        # Temperaturwerten) wird das wie bisher nicht geprüft und einfach
-        # angenommen, dass Lüften hilft.
-        outdoor_drier_enough = True
-        if (
+        # Lüften abraten. Kein Außen-Luftfeuchtigkeitssensor konfiguriert =
+        # wie bisher permissiv (Vergleich entfällt). Ist ein Sensor
+        # konfiguriert, aber gerade nicht verfügbar (oder fehlen sonstige
+        # nötige Werte), wird das - wie beim Temperatur-Vergleich oben -
+        # KONSERVATIV behandelt, nicht permissiv.
+        outdoor_drier_enough = outdoor_humidity_entity is None or (
             outdoor_humidity is not None
             and humidity is not None
             and indoor_temp is not None
             and outdoor_temp is not None
-        ):
-            indoor_abs_humidity = self._absolute_humidity(indoor_temp, humidity)
-            outdoor_abs_humidity = self._absolute_humidity(outdoor_temp, outdoor_humidity)
-            outdoor_drier_enough = outdoor_abs_humidity < indoor_abs_humidity
+            and self._absolute_humidity(outdoor_temp, outdoor_humidity)
+            < self._absolute_humidity(indoor_temp, humidity)
+        )
         open_by_temp = temp_needs_open and outdoor_cooler_enough
         open_by_humidity = humidity_needs_open and outdoor_drier_enough
 
