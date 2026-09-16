@@ -79,6 +79,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
      - Optional: Luftfeuchtigkeit
+     - Optional: CO2 (`sensor`-Entität mit ppm-Wert) – ohne Außenluft-
+       Vergleich, da Außenluft praktisch immer weit unter jeder sinnvollen
+       Innenschwelle liegt
      - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
        werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
        z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter
@@ -93,9 +96,10 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert):
-     - Schwellenwerte zum Öffnen/Schließen sowie Toleranz-Marge,
-       Frostschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer und
-       Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+     - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
+       und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Winter-Schwelle,
+       Winter-Höchstdauer und Erinnerungsintervall – Zahlenfelder mit
+       Pfeil-hoch/-runter-Steuerung
      - Duscherkennung (Ja/Nein/Leer) und die zugehörige Anstiegs-Schwelle –
        siehe "Duscherkennung" unter "Logik im Detail"
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
@@ -158,14 +162,15 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  Duscherkennung (Ja/Nein) und Anstiegs-Schwelle
+  CO2-Schwellen zum Öffnen/Schließen sowie Duscherkennung (Ja/Nein) und
+  Anstiegs-Schwelle
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
 Textfeld für:
-- Öffnen wegen Temperatur / wegen Luftfeuchtigkeit
-- Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / Frostschutz /
-  Winter-Höchstdauer / weil draußen wärmer geworden ist
+- Öffnen wegen Temperatur / wegen Luftfeuchtigkeit / wegen CO2
+- Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / CO2 /
+  Frostschutz / Winter-Höchstdauer / weil draußen wärmer geworden ist
 - Erinnerung (falls die Empfehlung ignoriert wird)
 
 Der Platzhalter `{raum}` wird automatisch durch den jeweiligen Raumnamen
@@ -232,41 +237,48 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 - Luftfeuchtigkeit ≥ "Schwelle zum Öffnen" **und** (kein Außen-
   Luftfeuchtigkeitssensor hinterlegt **oder** es draußen **absolut**
   betrachtet trockener ist als drinnen – siehe "Absolute vs. relative
-  Luftfeuchtigkeit" unten)
+  Luftfeuchtigkeit" unten), **oder**
+- CO2 ≥ "CO2-Schwelle zum Öffnen" – **ohne** Außenluft-Vergleich, da
+  Außenluft praktisch immer bei ~420 ppm liegt und Lüften bei hohem CO2
+  immer hilft
 
 **Schließen** wird empfohlen, wenn:
 - Innentemperatur ≤ "Schwelle zum Schließen" – *außer* es wird gerade noch
-  aus Feuchtigkeitsgründen gelüftet (siehe "Vorrang der Luftfeuchtigkeit"
-  unten), **oder**
+  aus Feuchtigkeits- oder CO2-Gründen gelüftet (siehe "Vorrang der
+  Luftfeuchtigkeit/CO2" unten), **oder**
 - Luftfeuchtigkeit ≤ "Schwelle zum Schließen", **oder**
+- CO2 ≤ "CO2-Schwelle zum Schließen", **oder**
 - **Sommer-Fall**: draußen ist mittlerweile mindestens um die Toleranz-Marge
-  wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeitsgründen
-  gelüftet, **oder**
+  wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeits- oder
+  CO2-Gründen gelüftet, **oder**
 - **Winter-Höchstdauer**: es herrschen "Winter"-Bedingungen (Außentemperatur
   unter der Winter-Schwelle) **und** die Empfehlung ist bereits länger als die
-  eingestellte Höchstdauer aktiv – *außer* die Einstellung "Luftfeuchtigkeit
-  hat Vorrang vor Winter-Höchstdauer" ist aktiv (Standard) **und** es wird
-  gerade noch aus Feuchtigkeitsgründen gelüftet, **oder**
+  eingestellte Höchstdauer aktiv – *außer* die Einstellung "Luftfeuchtigkeit/
+  CO2 haben Vorrang vor Winter-Höchstdauer" ist aktiv (Standard) **und** es
+  wird gerade noch aus Feuchtigkeits- oder CO2-Gründen gelüftet, **oder**
 - **Frostschutz**: die Außentemperatur ist auf/unter die Frostschutz-Grenze
   gefallen (greift sofort, unabhängig von allen anderen Bedingungen,
-  **auch** falls noch aus Feuchtigkeitsgründen gelüftet wird - Frostschutz
-  hat immer Vorrang)
+  **auch** falls noch aus Feuchtigkeits- oder CO2-Gründen gelüftet wird -
+  Frostschutz hat immer Vorrang)
 
-**Vorrang der Luftfeuchtigkeit:** Reine Temperatur- und Winter-Höchstdauer-
-Gründe schließen das Fenster nicht, solange die Luftfeuchtigkeit noch über
-der "Schwelle zum Öffnen" liegt (und Lüften laut Außen-Luftfeuchtigkeits-
-Vergleich noch helfen würde) - sonst würde direkt im Anschluss wieder eine
-Öffnen-Empfehlung wegen der Feuchtigkeit folgen. Einzige Ausnahme:
-Frostschutz hat immer Vorrang vor der Luftfeuchtigkeit.
+**Vorrang der Luftfeuchtigkeit/CO2:** Reine Temperatur- und Winter-
+Höchstdauer-Gründe schließen das Fenster nicht, solange die Luftfeuchtigkeit
+noch über der "Schwelle zum Öffnen" liegt (und Lüften laut Außen-
+Luftfeuchtigkeits-Vergleich noch helfen würde) **oder** der CO2-Wert noch
+über der CO2-Schwelle zum Öffnen liegt - sonst würde direkt im Anschluss
+wieder eine Öffnen-Empfehlung deswegen folgen. Einzige Ausnahme: Frostschutz
+hat immer Vorrang.
 
-**Konfigurierbare Priorität bei Winter-Höchstdauer:** Der neue Parameter
-"Luftfeuchtigkeit hat Vorrang vor Winter-Höchstdauer" legt fest, wie
+**Konfigurierbare Priorität bei Winter-Höchstdauer:** Der Parameter
+"Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer" legt fest, wie
 dieser Konflikt aufgelöst wird:
-- **An (Standard)**: Luftfeuchtigkeit gewinnt – die Winter-Höchstdauer wird
-  bei noch bestehendem Feuchtigkeits-Lüftungsbedarf ignoriert, das Fenster
-  bleibt offen (Schimmelvermeidung vor Wärmeverlust-Begrenzung)
+- **An (Standard)**: Luftfeuchtigkeit/CO2 gewinnen – die Winter-Höchstdauer
+  wird bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf
+  ignoriert, das Fenster bleibt offen (Gesundheit/Schimmelvermeidung vor
+  Wärmeverlust-Begrenzung)
 - **Aus**: die Winter-Höchstdauer wird strikt durchgesetzt, auch bei noch
-  hoher Luftfeuchtigkeit (Wärmeverlust-Begrenzung vor Schimmelvermeidung)
+  hoher Luftfeuchtigkeit oder hohem CO2-Wert (Wärmeverlust-Begrenzung vor
+  Schimmelvermeidung/Gesundheit)
 
 In den globalen Einstellungen ("Smart Ventilation Optionen") als fester
 Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
@@ -274,10 +286,10 @@ Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
 Vorrang, unabhängig von dieser Einstellung.
 
 Die reine Temperatur-Schließbedingung berücksichtigt einen noch
-bestehenden Feuchtigkeits-Lüftungsbedarf dagegen immer (nicht
+bestehenden Feuchtigkeits- oder CO2-Lüftungsbedarf dagegen immer (nicht
 konfigurierbar) - ein Schließen nur wegen erreichter Zieltemperatur,
-gefolgt von einem sofortigen erneuten Öffnen wegen der Luftfeuchtigkeit,
-ergäbe so gut wie nie Sinn.
+gefolgt von einem sofortigen erneuten Öffnen deswegen, ergäbe so gut wie
+nie Sinn.
 
 **Duscherkennung:** Optional (Standard aus), gedacht für Bäder mit Dusche/
 Badewanne, bei denen die Luftfeuchtigkeit durch das Duschen sehr schnell
@@ -402,10 +414,11 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussentemperatur` | aktueller Messwert (aus "Smart Ventilation Optionen") |
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
+| `co2`, `schwelle_co2_oeffnen` / `_schliessen` | nur vorhanden, falls ein CO2-Sensor hinterlegt ist |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
-| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `frost`, `duration`, `outdoor_warmer`) |
+| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `duration`, `outdoor_warmer`) |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
