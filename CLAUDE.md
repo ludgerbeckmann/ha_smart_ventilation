@@ -139,6 +139,23 @@ Trotz dieses Tests bleiben CSS/Rendering-Details (Abstände, Style-Filterung)
 nicht zuverlässig vorhersagbar - dafür bräuchte es eine echte
 Home-Assistant-Instanz.
 
+**8. `{platzhalter}` in `strings.json`/`translations/*.json` niemals als
+reinen Beispieltext in `description`/`data_description` schreiben.** Home
+Assistants Frontend rendert diese Texte über ICU MessageFormat
+(formatjs) - jedes `{wort}` darin wird als echter, zu befüllender
+Platzhalter interpretiert, nicht als Literal. Ohne übergebenen Wert zeigt
+die Oberfläche statt des Texts einen Fehler wie `[formatjs Error:
+MISSING_VALUE] The intl string context variable "raum" was not
+provided...`. Betroffen war z. B. die Beschreibung der
+Benachrichtigungstexte, die `{raum}`/`{wert}`/`{schwelle}` als Beispiel
+nennt. Fix: den Platzhalter in einfache Anführungszeichen einschließen,
+das rendert ihn laut ICU-Syntax als reinen Text: `'{raum}'` erscheint als
+`{raum}`. Betrifft ausschließlich diese Beschreibungstexte in
+`strings.json`/`translations/*.json` - die eigentlichen, vom Nutzer
+editierbaren Benachrichtigungsvorlagen (`DEFAULT_MSG_*` in `const.py`)
+sind reine Python-Strings und verwenden `{raum}` etc. ganz normal
+unescaped für `str.format()`.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
