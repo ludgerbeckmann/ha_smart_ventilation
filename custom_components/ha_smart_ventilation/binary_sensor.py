@@ -59,7 +59,6 @@ from .const import (
     CONF_SHOWER_DETECTION_ENABLED,
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
-    CONF_SONOS_ENABLED,
     CONF_SONOS_ENTITY,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
@@ -217,7 +216,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["schwelle_co2_schliessen"] = self._effective(
                 CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE
             )
-        if self._effective(CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED):
+        if self._config.get(CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED):
             attrs["duschen_erkannt"] = self._showering
         if outdoor_humidity is not None:
             attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
@@ -234,14 +233,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._config.get(CONF_WINDOW_ENTITY):
             attrs["fensterkontakt_entity"] = self._config[CONF_WINDOW_ENTITY]
 
-        # Effektiv wirksame Benachrichtigungsmethoden (Raum-Override oder
-        # geerbt von "Smart Ventilation Optionen") - für Dashboards, die
+        # Effektiv wirksame Benachrichtigungsmethoden - für Dashboards, die
         # anzeigen wollen, worüber ein Raum tatsächlich benachrichtigt.
-        if self._effective(CONF_SONOS_ENABLED, False):
+        # Sprachausgabe ist aktiv, sobald der Raum mindestens einen
+        # Lautsprecher ausgewählt hat - kein eigener Ja/Nein-Schalter mehr,
+        # keine globale Einstellung.
+        sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
+        if sonos_entities:
             attrs["sprachausgabe_aktiv"] = True
-            sonos_entities = self._as_list(self._effective_list(CONF_SONOS_ENTITY))
-            if sonos_entities:
-                attrs["sprachausgabe_lautsprecher"] = sonos_entities
+            attrs["sprachausgabe_lautsprecher"] = sonos_entities
         if self._effective(CONF_MOBILE_ENABLED, False):
             attrs["app_aktiv"] = True
             app_targets = [
@@ -553,7 +553,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # ansteigt (typisch beim Duschen), wird die Öffnen-Empfehlung wegen
         # Luftfeuchtigkeit zurückgehalten - Lüften währenddessen bringt
         # nichts. Optional, Standard aus (siehe _update_shower_detection).
-        shower_detection_enabled = self._effective(
+        # Nur pro Raum einstellbar, keine globale Einstellung.
+        shower_detection_enabled = self._config.get(
             CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
         )
         self._showering = (
@@ -1041,12 +1042,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         """Verschickt die Benachrichtigung per Sprachausgabe, App-Push
         und/oder persistenter Web-Benachrichtigung.
 
-        Ob eine Methode aktiv ist, wird bei jedem Aufruf live über
-        _effective() ermittelt (Raum-Override, sonst globale Einstellung) -
-        genau wie bei den Schwellenwerten. Änderungen an den globalen
-        Benachrichtigungseinstellungen wirken sich also auch auf Räume aus,
-        die dafür keinen eigenen Override gesetzt haben, ohne dass der Raum
-        neu gespeichert werden muss.
+        Sprachausgabe ist aktiv, sobald der Raum mindestens einen
+        Lautsprecher ausgewählt hat (reine Raum-Einstellung, kein globaler
+        Fallback). App-Push und persistente Benachrichtigung werden dagegen
+        bei jedem Aufruf live über _effective() ermittelt (Raum-Override,
+        sonst globale Einstellung) - genau wie bei den Schwellenwerten.
+        Änderungen an den globalen Benachrichtigungseinstellungen wirken
+        sich also auch auf Räume aus, die dafür keinen eigenen Override
+        gesetzt haben, ohne dass der Raum neu gespeichert werden muss.
 
         Alle Methoden können gleichzeitig aktiv sein, und jede Methode
         (außer der Web-Benachrichtigung) kann mehrere Ziel-Entitäten haben
@@ -1056,19 +1059,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         room = self._config[CONF_ROOM_NAME]
         message = self._build_message(should_ventilate, reason)
 
-        sonos_enabled = self._effective(CONF_SONOS_ENABLED, False)
+        # Sprachausgabe ist aktiv, sobald der Raum mindestens einen
+        # Lautsprecher ausgewählt hat - kein eigener Ja/Nein-Schalter mehr,
+        # keine globale Einstellung.
+        sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
         mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
         persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
 
-        if sonos_enabled:
-            sonos_entities = self._as_list(self._effective_list(CONF_SONOS_ENTITY))
+        if sonos_entities:
             tts_entity = self._effective(CONF_TTS_ENTITY, None)
-            if sonos_entities and tts_entity:
+            if tts_entity:
                 await self._play_tts(sonos_entities, tts_entity, message)
             else:
                 _LOGGER.warning(
-                    "Sprachausgabe aktiviert, aber Lautsprecher- oder "
-                    "TTS-Entity fehlt (%s)",
+                    "Sprachausgabe-Lautsprecher ausgewählt, aber keine "
+                    "TTS-Entity konfiguriert (%s)",
                     room,
                 )
 

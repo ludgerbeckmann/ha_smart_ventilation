@@ -10,9 +10,8 @@
         "sections": {
           "notify": {
             "name": "Notification methods",
-            "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
+            "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
-              "sonos_enabled": "Voice announcement",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Notification targets",
@@ -21,9 +20,8 @@
             "data_description": {
               "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
               "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "sonos_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
               "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "sonos_entity": "Empty = use the global speakers from \"Smart Ventilation Options\""
+              "sonos_entity": "Empty = no voice announcement for this room"
             }
           },
           "sensors": {
@@ -33,6 +31,7 @@
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Humidity (optional)",
+              "shower_detection_enabled": "Shower detection",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Window contact sensor (optional)",
               "no_window": "This room has no window"
@@ -40,6 +39,7 @@
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
               "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected above). The rise threshold for this lives in the \"Parameters\" section",
               "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
             }
@@ -60,7 +60,6 @@
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
               "humidity_priority_over_duration": "Priority for winter max duration",
-              "shower_detection_enabled": "Shower detection",
               "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
@@ -76,8 +75,7 @@
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
-              "shower_detection_enabled": "Empty = use the global setting. Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed.",
-              "shower_rise_threshold": "Empty = use the value from the global settings"
+              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section"
             }
           },
           "devices": {
@@ -116,9 +114,8 @@
         "sections": {
           "notify": {
             "name": "Notification methods",
-            "description": "Enable one or both methods via the checkbox; the fields directly below are only relevant if the respective checkbox is enabled.",
+            "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
-              "sonos_enabled": "Voice announcement",
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Notification targets",
@@ -127,9 +124,8 @@
             "data_description": {
               "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
               "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "sonos_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
               "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "sonos_entity": "Empty = use the global speakers from \"Smart Ventilation Options\""
+              "sonos_entity": "Empty = no voice announcement for this room"
             }
           },
           "sensors": {
@@ -139,6 +135,7 @@
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Humidity (optional)",
+              "shower_detection_enabled": "Shower detection",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Window contact sensor (optional)",
               "no_window": "This room has no window"
@@ -146,6 +143,7 @@
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
               "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected above). The rise threshold for this lives in the \"Parameters\" section",
               "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
             }
@@ -166,7 +164,6 @@
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
               "humidity_priority_over_duration": "Priority for winter max duration",
-              "shower_detection_enabled": "Shower detection",
               "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
@@ -182,8 +179,7 @@
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
-              "shower_detection_enabled": "Empty = use the global setting. Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed.",
-              "shower_rise_threshold": "Empty = use the value from the global settings"
+              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section"
             }
           },
           "devices": {
@@ -222,8 +218,6 @@
               "power_entity": "Power sensor (e.g. grid feed-in)",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
               "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
-              "sonos_enabled": "Voice announcement",
-              "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
@@ -257,7 +251,6 @@
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
               "humidity_priority_over_duration": "Humidity/CO2 take priority over winter max duration",
-              "shower_detection_enabled": "Shower detection",
               "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
@@ -268,8 +261,7 @@
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
               "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
-              "shower_detection_enabled": "Delays the open-window recommendation due to humidity as the room-wide default, while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Uses the humidity sensor already configured per room, no extra sensor needed. Can be overridden per room.",
-              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed"
+              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors\" section"
             }
           },
           "messages": {
