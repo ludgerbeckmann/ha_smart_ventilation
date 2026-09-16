@@ -201,39 +201,50 @@ CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
 CONF_MSG_REMINDER = "msg_reminder"
 
 DEFAULT_MSG_OPEN_HUMIDITY = (
-    "Bitte das Fenster im {raum} öffnen - die Luftfeuchtigkeit ist zu hoch."
+    "Bitte das Fenster im {raum} öffnen - die Luftfeuchtigkeit liegt mit "
+    "{wert} über dem Schwellenwert von {schwelle}."
 )
 DEFAULT_MSG_OPEN_CO2 = (
-    "Bitte das Fenster im {raum} öffnen - der CO2-Wert ist zu hoch."
+    "Bitte das Fenster im {raum} öffnen - der CO2-Wert liegt mit {wert} "
+    "über dem Schwellenwert von {schwelle}."
 )
 DEFAULT_MSG_OPEN_TEMP = (
-    "Bitte das Fenster im {raum} zum Lüften öffnen - drinnen ist es wärmer "
-    "als draußen."
+    "Bitte das Fenster im {raum} zum Lüften öffnen - die Innentemperatur "
+    "liegt mit {wert} über dem Schwellenwert von {schwelle}, draußen ist "
+    "es kühler."
 )
 DEFAULT_MSG_CLOSE_FROST = (
-    "Bitte das Fenster im {raum} wegen Frostgefahr wieder schließen."
+    "Bitte das Fenster im {raum} wegen Frostgefahr wieder schließen - die "
+    "Außentemperatur liegt mit {wert} auf/unter der Frostschutz-Grenze "
+    "von {schwelle}."
 )
 DEFAULT_MSG_CLOSE_HEAT = (
-    "Bitte das Fenster im {raum} wieder schließen - draußen ist es aktuell "
-    "zu heiß, um sinnvoll zu lüften."
+    "Bitte das Fenster im {raum} wieder schließen - draußen ist es mit "
+    "{wert} zu heiß, um sinnvoll zu lüften (Hitzeschutz-Grenze: "
+    "{schwelle})."
 )
 DEFAULT_MSG_CLOSE_DURATION = (
-    "Das Fenster im {raum} ist schon eine Weile offen - bitte wegen der "
-    "Kälte draußen wieder schließen."
+    "Das Fenster im {raum} ist schon {wert} offen - bitte wegen der Kälte "
+    "draußen wieder schließen (Höchstdauer: {schwelle})."
 )
 DEFAULT_MSG_CLOSE_HUMIDITY = (
-    "Die Luftfeuchtigkeit im {raum} ist wieder im normalen Bereich - "
-    "Fenster kann geschlossen werden."
+    "Die Luftfeuchtigkeit im {raum} liegt mit {wert} wieder im normalen "
+    "Bereich (Schwellenwert: {schwelle}) - Fenster kann geschlossen "
+    "werden."
 )
 DEFAULT_MSG_CLOSE_CO2 = (
-    "Der CO2-Wert im {raum} ist wieder im normalen Bereich - Fenster kann "
-    "geschlossen werden."
+    "Der CO2-Wert im {raum} liegt mit {wert} wieder im normalen Bereich "
+    "(Schwellenwert: {schwelle}) - Fenster kann geschlossen werden."
 )
 DEFAULT_MSG_CLOSE_OUTDOOR_WARMER = (
-    "Draußen ist es jetzt wärmer als im {raum} - bitte Fenster wieder "
-    "schließen."
+    "Draußen ist es mit {wert} jetzt wärmer als im {raum} ({schwelle}) - "
+    "bitte Fenster wieder schließen."
 )
-DEFAULT_MSG_CLOSE_DEFAULT = "Bitte das Fenster im {raum} wieder schließen."
+DEFAULT_MSG_CLOSE_DEFAULT = (
+    "Bitte das Fenster im {raum} wieder schließen - die Innentemperatur "
+    "liegt mit {wert} auf/unter dem Schwellenwert von {schwelle}."
+)
 DEFAULT_MSG_REMINDER = (
-    "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein."
+    "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein "
+    "({wert}, Schwellenwert {schwelle})."
 )
