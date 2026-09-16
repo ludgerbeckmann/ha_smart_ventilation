@@ -6,11 +6,15 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
+from homeassistant.helpers import area_registry as ar
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 
 from .const import (
     AC_DOMAINS,
     CONF_AC_ENTITY,
+    CONF_AREA_ID,
     CONF_CO2_ENTITY,
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
@@ -287,7 +291,61 @@ def _flatten_step_data(data: dict) -> dict:
     return flat
 
 
-def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
+def _entities_for_area(hass, area_id: str | None) -> set[str] | None:
+    """Liefert alle Entity-IDs, die (direkt oder über ihr Gerät) dem
+    angegebenen HA-Bereich zugeordnet sind - None, falls kein Bereich
+    übergeben wurde. Eine leere Menge (Bereich existiert, aber ohne
+    zugeordnete Entitäten) wird bewusst von None unterschieden, hat aber am
+    Aufrufer (_area_include_entities) dieselbe Wirkung: keine Einschränkung."""
+    if not area_id:
+        return None
+    entity_registry = er.async_get(hass)
+    device_registry = dr.async_get(hass)
+    entity_ids: set[str] = set()
+    for entity in entity_registry.entities.values():
+        entity_area_id = entity.area_id
+        if entity_area_id is None and entity.device_id:
+            device = device_registry.async_get(entity.device_id)
+            entity_area_id = device.area_id if device else None
+        if entity_area_id == area_id:
+            entity_ids.add(entity.entity_id)
+    return entity_ids
+
+
+def _area_include_entities(
+    area_entities: set[str] | None, domains: str | list[str]
+) -> list[str] | None:
+    """Schränkt einen EntitySelector auf die dem gewählten Bereich
+    zugeordneten Entitäten der passenden Domain(s) ein - liefert None (=
+    keine Einschränkung, alle Entitäten wie bisher wählbar), falls kein
+    Bereich gewählt wurde oder der Bereich keine passende Entität enthält.
+    Ohne diesen Fallback könnte ein Raum, dessen Sensoren (noch) keinem
+    HA-Bereich zugeordnet sind, plötzlich gar keine Auswahl mehr anbieten."""
+    if not area_entities:
+        return None
+    allowed_domains = (domains,) if isinstance(domains, str) else tuple(domains)
+    filtered = [
+        entity_id
+        for entity_id in area_entities
+        if entity_id.split(".", 1)[0] in allowed_domains
+    ]
+    return filtered or None
+
+
+def _build_area_schema() -> vol.Schema:
+    """Erster Schritt beim Anlegen eines neuen Raums: HA-Bereich wählen
+    (optional). Dient ausschließlich dazu, im zweiten Schritt (Formular aus
+    _build_room_schema) den Raumnamen vorzubelegen und die Sensor-/
+    Geräte-Auswahllisten auf die dem Bereich zugeordneten Entitäten
+    einzuschränken."""
+    return vol.Schema({vol.Optional(CONF_AREA_ID): selector.AreaSelector()})
+
+
+def _build_room_schema(
+    defaults: dict | None = None,
+    area_entities: set[str] | None = None,
+    show_area_selector: bool = False,
+) -> vol.Schema:
     """Formular für einen Raum: Raumname, danach vier Abschnitte
     ('Benachrichtigungsmethoden', 'Sensoren', 'Parameter', 'Geräte' -
     Parameter und Geräte standardmäßig eingeklappt, da optional).
@@ -308,8 +366,28 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
     bestehenden Eintrags (vollständig mit den aktuellen Werten) genutzt.
+
+    `area_entities` (falls angegeben) schränkt die Sensor-/Geräte-
+    Auswahllisten auf die einem HA-Bereich zugeordneten Entitäten ein
+    (siehe _entities_for_area/_area_include_entities) - Domains ohne
+    passende Entität im Bereich bleiben unbeschränkt.
+
+    `show_area_selector` zeigt zusätzlich ein Feld zur (Neu-)Auswahl des
+    HA-Bereichs an - beim Neuanlegen (Options-Flow: async_step_room) NICHT
+    nötig, da der Bereich dort bereits in einem eigenen ersten Schritt
+    gewählt wurde; beim Bearbeiten (Options-Flow) dagegen schon, da es dort
+    keinen eigenen ersten Schritt gibt.
     """
     defaults = defaults or {}
+    area_marker, area_sel = None, None
+    if show_area_selector:
+        current_area = defaults.get(CONF_AREA_ID)
+        area_marker = (
+            vol.Optional(CONF_AREA_ID, default=current_area)
+            if current_area
+            else vol.Optional(CONF_AREA_ID)
+        )
+        area_sel = selector.AreaSelector()
 
     temp_open_marker, temp_open_sel = _override_selector(CONF_TEMP_THRESHOLD_OPEN, defaults)
     temp_close_marker, temp_close_sel = _override_selector(CONF_TEMP_THRESHOLD_CLOSE, defaults)
@@ -347,9 +425,13 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
         CONF_PERSISTENT_ENABLED, defaults, yes_label="Ja", no_label="Nein"
     )
 
-    fields: dict = {
-        vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, "")): str,
-    }
+    fields: dict = {}
+    if show_area_selector:
+        fields[area_marker] = area_sel
+    fields[vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, ""))] = str
+
+    sonos_include = _area_include_entities(area_entities, "media_player")
+    presence_include = _area_include_entities(area_entities, PRESENCE_DOMAINS)
 
     fields[vol.Required(SECTION_NOTIFY)] = section(
         vol.Schema(
@@ -357,7 +439,11 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 _entity_marker(
                     CONF_SONOS_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="media_player", multiple=True)
+                    selector.EntitySelectorConfig(
+                        domain="media_player",
+                        multiple=True,
+                        **({"include_entities": sonos_include} if sonos_include else {}),
+                    )
                 ),
                 mobile_marker: mobile_sel,
                 vol.Optional(
@@ -380,7 +466,12 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                                 "required": False,
                                 "selector": selector.EntitySelector(
                                     selector.EntitySelectorConfig(
-                                        domain=PRESENCE_DOMAINS
+                                        domain=PRESENCE_DOMAINS,
+                                        **(
+                                            {"include_entities": presence_include}
+                                            if presence_include
+                                            else {}
+                                        ),
                                     )
                                 ),
                             },
@@ -393,13 +484,24 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
         {"collapsed": False},
     )
 
+    temp_source_include = _area_include_entities(area_entities, TEMP_SOURCE_DOMAINS)
+    sensor_include = _area_include_entities(area_entities, "sensor")
+    window_include = _area_include_entities(area_entities, "binary_sensor")
+
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
             {
                 _entity_marker(
                     CONF_TEMP_SOURCE_ENTITY, defaults
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain=TEMP_SOURCE_DOMAINS)
+                    selector.EntitySelectorConfig(
+                        domain=TEMP_SOURCE_DOMAINS,
+                        **(
+                            {"include_entities": temp_source_include}
+                            if temp_source_include
+                            else {}
+                        ),
+                    )
                 ),
                 vol.Optional(
                     CONF_TEMP_ATTRIBUTE,
@@ -416,7 +518,10 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 _entity_marker(
                     CONF_HUMIDITY_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor")
+                    selector.EntitySelectorConfig(
+                        domain="sensor",
+                        **({"include_entities": sensor_include} if sensor_include else {}),
+                    )
                 ),
                 vol.Optional(
                     CONF_SHOWER_DETECTION_ENABLED,
@@ -427,7 +532,10 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 _entity_marker(
                     CONF_CO2_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor")
+                    selector.EntitySelectorConfig(
+                        domain="sensor",
+                        **({"include_entities": sensor_include} if sensor_include else {}),
+                    )
                 ),
                 vol.Optional(
                     CONF_NO_WINDOW, default=defaults.get(CONF_NO_WINDOW, False)
@@ -435,7 +543,10 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 _entity_marker(
                     CONF_WINDOW_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="binary_sensor")
+                    selector.EntitySelectorConfig(
+                        domain="binary_sensor",
+                        **({"include_entities": window_include} if window_include else {}),
+                    )
                 ),
             }
         ),
@@ -464,6 +575,10 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
         {"collapsed": True},
     )
 
+    dehumidifier_include = _area_include_entities(area_entities, DEHUMIDIFIER_DOMAINS)
+    ac_include = _area_include_entities(area_entities, AC_DOMAINS)
+    shutter_include = _area_include_entities(area_entities, SHUTTER_DOMAINS)
+
     # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
     # für einen Teil der Räume relevant
     fields[vol.Required(SECTION_DEVICES)] = section(
@@ -472,17 +587,34 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 _entity_marker(
                     CONF_DEHUMIDIFIER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain=DEHUMIDIFIER_DOMAINS)
+                    selector.EntitySelectorConfig(
+                        domain=DEHUMIDIFIER_DOMAINS,
+                        **(
+                            {"include_entities": dehumidifier_include}
+                            if dehumidifier_include
+                            else {}
+                        ),
+                    )
                 ),
                 _entity_marker(
                     CONF_AC_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain=AC_DOMAINS)
+                    selector.EntitySelectorConfig(
+                        domain=AC_DOMAINS,
+                        **({"include_entities": ac_include} if ac_include else {}),
+                    )
                 ),
                 _entity_marker(
                     CONF_SHUTTER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain=SHUTTER_DOMAINS)
+                    selector.EntitySelectorConfig(
+                        domain=SHUTTER_DOMAINS,
+                        **(
+                            {"include_entities": shutter_include}
+                            if shutter_include
+                            else {}
+                        ),
+                    )
                 ),
                 power_marker: power_sel,
                 grace_marker: grace_sel,
@@ -741,8 +873,28 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
+        """Erster Schritt: optional einen HA-Bereich wählen. Dient nur dazu,
+        im zweiten Schritt (async_step_room) den Raumnamen vorzubelegen und
+        die Sensor-/Geräte-Auswahllisten auf den Bereich einzuschränken -
+        wird deshalb hier selbst noch nicht in den Config-Entry
+        übernommen. Kein eigenes __init__ nötig - das Attribut wird hier
+        beim ersten (einzigen) Aufruf dieses Schritts gesetzt, bevor
+        async_step_room es liest."""
+        if user_input is not None:
+            self._area_id = user_input.get(CONF_AREA_ID) or None
+            return await self.async_step_room()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_build_area_schema(),
+        )
+
+    async def async_step_room(
+        self, user_input: dict | None = None
+    ) -> config_entries.FlowResult:
         errors: dict[str, str] = {}
-        defaults: dict | None = None
+        defaults: dict = {}
+        area_id = getattr(self, "_area_id", None)
 
         if user_input is not None:
             defaults = _flatten_step_data(user_input)
@@ -751,6 +903,7 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if error:
                 errors["base"] = error
             else:
+                defaults[CONF_AREA_ID] = area_id
                 unique_id = (
                     f"{defaults[CONF_ROOM_NAME]}_"
                     f"{defaults[CONF_TEMP_SOURCE_ENTITY]}"
@@ -761,10 +914,16 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=defaults[CONF_ROOM_NAME], data=defaults
                 )
+        elif area_id:
+            area = ar.async_get(self.hass).async_get_area(area_id)
+            if area is not None:
+                defaults[CONF_ROOM_NAME] = area.name
+
+        area_entities = _entities_for_area(self.hass, area_id)
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=_build_room_schema(defaults),
+            step_id="room",
+            data_schema=_build_room_schema(defaults, area_entities=area_entities),
             errors=errors,
         )
 
@@ -828,9 +987,22 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 )
                 return self.async_create_entry(title="", data={})
 
+        # Die Filterung nutzt bewusst den GESPEICHERTEN Bereich (aus
+        # config_entry.data), nicht einen hier gerade erst ausgewählten -
+        # ein hier geänderter Bereich wirkt sich also erst beim nächsten
+        # Öffnen dieses Formulars auf die Auswahllisten aus (siehe Hinweis
+        # im Feld selbst). Ein einstufiges Formular wie bisher bleibt damit
+        # für den häufigen Fall (nur einen Schwellenwert anpassen) ohne
+        # zusätzlichen Zwischenschritt möglich.
+        area_entities = _entities_for_area(
+            self.hass, current.get(CONF_AREA_ID)
+        )
+
         return self.async_show_form(
             step_id="room",
-            data_schema=_build_room_schema(defaults),
+            data_schema=_build_room_schema(
+                defaults, area_entities=area_entities, show_area_selector=True
+            ),
             errors=errors,
         )
 

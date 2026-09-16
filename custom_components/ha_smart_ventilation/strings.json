@@ -3,7 +3,14 @@
     "step": {
       "user": {
         "title": "Smart Ventilation – Raum hinzufügen",
-        "description": "Lege pro Raum eine Überwachung an. Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"- Smart Ventilation Optionen -\" (Konfigurieren).",
+        "description": "Optional: HA-Bereich wählen, der diesem Raum entspricht. Damit wird im nächsten Schritt der Raumname vorbelegt und die Sensor-/Geräte-Auswahllisten auf die diesem Bereich zugeordneten Entitäten eingeschränkt. Leer lassen, um wie bisher aus allen Entitäten zu wählen.",
+        "data": {
+          "area_id": "HA-Bereich (optional)"
+        }
+      },
+      "room": {
+        "title": "Smart Ventilation – Raum hinzufügen",
+        "description": "Lege pro Raum eine Überwachung an. Wurde im vorigen Schritt ein HA-Bereich gewählt, ist der Raumname damit vorbelegt und die Sensor-/Geräte-Auswahllisten unten sind bereits auf die diesem Bereich zugeordneten Entitäten eingeschränkt (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"- Smart Ventilation Optionen -\" (Konfigurieren).",
         "data": {
           "room_name": "Raumname"
         },
@@ -111,6 +118,7 @@
         "title": "Smart Ventilation – Raum bearbeiten",
         "description": "Bestehende Einstellungen für diesen Raum anpassen.",
         "data": {
+          "area_id": "HA-Bereich (optional)",
           "room_name": "Raumname"
         },
         "sections": {
@@ -204,6 +212,9 @@
               "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
             }
           }
+        },
+        "data_description": {
+          "area_id": "Schränkt die Sensor-/Geräte-Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt) - ändern wirkt sich erst beim nächsten Öffnen dieses Formulars aus. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
         }
       },
       "global": {

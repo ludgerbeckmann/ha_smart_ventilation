@@ -3,7 +3,14 @@
     "step": {
       "user": {
         "title": "Smart Ventilation – Add room",
-        "description": "Set up monitoring for one room. Repeat this flow for additional rooms (Settings → Devices & Services → Add integration). Cross-room defaults live under the automatically created \"Smart Ventilation Options\" entry (Configure).",
+        "description": "Optional: select the HA area that corresponds to this room. This pre-fills the room name in the next step and restricts the sensor/device selection lists to the entities assigned to that area. Leave empty to choose from all entities as before.",
+        "data": {
+          "area_id": "HA area (optional)"
+        }
+      },
+      "room": {
+        "title": "Smart Ventilation – Add room",
+        "description": "Set up monitoring for one room. If an HA area was selected in the previous step, the room name is already pre-filled from it and the sensor/device selection lists below are already restricted to the entities assigned to that area (domains without a matching entity in the area remain unrestricted). Repeat this flow for additional rooms (Settings → Devices & Services → Add integration). Cross-room defaults live under the automatically created \"Smart Ventilation Options\" entry (Configure).",
         "data": {
           "room_name": "Room name"
         },
@@ -111,6 +118,7 @@
         "title": "Smart Ventilation – Edit room",
         "description": "Adjust the existing settings for this room.",
         "data": {
+          "area_id": "HA area (optional)",
           "room_name": "Room name"
         },
         "sections": {
@@ -204,6 +212,9 @@
               "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long"
             }
           }
+        },
+        "data_description": {
+          "area_id": "Restricts the sensor/device selection lists below to the entities assigned to this area (domains without a matching entity in the area remain unrestricted) - a change here only takes effect the next time this form is opened. Leave empty to choose from all entities as before."
         }
       },
       "global": {

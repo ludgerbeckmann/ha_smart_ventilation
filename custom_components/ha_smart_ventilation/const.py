@@ -13,6 +13,13 @@ GLOBAL_SETTINGS_UNIQUE_ID = "ha_smart_ventilation_global_settings"
 GLOBAL_ENTRY_ID_KEY = "_global_entry_id"
 
 CONF_ROOM_NAME = "room_name"
+# Optional: die HA-Bereich-ID (area_registry), aus der beim Anlegen der
+# Raumname vorbelegt und die Sensor-/Geräte-Auswahllisten auf die dem
+# Bereich zugeordneten Entitäten eingeschränkt wurden. Rein eine
+# Config-Flow-Komfortfunktion - wird zur Laufzeit (binary_sensor.py) nicht
+# ausgewertet. Kein Pflichtfeld, da nicht jeder Raum einem HA-Bereich
+# entsprechen muss.
+CONF_AREA_ID = "area_id"
 CONF_TEMP_SOURCE_ENTITY = "temperature_source_entity"
 CONF_TEMP_ATTRIBUTE = "temperature_attribute"
 # Standard False (bestehende Räume verhalten sich unverändert - sie haben

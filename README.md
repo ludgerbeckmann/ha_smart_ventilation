@@ -41,10 +41,21 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
 ### Raum hinzufügen
 
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
-2. Nach "Smart Ventilation" suchen – es öffnet sich direkt das
-   Raum-Formular (ein einziger Schritt, keine Folgeseiten mehr)
+2. Nach "Smart Ventilation" suchen – es öffnet sich zunächst ein kurzer
+   erster Schritt zur (optionalen) Auswahl eines **HA-Bereichs**: Wird
+   hier ein Bereich gewählt, wird im folgenden Hauptformular der Raumname
+   automatisch mit der Bezeichnung dieses Bereichs vorbelegt, und alle
+   Sensor-/Geräte-Auswahllisten (Temperatur, Luftfeuchtigkeit, CO2,
+   Fensterkontakt, Lautsprecher, Anwesenheits-Entität, Luftentfeuchter,
+   Klimaanlage, Fenstersperre/Rollladen) zeigen nur noch die diesem
+   Bereich zugeordneten Entitäten an. Enthält der gewählte Bereich für
+   eine bestimmte Domain keine passende Entität, bleibt die betreffende
+   Liste unverändert unbeschränkt (kein Sensor "verschwindet" dadurch).
+   Bleibt dieser Schritt leer, funktioniert alles wie bisher – Raumname
+   frei eintippen, alle Entitäten wählbar
 3. **Hauptformular** ausfüllen:
-   - **Raumname** (ganz oben)
+   - **Raumname** (ganz oben, ggf. bereits durch den HA-Bereich
+     vorbelegt – lässt sich hier weiterhin frei ändern)
    - **Abschnitt "Benachrichtigungsmethoden"**:
      - **Lautsprecher** (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl):
        Sprachausgabe ist automatisch aktiv, sobald hier mindestens ein
@@ -252,6 +263,25 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 > eigenen Override aus - allerdings nicht sofort, sondern spätestens beim
 > nächsten 5-Minuten-Tick jedes Raums (kein sofortiger Reload aller
 > Raum-Entitäten).
+>
+> Beim Bearbeiten eines Raums steht - anders als beim Neuanlegen - kein
+> eigener erster Schritt für den HA-Bereich zur Verfügung; das Feld
+> "HA-Bereich" findet sich hier direkt ganz oben im selben Formular, neben
+> dem Raumnamen. Die darunter angezeigten, auf den Bereich eingeschränkten
+> Sensor-/Geräte-Auswahllisten richten sich dabei noch nach dem zuletzt
+> **gespeicherten** Bereich - änderst du den Bereich hier, wirkt sich das
+> auf die Auswahllisten erst beim nächsten Öffnen dieses Formulars aus.
+
+## HA-Bereich nachträglich zuordnen oder ändern
+
+Ein Raum, der schon vor diesem Feature angelegt wurde (oder bei dem der
+erste Schritt leer gelassen wurde), hat keinen HA-Bereich hinterlegt - die
+Sensor-Auswahllisten zeigen dann weiterhin, wie gewohnt, alle Entitäten.
+Das lässt sich jederzeit nachträglich ändern: Eintrag über "Konfigurieren"
+öffnen, oben das Feld "HA-Bereich" setzen und speichern - ab dem nächsten
+Öffnen des Formulars sind die Auswahllisten dann entsprechend eingeschränkt.
+Umgekehrt lässt sich ein einmal gesetzter Bereich genauso wieder leeren, um
+zur unbeschränkten Auswahl zurückzukehren.
 
 ## Logik im Detail
 
@@ -718,3 +748,13 @@ Release-Management dieses Repositories:
 Der Ablauf bei einer neuen Version ist damit: Code ändern → Version in
 `manifest.json` hochzählen → auf `main` pushen. Tag und Release entstehen
 automatisch, ohne manuellen Schritt auf GitHub.
+
+**Pre-Releases (Beta-Versionen):** Enthält die Versionsnummer einen
+Bindestrich nach dem semver-Schema (z. B. `0.33.0-beta.1`), markiert der
+Workflow das erzeugte GitHub-Release automatisch als **Pre-Release** und
+setzt es nicht als "Latest Release". HACS zeigt Pre-Releases nur Nutzern
+an, die für diese Integration in HACS unter "Beta-Versionen anzeigen"
+zugestimmt haben - alle anderen bleiben unverändert auf der letzten
+regulären (nicht-Pre-Release-)Version. Sobald eine Beta-Version bestätigt
+ist, wird sie durch eine reguläre Versionsnummer ohne Bindestrich (z. B.
+`0.33.0`) abgelöst, die dann ganz normal für alle sichtbar wird.
