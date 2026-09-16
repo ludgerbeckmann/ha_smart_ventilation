@@ -272,7 +272,7 @@
           },
           "messages": {
             "name": "Notification texts",
-            "description": "The texts sent for the respective recommendations. Three placeholders are available: {raum} (room name), {wert} (current measured value, including unit) and {schwelle} (the matching threshold, including unit).",
+            "description": "The texts sent for the respective recommendations. Three placeholders are available: '{raum}' (room name), '{wert}' (current measured value, including unit) and '{schwelle}' (the matching threshold, including unit).",
             "data": {
               "msg_open_humidity": "Open due to humidity",
               "msg_open_co2": "Open due to CO2",
@@ -287,17 +287,17 @@
               "msg_reminder": "Reminder"
             },
             "data_description": {
-              "msg_open_humidity": "{raum} = room name. {wert} = current humidity, {schwelle} = humidity threshold to open (each incl. %).",
-              "msg_open_co2": "{raum} = room name. {wert} = current CO2 value, {schwelle} = CO2 threshold to open (each incl. ppm).",
-              "msg_open_temp": "{raum} = room name. {wert} = current indoor temperature, {schwelle} = temperature threshold to open (each incl. °C).",
-              "msg_close_default": "{raum} = room name. {wert} = current indoor temperature, {schwelle} = temperature threshold to close (each incl. °C) - used e.g. when temperature alone triggers closing.",
-              "msg_close_humidity": "{raum} = room name. {wert} = current humidity, {schwelle} = humidity threshold to close (each incl. %).",
-              "msg_close_co2": "{raum} = room name. {wert} = current CO2 value, {schwelle} = CO2 threshold to close (each incl. ppm).",
-              "msg_close_frost": "{raum} = room name. {wert} = current outdoor temperature, {schwelle} = frost protection limit (each incl. °C).",
-              "msg_close_heat": "{raum} = room name. {wert} = current outdoor temperature, {schwelle} = heat protection limit (each incl. °C).",
-              "msg_close_duration": "{raum} = room name. {wert} = time open so far, {schwelle} = winter max duration (each incl. minutes).",
-              "msg_close_outdoor_warmer": "{raum} = room name. {wert} = current outdoor temperature, {schwelle} = current indoor temperature (each incl. °C).",
-              "msg_reminder": "{raum} = room name. {wert}/{schwelle} = current value and open threshold of the original ventilation reason (temperature/humidity/CO2), each incl. its unit."
+              "msg_open_humidity": "'{raum}' = room name. '{wert}' = current humidity, '{schwelle}' = humidity threshold to open (each incl. %).",
+              "msg_open_co2": "'{raum}' = room name. '{wert}' = current CO2 value, '{schwelle}' = CO2 threshold to open (each incl. ppm).",
+              "msg_open_temp": "'{raum}' = room name. '{wert}' = current indoor temperature, '{schwelle}' = temperature threshold to open (each incl. °C).",
+              "msg_close_default": "'{raum}' = room name. '{wert}' = current indoor temperature, '{schwelle}' = temperature threshold to close (each incl. °C) - used e.g. when temperature alone triggers closing.",
+              "msg_close_humidity": "'{raum}' = room name. '{wert}' = current humidity, '{schwelle}' = humidity threshold to close (each incl. %).",
+              "msg_close_co2": "'{raum}' = room name. '{wert}' = current CO2 value, '{schwelle}' = CO2 threshold to close (each incl. ppm).",
+              "msg_close_frost": "'{raum}' = room name. '{wert}' = current outdoor temperature, '{schwelle}' = frost protection limit (each incl. °C).",
+              "msg_close_heat": "'{raum}' = room name. '{wert}' = current outdoor temperature, '{schwelle}' = heat protection limit (each incl. °C).",
+              "msg_close_duration": "'{raum}' = room name. '{wert}' = time open so far, '{schwelle}' = winter max duration (each incl. minutes).",
+              "msg_close_outdoor_warmer": "'{raum}' = room name. '{wert}' = current outdoor temperature, '{schwelle}' = current indoor temperature (each incl. °C).",
+              "msg_reminder": "'{raum}' = room name. '{wert}'/'{schwelle}' = current value and open threshold of the original ventilation reason (temperature/humidity/CO2), each incl. its unit."
             }
           }
         }
