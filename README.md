@@ -292,11 +292,14 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 **Vorrang der Luftfeuchtigkeit/CO2:** Reine Temperatur- und Winter-
 Höchstdauer-Gründe schließen das Fenster nicht, solange die Luftfeuchtigkeit
-noch über der "Schwelle zum Öffnen" liegt (und Lüften laut Außen-
-Luftfeuchtigkeits-Vergleich noch helfen würde) **oder** der CO2-Wert noch
-über der CO2-Schwelle zum Öffnen liegt - sonst würde direkt im Anschluss
-wieder eine Öffnen-Empfehlung deswegen folgen. Einzige Ausnahme: Frost- und
-Hitzeschutz haben immer Vorrang.
+oder der CO2-Wert noch einen Lüftungsbedarf anzeigen. Ist das Fenster bereits
+deswegen offen, gilt das so lange, bis der jeweilige Wert auf die eigene
+**Schließen**-Schwelle gefallen ist - nicht schon, sobald er unter die
+(höhere) Öffnen-Schwelle fällt. Sonst würde die Empfehlung bei Werten
+zwischen den beiden Schwellen ständig zwischen "wegen Temperatur schließen"
+und "wegen Luftfeuchtigkeit/CO2 wieder öffnen" hin- und herflackern, obwohl
+sich der eigentliche Lüftungsbedarf die ganze Zeit über nicht geändert hat.
+Einzige Ausnahme: Frost- und Hitzeschutz haben immer Vorrang.
 
 **Konfigurierbare Priorität bei Winter-Höchstdauer:** Der Parameter
 "Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer" legt fest, wie

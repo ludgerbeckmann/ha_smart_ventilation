@@ -593,6 +593,24 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # immer.
         open_by_co2 = co2_needs_open
 
+        # --- Schutz vor Schließen aus anderen Gründen (Temperatur, Sommer-
+        # Fall, Winter-Höchstdauer): bleibt aktiv, solange Luftfeuchtigkeit/
+        # CO2 die jeweilige SCHLIESSEN-Schwelle noch nicht erreicht haben -
+        # nicht nur bis sie unter die (höhere) ÖFFNEN-Schwelle fallen. Ohne
+        # diese Unterscheidung würde die Empfehlung bei Werten zwischen den
+        # beiden Schwellen (z. B. Luftfeuchtigkeit zwischen 50 % und 60 %
+        # bei Standard-Schwellen) ständig zwischen "wegen Temperatur
+        # schließen" und "wegen Luftfeuchtigkeit wieder öffnen" hin- und
+        # herflackern, sobald zufällig auch die Temperatur-Schließbedingung
+        # erfüllt ist - obwohl die Luftfeuchtigkeit die ganze Zeit über
+        # unverändert im Lüftungsbedarf-Bereich blieb.
+        humidity_still_needed = open_by_humidity or (
+            self._attr_is_on and humidity is not None and not humidity_needs_close
+        )
+        co2_still_needed = open_by_co2 or (
+            self._attr_is_on and co2 is not None and not co2_needs_close
+        )
+
         # Ohne Fenster in diesem Raum gibt es grundsätzlich nichts zu öffnen
         # oder zu schließen - die Empfehlungs-/Benachrichtigungslogik entfällt
         # komplett. Die oben berechneten temp_needs_*/humidity_needs_*-Flags
@@ -631,8 +649,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         close_by_summer_outdoor = (
             self._attr_is_on
             and outdoor_warmer_again
-            and not open_by_humidity
-            and not open_by_co2
+            and not humidity_still_needed
+            and not co2_still_needed
         )
 
         # --- Schließen: Winter-Höchstdauer ---
@@ -655,7 +673,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and winter_conditions
             and open_duration_minutes is not None
             and open_duration_minutes >= max_duration
-            and not (humidity_priority and (open_by_humidity or open_by_co2))
+            and not (humidity_priority and (humidity_still_needed or co2_still_needed))
         )
 
         # --- Schließen: Frost-/Hitzeschutz erzwingt sofortiges Schließen ---
@@ -667,7 +685,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # sonst würde direkt im Anschluss wieder eine "bitte öffnen"-
         # Empfehlung deswegen folgen (Schließen-dann-sofort-wieder-Öffnen-
         # Flackern).
-        close_by_temp = temp_needs_close and not open_by_humidity and not open_by_co2
+        close_by_temp = (
+            temp_needs_close and not humidity_still_needed and not co2_still_needed
+        )
 
         should_close = (
             close_by_temp
