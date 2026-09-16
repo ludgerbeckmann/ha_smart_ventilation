@@ -244,6 +244,30 @@
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
               "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit. Frostschutz hat davon unabhängig immer Vorrang."
             }
+          },
+          "messages": {
+            "name": "Benachrichtigungstexte",
+            "description": "Die Texte, die bei den jeweiligen Empfehlungen verschickt werden. {raum} wird durch den Raumnamen ersetzt.",
+            "data": {
+              "msg_open_humidity": "Öffnen wegen Luftfeuchtigkeit",
+              "msg_open_temp": "Öffnen wegen Temperatur",
+              "msg_close_default": "Schließen (allgemein)",
+              "msg_close_humidity": "Schließen wegen Luftfeuchtigkeit",
+              "msg_close_frost": "Schließen wegen Frostschutz",
+              "msg_close_duration": "Schließen wegen Winter-Höchstdauer",
+              "msg_close_outdoor_warmer": "Schließen weil draußen wärmer",
+              "msg_reminder": "Erinnerung"
+            },
+            "data_description": {
+              "msg_open_humidity": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_open_temp": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_close_default": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_close_humidity": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_close_frost": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_close_duration": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_close_outdoor_warmer": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
+              "msg_reminder": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt."
+            }
           }
         }
       }

@@ -244,6 +244,30 @@
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
               "humidity_priority_over_duration": "On (default): if humidity still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity. Frost protection always takes priority regardless."
             }
+          },
+          "messages": {
+            "name": "Notification texts",
+            "description": "The texts sent for the respective recommendations. {raum} is replaced with the room name.",
+            "data": {
+              "msg_open_humidity": "Open due to humidity",
+              "msg_open_temp": "Open due to temperature",
+              "msg_close_default": "Close (general)",
+              "msg_close_humidity": "Close due to humidity",
+              "msg_close_frost": "Close due to frost protection",
+              "msg_close_duration": "Close due to winter max duration",
+              "msg_close_outdoor_warmer": "Close because it's warmer outside",
+              "msg_reminder": "Reminder"
+            },
+            "data_description": {
+              "msg_open_humidity": "The placeholder {raum} is replaced with the room name.",
+              "msg_open_temp": "The placeholder {raum} is replaced with the room name.",
+              "msg_close_default": "The placeholder {raum} is replaced with the room name.",
+              "msg_close_humidity": "The placeholder {raum} is replaced with the room name.",
+              "msg_close_frost": "The placeholder {raum} is replaced with the room name.",
+              "msg_close_duration": "The placeholder {raum} is replaced with the room name.",
+              "msg_close_outdoor_warmer": "The placeholder {raum} is replaced with the room name.",
+              "msg_reminder": "The placeholder {raum} is replaced with the room name."
+            }
           }
         }
       }

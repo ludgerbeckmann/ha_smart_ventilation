@@ -157,6 +157,22 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard
 
+**Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
+Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
+Textfeld für:
+- Öffnen wegen Temperatur / wegen Luftfeuchtigkeit
+- Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / Frostschutz /
+  Winter-Höchstdauer / weil draußen wärmer geworden ist
+- Erinnerung (falls die Empfehlung ignoriert wird)
+
+Der Platzhalter `{raum}` wird automatisch durch den jeweiligen Raumnamen
+ersetzt. Ein Feld komplett zu leeren setzt es beim Speichern automatisch
+wieder auf den mitgelieferten Standardtext zurück. Enthält ein selbst
+angepasster Text einen ungültigen Platzhalter (z. B. Tippfehler wie
+`{room}` statt `{raum}`), wird die Nachricht trotzdem unverändert
+verschickt (ein entsprechender Hinweis erscheint dann im Log) - eine
+Benachrichtigung geht dadurch nie komplett verloren.
+
 Alle Zahlenfelder sind immer mit einem sinnvollen Standardwert vorausgefüllt
 – wird ein Feld komplett geleert, greift beim Speichern automatisch wieder
 dieser Standardwert.
@@ -400,7 +416,7 @@ content: >
   {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string) if a.innentemperatur is not none else '–' %}
-  {% set temp_val = ('<span style="color: orange;">' ~ temp_val ~ '</span>') if grund_code == 'temp' else temp_val %}
+  {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if grund_code == 'temp' else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string) if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
@@ -418,7 +434,7 @@ content: >
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string) if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_val = ('<span style="color: orange;">' ~ hum_val ~ '</span>') if grund_code == 'humidity' else hum_val %}
+  {% set hum_val = ('<mark>' ~ hum_val ~ '</mark>') if grund_code == 'humidity' else hum_val %}
   {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' % | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
   {% endif %}
   {% set abs_row = '' %}
@@ -440,15 +456,15 @@ content: >
   {% if dev1 != '' or dev2 != '' %}
   {% set dev_line = '\n\nGeräte: ' ~ dev1 ~ dev_sep ~ dev2 %}
   {% endif %}
-  {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '' %}
-  {% set grund_suffix = ' (' ~ grund_label ~ ')' if grund_label else '' %}
+  {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = 'Kein Lüftungsbedarf' if never_triggered else (status_icon) %}
   {% set status_line = '' if no_window else ('Empfehlung: ' ~ empfehlung_text ~ window_line) %}
-  {% set table1 = '| | Innen | Außen | Öffnen ab | Schließen ab |' %}
-  {% set table2 = '|---|---|---|---|---|' %}
-  {% set table3 = '| Temperatur | ' ~ temp_val ~ ' °C | ' ~ outdoor_temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' %}
-  {% set changed_line = '' if never_triggered else ('\n\nZuletzt geändert: ' ~ changed_time ~ ' → ' ~ change_action ~ grund_suffix) %}
+  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' °C | ' ~ outdoor_temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row %}
+  {% set changed_table = '' %}
+  {% if not never_triggered %}
+  {% set changed_table = '| Uhrzeit | Auslöser | Empfehlung |\n|---|---|---|\n| ' ~ changed_time ~ ' | ' ~ grund_label ~ ' | ' ~ change_action ~ ' |' %}
+  {% endif %}
   {% set n1 = 'Sprachausgabe' %}
   {% set n1_status = '🟢 an' if a.sprachausgabe_aktiv is defined else '⚫ aus' %}
   {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
@@ -458,9 +474,14 @@ content: >
   {% set n3 = 'Persistente Benachrichtigung' %}
   {% set n3_status = '🟢 an' if a.persistent_aktiv is defined else '⚫ aus' %}
   {% set n3_ziel = '–' %}
-  {% set notify_table = '\n\n| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
+  {% set notify_table = '| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
+  {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
+  {% set body = status_line ~ dev_line %}
+  {% set body = body ~ (spacer ~ changed_table if changed_table else '') %}
+  {% set body = body ~ spacer ~ values_table %}
+  {% set body = body ~ spacer ~ notify_table %}
   {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
-  {{ sep_before ~ header ~ '\n\n' ~ status_line ~ dev_line ~ changed_line ~ '\n\n' ~ table1 ~ '\n' ~ table2 ~ '\n' ~ table3 ~ hum_row ~ abs_row ~ notify_table }}
+  {{ sep_before ~ header ~ '\n\n' ~ body }}
   {% endfor %}
 ```
 
@@ -468,41 +489,42 @@ Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
 YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
 über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
 
-**Neu: Uhrzeit statt relativer Zeit.** "Zuletzt geändert" zeigt jetzt
-Datum + Uhrzeit (`15.09. 05:52`) statt "vor X Stunden" - über Home
-Assistants `as_local()`-Funktion, damit die Zeitzone korrekt
-berücksichtigt wird.
+**Wichtige technische Erkenntnis:** Home Assistants Markdown-Karte
+filtert offenbar das `style`-Attribut aus eingebettetem HTML heraus (ein
+üblicher Sicherheitsmechanismus - Skripte oder aufwändiges CSS über
+eingebettetes HTML einzuschleusen soll verhindert werden). Deshalb wurden
+`<div style="height: ...">` und `<hr style="...">` unwirksam. Diese
+Version verzichtet komplett auf `style`-Attribute:
 
-**Neu: Tabelle "Benachrichtigungsmethoden".** Zeigt für jeden Raum, welche
-der drei Methoden (Sprachausgabe, App-Benachrichtigung, Persistente
-Benachrichtigung) **tatsächlich aktiv** ist - inklusive Raum-Override und
-globaler Vererbung, genau das, was auch wirklich beim nächsten Auslösen
-verschickt würde - sowie die konkreten Ziele (Lautsprecher- bzw.
-Notify-Entitäten). Steht am Ende jedes Raum-Blocks.
+- **Abstand zwischen Tabellen**: `<small><small><small>&nbsp;</small></small></small>` -
+  ein eigenständiger Absatz, durch dreifaches `<small>` möglichst kompakt
+  gehalten, ohne jedes Style-Attribut
+- **Trennlinie zwischen Räumen**: schlichtes `<hr>` (Standard-Tag ohne
+  Style-Attribut) - ein Versuch, die Linie über Text-Zeichen dicker/dunkler
+  zu gestalten, führte je nach Bildschirmbreite zu Zeilenumbrüchen; das
+  Standard-`<hr>` ist dafür zuverlässig über die volle Kartenbreite
+- **Hervorhebung des ausschlaggebenden Werts**: `<mark>` (Standard-HTML-Tag
+  für Hervorhebungen) statt `<span style="color: orange;">` - Browser/
+  Home-Assistant-Frontend stellen das meist mit gelbem Hintergrund dar,
+  nicht exakt Orange, aber ebenfalls gut sichtbar und garantiert
+  funktionsfähig
 
-Aufbau pro Raum: **Ampel-Punkt** (🟢/🔴, nur bei Räumen mit Fenster **und**
-konfiguriertem Fensterkontakt **und** einer bereits ausgelösten Empfehlung)
-direkt vor dem **Raumnamen** als Überschrift, darunter **Empfehlung** und
-der **tatsächliche Fensterzustand**, darunter ggf. die **Geräte**-Zeile,
-dann **Zuletzt geändert**, die **Werte-Tabelle** (Innen-/Außenwerte,
-Schwellenwerte, ggf. absolute Luftfeuchtigkeit) und ganz am Ende die
-**Benachrichtigungsmethoden-Tabelle**.
+Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
+aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
+die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
+gefiltert werden oder noch mehr).
 
-**Ampel-Punkt-Logik:** 🟢 wenn Empfehlung und tatsächlicher Fensterzustand
-übereinstimmen, 🔴 bei Abweichung. Ein Raum, der noch **nie** in den
-"Öffnen"-Zustand gewechselt ist, zeigt **"Kein Lüftungsbedarf"** statt der
-irreführenden Empfehlung "Schließen" - ohne Ampel-Punkt und ohne "Zuletzt
-geändert"-Zeile. War Temperatur oder Luftfeuchtigkeit der Grund für den
-letzten Wechsel, wird der entsprechende Innen-Wert in der Werte-Tabelle
-**orange** hervorgehoben. Icons dienen ausschließlich zur
-**Status-Signalisierung** (🟢 = an/offen/übereinstimmend, ⚫ = aus/
-geschlossen, 🔴 = Abweichung) - rein dekorative Icons sind bewusst
-entfernt. Die Schwellenwerte sind mit `>`/`<` versehen (öffnen
-**oberhalb**, schließen **unterhalb** des jeweiligen Werts). Die Vorlage
-ist bewusst in viele kurze, einfache Einzelschritte zerlegt (statt weniger
-sehr langer, tief verschachtelter Zeilen) - das macht sie robuster
-gegenüber Kopier-/Einfügeproblemen und leichter zu debuggen, falls doch
-einmal ein Fehler auftritt. Diese Version wurde sowohl gegen eine echte
+**Reihenfolge:** Raumname → Empfehlung/Fenster → Geräte (falls vorhanden)
+→ **Zuletzt-geändert-Tabelle** (Uhrzeit/Auslöser/Empfehlung, nur falls
+schon einmal ausgelöst) → **Werte-Tabelle** (mit Spaltenüberschrift
+"Messgröße") → **Benachrichtigungsmethoden-Tabelle**.
+
+Icons dienen ausschließlich zur **Status-Signalisierung** (🟢 = an/offen/
+übereinstimmend, ⚫ = aus/geschlossen, 🔴 = Abweichung). Die Schwellenwerte
+sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
+des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
+Einzelschritte zerlegt - das macht sie robuster gegenüber Kopier-/
+Einfügeproblemen. Diese Version wurde sowohl gegen eine echte
 YAML-Faltung (`content: >`) als auch gegen Home Assistants sandboxed
 Jinja-Umgebung getestet.
 

@@ -141,3 +141,44 @@ DEFAULT_POWER_GRACE_PERIOD = 15
 # Luftfeuchtigkeit. Frostschutz hat davon unabhängig immer Vorrang.
 CONF_HUMIDITY_PRIORITY_OVER_DURATION = "humidity_priority_over_duration"
 DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION = True
+
+# Konfigurierbare Benachrichtigungstexte (nur in den globalen Einstellungen
+# "Smart Ventilation Optionen" - {raum} wird durch den jeweiligen Raumnamen
+# ersetzt). Über _effective() aufgelöst wie die anderen Werte - technisch
+# wäre damit sogar ein zukünftiger Raum-Override ohne weitere Codeänderung
+# möglich, aktuell aber bewusst nur global im Formular angeboten.
+CONF_MSG_OPEN_HUMIDITY = "msg_open_humidity"
+CONF_MSG_OPEN_TEMP = "msg_open_temp"
+CONF_MSG_CLOSE_FROST = "msg_close_frost"
+CONF_MSG_CLOSE_DURATION = "msg_close_duration"
+CONF_MSG_CLOSE_HUMIDITY = "msg_close_humidity"
+CONF_MSG_CLOSE_OUTDOOR_WARMER = "msg_close_outdoor_warmer"
+CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
+CONF_MSG_REMINDER = "msg_reminder"
+
+DEFAULT_MSG_OPEN_HUMIDITY = (
+    "Bitte das Fenster im {raum} öffnen - die Luftfeuchtigkeit ist zu hoch."
+)
+DEFAULT_MSG_OPEN_TEMP = (
+    "Bitte das Fenster im {raum} zum Lüften öffnen - drinnen ist es wärmer "
+    "als draußen."
+)
+DEFAULT_MSG_CLOSE_FROST = (
+    "Bitte das Fenster im {raum} wegen Frostgefahr wieder schließen."
+)
+DEFAULT_MSG_CLOSE_DURATION = (
+    "Das Fenster im {raum} ist schon eine Weile offen - bitte wegen der "
+    "Kälte draußen wieder schließen."
+)
+DEFAULT_MSG_CLOSE_HUMIDITY = (
+    "Die Luftfeuchtigkeit im {raum} ist wieder im normalen Bereich - "
+    "Fenster kann geschlossen werden."
+)
+DEFAULT_MSG_CLOSE_OUTDOOR_WARMER = (
+    "Draußen ist es jetzt wärmer als im {raum} - bitte Fenster wieder "
+    "schließen."
+)
+DEFAULT_MSG_CLOSE_DEFAULT = "Bitte das Fenster im {raum} wieder schließen."
+DEFAULT_MSG_REMINDER = (
+    "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein."
+)

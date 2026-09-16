@@ -34,6 +34,14 @@ from .const import (
     CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
+    CONF_MSG_CLOSE_DEFAULT,
+    CONF_MSG_CLOSE_DURATION,
+    CONF_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_HUMIDITY,
+    CONF_MSG_CLOSE_OUTDOOR_WARMER,
+    CONF_MSG_OPEN_HUMIDITY,
+    CONF_MSG_OPEN_TEMP,
+    CONF_MSG_REMINDER,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PERSISTENT_ENABLED,
@@ -61,6 +69,14 @@ from .const import (
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
     DEFAULT_MAX_OPEN_DURATION_WINTER,
     DEFAULT_MIN_SURPLUS_POWER,
+    DEFAULT_MSG_CLOSE_DEFAULT,
+    DEFAULT_MSG_CLOSE_DURATION,
+    DEFAULT_MSG_CLOSE_FROST,
+    DEFAULT_MSG_CLOSE_HUMIDITY,
+    DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+    DEFAULT_MSG_OPEN_HUMIDITY,
+    DEFAULT_MSG_OPEN_TEMP,
+    DEFAULT_MSG_REMINDER,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_TEMP_ATTRIBUTE,
@@ -782,35 +798,45 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         if should_ventilate:
             if reason == "humidity":
-                return (
-                    f"Bitte das Fenster im {room} öffnen - die Luftfeuchtigkeit "
-                    "ist zu hoch."
+                template = self._effective(
+                    CONF_MSG_OPEN_HUMIDITY, DEFAULT_MSG_OPEN_HUMIDITY
                 )
-            return (
-                f"Bitte das Fenster im {room} zum Lüften öffnen - drinnen ist "
-                "es wärmer als draußen."
+            else:
+                template = self._effective(CONF_MSG_OPEN_TEMP, DEFAULT_MSG_OPEN_TEMP)
+        elif reason == "frost":
+            template = self._effective(CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST)
+        elif reason == "duration":
+            template = self._effective(
+                CONF_MSG_CLOSE_DURATION, DEFAULT_MSG_CLOSE_DURATION
+            )
+        elif reason == "humidity":
+            template = self._effective(
+                CONF_MSG_CLOSE_HUMIDITY, DEFAULT_MSG_CLOSE_HUMIDITY
+            )
+        elif reason == "outdoor_warmer":
+            template = self._effective(
+                CONF_MSG_CLOSE_OUTDOOR_WARMER, DEFAULT_MSG_CLOSE_OUTDOOR_WARMER
+            )
+        elif reason == "reminder":
+            template = self._effective(CONF_MSG_REMINDER, DEFAULT_MSG_REMINDER)
+        else:
+            template = self._effective(
+                CONF_MSG_CLOSE_DEFAULT, DEFAULT_MSG_CLOSE_DEFAULT
             )
 
-        if reason == "frost":
-            return f"Bitte das Fenster im {room} wegen Frostgefahr wieder schließen."
-        if reason == "duration":
-            return (
-                f"Das Fenster im {room} ist schon eine Weile offen - bitte wegen "
-                "der Kälte draußen wieder schließen."
+        try:
+            return template.format(raum=room)
+        except (KeyError, ValueError, IndexError):
+            # Fehlerhafter Platzhalter in einem selbst angepassten Text -
+            # lieber den unformatierten Text senden als die Benachrichtigung
+            # ganz zu verlieren.
+            _LOGGER.warning(
+                "Benachrichtigungstext für Raum %s enthält einen ungültigen "
+                "Platzhalter - wird unverändert gesendet: %s",
+                room,
+                template,
             )
-        if reason == "humidity":
-            return (
-                f"Die Luftfeuchtigkeit im {room} ist wieder im normalen Bereich - "
-                "Fenster kann geschlossen werden."
-            )
-        if reason == "outdoor_warmer":
-            return (
-                f"Draußen ist es jetzt wärmer als im {room} - bitte Fenster "
-                "wieder schließen."
-            )
-        if reason == "reminder":
-            return f"Erinnerung: Das Fenster im {room} sollte noch geöffnet sein."
-        return f"Bitte das Fenster im {room} wieder schließen."
+            return template
 
     def _is_present(self, presence_entity: str | None) -> bool:
         """Prüft, ob die zu einem Notify-Ziel gehörende Person/das Gerät

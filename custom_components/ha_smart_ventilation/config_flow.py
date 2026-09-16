@@ -24,6 +24,14 @@ from .const import (
     CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
+    CONF_MSG_CLOSE_DEFAULT,
+    CONF_MSG_CLOSE_DURATION,
+    CONF_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_HUMIDITY,
+    CONF_MSG_CLOSE_OUTDOOR_WARMER,
+    CONF_MSG_OPEN_HUMIDITY,
+    CONF_MSG_OPEN_TEMP,
+    CONF_MSG_REMINDER,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PERSISTENT_ENABLED,
@@ -52,6 +60,14 @@ from .const import (
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
     DEFAULT_MAX_OPEN_DURATION_WINTER,
     DEFAULT_MIN_SURPLUS_POWER,
+    DEFAULT_MSG_CLOSE_DEFAULT,
+    DEFAULT_MSG_CLOSE_DURATION,
+    DEFAULT_MSG_CLOSE_FROST,
+    DEFAULT_MSG_CLOSE_HUMIDITY,
+    DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+    DEFAULT_MSG_OPEN_HUMIDITY,
+    DEFAULT_MSG_OPEN_TEMP,
+    DEFAULT_MSG_REMINDER,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_TEMP_ATTRIBUTE,
@@ -75,6 +91,7 @@ SECTION_NOTIFY = "notify"
 SECTION_SENSORS = "sensors"
 SECTION_DEVICES = "devices"
 SECTION_PARAMETERS = "parameters"
+SECTION_MESSAGES = "messages"
 
 # Schwellenwerte und weitere Zahlen-Parameter mit Pfeil-hoch/-runter-Steuerung.
 # Beim Bearbeiten der GLOBALEN Einstellungen immer mit Standardwert
@@ -193,11 +210,27 @@ def _tri_state_bool_selector(
     return marker, field_selector
 
 
+_MESSAGE_FIELD_DEFAULTS = {
+    CONF_MSG_OPEN_HUMIDITY: DEFAULT_MSG_OPEN_HUMIDITY,
+    CONF_MSG_OPEN_TEMP: DEFAULT_MSG_OPEN_TEMP,
+    CONF_MSG_CLOSE_DEFAULT: DEFAULT_MSG_CLOSE_DEFAULT,
+    CONF_MSG_CLOSE_HUMIDITY: DEFAULT_MSG_CLOSE_HUMIDITY,
+    CONF_MSG_CLOSE_FROST: DEFAULT_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_DURATION: DEFAULT_MSG_CLOSE_DURATION,
+    CONF_MSG_CLOSE_OUTDOOR_WARMER: DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+    CONF_MSG_REMINDER: DEFAULT_MSG_REMINDER,
+}
+
+
 def _apply_threshold_defaults(data: dict) -> dict:
-    """Füllt geleerte Schwellenwert-Felder mit ihrem Standardwert auf.
-    Wird ausschließlich für die globalen Einstellungen verwendet - auf
-    Raumebene bleiben leere Felder bewusst leer (= 'globalen Wert nutzen')."""
+    """Füllt geleerte Schwellenwert- und Benachrichtigungstext-Felder mit
+    ihrem Standardwert auf. Wird ausschließlich für die globalen
+    Einstellungen verwendet - auf Raumebene bleiben leere Felder bewusst
+    leer (= 'globalen Wert nutzen')."""
     for key, (default_value, *_rest) in _THRESHOLD_FIELDS.items():
+        if data.get(key) in (None, ""):
+            data[key] = default_value
+    for key, default_value in _MESSAGE_FIELD_DEFAULTS.items():
         if data.get(key) in (None, ""):
             data[key] = default_value
     return data
@@ -207,7 +240,7 @@ def _flatten_step_data(data: dict) -> dict:
     """Führt die verschachtelten Sections wieder zu einem flachen Dict
     zusammen. Sections sind nur eine visuelle Gruppierung im Formular -
     intern arbeiten wir weiterhin mit einem flachen dict."""
-    section_keys = (SECTION_NOTIFY, SECTION_SENSORS, SECTION_DEVICES, SECTION_PARAMETERS)
+    section_keys = (SECTION_NOTIFY, SECTION_SENSORS, SECTION_DEVICES, SECTION_PARAMETERS, SECTION_MESSAGES)
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
         flat.update(data.get(key) or {})
@@ -543,6 +576,80 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             ),
             vol.Required(SECTION_PARAMETERS): section(
                 vol.Schema(parameter_fields), {"collapsed": False}
+            ),
+            vol.Required(SECTION_MESSAGES): section(
+                vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_MSG_OPEN_HUMIDITY,
+                            default=defaults.get(
+                                CONF_MSG_OPEN_HUMIDITY, DEFAULT_MSG_OPEN_HUMIDITY
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(
+                                multiline=True, type=selector.TextSelectorType.TEXT
+                            )
+                        ),
+                        vol.Required(
+                            CONF_MSG_OPEN_TEMP,
+                            default=defaults.get(
+                                CONF_MSG_OPEN_TEMP, DEFAULT_MSG_OPEN_TEMP
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_DEFAULT,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_DEFAULT, DEFAULT_MSG_CLOSE_DEFAULT
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_HUMIDITY,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_HUMIDITY, DEFAULT_MSG_CLOSE_HUMIDITY
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_FROST,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_DURATION,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_DURATION, DEFAULT_MSG_CLOSE_DURATION
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_OUTDOOR_WARMER,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_OUTDOOR_WARMER,
+                                DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_REMINDER,
+                            default=defaults.get(
+                                CONF_MSG_REMINDER, DEFAULT_MSG_REMINDER
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                    }
+                ),
+                {"collapsed": True},
             ),
         }
     )
