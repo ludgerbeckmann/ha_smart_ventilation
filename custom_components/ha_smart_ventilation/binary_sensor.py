@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections import deque
 from datetime import timedelta
 
 from homeassistant.components.binary_sensor import (
@@ -50,6 +51,8 @@ from .const import (
     CONF_PRESENCE_ENTITY,
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
+    CONF_SHOWER_DETECTION_ENABLED,
+    CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENABLED,
     CONF_SONOS_ENTITY,
@@ -79,6 +82,8 @@ from .const import (
     DEFAULT_MSG_REMINDER,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
+    DEFAULT_SHOWER_DETECTION_ENABLED,
+    DEFAULT_SHOWER_RISE_THRESHOLD,
     DEFAULT_TEMP_ATTRIBUTE,
     DEFAULT_TEMP_MARGIN,
     DEFAULT_TEMP_THRESHOLD_CLOSE,
@@ -88,6 +93,7 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    SHOWER_RISE_LOOKBACK_MINUTES,
     TTS_PLAYBACK_MODE_PAUSE,
 )
 
@@ -153,6 +159,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._dehumidifier_low_power_since = None
         self._ac_low_power_since = None
 
+        # Rollierendes Zeitfenster (Zeitpunkt, Luftfeuchtigkeit) für die
+        # Duscherkennung - siehe _update_shower_detection().
+        self._humidity_samples: deque[tuple] = deque()
+        self._showering = False
+
     @property
     def extra_state_attributes(self) -> dict:
         indoor_temp = self._get_indoor_temperature()
@@ -188,6 +199,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["schwelle_feuchtigkeit_schliessen"] = self._effective(
                 CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
             )
+        if self._effective(CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED):
+            attrs["duschen_erkannt"] = self._showering
         if outdoor_humidity is not None:
             attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
         if humidity is not None and indoor_temp is not None:
@@ -349,6 +362,39 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         vapor_pressure = (rh_percent / 100) * saturation_vapor_pressure
         return 216.7 * vapor_pressure / (273.15 + temp_c)
 
+    def _update_shower_detection(self, humidity: float | None, now) -> bool:
+        """Erkennt ein laufendes Duschen rein anhand des Anstiegs der
+        Luftfeuchtigkeit über ein rollierendes Zeitfenster (siehe
+        SHOWER_RISE_LOOKBACK_MINUTES) - kein zusätzlicher Sensor nötig.
+
+        Lüften direkt während des Duschens bringt nichts (es entsteht
+        weiter Dampf) - solange der Anstieg anhält, wird angenommen, dass
+        noch geduscht wird. Sobald der Anstieg wieder unter die Schwelle
+        fällt (Dusche vorbei, Luftfeuchtigkeit stabilisiert sich oder
+        sinkt), gilt das Duschen als beendet.
+        """
+        if humidity is None:
+            self._humidity_samples.clear()
+            return False
+
+        self._humidity_samples.append((now, humidity))
+        cutoff = now - timedelta(minutes=SHOWER_RISE_LOOKBACK_MINUTES)
+        while len(self._humidity_samples) > 1 and self._humidity_samples[0][0] < cutoff:
+            self._humidity_samples.popleft()
+
+        oldest_time, oldest_value = self._humidity_samples[0]
+        elapsed_minutes = (now - oldest_time).total_seconds() / 60
+        if elapsed_minutes < 1:
+            # Noch nicht genug Historie, um einen Anstieg zu beurteilen -
+            # permissiv wie bei "nicht konfiguriert" (siehe CLAUDE.md).
+            return False
+
+        rise_rate = (humidity - oldest_value) / elapsed_minutes
+        threshold = self._effective(
+            CONF_SHOWER_RISE_THRESHOLD, DEFAULT_SHOWER_RISE_THRESHOLD
+        )
+        return rise_rate >= threshold
+
     def _window_action_needed(self, target_open: bool) -> bool:
         """Prüft, ob eine Benachrichtigung überhaupt nötig ist, oder ob das
         Fenster laut Fensterkontakt-Sensor bereits im gewünschten Zustand ist.
@@ -474,8 +520,24 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and self._absolute_humidity(outdoor_temp, outdoor_humidity)
             < self._absolute_humidity(indoor_temp, humidity)
         )
+
+        # --- Duscherkennung: solange die Luftfeuchtigkeit gerade schnell
+        # ansteigt (typisch beim Duschen), wird die Öffnen-Empfehlung wegen
+        # Luftfeuchtigkeit zurückgehalten - Lüften währenddessen bringt
+        # nichts. Optional, Standard aus (siehe _update_shower_detection).
+        shower_detection_enabled = self._effective(
+            CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
+        )
+        self._showering = (
+            self._update_shower_detection(humidity, dt_util.utcnow())
+            if shower_detection_enabled
+            else False
+        )
+
         open_by_temp = temp_needs_open and outdoor_cooler_enough
-        open_by_humidity = humidity_needs_open and outdoor_drier_enough
+        open_by_humidity = (
+            humidity_needs_open and outdoor_drier_enough and not self._showering
+        )
 
         # Ohne Fenster in diesem Raum gibt es grundsätzlich nichts zu öffnen
         # oder zu schließen - die Empfehlungs-/Benachrichtigungslogik entfällt

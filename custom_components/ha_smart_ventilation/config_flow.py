@@ -40,6 +40,8 @@ from .const import (
     CONF_PRESENCE_ENTITY,
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
+    CONF_SHOWER_DETECTION_ENABLED,
+    CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENABLED,
     CONF_SONOS_ENTITY,
@@ -70,6 +72,8 @@ from .const import (
     DEFAULT_MSG_REMINDER,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
+    DEFAULT_SHOWER_DETECTION_ENABLED,
+    DEFAULT_SHOWER_RISE_THRESHOLD,
     DEFAULT_TEMP_ATTRIBUTE,
     DEFAULT_TEMP_MARGIN,
     DEFAULT_TEMP_THRESHOLD_CLOSE,
@@ -112,9 +116,10 @@ _THRESHOLD_FIELDS = {
     CONF_MIN_SURPLUS_POWER: (DEFAULT_MIN_SURPLUS_POWER, 0, 10000, 100, "W"),
     CONF_POWER_GRACE_PERIOD: (DEFAULT_POWER_GRACE_PERIOD, 0, 120, 5, "min"),
     CONF_TTS_VOLUME: (DEFAULT_TTS_VOLUME, 0, 100, 5, "%"),
+    CONF_SHOWER_RISE_THRESHOLD: (DEFAULT_SHOWER_RISE_THRESHOLD, 0.2, 10, 0.1, "%/min"),
 }
 
-# Die neun "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit dem
+# Die zehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit dem
 # Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/power_grace_period
 # gehören beim Raum bewusst zum Geräte-Abschnitt, nicht hierher.
 _CORE_PARAMETER_KEYS = (
@@ -127,6 +132,7 @@ _CORE_PARAMETER_KEYS = (
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_REMINDER_INTERVAL,
+    CONF_SHOWER_RISE_THRESHOLD,
 )
 
 
@@ -300,6 +306,12 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
         yes_label="Ja – Luftfeuchtigkeit hat Vorrang",
         no_label="Nein – Winter-Höchstdauer hat Vorrang",
     )
+    shower_marker, shower_sel = _tri_state_bool_selector(
+        CONF_SHOWER_DETECTION_ENABLED, defaults, yes_label="Ja", no_label="Nein"
+    )
+    shower_threshold_marker, shower_threshold_sel = _override_selector(
+        CONF_SHOWER_RISE_THRESHOLD, defaults
+    )
 
     # Die drei Benachrichtigungsmethoden sind jetzt überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
@@ -412,6 +424,8 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 duration_marker: duration_sel,
                 priority_marker: priority_sel,
                 reminder_marker: reminder_sel,
+                shower_marker: shower_sel,
+                shower_threshold_marker: shower_threshold_sel,
             }
         ),
         {"collapsed": True},
@@ -469,6 +483,14 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             default=defaults.get(
                 CONF_HUMIDITY_PRIORITY_OVER_DURATION,
                 DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
+            ),
+        )
+    ] = selector.BooleanSelector()
+    parameter_fields[
+        vol.Required(
+            CONF_SHOWER_DETECTION_ENABLED,
+            default=defaults.get(
+                CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
             ),
         )
     ] = selector.BooleanSelector()

@@ -142,6 +142,24 @@ DEFAULT_POWER_GRACE_PERIOD = 15
 CONF_HUMIDITY_PRIORITY_OVER_DURATION = "humidity_priority_over_duration"
 DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION = True
 
+# Duscherkennung: verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit,
+# solange die Luftfeuchtigkeit gerade schnell ansteigt (typisch beim
+# Duschen) - Lüften direkt während des Duschens bringt nichts, da weiter
+# Dampf entsteht. Erkennung rein anhand des Anstiegs des bereits
+# konfigurierten Luftfeuchtigkeitssensors, kein zusätzlicher Sensor nötig.
+# Standard aus (nur relevant für Räume mit Dusche/Badewanne).
+CONF_SHOWER_DETECTION_ENABLED = "shower_detection_enabled"
+CONF_SHOWER_RISE_THRESHOLD = "shower_rise_threshold"
+DEFAULT_SHOWER_DETECTION_ENABLED = False
+# %-Punkte relative Luftfeuchtigkeit pro Minute, oberhalb der ein laufendes
+# Duschen angenommen wird.
+DEFAULT_SHOWER_RISE_THRESHOLD = 1.5
+# Zeitfenster (Minuten), über das der Anstieg gemessen wird - je kürzer,
+# desto schneller reagiert die Erkennung auf ein Ende des Duschens, aber
+# desto störanfälliger gegen kurze Messschwankungen. Bewusst fest verdrahtet,
+# nicht über die UI einstellbar.
+SHOWER_RISE_LOOKBACK_MINUTES = 10
+
 # Konfigurierbare Benachrichtigungstexte (nur in den globalen Einstellungen
 # "Smart Ventilation Optionen" - {raum} wird durch den jeweiligen Raumnamen
 # ersetzt). Über _effective() aufgelöst wie die anderen Werte - technisch
