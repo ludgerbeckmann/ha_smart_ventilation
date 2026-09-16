@@ -459,7 +459,7 @@ ohne zusätzliche Custom Cards:
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'frost': 'Frostschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
+  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -468,9 +468,10 @@ content: >
   {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚫ Schließen' %}
   {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
-  {% set temp_val = (a.innentemperatur | round(1) | string) if a.innentemperatur is not none else '–' %}
+  {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
   {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if grund_code == 'temp' else temp_val %}
-  {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string) if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
+  {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
+  {% set outdoor_temp_val = ('<mark>' ~ outdoor_temp_val ~ '</mark>') if grund_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_line = '' %}
@@ -486,9 +487,15 @@ content: >
   {% endif %}
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
-  {% set hum_val = (a.luftfeuchtigkeit | round(0) | string) if a.luftfeuchtigkeit is not none else '–' %}
+  {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
   {% set hum_val = ('<mark>' ~ hum_val ~ '</mark>') if grund_code == 'humidity' else hum_val %}
-  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' % | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
+  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
+  {% endif %}
+  {% set co2_row = '' %}
+  {% if a.co2 is defined %}
+  {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
+  {% set co2_val = ('<mark>' ~ co2_val ~ '</mark>') if grund_code == 'co2' else co2_val %}
+  {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
   {% if a.absolute_luftfeuchtigkeit is defined %}
@@ -504,16 +511,22 @@ content: >
   {% if a.klimaanlage_an is defined %}
   {% set dev2 = 'Klimaanlage ' ~ ('🟢 an' if a.klimaanlage_an else '⚫ aus') %}
   {% endif %}
-  {% set dev_sep = ' · ' if (dev1 != '' and dev2 != '') else '' %}
+  {% set dev3 = '' %}
+  {% if a.duschen_erkannt is defined %}
+  {% set dev3 = 'Dusche ' ~ ('🟢 an' if a.duschen_erkannt else '⚫ aus') %}
+  {% endif %}
+  {% set status_parts = dev1 %}
+  {% set status_parts = (status_parts ~ ' · ' ~ dev2) if (status_parts != '' and dev2 != '') else (status_parts ~ dev2) %}
+  {% set status_parts = (status_parts ~ ' · ' ~ dev3) if (status_parts != '' and dev3 != '') else (status_parts ~ dev3) %}
   {% set dev_line = '' %}
-  {% if dev1 != '' or dev2 != '' %}
-  {% set dev_line = '\n\nGeräte: ' ~ dev1 ~ dev_sep ~ dev2 %}
+  {% if status_parts != '' %}
+  {% set dev_line = '\n\nStatus: ' ~ status_parts %}
   {% endif %}
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = 'Kein Lüftungsbedarf' if never_triggered else (status_icon) %}
   {% set status_line = '' if no_window else ('Empfehlung: ' ~ empfehlung_text ~ window_line) %}
-  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' °C | ' ~ outdoor_temp_val ~ ' °C | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row %}
+  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ co2_row ~ abs_row %}
   {% set changed_table = '' %}
   {% if not never_triggered %}
   {% set changed_table = '| Uhrzeit | Auslöser | Empfehlung |\n|---|---|---|\n| ' ~ changed_time ~ ' | ' ~ grund_label ~ ' | ' ~ change_action ~ ' |' %}
@@ -560,17 +573,25 @@ Version verzichtet komplett auf `style`-Attribute:
   für Hervorhebungen) statt `<span style="color: orange;">` - Browser/
   Home-Assistant-Frontend stellen das meist mit gelbem Hintergrund dar,
   nicht exakt Orange, aber ebenfalls gut sichtbar und garantiert
-  funktionsfähig
+  funktionsfähig. Hervorgehoben wird jeweils die Zelle mit der Maßeinheit
+  zusammen (z. B. `34.2 °C`, nicht nur `34.2`) und für **jeden** Auslöser,
+  der einem konkreten Messwert zuordenbar ist: Innentemperatur (`temp`),
+  Luftfeuchtigkeit (`humidity`), CO2 (`co2`) sowie die Außentemperatur bei
+  Frost-/Hitzeschutz und dem Sommer-Fall (`frost`/`heat`/`outdoor_warmer`) -
+  bei Winter-Höchstdauer (`duration`) gibt es keinen einzelnen Messwert zum
+  Hervorheben, dort bleibt nur die Zeile in der Zuletzt-geändert-Tabelle
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
 aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
 die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
-**Reihenfolge:** Raumname → Empfehlung/Fenster → Geräte (falls vorhanden)
-→ **Zuletzt-geändert-Tabelle** (Uhrzeit/Auslöser/Empfehlung, nur falls
-schon einmal ausgelöst) → **Werte-Tabelle** (mit Spaltenüberschrift
-"Messgröße") → **Benachrichtigungsmethoden-Tabelle**.
+**Reihenfolge:** Raumname → Empfehlung/Fenster → Status (Luftentfeuchter/
+Klimaanlage/Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für
+den Raum aktiv) → **Zuletzt-geändert-Tabelle** (Uhrzeit/Auslöser/
+Empfehlung, nur falls schon einmal ausgelöst) → **Werte-Tabelle** (mit
+Spaltenüberschrift "Messgröße", inkl. CO2-Zeile falls ein CO2-Sensor
+hinterlegt ist) → **Benachrichtigungsmethoden-Tabelle**.
 
 Icons dienen ausschließlich zur **Status-Signalisierung** (🟢 = an/offen/
 übereinstimmend, ⚫ = aus/geschlossen, 🔴 = Abweichung). Die Schwellenwerte
