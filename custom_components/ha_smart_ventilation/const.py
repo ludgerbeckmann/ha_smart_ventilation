@@ -64,6 +64,7 @@ DEFAULT_TTS_PLAYBACK_MODE = TTS_PLAYBACK_MODE_OVERLAY
 # Erweiterte Lüftungslogik
 CONF_TEMP_MARGIN = "temp_margin"
 CONF_FROST_PROTECTION_TEMP = "frost_protection_temp"
+CONF_HEAT_PROTECTION_TEMP = "heat_protection_temp"
 CONF_WINTER_OUTDOOR_THRESHOLD = "winter_outdoor_threshold"
 CONF_MAX_OPEN_DURATION_WINTER = "max_open_duration_winter_minutes"
 CONF_REMINDER_INTERVAL = "reminder_interval_minutes"
@@ -110,6 +111,14 @@ DEFAULT_TEMP_MARGIN = 1.0
 # Unterhalb dieser Außentemperatur wird nie geöffnet (Frostschutz); ein
 # bereits geöffneter Zustand wird sofort auf "Schließen" gesetzt.
 DEFAULT_FROST_PROTECTION_TEMP = 0.0
+
+# Oberhalb dieser Außentemperatur wird nie geöffnet (Hitzeschutz, Pendant
+# zum Frostschutz) - Lüften würde absehbar nur noch Hitze hereinlassen und
+# die Innentemperatur weiter über die Schwelle treiben, unabhängig davon,
+# ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden
+# sollte. Ein bereits geöffneter Zustand wird sofort auf "Schließen"
+# gesetzt.
+DEFAULT_HEAT_PROTECTION_TEMP = 30.0
 
 # Unterhalb dieser Außentemperatur gilt die Situation als "Winter" - dann
 # greift die maximale Öffnungsdauer, um Wärmeverlust zu begrenzen.
@@ -183,6 +192,7 @@ CONF_MSG_OPEN_HUMIDITY = "msg_open_humidity"
 CONF_MSG_OPEN_CO2 = "msg_open_co2"
 CONF_MSG_OPEN_TEMP = "msg_open_temp"
 CONF_MSG_CLOSE_FROST = "msg_close_frost"
+CONF_MSG_CLOSE_HEAT = "msg_close_heat"
 CONF_MSG_CLOSE_DURATION = "msg_close_duration"
 CONF_MSG_CLOSE_HUMIDITY = "msg_close_humidity"
 CONF_MSG_CLOSE_CO2 = "msg_close_co2"
@@ -202,6 +212,10 @@ DEFAULT_MSG_OPEN_TEMP = (
 )
 DEFAULT_MSG_CLOSE_FROST = (
     "Bitte das Fenster im {raum} wegen Frostgefahr wieder schließen."
+)
+DEFAULT_MSG_CLOSE_HEAT = (
+    "Bitte das Fenster im {raum} wieder schließen - draußen ist es aktuell "
+    "zu heiß, um sinnvoll zu lüften."
 )
 DEFAULT_MSG_CLOSE_DURATION = (
     "Das Fenster im {raum} ist schon eine Weile offen - bitte wegen der "

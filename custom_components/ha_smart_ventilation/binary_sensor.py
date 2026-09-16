@@ -28,6 +28,7 @@ from .const import (
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
     CONF_HUMIDITY_PRIORITY_OVER_DURATION,
@@ -42,6 +43,7 @@ from .const import (
     CONF_MSG_CLOSE_DEFAULT,
     CONF_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
     CONF_MSG_OPEN_CO2,
@@ -73,6 +75,7 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
@@ -82,6 +85,7 @@ from .const import (
     DEFAULT_MSG_CLOSE_DEFAULT,
     DEFAULT_MSG_CLOSE_DURATION,
     DEFAULT_MSG_CLOSE_FROST,
+    DEFAULT_MSG_CLOSE_HEAT,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     DEFAULT_MSG_OPEN_CO2,
@@ -131,8 +135,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     - Schließen, sobald draußen wieder spürbar wärmer ist als drinnen
       (Sommer-Nachtkühlung: abends öffnen, morgens schließen) - außer es
       wird gerade noch aus Feuchtigkeitsgründen gelüftet
-    - Frostschutz: unterhalb einer Außentemperatur wird nie geöffnet, ein
-      bereits offener Zustand wird sofort geschlossen
+    - Frost-/Hitzeschutz: unterhalb bzw. oberhalb einer Außentemperatur-
+      Grenze wird nie geöffnet, ein bereits offener Zustand wird sofort
+      geschlossen - unabhängig vom eigentlichen Öffnen-Grund (Temperatur,
+      Luftfeuchtigkeit oder CO2)
     - Winter-Höchstdauer: bei kalter Außentemperatur wird nach einer
       einstellbaren Zeit automatisch zum Schließen aufgefordert, um
       übermäßigen Wärmeverlust zu vermeiden
@@ -486,6 +492,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         co2_close = self._effective(CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE)
         margin = self._effective(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
         frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
+        heat_temp = self._effective(CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP)
         winter_threshold = self._effective(
             CONF_WINTER_OUTDOOR_THRESHOLD, DEFAULT_WINTER_OUTDOOR_THRESHOLD
         )
@@ -513,6 +520,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # das fälschlich wie "kein Sensor konfiguriert" zu behandeln.
         frost_block = outdoor_entity is not None and (
             outdoor_temp is None or outdoor_temp <= frost_temp
+        )
+
+        # --- Hitzeschutz: harte Grenze, Pendant zum Frostschutz ---
+        # Oberhalb dieser Außentemperatur wird nie geöffnet - Lüften würde
+        # absehbar nur noch Hitze hereinlassen, unabhängig davon, ob
+        # eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet
+        # werden sollte. Anders als beim Frostschutz wird eine fehlende
+        # Außentemperatur hier NICHT als "zu heiß" gewertet (das übernimmt
+        # bereits frost_block als konservativer Fallback) - sonst würde ein
+        # einzelner fehlender Messwert beide Schutzmechanismen gleichzeitig
+        # auslösen, ohne zusätzlichen Nutzen.
+        heat_block = outdoor_entity is not None and (
+            outdoor_temp is not None and outdoor_temp >= heat_temp
         )
 
         # --- Öffnen: drinnen zu warm UND draußen spürbar kühler ---
@@ -600,7 +620,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         should_open = (
             open_by_temp or open_by_humidity or open_by_co2
-        ) and not frost_block
+        ) and not frost_block and not heat_block
 
         # --- Schließen: Sommer-Fall (draußen wieder spürbar wärmer) ---
         outdoor_warmer_again = (
@@ -638,8 +658,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and not (humidity_priority and (open_by_humidity or open_by_co2))
         )
 
-        # --- Schließen: Frostschutz erzwingt sofortiges Schließen ---
+        # --- Schließen: Frost-/Hitzeschutz erzwingt sofortiges Schließen ---
         close_by_frost = self._attr_is_on and frost_block
+        close_by_heat = self._attr_is_on and heat_block
 
         # Reine Temperatur-Schließbedingung nicht anwenden, solange die
         # Luftfeuchtigkeit oder der CO2-Wert noch Lüftungsbedarf anzeigen -
@@ -655,6 +676,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             or close_by_summer_outdoor
             or close_by_duration
             or close_by_frost
+            or close_by_heat
         )
 
         new_state = self._attr_is_on
@@ -672,6 +694,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             new_state = False
             if close_by_frost:
                 reason = "frost"
+            elif close_by_heat:
+                reason = "heat"
             elif close_by_duration:
                 reason = "duration"
             elif humidity_needs_close:
@@ -918,6 +942,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 template = self._effective(CONF_MSG_OPEN_TEMP, DEFAULT_MSG_OPEN_TEMP)
         elif reason == "frost":
             template = self._effective(CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST)
+        elif reason == "heat":
+            template = self._effective(CONF_MSG_CLOSE_HEAT, DEFAULT_MSG_CLOSE_HEAT)
         elif reason == "duration":
             template = self._effective(
                 CONF_MSG_CLOSE_DURATION, DEFAULT_MSG_CLOSE_DURATION
