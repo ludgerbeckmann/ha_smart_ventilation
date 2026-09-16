@@ -33,12 +33,14 @@
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Humidity (optional)",
+              "co2_entity": "CO2 (optional)",
               "window_entity": "Window contact sensor (optional)",
               "no_window": "This room has no window"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
               "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
             }
           },
@@ -50,6 +52,8 @@
               "temp_threshold_close": "Temperature threshold to close",
               "humidity_threshold_open": "Humidity threshold to open",
               "humidity_threshold_close": "Humidity threshold to close",
+              "co2_threshold_open": "CO2 threshold to open",
+              "co2_threshold_close": "CO2 threshold to close",
               "temp_margin": "Tolerance margin",
               "frost_protection_temp": "Frost protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
@@ -64,12 +68,14 @@
               "temp_threshold_close": "Empty = use the value from the global settings",
               "humidity_threshold_open": "Empty = use the value from the global settings",
               "humidity_threshold_close": "Empty = use the value from the global settings",
+              "co2_threshold_open": "Empty = use the value from the global settings",
+              "co2_threshold_close": "Empty = use the value from the global settings",
               "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
               "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
               "shower_detection_enabled": "Empty = use the global setting. Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed.",
               "shower_rise_threshold": "Empty = use the value from the global settings"
             }
@@ -133,12 +139,14 @@
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Humidity (optional)",
+              "co2_entity": "CO2 (optional)",
               "window_entity": "Window contact sensor (optional)",
               "no_window": "This room has no window"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
               "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
             }
           },
@@ -150,6 +158,8 @@
               "temp_threshold_close": "Temperature threshold to close",
               "humidity_threshold_open": "Humidity threshold to open",
               "humidity_threshold_close": "Humidity threshold to close",
+              "co2_threshold_open": "CO2 threshold to open",
+              "co2_threshold_close": "CO2 threshold to close",
               "temp_margin": "Tolerance margin",
               "frost_protection_temp": "Frost protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
@@ -164,12 +174,14 @@
               "temp_threshold_close": "Empty = use the value from the global settings",
               "humidity_threshold_open": "Empty = use the value from the global settings",
               "humidity_threshold_close": "Empty = use the value from the global settings",
+              "co2_threshold_open": "Empty = use the value from the global settings",
+              "co2_threshold_close": "Empty = use the value from the global settings",
               "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
               "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
               "shower_detection_enabled": "Empty = use the global setting. Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed.",
               "shower_rise_threshold": "Empty = use the value from the global settings"
             }
@@ -237,22 +249,25 @@
               "temp_threshold_close": "Temperature threshold to close",
               "humidity_threshold_open": "Humidity threshold to open",
               "humidity_threshold_close": "Humidity threshold to close",
+              "co2_threshold_open": "CO2 threshold to open",
+              "co2_threshold_close": "CO2 threshold to close",
               "temp_margin": "Tolerance margin",
               "frost_protection_temp": "Frost protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
-              "humidity_priority_over_duration": "Humidity takes priority over winter max duration",
+              "humidity_priority_over_duration": "Humidity/CO2 take priority over winter max duration",
               "shower_detection_enabled": "Shower detection",
               "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
+              "co2_threshold_open": "Common recommendation: ventilate at 1000 ppm at the latest",
               "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
               "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
-              "humidity_priority_over_duration": "On (default): if humidity still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity. Frost protection always takes priority regardless.",
+              "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
               "shower_detection_enabled": "Delays the open-window recommendation due to humidity as the room-wide default, while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Uses the humidity sensor already configured per room, no extra sensor needed. Can be overridden per room.",
               "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed"
             }
@@ -262,9 +277,11 @@
             "description": "The texts sent for the respective recommendations. {raum} is replaced with the room name.",
             "data": {
               "msg_open_humidity": "Open due to humidity",
+              "msg_open_co2": "Open due to CO2",
               "msg_open_temp": "Open due to temperature",
               "msg_close_default": "Close (general)",
               "msg_close_humidity": "Close due to humidity",
+              "msg_close_co2": "Close due to CO2",
               "msg_close_frost": "Close due to frost protection",
               "msg_close_duration": "Close due to winter max duration",
               "msg_close_outdoor_warmer": "Close because it's warmer outside",
@@ -272,9 +289,11 @@
             },
             "data_description": {
               "msg_open_humidity": "The placeholder {raum} is replaced with the room name.",
+              "msg_open_co2": "The placeholder {raum} is replaced with the room name.",
               "msg_open_temp": "The placeholder {raum} is replaced with the room name.",
               "msg_close_default": "The placeholder {raum} is replaced with the room name.",
               "msg_close_humidity": "The placeholder {raum} is replaced with the room name.",
+              "msg_close_co2": "The placeholder {raum} is replaced with the room name.",
               "msg_close_frost": "The placeholder {raum} is replaced with the room name.",
               "msg_close_duration": "The placeholder {raum} is replaced with the room name.",
               "msg_close_outdoor_warmer": "The placeholder {raum} is replaced with the room name.",

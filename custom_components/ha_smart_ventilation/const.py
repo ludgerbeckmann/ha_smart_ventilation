@@ -22,6 +22,10 @@ CONF_TEMP_ATTRIBUTE = "temperature_attribute"
 # Sensorwerte weiter.
 CONF_NO_WINDOW = "no_window"
 CONF_HUMIDITY_ENTITY = "humidity_entity"
+# CO2-Sensor (ppm) - analog zur Luftfeuchtigkeit, aber ohne Außenluft-
+# Vergleich: Außenluft liegt praktisch immer bei ~420 ppm, also weit unter
+# jeder sinnvollen Innenschwelle - Lüften hilft bei CO2 immer.
+CONF_CO2_ENTITY = "co2_entity"
 CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
 # Nur in den globalen Einstellungen ("Smart Ventilation Options") verfügbar,
 # nicht pro Raum überschreibbar - wie CONF_OUTDOOR_TEMP_ENTITY.
@@ -31,6 +35,8 @@ CONF_TEMP_THRESHOLD_OPEN = "temp_threshold_open"
 CONF_TEMP_THRESHOLD_CLOSE = "temp_threshold_close"
 CONF_HUMIDITY_THRESHOLD_OPEN = "humidity_threshold_open"
 CONF_HUMIDITY_THRESHOLD_CLOSE = "humidity_threshold_close"
+CONF_CO2_THRESHOLD_OPEN = "co2_threshold_open"
+CONF_CO2_THRESHOLD_CLOSE = "co2_threshold_close"
 CONF_NOTIFY_METHOD = "notify_method"
 CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
@@ -89,6 +95,12 @@ DEFAULT_TEMP_THRESHOLD_OPEN = 23.0
 DEFAULT_TEMP_THRESHOLD_CLOSE = 21.0
 DEFAULT_HUMIDITY_THRESHOLD_OPEN = 60.0
 DEFAULT_HUMIDITY_THRESHOLD_CLOSE = 50.0
+
+# CO2 in ppm. 1000 ppm ist die gängige Empfehlung für "spätestens jetzt
+# lüften" (z. B. Umweltbundesamt), 800 ppm als Schließen-Schwelle ergibt
+# dieselbe relative Hysterese wie bei der Luftfeuchtigkeit (60/50).
+DEFAULT_CO2_THRESHOLD_OPEN = 1000.0
+DEFAULT_CO2_THRESHOLD_CLOSE = 800.0
 
 # Toleranz-Marge (°C) bei allen Außen-/Innentemperatur-Vergleichen, um
 # Flackern der Empfehlung bei Werten nahe der Schwelle zu vermeiden.
@@ -166,16 +178,21 @@ SHOWER_RISE_LOOKBACK_MINUTES = 10
 # wäre damit sogar ein zukünftiger Raum-Override ohne weitere Codeänderung
 # möglich, aktuell aber bewusst nur global im Formular angeboten.
 CONF_MSG_OPEN_HUMIDITY = "msg_open_humidity"
+CONF_MSG_OPEN_CO2 = "msg_open_co2"
 CONF_MSG_OPEN_TEMP = "msg_open_temp"
 CONF_MSG_CLOSE_FROST = "msg_close_frost"
 CONF_MSG_CLOSE_DURATION = "msg_close_duration"
 CONF_MSG_CLOSE_HUMIDITY = "msg_close_humidity"
+CONF_MSG_CLOSE_CO2 = "msg_close_co2"
 CONF_MSG_CLOSE_OUTDOOR_WARMER = "msg_close_outdoor_warmer"
 CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
 CONF_MSG_REMINDER = "msg_reminder"
 
 DEFAULT_MSG_OPEN_HUMIDITY = (
     "Bitte das Fenster im {raum} öffnen - die Luftfeuchtigkeit ist zu hoch."
+)
+DEFAULT_MSG_OPEN_CO2 = (
+    "Bitte das Fenster im {raum} öffnen - der CO2-Wert ist zu hoch."
 )
 DEFAULT_MSG_OPEN_TEMP = (
     "Bitte das Fenster im {raum} zum Lüften öffnen - drinnen ist es wärmer "
@@ -191,6 +208,10 @@ DEFAULT_MSG_CLOSE_DURATION = (
 DEFAULT_MSG_CLOSE_HUMIDITY = (
     "Die Luftfeuchtigkeit im {raum} ist wieder im normalen Bereich - "
     "Fenster kann geschlossen werden."
+)
+DEFAULT_MSG_CLOSE_CO2 = (
+    "Der CO2-Wert im {raum} ist wieder im normalen Bereich - Fenster kann "
+    "geschlossen werden."
 )
 DEFAULT_MSG_CLOSE_OUTDOOR_WARMER = (
     "Draußen ist es jetzt wärmer als im {raum} - bitte Fenster wieder "

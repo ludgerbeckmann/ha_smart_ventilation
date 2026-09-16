@@ -23,6 +23,9 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AC_ENTITY,
+    CONF_CO2_ENTITY,
+    CONF_CO2_THRESHOLD_CLOSE,
+    CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -35,11 +38,13 @@ from .const import (
     CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
     CONF_MOBILE_TARGETS,
+    CONF_MSG_CLOSE_CO2,
     CONF_MSG_CLOSE_DEFAULT,
     CONF_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_FROST,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
+    CONF_MSG_OPEN_CO2,
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
     CONF_MSG_REMINDER,
@@ -66,17 +71,21 @@ from .const import (
     CONF_TTS_VOLUME,
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
+    DEFAULT_CO2_THRESHOLD_CLOSE,
+    DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
     DEFAULT_MAX_OPEN_DURATION_WINTER,
     DEFAULT_MIN_SURPLUS_POWER,
+    DEFAULT_MSG_CLOSE_CO2,
     DEFAULT_MSG_CLOSE_DEFAULT,
     DEFAULT_MSG_CLOSE_DURATION,
     DEFAULT_MSG_CLOSE_FROST,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+    DEFAULT_MSG_OPEN_CO2,
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
     DEFAULT_MSG_REMINDER,
@@ -168,6 +177,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     def extra_state_attributes(self) -> dict:
         indoor_temp = self._get_indoor_temperature()
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
+        co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
         outdoor_temp = self._get_float_state(self._effective(CONF_OUTDOOR_TEMP_ENTITY, None))
         outdoor_humidity = self._get_float_state(
             self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
@@ -198,6 +208,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
             attrs["schwelle_feuchtigkeit_schliessen"] = self._effective(
                 CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
+            )
+        if self._config.get(CONF_CO2_ENTITY):
+            attrs["co2"] = co2
+            attrs["schwelle_co2_oeffnen"] = self._effective(
+                CONF_CO2_THRESHOLD_OPEN, DEFAULT_CO2_THRESHOLD_OPEN
+            )
+            attrs["schwelle_co2_schliessen"] = self._effective(
+                CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE
             )
         if self._effective(CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED):
             attrs["duschen_erkannt"] = self._showering
@@ -273,7 +291,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._ac_state = bool(attrs["klimaanlage_an"])
 
         tracked = [self._config[CONF_TEMP_SOURCE_ENTITY]]
-        for key in (CONF_HUMIDITY_ENTITY, CONF_WINDOW_ENTITY, CONF_POWER_ENTITY):
+        for key in (
+            CONF_HUMIDITY_ENTITY,
+            CONF_CO2_ENTITY,
+            CONF_WINDOW_ENTITY,
+            CONF_POWER_ENTITY,
+        ):
             value = self._config.get(key)
             if value:
                 tracked.append(value)
@@ -449,6 +472,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         """Prüft alle Bedingungen und aktualisiert ggf. den Zustand."""
         indoor_temp = self._get_indoor_temperature()
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
+        co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
         outdoor_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
         outdoor_temp = self._get_float_state(outdoor_entity)
         outdoor_humidity_entity = self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
@@ -458,6 +482,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         temp_close = self._effective(CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE)
         hum_open = self._effective(CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN)
         hum_close = self._effective(CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE)
+        co2_open = self._effective(CONF_CO2_THRESHOLD_OPEN, DEFAULT_CO2_THRESHOLD_OPEN)
+        co2_close = self._effective(CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE)
         margin = self._effective(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
         frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
         winter_threshold = self._effective(
@@ -474,6 +500,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # --- Grundbedingungen ---
         humidity_needs_open = humidity is not None and humidity >= hum_open
         humidity_needs_close = humidity is not None and humidity <= hum_close
+        co2_needs_open = co2 is not None and co2 >= co2_open
+        co2_needs_close = co2 is not None and co2 <= co2_close
         temp_needs_open = indoor_temp is not None and indoor_temp >= temp_open
         temp_needs_close = indoor_temp is not None and indoor_temp <= temp_close
 
@@ -538,6 +566,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         open_by_humidity = (
             humidity_needs_open and outdoor_drier_enough and not self._showering
         )
+        # CO2 braucht - anders als Temperatur/Luftfeuchtigkeit - keinen
+        # Außenluft-Vergleich: Außenluft liegt praktisch immer bei ~420 ppm,
+        # also weit unter jeder sinnvollen Innenschwelle - Lüften hilft hier
+        # immer.
+        open_by_co2 = co2_needs_open
 
         # Ohne Fenster in diesem Raum gibt es grundsätzlich nichts zu öffnen
         # oder zu schließen - die Empfehlungs-/Benachrichtigungslogik entfällt
@@ -564,7 +597,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
             return
 
-        should_open = (open_by_temp or open_by_humidity) and not frost_block
+        should_open = (
+            open_by_temp or open_by_humidity or open_by_co2
+        ) and not frost_block
 
         # --- Schließen: Sommer-Fall (draußen wieder spürbar wärmer) ---
         outdoor_warmer_again = (
@@ -573,13 +608,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and outdoor_temp >= indoor_temp + margin
         )
         close_by_summer_outdoor = (
-            self._attr_is_on and outdoor_warmer_again and not open_by_humidity
+            self._attr_is_on
+            and outdoor_warmer_again
+            and not open_by_humidity
+            and not open_by_co2
         )
 
         # --- Schließen: Winter-Höchstdauer ---
-        # Ob dabei ein noch bestehender Feuchtigkeits-Lüftungsbedarf Vorrang
-        # hat (Standard) oder die Höchstdauer strikt durchgesetzt wird, ist
-        # konfigurierbar (Raum-Override möglich, sonst globale Einstellung).
+        # Ob dabei ein noch bestehender Feuchtigkeits-/CO2-Lüftungsbedarf
+        # Vorrang hat (Standard) oder die Höchstdauer strikt durchgesetzt
+        # wird, ist konfigurierbar (Raum-Override möglich, sonst globale
+        # Einstellung).
         humidity_priority = self._effective(
             CONF_HUMIDITY_PRIORITY_OVER_DURATION,
             DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
@@ -595,21 +634,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and winter_conditions
             and open_duration_minutes is not None
             and open_duration_minutes >= max_duration
-            and not (humidity_priority and open_by_humidity)
+            and not (humidity_priority and (open_by_humidity or open_by_co2))
         )
 
         # --- Schließen: Frostschutz erzwingt sofortiges Schließen ---
         close_by_frost = self._attr_is_on and frost_block
 
         # Reine Temperatur-Schließbedingung nicht anwenden, solange die
-        # Luftfeuchtigkeit noch Lüftungsbedarf anzeigt - sonst würde direkt
-        # im Anschluss wieder eine "bitte öffnen"-Empfehlung wegen der
-        # Feuchtigkeit folgen (Schließen-dann-sofort-wieder-Öffnen-Flackern).
-        close_by_temp = temp_needs_close and not open_by_humidity
+        # Luftfeuchtigkeit oder der CO2-Wert noch Lüftungsbedarf anzeigen -
+        # sonst würde direkt im Anschluss wieder eine "bitte öffnen"-
+        # Empfehlung deswegen folgen (Schließen-dann-sofort-wieder-Öffnen-
+        # Flackern).
+        close_by_temp = temp_needs_close and not open_by_humidity and not open_by_co2
 
         should_close = (
             close_by_temp
             or humidity_needs_close
+            or co2_needs_close
             or close_by_summer_outdoor
             or close_by_duration
             or close_by_frost
@@ -620,7 +661,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         if should_open and not self._attr_is_on:
             new_state = True
-            reason = "humidity" if open_by_humidity and not open_by_temp else "temp"
+            if open_by_temp:
+                reason = "temp"
+            elif open_by_humidity:
+                reason = "humidity"
+            else:
+                reason = "co2"
         elif should_close and self._attr_is_on:
             new_state = False
             if close_by_frost:
@@ -629,6 +675,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 reason = "duration"
             elif humidity_needs_close:
                 reason = "humidity"
+            elif co2_needs_close:
+                reason = "co2"
             elif close_by_temp:
                 reason = "temp"
             elif close_by_summer_outdoor:
@@ -863,6 +911,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 template = self._effective(
                     CONF_MSG_OPEN_HUMIDITY, DEFAULT_MSG_OPEN_HUMIDITY
                 )
+            elif reason == "co2":
+                template = self._effective(CONF_MSG_OPEN_CO2, DEFAULT_MSG_OPEN_CO2)
             else:
                 template = self._effective(CONF_MSG_OPEN_TEMP, DEFAULT_MSG_OPEN_TEMP)
         elif reason == "frost":
@@ -875,6 +925,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             template = self._effective(
                 CONF_MSG_CLOSE_HUMIDITY, DEFAULT_MSG_CLOSE_HUMIDITY
             )
+        elif reason == "co2":
+            template = self._effective(CONF_MSG_CLOSE_CO2, DEFAULT_MSG_CLOSE_CO2)
         elif reason == "outdoor_warmer":
             template = self._effective(
                 CONF_MSG_CLOSE_OUTDOOR_WARMER, DEFAULT_MSG_CLOSE_OUTDOOR_WARMER
