@@ -268,10 +268,12 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 **Schließen** wird empfohlen, wenn:
 - Innentemperatur ≤ "Schwelle zum Schließen" – *außer* es wird gerade noch
-  aus Feuchtigkeits- oder CO2-Gründen gelüftet (siehe "Vorrang der
-  Luftfeuchtigkeit/CO2" unten), **oder**
-- Luftfeuchtigkeit ≤ "Schwelle zum Schließen", **oder**
-- CO2 ≤ "CO2-Schwelle zum Schließen", **oder**
+  aus Feuchtigkeits- oder CO2-Gründen gelüftet (siehe "Vorrang zwischen
+  Temperatur/Luftfeuchtigkeit/CO2" unten), **oder**
+- Luftfeuchtigkeit ≤ "Schwelle zum Schließen" – *außer* es wird gerade noch
+  aus Temperatur- oder CO2-Gründen gelüftet, **oder**
+- CO2 ≤ "CO2-Schwelle zum Schließen" – *außer* es wird gerade noch aus
+  Temperatur- oder Feuchtigkeits-Gründen gelüftet, **oder**
 - **Sommer-Fall**: draußen ist mittlerweile mindestens um die Toleranz-Marge
   wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeits- oder
   CO2-Gründen gelüftet, **oder**
@@ -290,16 +292,21 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
   hereinlassen, egal ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder
   CO2 gelüftet werden sollte)
 
-**Vorrang der Luftfeuchtigkeit/CO2:** Reine Temperatur- und Winter-
-Höchstdauer-Gründe schließen das Fenster nicht, solange die Luftfeuchtigkeit
-oder der CO2-Wert noch einen Lüftungsbedarf anzeigen. Ist das Fenster bereits
-deswegen offen, gilt das so lange, bis der jeweilige Wert auf die eigene
-**Schließen**-Schwelle gefallen ist - nicht schon, sobald er unter die
-(höhere) Öffnen-Schwelle fällt. Sonst würde die Empfehlung bei Werten
-zwischen den beiden Schwellen ständig zwischen "wegen Temperatur schließen"
-und "wegen Luftfeuchtigkeit/CO2 wieder öffnen" hin- und herflackern, obwohl
-sich der eigentliche Lüftungsbedarf die ganze Zeit über nicht geändert hat.
-Einzige Ausnahme: Frost- und Hitzeschutz haben immer Vorrang.
+**Vorrang zwischen Temperatur/Luftfeuchtigkeit/CO2:** Die drei Größen
+schützen sich gegenseitig davor, allein wegen einer der beiden anderen
+geschlossen zu werden - das gilt symmetrisch in alle Richtungen: Temperatur
+schließt nicht, solange noch Luftfeuchtigkeits- oder CO2-Bedarf besteht,
+Luftfeuchtigkeit schließt nicht, solange noch Temperatur- oder CO2-Bedarf
+besteht, und CO2 schließt nicht, solange noch Temperatur- oder
+Luftfeuchtigkeits-Bedarf besteht. Auch Sommer-Fall und Winter-Höchstdauer
+respektieren das (siehe oben). Ist das Fenster bereits wegen einer Größe
+offen, gilt deren Schutzwirkung so lange, bis **diese** Größe auf ihre
+eigene **Schließen**-Schwelle gefallen ist - nicht schon, sobald sie unter
+ihre (höhere) Öffnen-Schwelle fällt. Sonst würde die Empfehlung bei Werten
+zwischen den beiden Schwellen ständig hin- und herflackern (z. B. "wegen
+Temperatur schließen" und "wegen Luftfeuchtigkeit/CO2 wieder öffnen"),
+obwohl sich der eigentliche Lüftungsbedarf die ganze Zeit über nicht
+geändert hat. Einzige Ausnahme: Frost- und Hitzeschutz haben immer Vorrang.
 
 **Konfigurierbare Priorität bei Winter-Höchstdauer:** Der Parameter
 "Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer" legt fest, wie

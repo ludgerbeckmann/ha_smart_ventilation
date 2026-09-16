@@ -593,17 +593,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # immer.
         open_by_co2 = co2_needs_open
 
-        # --- Schutz vor Schließen aus anderen Gründen (Temperatur, Sommer-
-        # Fall, Winter-Höchstdauer): bleibt aktiv, solange Luftfeuchtigkeit/
-        # CO2 die jeweilige SCHLIESSEN-Schwelle noch nicht erreicht haben -
-        # nicht nur bis sie unter die (höhere) ÖFFNEN-Schwelle fallen. Ohne
+        # --- Schutz vor Schließen aus einem anderen Grund: bleibt für jede
+        # der drei Größen (Temperatur, Luftfeuchtigkeit, CO2) aktiv, solange
+        # sie die jeweilige SCHLIESSEN-Schwelle noch nicht erreicht hat -
+        # nicht nur bis sie unter die (höhere) ÖFFNEN-Schwelle fällt. Ohne
         # diese Unterscheidung würde die Empfehlung bei Werten zwischen den
         # beiden Schwellen (z. B. Luftfeuchtigkeit zwischen 50 % und 60 %
-        # bei Standard-Schwellen) ständig zwischen "wegen Temperatur
+        # bei Standard-Schwellen) ständig zwischen "wegen Temperatur/CO2
         # schließen" und "wegen Luftfeuchtigkeit wieder öffnen" hin- und
-        # herflackern, sobald zufällig auch die Temperatur-Schließbedingung
-        # erfüllt ist - obwohl die Luftfeuchtigkeit die ganze Zeit über
-        # unverändert im Lüftungsbedarf-Bereich blieb.
+        # herflackern, sobald zufällig gleichzeitig eine andere
+        # Schließbedingung erfüllt ist - obwohl die Luftfeuchtigkeit die
+        # ganze Zeit über unverändert im Lüftungsbedarf-Bereich blieb.
+        # Symmetrisch für alle drei Größen: jede schützt die beiden anderen
+        # davor, allein deswegen zu schließen.
+        temp_still_needed = open_by_temp or (
+            self._attr_is_on and indoor_temp is not None and not temp_needs_close
+        )
         humidity_still_needed = open_by_humidity or (
             self._attr_is_on and humidity is not None and not humidity_needs_close
         )
@@ -680,23 +685,78 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         close_by_frost = self._attr_is_on and frost_block
         close_by_heat = self._attr_is_on and heat_block
 
-        # Reine Temperatur-Schließbedingung nicht anwenden, solange die
-        # Luftfeuchtigkeit oder der CO2-Wert noch Lüftungsbedarf anzeigen -
-        # sonst würde direkt im Anschluss wieder eine "bitte öffnen"-
-        # Empfehlung deswegen folgen (Schließen-dann-sofort-wieder-Öffnen-
-        # Flackern).
+        # Jede der drei reinen Schließbedingungen (Temperatur, Luftfeuchtigkeit,
+        # CO2) wird nicht angewendet, solange eine der beiden ANDEREN Größen
+        # noch Lüftungsbedarf anzeigt - sonst würde direkt im Anschluss
+        # wieder eine "bitte öffnen"-Empfehlung deswegen folgen (Schließen-
+        # dann-sofort-wieder-Öffnen-Flackern). Frost-/Hitzeschutz sowie der
+        # Sommer-Fall/Winter-Höchstdauer sind davon unabhängig (siehe dort).
         close_by_temp = (
             temp_needs_close and not humidity_still_needed and not co2_still_needed
+        )
+        close_by_humidity = (
+            humidity_needs_close and not temp_still_needed and not co2_still_needed
+        )
+        close_by_co2 = (
+            co2_needs_close and not temp_still_needed and not humidity_still_needed
         )
 
         should_close = (
             close_by_temp
-            or humidity_needs_close
-            or co2_needs_close
+            or close_by_humidity
+            or close_by_co2
             or close_by_summer_outdoor
             or close_by_duration
             or close_by_frost
             or close_by_heat
+        )
+
+        # Ein einziger strukturierter Debug-Log-Eintrag pro Neubewertung mit
+        # allen Zwischenergebnissen - aktivierbar ganz ohne eigenes Feature
+        # über Home Assistants Standardmechanismus (Einstellungen → Geräte &
+        # Dienste → Smart Ventilation → Zahnrad am jeweiligen Raum →
+        # Debug-Protokollierung aktivieren, oder global über `logger:` in
+        # der configuration.yaml für
+        # custom_components.ha_smart_ventilation). Gedacht, um Flacker-
+        # artige Probleme (wiederholtes Öffnen/Schließen) anhand der
+        # Logzeilen nachvollziehen zu können, ohne die Entscheidungskette
+        # gedanklich (oder im Chat) durchspielen zu müssen.
+        _LOGGER.debug(
+            "%s: is_on=%s indoor_temp=%s outdoor_temp=%s humidity=%s co2=%s | "
+            "needs open/close: temp=%s/%s hum=%s/%s co2=%s/%s | "
+            "open_by: temp=%s hum=%s co2=%s | frost_block=%s heat_block=%s | "
+            "still_needed: temp=%s hum=%s co2=%s | "
+            "close_by: temp=%s hum=%s co2=%s summer=%s duration=%s frost=%s heat=%s | "
+            "should_open=%s should_close=%s",
+            self._config[CONF_ROOM_NAME],
+            self._attr_is_on,
+            indoor_temp,
+            outdoor_temp,
+            humidity,
+            co2,
+            temp_needs_open,
+            temp_needs_close,
+            humidity_needs_open,
+            humidity_needs_close,
+            co2_needs_open,
+            co2_needs_close,
+            open_by_temp,
+            open_by_humidity,
+            open_by_co2,
+            frost_block,
+            heat_block,
+            temp_still_needed,
+            humidity_still_needed,
+            co2_still_needed,
+            close_by_temp,
+            close_by_humidity,
+            close_by_co2,
+            close_by_summer_outdoor,
+            close_by_duration,
+            close_by_frost,
+            close_by_heat,
+            should_open,
+            should_close,
         )
 
         new_state = self._attr_is_on
@@ -718,9 +778,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 reason = "heat"
             elif close_by_duration:
                 reason = "duration"
-            elif humidity_needs_close:
+            elif close_by_humidity:
                 reason = "humidity"
-            elif co2_needs_close:
+            elif close_by_co2:
                 reason = "co2"
             elif close_by_temp:
                 reason = "temp"
