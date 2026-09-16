@@ -16,6 +16,7 @@ from .const import (
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
     CONF_HUMIDITY_PRIORITY_OVER_DURATION,
@@ -31,6 +32,7 @@ from .const import (
     CONF_MSG_CLOSE_DEFAULT,
     CONF_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
     CONF_MSG_OPEN_CO2,
@@ -63,6 +65,7 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
     DEFAULT_HUMIDITY_THRESHOLD_OPEN,
@@ -72,6 +75,7 @@ from .const import (
     DEFAULT_MSG_CLOSE_DEFAULT,
     DEFAULT_MSG_CLOSE_DURATION,
     DEFAULT_MSG_CLOSE_FROST,
+    DEFAULT_MSG_CLOSE_HEAT,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     DEFAULT_MSG_OPEN_CO2,
@@ -120,6 +124,7 @@ _THRESHOLD_FIELDS = {
     CONF_CO2_THRESHOLD_CLOSE: (DEFAULT_CO2_THRESHOLD_CLOSE, 400, 5000, 50, "ppm"),
     CONF_TEMP_MARGIN: (DEFAULT_TEMP_MARGIN, 0, 5, 0.5, "°C"),
     CONF_FROST_PROTECTION_TEMP: (DEFAULT_FROST_PROTECTION_TEMP, -20, 15, 0.5, "°C"),
+    CONF_HEAT_PROTECTION_TEMP: (DEFAULT_HEAT_PROTECTION_TEMP, 20, 45, 0.5, "°C"),
     CONF_WINTER_OUTDOOR_THRESHOLD: (DEFAULT_WINTER_OUTDOOR_THRESHOLD, -10, 20, 0.5, "°C"),
     CONF_MAX_OPEN_DURATION_WINTER: (DEFAULT_MAX_OPEN_DURATION_WINTER, 5, 120, 5, "min"),
     CONF_REMINDER_INTERVAL: (DEFAULT_REMINDER_INTERVAL, 0, 180, 5, "min"),
@@ -129,9 +134,10 @@ _THRESHOLD_FIELDS = {
     CONF_SHOWER_RISE_THRESHOLD: (DEFAULT_SHOWER_RISE_THRESHOLD, 0.2, 10, 0.1, "%/min"),
 }
 
-# Die zwölf "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit dem
-# Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/power_grace_period
-# gehören beim Raum bewusst zum Geräte-Abschnitt, nicht hierher.
+# Die dreizehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
+# dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
+# power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
+# hierher.
 _CORE_PARAMETER_KEYS = (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TEMP_THRESHOLD_CLOSE,
@@ -141,6 +147,7 @@ _CORE_PARAMETER_KEYS = (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_TEMP_MARGIN,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_REMINDER_INTERVAL,
@@ -236,6 +243,7 @@ _MESSAGE_FIELD_DEFAULTS = {
     CONF_MSG_CLOSE_HUMIDITY: DEFAULT_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_CO2: DEFAULT_MSG_CLOSE_CO2,
     CONF_MSG_CLOSE_FROST: DEFAULT_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_HEAT: DEFAULT_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_DURATION: DEFAULT_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_OUTDOOR_WARMER: DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     CONF_MSG_REMINDER: DEFAULT_MSG_REMINDER,
@@ -311,6 +319,7 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     co2_close_marker, co2_close_sel = _override_selector(CONF_CO2_THRESHOLD_CLOSE, defaults)
     margin_marker, margin_sel = _override_selector(CONF_TEMP_MARGIN, defaults)
     frost_marker, frost_sel = _override_selector(CONF_FROST_PROTECTION_TEMP, defaults)
+    heat_marker, heat_sel = _override_selector(CONF_HEAT_PROTECTION_TEMP, defaults)
     winter_marker, winter_sel = _override_selector(CONF_WINTER_OUTDOOR_THRESHOLD, defaults)
     duration_marker, duration_sel = _override_selector(CONF_MAX_OPEN_DURATION_WINTER, defaults)
     reminder_marker, reminder_sel = _override_selector(CONF_REMINDER_INTERVAL, defaults)
@@ -444,6 +453,7 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 co2_close_marker: co2_close_sel,
                 margin_marker: margin_sel,
                 frost_marker: frost_sel,
+                heat_marker: heat_sel,
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
                 priority_marker: priority_sel,
@@ -660,6 +670,14 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             CONF_MSG_CLOSE_FROST,
                             default=defaults.get(
                                 CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_HEAT,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_HEAT, DEFAULT_MSG_CLOSE_HEAT
                             ),
                         ): selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)

@@ -100,9 +100,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert):
      - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
-       und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Winter-Schwelle,
-       Winter-Höchstdauer und Erinnerungsintervall – Zahlenfelder mit
-       Pfeil-hoch/-runter-Steuerung
+       und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Hitzeschutz-Grenze,
+       Winter-Schwelle, Winter-Höchstdauer und Erinnerungsintervall –
+       Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
      - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
        Abschnitt "Sensoren" aktiviert ist)
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
@@ -175,7 +175,8 @@ Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
 Textfeld für:
 - Öffnen wegen Temperatur / wegen Luftfeuchtigkeit / wegen CO2
 - Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / CO2 /
-  Frostschutz / Winter-Höchstdauer / weil draußen wärmer geworden ist
+  Frostschutz / Hitzeschutz / Winter-Höchstdauer / weil draußen wärmer
+  geworden ist
 - Erinnerung (falls die Empfehlung ignoriert wird)
 
 Der Platzhalter `{raum}` wird automatisch durch den jeweiligen Raumnamen
@@ -236,7 +237,7 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 ## Logik im Detail
 
-**Öffnen** wird empfohlen, wenn (und Frostschutz nicht greift):
+**Öffnen** wird empfohlen, wenn (und weder Frost- noch Hitzeschutz greift):
 - Innentemperatur ≥ "Schwelle zum Öffnen" **und** draußen mindestens um die
   Toleranz-Marge kühler ist als drinnen, **oder**
 - Luftfeuchtigkeit ≥ "Schwelle zum Öffnen" **und** (kein Außen-
@@ -264,15 +265,20 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 - **Frostschutz**: die Außentemperatur ist auf/unter die Frostschutz-Grenze
   gefallen (greift sofort, unabhängig von allen anderen Bedingungen,
   **auch** falls noch aus Feuchtigkeits- oder CO2-Gründen gelüftet wird -
-  Frostschutz hat immer Vorrang)
+  Frostschutz hat immer Vorrang), **oder**
+- **Hitzeschutz**: die Außentemperatur ist auf/über die Hitzeschutz-Grenze
+  gestiegen (Pendant zum Frostschutz, greift genauso sofort und unabhängig
+  von allen anderen Bedingungen - Lüften würde absehbar nur noch Hitze
+  hereinlassen, egal ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder
+  CO2 gelüftet werden sollte)
 
 **Vorrang der Luftfeuchtigkeit/CO2:** Reine Temperatur- und Winter-
 Höchstdauer-Gründe schließen das Fenster nicht, solange die Luftfeuchtigkeit
 noch über der "Schwelle zum Öffnen" liegt (und Lüften laut Außen-
 Luftfeuchtigkeits-Vergleich noch helfen würde) **oder** der CO2-Wert noch
 über der CO2-Schwelle zum Öffnen liegt - sonst würde direkt im Anschluss
-wieder eine Öffnen-Empfehlung deswegen folgen. Einzige Ausnahme: Frostschutz
-hat immer Vorrang.
+wieder eine Öffnen-Empfehlung deswegen folgen. Einzige Ausnahme: Frost- und
+Hitzeschutz haben immer Vorrang.
 
 **Konfigurierbare Priorität bei Winter-Höchstdauer:** Der Parameter
 "Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer" legt fest, wie
@@ -287,8 +293,8 @@ dieser Konflikt aufgelöst wird:
 
 In den globalen Einstellungen ("Smart Ventilation Optionen") als fester
 Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
-(leer = globalen Wert verwenden). Frostschutz hat davon unabhängig immer
-Vorrang, unabhängig von dieser Einstellung.
+(leer = globalen Wert verwenden). Frost- und Hitzeschutz haben davon
+unabhängig immer Vorrang, unabhängig von dieser Einstellung.
 
 Die reine Temperatur-Schließbedingung berücksichtigt einen noch
 bestehenden Feuchtigkeits- oder CO2-Lüftungsbedarf dagegen immer (nicht
@@ -318,6 +324,12 @@ betroffen.
 **Zusätzlich:**
 - **Frostschutz** verhindert außerdem grundsätzlich das Öffnen, solange die
   Außentemperatur auf/unter der Frostschutz-Grenze liegt
+- **Hitzeschutz** verhindert ebenso grundsätzlich das Öffnen, solange die
+  Außentemperatur auf/über der Hitzeschutz-Grenze liegt (Standard 30 °C) -
+  anders als beim Frostschutz wird ein fehlender/nicht verfügbarer
+  Außentemperatur-Wert dabei NICHT vorsorglich als "zu heiß" gewertet
+  (das übernimmt in diesem Fall bereits der Frostschutz als konservativer
+  Fallback)
 - **Erinnerung**: ist ein Erinnerungsintervall > 0 eingestellt, wird die
   Benachrichtigung wiederholt, solange die Empfehlung aktiv bleibt (z. B.
   falls das Fenster trotzdem nicht geöffnet wurde)
@@ -424,7 +436,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
-| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `duration`, `outdoor_warmer`) |
+| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`) |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
