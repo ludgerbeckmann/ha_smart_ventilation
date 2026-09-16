@@ -45,12 +45,11 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
    Raum-Formular (ein einziger Schritt, keine Folgeseiten mehr)
 3. **Hauptformular** ausfüllen:
    - **Raumname** (ganz oben)
-   - **Abschnitt "Benachrichtigungsmethoden"** (alle drei Methoden jetzt
-     global mit Raum-Override - jedes Dropdown kennt **Ja / Nein / leer**,
-     leer = globale Einstellung aus "Smart Ventilation Optionen" gilt):
-     - **Sprachausgabe** (Ja/Nein/leer) – direkt darunter: **Lautsprecher**
-       (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl; leer =
-       globale Lautsprecher verwenden). Die TTS-Entität selbst kommt
+   - **Abschnitt "Benachrichtigungsmethoden"**:
+     - **Lautsprecher** (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl):
+       Sprachausgabe ist automatisch aktiv, sobald hier mindestens ein
+       Lautsprecher ausgewählt ist – kein eigener Ja/Nein-Schalter mehr,
+       auch keine globale Einstellung dafür. Die TTS-Entität selbst kommt
        ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
        auswählbar
      - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
@@ -79,6 +78,10 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
      - Optional: Luftfeuchtigkeit
+     - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
+       einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
+       unter "Logik im Detail". Die zugehörige Anstiegs-Schwelle findet
+       sich weiter unten im Abschnitt "Parameter"
      - Optional: CO2 (`sensor`-Entität mit ppm-Wert) – ohne Außenluft-
        Vergleich, da Außenluft praktisch immer weit unter jeder sinnvollen
        Innenschwelle liegt
@@ -100,8 +103,8 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Winter-Schwelle,
        Winter-Höchstdauer und Erinnerungsintervall – Zahlenfelder mit
        Pfeil-hoch/-runter-Steuerung
-     - Duscherkennung (Ja/Nein/Leer) und die zugehörige Anstiegs-Schwelle –
-       siehe "Duscherkennung" unter "Logik im Detail"
+     - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
+       Abschnitt "Sensoren" aktiviert ist)
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
      Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
@@ -151,19 +154,21 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
   Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
   Werte selbst bleiben pro Raum überschreibbar, siehe Geräte-Abschnitt
   im Raum-Formular)
-- **Sprachausgabe** + **Lautsprecher**: globaler Standard für alle Räume,
-  die dafür keinen eigenen Ja/Nein/Ziel-Override im Abschnitt
-  "Benachrichtigungsmethoden" gesetzt haben
-- **Home Assistant Companion App** + **Benachrichtigungsziele**: ebenso
-  globaler Standard, pro Raum überschreibbar
+- **Home Assistant Companion App** + **Benachrichtigungsziele**: globaler
+  Standard, pro Raum überschreibbar
 - **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
   Standard, pro Raum überschreibbar
+
+Sprachausgabe hat hier keine Einstellung mehr – Lautsprecherauswahl und
+Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
+"Benachrichtigungsmethoden" im Raum-Formular).
 
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  CO2-Schwellen zum Öffnen/Schließen sowie Duscherkennung (Ja/Nein) und
-  Anstiegs-Schwelle
+  CO2-Schwellen zum Öffnen/Schließen sowie der Anstiegs-Schwelle für die
+  Duscherkennung (die Aktivierung selbst ist reine Raumeinstellung, siehe
+  oben)
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
@@ -220,9 +225,9 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
    ist dafür nicht nötig
 
 > Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
-> der Eingabe ein-/ausblenden. Die Felder für Sprachausgabe bzw. App im
-> Abschnitt "Benachrichtigungsmethoden" sind deshalb immer sichtbar, werden
-> aber nur ausgewertet, wenn die jeweilige Checkbox aktiviert ist.
+> der Eingabe ein-/ausblenden. Das Ziel-Feld für die App-Benachrichtigung im
+> Abschnitt "Benachrichtigungsmethoden" ist deshalb immer sichtbar, wird
+> aber nur ausgewertet, wenn die Checkbox aktiviert ist.
 >
 > Änderungen an den globalen Einstellungen wirken sich auf alle Räume ohne
 > eigenen Override aus - allerdings nicht sofort, sondern spätestens beim
@@ -291,21 +296,22 @@ konfigurierbar) - ein Schließen nur wegen erreichter Zieltemperatur,
 gefolgt von einem sofortigen erneuten Öffnen deswegen, ergäbe so gut wie
 nie Sinn.
 
-**Duscherkennung:** Optional (Standard aus), gedacht für Bäder mit Dusche/
-Badewanne, bei denen die Luftfeuchtigkeit durch das Duschen sehr schnell
-ansteigt. Ist "Duscherkennung" aktiviert, wird laufend der Anstieg der
-bereits konfigurierten Luftfeuchtigkeit über die letzten 10 Minuten
-beobachtet - kein zusätzlicher Sensor nötig. Steigt die Luftfeuchtigkeit
-schneller als die "Anstiegs-Schwelle" (Standard 1,5 %-Punkte/Minute), wird
-angenommen, dass gerade geduscht wird: die Öffnen-Empfehlung wegen
-Luftfeuchtigkeit bleibt währenddessen zurückgehalten, da Lüften mitten im
-Duschvorgang nichts bringt (es entsteht weiter Dampf). Sobald der Anstieg
-wieder unter die Schwelle fällt (Duschen vorbei, Luftfeuchtigkeit
-stabilisiert sich oder sinkt bereits wieder), greift die normale
-Feuchtigkeits-Logik und die Öffnen-Empfehlung erfolgt wie gewohnt. Der
-aktuelle Erkennungsstatus steht als Attribut `duschen_erkannt` zur
-Verfügung, sobald die Funktion für den Raum aktiv ist (Raum-Override oder
-globale Einstellung). Rein temperatur- oder anders begründete
+**Duscherkennung:** Optional (Standard aus, nur im Raum-Formular unter
+"Sensoren" aktivierbar - keine globale Einstellung), gedacht für Bäder mit
+Dusche/Badewanne, bei denen die Luftfeuchtigkeit durch das Duschen sehr
+schnell ansteigt. Ist "Duscherkennung" für einen Raum aktiviert, wird
+laufend der Anstieg der bereits konfigurierten Luftfeuchtigkeit über die
+letzten 10 Minuten beobachtet - kein zusätzlicher Sensor nötig. Steigt die
+Luftfeuchtigkeit schneller als die "Anstiegs-Schwelle" (Standard 1,5
+%-Punkte/Minute, im Abschnitt "Parameter" einstellbar), wird angenommen,
+dass gerade geduscht wird: die Öffnen-Empfehlung wegen Luftfeuchtigkeit
+bleibt währenddessen zurückgehalten, da Lüften mitten im Duschvorgang
+nichts bringt (es entsteht weiter Dampf). Sobald der Anstieg wieder unter
+die Schwelle fällt (Duschen vorbei, Luftfeuchtigkeit stabilisiert sich oder
+sinkt bereits wieder), greift die normale Feuchtigkeits-Logik und die
+Öffnen-Empfehlung erfolgt wie gewohnt. Der aktuelle Erkennungsstatus steht
+als Attribut `duschen_erkannt` zur Verfügung, sobald die Funktion für den
+Raum aktiviert ist. Rein temperatur- oder anders begründete
 Öffnen-Empfehlungen (siehe oben) sind von der Duscherkennung nicht
 betroffen.
 
@@ -423,7 +429,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
-| `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn Sprachausgabe effektiv aktiv ist (Raum-Override oder geerbt von "Smart Ventilation Optionen") |
+| `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn der Raum mindestens einen Lautsprecher ausgewählt hat |
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 | `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
@@ -566,13 +572,22 @@ Jinja-Umgebung getestet.
 ## Hinweise
 
 - **Umstieg auf globale Benachrichtigungsziele**: Bestehende Räume, die
-  bereits eigene Werte für Sprachausgabe/App/Persistent gesetzt hatten,
-  funktionieren unverändert weiter (ihre bisherigen Ja/Nein-Werte gelten
-  jetzt einfach als expliziter Raum-Override). Neu ist nur, dass sich diese
-  Felder jetzt auch komplett leer lassen lassen, um stattdessen die
-  globale Einstellung zu übernehmen. Um einen bereits konfigurierten Raum
-  auf "globale Einstellung nutzen" umzustellen, musst du das entsprechende
-  Dropdown im Formular einmal manuell auf die leere Option zurücksetzen.
+  bereits eigene Werte für App/Persistent gesetzt hatten, funktionieren
+  unverändert weiter (ihre bisherigen Ja/Nein-Werte gelten jetzt einfach
+  als expliziter Raum-Override). Neu ist nur, dass sich diese Felder jetzt
+  auch komplett leer lassen lassen, um stattdessen die globale Einstellung
+  zu übernehmen. Um einen bereits konfigurierten Raum auf "globale
+  Einstellung nutzen" umzustellen, musst du das entsprechende Dropdown im
+  Formular einmal manuell auf die leere Option zurücksetzen.
+- **Wegfall des Sprachausgabe-Schalters**: Der frühere Ja/Nein/leer-Schalter
+  "Sprachausgabe" (Raum und global) und die globale Lautsprecherliste
+  wurden entfernt. Ein bereits konfigurierter Raum mit ausgewählten
+  Lautsprechern ist davon nicht betroffen - Sprachausgabe war und bleibt
+  aktiv, jetzt eben ausschließlich abgeleitet daraus, dass Lautsprecher
+  ausgewählt sind. Hatte ein Raum dagegen Sprachausgabe nur über die
+  globale Einstellung (leeres Dropdown) bezogen, ohne selbst Lautsprecher
+  festzulegen, ist Sprachausgabe für ihn jetzt aus - dann müssen die
+  gewünschten Lautsprecher einmalig direkt im Raum nachgetragen werden.
 - Die Integration reagiert direkt auf Zustandsänderungen (kein Polling),
   daher sehr geringe Systemlast. Die angezeigten Attribute (aktuelle
   Temperatur/Luftfeuchtigkeit etc.) werden bei jeder Neubewertung aktuell

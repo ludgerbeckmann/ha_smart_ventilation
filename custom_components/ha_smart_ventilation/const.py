@@ -40,9 +40,10 @@ CONF_CO2_THRESHOLD_CLOSE = "co2_threshold_close"
 CONF_NOTIFY_METHOD = "notify_method"
 CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
-# Aktivierungs-Checkboxen im Raum-Formular (Abschnitt "Benachrichtigungs-
-# methoden") - ersetzen die frühere Mehrfachauswahl als eigenständiges Feld.
-CONF_SONOS_ENABLED = "sonos_enabled"
+# Aktivierungs-Checkbox im Raum-Formular (Abschnitt "Benachrichtigungs-
+# methoden") - ersetzt die frühere Mehrfachauswahl als eigenständiges Feld.
+# Sprachausgabe hat keine eigene Checkbox mehr - sie ist aktiv, sobald
+# mindestens ein Lautsprecher (CONF_SONOS_ENTITY) ausgewählt ist.
 CONF_MOBILE_ENABLED = "mobile_enabled"
 CONF_PERSISTENT_ENABLED = "persistent_enabled"
 CONF_MOBILE_NOTIFY_ENTITY = "mobile_notify_entity"
@@ -159,7 +160,8 @@ DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION = True
 # Duschen) - Lüften direkt während des Duschens bringt nichts, da weiter
 # Dampf entsteht. Erkennung rein anhand des Anstiegs des bereits
 # konfigurierten Luftfeuchtigkeitssensors, kein zusätzlicher Sensor nötig.
-# Standard aus (nur relevant für Räume mit Dusche/Badewanne).
+# Standard aus, nur pro Raum einstellbar (Abschnitt "Sensoren") - keine
+# globale Einstellung, da nur für Räume mit Dusche/Badewanne relevant.
 CONF_SHOWER_DETECTION_ENABLED = "shower_detection_enabled"
 CONF_SHOWER_RISE_THRESHOLD = "shower_rise_threshold"
 DEFAULT_SHOWER_DETECTION_ENABLED = False

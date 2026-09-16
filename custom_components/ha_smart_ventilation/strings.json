@@ -10,9 +10,8 @@
         "sections": {
           "notify": {
             "name": "Benachrichtigungsmethoden",
-            "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
+            "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
-              "sonos_enabled": "Sprachausgabe",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Benachrichtigungsziele",
@@ -21,9 +20,8 @@
             "data_description": {
               "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
               "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "sonos_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "sonos_entity": "Leer = globale Lautsprecher aus \"Smart Ventilation Optionen\" verwenden"
+              "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum"
             }
           },
           "sensors": {
@@ -33,6 +31,7 @@
               "temperature_source_entity": "Temperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
+              "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
               "no_window": "Dieser Raum hat kein Fenster"
@@ -40,6 +39,7 @@
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
               "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
+              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Parameter\"",
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
@@ -60,7 +60,6 @@
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
               "reminder_interval_minutes": "Erinnerungsintervall",
               "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer",
-              "shower_detection_enabled": "Duscherkennung",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung"
             },
             "data_description": {
@@ -76,8 +75,7 @@
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
               "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_detection_enabled": "Leer = globale Einstellung verwenden. Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig.",
-              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden"
+              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist"
             }
           },
           "devices": {
@@ -116,9 +114,8 @@
         "sections": {
           "notify": {
             "name": "Benachrichtigungsmethoden",
-            "description": "Aktiviere eine oder beide Methoden über die Checkbox; die zugehörigen Felder direkt darunter sind nur relevant, wenn die jeweilige Checkbox aktiviert ist.",
+            "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
-              "sonos_enabled": "Sprachausgabe",
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Benachrichtigungsziele",
@@ -127,9 +124,8 @@
             "data_description": {
               "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
               "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "sonos_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "sonos_entity": "Leer = globale Lautsprecher aus \"Smart Ventilation Optionen\" verwenden"
+              "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum"
             }
           },
           "sensors": {
@@ -139,6 +135,7 @@
               "temperature_source_entity": "Temperatur",
               "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Luftfeuchtigkeit (optional)",
+              "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
               "no_window": "Dieser Raum hat kein Fenster"
@@ -146,6 +143,7 @@
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
               "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
+              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Parameter\"",
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
@@ -166,7 +164,6 @@
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
               "reminder_interval_minutes": "Erinnerungsintervall",
               "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer",
-              "shower_detection_enabled": "Duscherkennung",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung"
             },
             "data_description": {
@@ -182,8 +179,7 @@
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
               "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_detection_enabled": "Leer = globale Einstellung verwenden. Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig.",
-              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden"
+              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist"
             }
           },
           "devices": {
@@ -222,8 +218,6 @@
               "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
-              "sonos_enabled": "Sprachausgabe",
-              "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
@@ -257,7 +251,6 @@
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
               "reminder_interval_minutes": "Erinnerungsintervall",
               "humidity_priority_over_duration": "Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer",
-              "shower_detection_enabled": "Duscherkennung",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung"
             },
             "data_description": {
@@ -268,8 +261,7 @@
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
               "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit/hohem CO2-Wert. Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit als raumweiter Standard, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nutzt den je Raum konfigurierten Luftfeuchtigkeitssensor, kein zusätzlicher Sensor nötig. Pro Raum überschreibbar.",
-              "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird"
+              "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird - nur relevant für Räume, die die Duscherkennung im Abschnitt \"Sensoren\" aktiviert haben"
             }
           },
           "messages": {

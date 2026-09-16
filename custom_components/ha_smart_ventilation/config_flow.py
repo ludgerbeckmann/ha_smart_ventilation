@@ -48,7 +48,6 @@ from .const import (
     CONF_SHOWER_DETECTION_ENABLED,
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
-    CONF_SONOS_ENABLED,
     CONF_SONOS_ENTITY,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
@@ -270,7 +269,6 @@ def _flatten_step_data(data: dict) -> dict:
     # umwandeln (fehlt der Schlüssel, bleibt er unberührt = "global nutzen")
     for tri_state_key in (
         CONF_HUMIDITY_PRIORITY_OVER_DURATION,
-        CONF_SONOS_ENABLED,
         CONF_MOBILE_ENABLED,
         CONF_PERSISTENT_ENABLED,
     ):
@@ -286,12 +284,13 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     ('Benachrichtigungsmethoden', 'Sensoren', 'Parameter', 'Geräte' -
     Parameter und Geräte standardmäßig eingeklappt, da optional).
 
-    Im Abschnitt "Benachrichtigungsmethoden" aktiviert je eine Checkbox
-    Sprachausgabe bzw. App-Benachrichtigung; die zugehörigen Felder stehen
-    direkt darunter im selben Abschnitt (Home-Assistant-Formulare können
-    Felder nicht abhängig von einer Checkbox ein-/ausblenden - sie sind
-    daher immer sichtbar, werden aber nur ausgewertet, wenn die jeweilige
-    Checkbox aktiviert ist).
+    Im Abschnitt "Benachrichtigungsmethoden" aktiviert eine Checkbox die
+    App-Benachrichtigung; das zugehörige Feld steht direkt darunter im
+    selben Abschnitt (Home-Assistant-Formulare können Felder nicht
+    abhängig von einer Checkbox ein-/ausblenden - es ist daher immer
+    sichtbar, wird aber nur ausgewertet, wenn die Checkbox aktiviert ist).
+    Sprachausgabe hat keine eigene Checkbox - sie ist aktiv, sobald
+    mindestens ein Lautsprecher ausgewählt ist.
 
     Die Felder in 'Parameter' sowie Leistungsschwelle/-verzögerung im
     Geräte-Abschnitt sind echt optional: leer gelassen wird der Wert aus
@@ -323,19 +322,15 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
         yes_label="Ja – Luftfeuchtigkeit/CO2 haben Vorrang",
         no_label="Nein – Winter-Höchstdauer hat Vorrang",
     )
-    shower_marker, shower_sel = _tri_state_bool_selector(
-        CONF_SHOWER_DETECTION_ENABLED, defaults, yes_label="Ja", no_label="Nein"
-    )
     shower_threshold_marker, shower_threshold_sel = _override_selector(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
 
-    # Die drei Benachrichtigungsmethoden sind jetzt überschreibbare
+    # App-Push und persistente Benachrichtigung sind überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
     # "Smart Ventilation Optionen" (siehe _tri_state_bool_selector).
-    sonos_marker, sonos_sel = _tri_state_bool_selector(
-        CONF_SONOS_ENABLED, defaults, yes_label="Ja", no_label="Nein"
-    )
+    # Sprachausgabe hat keinen eigenen Schalter mehr - sie ist aktiv, sobald
+    # unten mindestens ein Lautsprecher ausgewählt ist.
     mobile_marker, mobile_sel = _tri_state_bool_selector(
         CONF_MOBILE_ENABLED, defaults, yes_label="Ja", no_label="Nein"
     )
@@ -350,7 +345,6 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
     fields[vol.Required(SECTION_NOTIFY)] = section(
         vol.Schema(
             {
-                sonos_marker: sonos_sel,
                 _entity_marker(
                     CONF_SONOS_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -415,6 +409,12 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="sensor")
                 ),
+                vol.Optional(
+                    CONF_SHOWER_DETECTION_ENABLED,
+                    default=defaults.get(
+                        CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
+                    ),
+                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_CO2_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -448,7 +448,6 @@ def _build_room_schema(defaults: dict | None = None) -> vol.Schema:
                 duration_marker: duration_sel,
                 priority_marker: priority_sel,
                 reminder_marker: reminder_sel,
-                shower_marker: shower_sel,
                 shower_threshold_marker: shower_threshold_sel,
             }
         ),
@@ -510,14 +509,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             ),
         )
     ] = selector.BooleanSelector()
-    parameter_fields[
-        vol.Required(
-            CONF_SHOWER_DETECTION_ENABLED,
-            default=defaults.get(
-                CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
-            ),
-        )
-    ] = selector.BooleanSelector()
 
     return vol.Schema(
         {
@@ -567,17 +558,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ),
                         power_marker: power_sel,
                         grace_marker: grace_sel,
-                        vol.Required(
-                            CONF_SONOS_ENABLED,
-                            default=defaults.get(CONF_SONOS_ENABLED, False),
-                        ): selector.BooleanSelector(),
-                        _entity_marker(
-                            CONF_SONOS_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(
-                                domain="media_player", multiple=True
-                            )
-                        ),
                         vol.Required(
                             CONF_MOBILE_ENABLED,
                             default=defaults.get(CONF_MOBILE_ENABLED, False),
