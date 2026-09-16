@@ -55,7 +55,9 @@
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
-              "humidity_priority_over_duration": "Priority for winter max duration"
+              "humidity_priority_over_duration": "Priority for winter max duration",
+              "shower_detection_enabled": "Shower detection",
+              "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings",
@@ -67,7 +69,9 @@
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless."
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
+              "shower_detection_enabled": "Empty = use the global setting. Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed.",
+              "shower_rise_threshold": "Empty = use the value from the global settings"
             }
           },
           "devices": {
@@ -151,7 +155,9 @@
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
-              "humidity_priority_over_duration": "Priority for winter max duration"
+              "humidity_priority_over_duration": "Priority for winter max duration",
+              "shower_detection_enabled": "Shower detection",
+              "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings",
@@ -163,7 +169,9 @@
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless."
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
+              "shower_detection_enabled": "Empty = use the global setting. Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed.",
+              "shower_rise_threshold": "Empty = use the value from the global settings"
             }
           },
           "devices": {
@@ -234,7 +242,9 @@
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
               "reminder_interval_minutes": "Reminder interval",
-              "humidity_priority_over_duration": "Humidity takes priority over winter max duration"
+              "humidity_priority_over_duration": "Humidity takes priority over winter max duration",
+              "shower_detection_enabled": "Shower detection",
+              "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
               "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
@@ -242,7 +252,9 @@
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
-              "humidity_priority_over_duration": "On (default): if humidity still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity. Frost protection always takes priority regardless."
+              "humidity_priority_over_duration": "On (default): if humidity still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity. Frost protection always takes priority regardless.",
+              "shower_detection_enabled": "Delays the open-window recommendation due to humidity as the room-wide default, while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Uses the humidity sensor already configured per room, no extra sensor needed. Can be overridden per room.",
+              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed"
             }
           },
           "messages": {

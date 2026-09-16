@@ -96,6 +96,8 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      - Schwellenwerte zum Öffnen/Schließen sowie Toleranz-Marge,
        Frostschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer und
        Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+     - Duscherkennung (Ja/Nein/Leer) und die zugehörige Anstiegs-Schwelle –
+       siehe "Duscherkennung" unter "Logik im Detail"
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
      Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
@@ -155,7 +157,8 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
-  wie im Raum-Parameter-Abschnitt) als raumweiter Standard
+  wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
+  Duscherkennung (Ja/Nein) und Anstiegs-Schwelle
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
@@ -276,6 +279,24 @@ konfigurierbar) - ein Schließen nur wegen erreichter Zieltemperatur,
 gefolgt von einem sofortigen erneuten Öffnen wegen der Luftfeuchtigkeit,
 ergäbe so gut wie nie Sinn.
 
+**Duscherkennung:** Optional (Standard aus), gedacht für Bäder mit Dusche/
+Badewanne, bei denen die Luftfeuchtigkeit durch das Duschen sehr schnell
+ansteigt. Ist "Duscherkennung" aktiviert, wird laufend der Anstieg der
+bereits konfigurierten Luftfeuchtigkeit über die letzten 10 Minuten
+beobachtet - kein zusätzlicher Sensor nötig. Steigt die Luftfeuchtigkeit
+schneller als die "Anstiegs-Schwelle" (Standard 1,5 %-Punkte/Minute), wird
+angenommen, dass gerade geduscht wird: die Öffnen-Empfehlung wegen
+Luftfeuchtigkeit bleibt währenddessen zurückgehalten, da Lüften mitten im
+Duschvorgang nichts bringt (es entsteht weiter Dampf). Sobald der Anstieg
+wieder unter die Schwelle fällt (Duschen vorbei, Luftfeuchtigkeit
+stabilisiert sich oder sinkt bereits wieder), greift die normale
+Feuchtigkeits-Logik und die Öffnen-Empfehlung erfolgt wie gewohnt. Der
+aktuelle Erkennungsstatus steht als Attribut `duschen_erkannt` zur
+Verfügung, sobald die Funktion für den Raum aktiv ist (Raum-Override oder
+globale Einstellung). Rein temperatur- oder anders begründete
+Öffnen-Empfehlungen (siehe oben) sind von der Duscherkennung nicht
+betroffen.
+
 **Zusätzlich:**
 - **Frostschutz** verhindert außerdem grundsätzlich das Öffnen, solange die
   Außentemperatur auf/unter der Frostschutz-Grenze liegt
@@ -392,6 +413,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn Sprachausgabe effektiv aktiv ist (Raum-Override oder geerbt von "Smart Ventilation Optionen") |
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
+| `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
 wann der aktuelle Öffnen/Schließen-Status gilt.
