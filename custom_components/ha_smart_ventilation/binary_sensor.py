@@ -928,6 +928,98 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._config[CONF_ROOM_NAME],
             )
 
+    @staticmethod
+    def _format_measurement(value: float | None, unit: str, decimals: int = 0) -> str:
+        """Formatiert einen Mess- oder Schwellenwert inkl. Einheit für die
+        Platzhalter {wert}/{schwelle} in den Benachrichtigungstexten."""
+        if value is None:
+            return "–"
+        try:
+            return f"{float(value):.{decimals}f} {unit}"
+        except (TypeError, ValueError):
+            return str(value)
+
+    def _measurement_context(
+        self, context_reason: str | None, opening: bool
+    ) -> tuple[str, str]:
+        """Liefert (aktueller Wert, Schwellenwert) - fertig formatiert inkl.
+        Einheit - für die Platzhalter {wert}/{schwelle}, passend zum
+        jeweiligen Grund und zur Richtung (Öffnen/Schließen: Öffnen- und
+        Schließen-Schwelle unterscheiden sich bei Temperatur/Luftfeuchtigkeit/
+        CO2)."""
+        if context_reason == "humidity":
+            humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
+            threshold = self._effective(
+                CONF_HUMIDITY_THRESHOLD_OPEN if opening else CONF_HUMIDITY_THRESHOLD_CLOSE,
+                DEFAULT_HUMIDITY_THRESHOLD_OPEN if opening else DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
+            )
+            return (
+                self._format_measurement(humidity, "%"),
+                self._format_measurement(threshold, "%"),
+            )
+        if context_reason == "co2":
+            co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
+            threshold = self._effective(
+                CONF_CO2_THRESHOLD_OPEN if opening else CONF_CO2_THRESHOLD_CLOSE,
+                DEFAULT_CO2_THRESHOLD_OPEN if opening else DEFAULT_CO2_THRESHOLD_CLOSE,
+            )
+            return (
+                self._format_measurement(co2, "ppm"),
+                self._format_measurement(threshold, "ppm"),
+            )
+        if context_reason == "frost":
+            outdoor_temp = self._get_float_state(
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+            )
+            threshold = self._effective(
+                CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP
+            )
+            return (
+                self._format_measurement(outdoor_temp, "°C", 1),
+                self._format_measurement(threshold, "°C", 1),
+            )
+        if context_reason == "heat":
+            outdoor_temp = self._get_float_state(
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+            )
+            threshold = self._effective(
+                CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
+            )
+            return (
+                self._format_measurement(outdoor_temp, "°C", 1),
+                self._format_measurement(threshold, "°C", 1),
+            )
+        if context_reason == "outdoor_warmer":
+            outdoor_temp = self._get_float_state(
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+            )
+            indoor_temp = self._get_indoor_temperature()
+            return (
+                self._format_measurement(outdoor_temp, "°C", 1),
+                self._format_measurement(indoor_temp, "°C", 1),
+            )
+        if context_reason == "duration":
+            elapsed = None
+            if self._open_since is not None:
+                elapsed = (dt_util.utcnow() - self._open_since).total_seconds() / 60
+            threshold = self._effective(
+                CONF_MAX_OPEN_DURATION_WINTER, DEFAULT_MAX_OPEN_DURATION_WINTER
+            )
+            return (
+                self._format_measurement(elapsed, "min"),
+                self._format_measurement(threshold, "min"),
+            )
+        # "temp" oder unbekannt/None -> Innentemperatur vs. Temperatur-Schwelle
+        indoor_temp = self._get_indoor_temperature()
+        threshold = self._effective(
+            CONF_TEMP_THRESHOLD_OPEN if opening else CONF_TEMP_THRESHOLD_CLOSE,
+            DEFAULT_TEMP_THRESHOLD_OPEN if opening else DEFAULT_TEMP_THRESHOLD_CLOSE,
+        )
+        return (
+            self._format_measurement(indoor_temp, "°C", 1),
+            self._format_measurement(threshold, "°C", 1),
+        )
+
     def _build_message(self, should_ventilate: bool, reason: str | None) -> str:
         room = self._config[CONF_ROOM_NAME]
 
@@ -940,33 +1032,42 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 template = self._effective(CONF_MSG_OPEN_CO2, DEFAULT_MSG_OPEN_CO2)
             else:
                 template = self._effective(CONF_MSG_OPEN_TEMP, DEFAULT_MSG_OPEN_TEMP)
+            wert, schwelle = self._measurement_context(reason, opening=True)
         elif reason == "frost":
             template = self._effective(CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST)
+            wert, schwelle = self._measurement_context("frost", opening=False)
         elif reason == "heat":
             template = self._effective(CONF_MSG_CLOSE_HEAT, DEFAULT_MSG_CLOSE_HEAT)
+            wert, schwelle = self._measurement_context("heat", opening=False)
         elif reason == "duration":
             template = self._effective(
                 CONF_MSG_CLOSE_DURATION, DEFAULT_MSG_CLOSE_DURATION
             )
+            wert, schwelle = self._measurement_context("duration", opening=False)
         elif reason == "humidity":
             template = self._effective(
                 CONF_MSG_CLOSE_HUMIDITY, DEFAULT_MSG_CLOSE_HUMIDITY
             )
+            wert, schwelle = self._measurement_context("humidity", opening=False)
         elif reason == "co2":
             template = self._effective(CONF_MSG_CLOSE_CO2, DEFAULT_MSG_CLOSE_CO2)
+            wert, schwelle = self._measurement_context("co2", opening=False)
         elif reason == "outdoor_warmer":
             template = self._effective(
                 CONF_MSG_CLOSE_OUTDOOR_WARMER, DEFAULT_MSG_CLOSE_OUTDOOR_WARMER
             )
+            wert, schwelle = self._measurement_context("outdoor_warmer", opening=False)
         elif reason == "reminder":
             template = self._effective(CONF_MSG_REMINDER, DEFAULT_MSG_REMINDER)
+            wert, schwelle = self._measurement_context(self._last_reason, opening=True)
         else:
             template = self._effective(
                 CONF_MSG_CLOSE_DEFAULT, DEFAULT_MSG_CLOSE_DEFAULT
             )
+            wert, schwelle = self._measurement_context("temp", opening=False)
 
         try:
-            return template.format(raum=room)
+            return template.format(raum=room, wert=wert, schwelle=schwelle)
         except (KeyError, ValueError, IndexError):
             # Fehlerhafter Platzhalter in einem selbst angepassten Text -
             # lieber den unformatierten Text senden als die Benachrichtigung

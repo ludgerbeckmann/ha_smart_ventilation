@@ -179,13 +179,31 @@ Textfeld für:
   geworden ist
 - Erinnerung (falls die Empfehlung ignoriert wird)
 
-Der Platzhalter `{raum}` wird automatisch durch den jeweiligen Raumnamen
-ersetzt. Ein Feld komplett zu leeren setzt es beim Speichern automatisch
-wieder auf den mitgelieferten Standardtext zurück. Enthält ein selbst
-angepasster Text einen ungültigen Platzhalter (z. B. Tippfehler wie
-`{room}` statt `{raum}`), wird die Nachricht trotzdem unverändert
-verschickt (ein entsprechender Hinweis erscheint dann im Log) - eine
-Benachrichtigung geht dadurch nie komplett verloren.
+Drei Platzhalter stehen zur Verfügung und werden automatisch ersetzt:
+- `{raum}` – der jeweilige Raumname
+- `{wert}` – der aktuelle Mess-/Ist-Wert, der die Empfehlung ausgelöst hat,
+  bereits inklusive Einheit (z. B. `60 %`, `1234 ppm`, `34.2 °C`, `45 min`)
+- `{schwelle}` – der zugehörige Schwellenwert, ebenso inklusive Einheit
+  (z. B. `59 %`)
+
+Welcher Mess- und Schwellenwert genau hinter `{wert}`/`{schwelle}` steckt,
+hängt vom jeweiligen Textfeld ab – bei "Öffnen wegen Luftfeuchtigkeit"
+z. B. aktuelle Luftfeuchtigkeit vs. Feuchtigkeits-Schwelle zum Öffnen, bei
+"Schließen wegen Frostschutz" aktuelle Außentemperatur vs.
+Frostschutz-Grenze, bei "Schließen wegen Winter-Höchstdauer" bisherige
+Öffnungsdauer vs. Höchstdauer, bei der Erinnerung der Wert/die
+Öffnen-Schwelle des ursprünglichen Lüftungsgrundes. Damit lässt sich z. B.
+formulieren: "Die Luftfeuchtigkeit liegt mit {wert} über dem Schwellenwert
+von {schwelle}." Keiner der drei Platzhalter muss verwendet werden – wer
+lieber bei kurzen, generischen Texten bleibt, lässt `{wert}`/`{schwelle}`
+einfach weg.
+
+Ein Feld komplett zu leeren setzt es beim Speichern automatisch wieder auf
+den mitgelieferten Standardtext zurück. Enthält ein selbst angepasster
+Text einen ungültigen Platzhalter (z. B. Tippfehler wie `{room}` statt
+`{raum}`), wird die Nachricht trotzdem unverändert verschickt (ein
+entsprechender Hinweis erscheint dann im Log) - eine Benachrichtigung geht
+dadurch nie komplett verloren.
 
 Alle Zahlenfelder sind immer mit einem sinnvollen Standardwert vorausgefüllt
 – wird ein Feld komplett geleert, greift beim Speichern automatisch wieder

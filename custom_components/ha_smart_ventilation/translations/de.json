@@ -272,7 +272,7 @@
           },
           "messages": {
             "name": "Benachrichtigungstexte",
-            "description": "Die Texte, die bei den jeweiligen Empfehlungen verschickt werden. {raum} wird durch den Raumnamen ersetzt.",
+            "description": "Die Texte, die bei den jeweiligen Empfehlungen verschickt werden. Drei Platzhalter stehen zur Verfügung: {raum} (Raumname), {wert} (aktueller Mess- bzw. Ist-Wert inkl. Einheit) und {schwelle} (zugehöriger Schwellenwert inkl. Einheit).",
             "data": {
               "msg_open_humidity": "Öffnen wegen Luftfeuchtigkeit",
               "msg_open_co2": "Öffnen wegen CO2",
@@ -287,17 +287,17 @@
               "msg_reminder": "Erinnerung"
             },
             "data_description": {
-              "msg_open_humidity": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_open_co2": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_open_temp": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_default": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_humidity": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_co2": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_frost": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_heat": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_duration": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_close_outdoor_warmer": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt.",
-              "msg_reminder": "Platzhalter {raum} wird durch den jeweiligen Raumnamen ersetzt."
+              "msg_open_humidity": "{raum} = Raumname. {wert} = aktuelle Luftfeuchtigkeit, {schwelle} = Feuchtigkeits-Schwelle zum Öffnen (jeweils inkl. %).",
+              "msg_open_co2": "{raum} = Raumname. {wert} = aktueller CO2-Wert, {schwelle} = CO2-Schwelle zum Öffnen (jeweils inkl. ppm).",
+              "msg_open_temp": "{raum} = Raumname. {wert} = aktuelle Innentemperatur, {schwelle} = Temperatur-Schwelle zum Öffnen (jeweils inkl. °C).",
+              "msg_close_default": "{raum} = Raumname. {wert} = aktuelle Innentemperatur, {schwelle} = Temperatur-Schwelle zum Schließen (jeweils inkl. °C) - wird u. a. verwendet, wenn ausschließlich die Temperatur das Schließen auslöst.",
+              "msg_close_humidity": "{raum} = Raumname. {wert} = aktuelle Luftfeuchtigkeit, {schwelle} = Feuchtigkeits-Schwelle zum Schließen (jeweils inkl. %).",
+              "msg_close_co2": "{raum} = Raumname. {wert} = aktueller CO2-Wert, {schwelle} = CO2-Schwelle zum Schließen (jeweils inkl. ppm).",
+              "msg_close_frost": "{raum} = Raumname. {wert} = aktuelle Außentemperatur, {schwelle} = Frostschutz-Grenze (jeweils inkl. °C).",
+              "msg_close_heat": "{raum} = Raumname. {wert} = aktuelle Außentemperatur, {schwelle} = Hitzeschutz-Grenze (jeweils inkl. °C).",
+              "msg_close_duration": "{raum} = Raumname. {wert} = bisherige Öffnungsdauer, {schwelle} = Winter-Höchstdauer (jeweils inkl. Minuten).",
+              "msg_close_outdoor_warmer": "{raum} = Raumname. {wert} = aktuelle Außentemperatur, {schwelle} = aktuelle Innentemperatur (jeweils inkl. °C).",
+              "msg_reminder": "{raum} = Raumname. {wert}/{schwelle} = aktueller Wert bzw. Öffnen-Schwelle des ursprünglichen Lüftungsgrundes (Temperatur/Luftfeuchtigkeit/CO2), inkl. jeweiliger Einheit."
             }
           }
         }
