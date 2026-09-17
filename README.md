@@ -608,7 +608,7 @@ content: >
   {% set notify_table = '| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
   {% set body = empf_table %}
-  {% set body = body ~ spacer ~ values_table %}
+  {% set body = (body ~ spacer ~ values_table) if body else values_table %}
   {% set body = body ~ spacer ~ notify_table %}
   {% set body = body ~ ('\n\n' ~ dev_line if dev_line else '') %}
   {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
