@@ -548,7 +548,7 @@ content: >
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
-  {% set match_icon = '' %}
+  {% set match_icon = '⚫ ' if no_window else '' %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'Offen' if w == 'on' else ('Geschlossen' if w == 'off' else 'Unbekannt') %}
@@ -687,7 +687,9 @@ Tabelle**.
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🔴 am
 Raumnamen zeigen, ob der Fenster-Zustand mit der Empfehlung übereinstimmt
-(🟢) oder davon abweicht (🔴); bei Geräte-Status und Benachrichtigungs-
+(🟢) oder davon abweicht (🔴); bei Räumen ohne Fenster ("Dieser Raum hat
+kein Fenster" aktiviert) steht dort stattdessen immer ⚫, da es dafür
+keine Empfehlung gibt. Bei Geräte-Status und Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
 "Offen"/"Geschlossen"). Die Schwellenwerte
