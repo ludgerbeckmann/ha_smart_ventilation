@@ -595,7 +595,7 @@ content: >
   {% if not no_window %}
   {% set empf_table = '| Empfehlung | Fenster | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ empfehlung_text ~ ' | ' ~ window_state_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
   {% endif %}
-  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ co2_row ~ abs_row %}
+  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
   {% set n1_status = '🟢 an' if a.sprachausgabe_aktiv is defined else '⚫ aus' %}
   {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
