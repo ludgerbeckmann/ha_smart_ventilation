@@ -554,13 +554,13 @@ content: >
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
   {% set hum_val = ('<mark>' ~ hum_val ~ '</mark>') if highlight_code == 'humidity' else hum_val %}
-  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
+  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | round(0) | int | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | round(0) | int | string) ~ ' % |' %}
   {% endif %}
   {% set co2_row = '' %}
   {% if a.co2 is defined %}
   {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
   {% set co2_val = ('<mark>' ~ co2_val ~ '</mark>') if highlight_code == 'co2' else co2_val %}
-  {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | string) ~ ' ppm |' %}
+  {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | round(0) | int | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | round(0) | int | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
