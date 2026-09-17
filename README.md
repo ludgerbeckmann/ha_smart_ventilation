@@ -669,6 +669,35 @@ Einfügeproblemen. Diese Version wurde sowohl gegen eine echte
 YAML-Faltung (`content: >`) als auch gegen Home Assistants sandboxed
 Jinja-Umgebung getestet.
 
+## Fehlersuche / Diagnose
+
+Zwei Bordmittel helfen bei der Fehlersuche, ohne dass Werte oder
+Log-Zeilen von Hand abgeschrieben werden müssen:
+
+- **Diagnose herunterladen**: Bei jedem Eintrag (ein Raum oder
+  "- Smart Ventilation Optionen -") lässt sich über das Drei-Punkte-Menü
+  (⋮) → **Diagnose herunterladen** eine JSON-Datei erzeugen. Sie enthält
+  die Konfiguration dieses Eintrags (personenbezogene Anwesenheits-/
+  Notify-Ziel-Entitäten sind darin automatisch geschwärzt), bei einem
+  Raum zusätzlich den aktuellen Entitäts-Zustand samt aller Attribute
+  sowie eine Momentaufnahme (Zustand + Attribute) aller referenzierten
+  Roh-Sensoren - Innentemperatur-Quelle, Luftfeuchtigkeit, CO2,
+  Fensterkontakt sowie die globale Außentemperatur/-luftfeuchtigkeit.
+  Damit lässt sich z. B. sofort erkennen, ob ein referenzierter Sensor
+  gerade `unavailable`/`unknown` meldet. Diese Datei kann direkt
+  hochgeladen/geteilt werden, z. B. um ein auffälliges Verhalten zu
+  melden.
+- **Debug-Protokollierung**: Über Einstellungen → Geräte & Dienste →
+  beim jeweiligen Raum-Eintrag → Zahnrad-Symbol → **Debug-Protokollierung
+  aktivieren** (oder global über `logger:` in der `configuration.yaml`
+  für `custom_components.ha_smart_ventilation`) protokolliert die
+  Integration bei jeder Neubewertung eine einzelne, strukturierte
+  Log-Zeile mit allen Zwischenwerten der Entscheidungskette (Temperaturen,
+  Luftfeuchtigkeit, CO2, alle Öffnen-/Schließen-/"noch benötigt"-Flags).
+  Hilfreich vor allem bei Flacker-artigen Problemen (wiederholtes
+  Öffnen/Schließen), bei denen ein einzelner Diagnose-Snapshot nicht
+  ausreicht.
+
 ## Hinweise
 
 - **Umstieg auf globale Benachrichtigungsziele**: Bestehende Räume, die
