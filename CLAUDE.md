@@ -234,6 +234,29 @@ anderen Zustand fallen - und wenn ja, eine Migration in `async_setup_entry`
 ergänzen, nicht nur auf "wird beim nächsten Speichern schon aktualisiert"
 hoffen.
 
+**11. Ein einzelner Grund-Code darf nicht zwei unterschiedliche Ursachen
+verdecken.** `frost_block` (siehe Lektion 2) blockiert absichtlich
+gleichermaßen bei tatsächlich niedriger Außentemperatur UND bei
+komplett fehlendem Messwert (Sensor `unavailable`/`unknown`) - beides
+sollte weiterhin identisch vorsorglich schließen (das ist richtig so).
+Der resultierende `reason`/`letzter_grund`-Wert war aber in beiden
+Fällen identisch `"frost"`, wodurch Benachrichtigung und Dashboard eine
+konkrete Frostgefahr meldeten ("die Außentemperatur liegt mit {wert}
+auf/unter der Frostschutz-Grenze"), obwohl in Wahrheit gar kein
+Messwert vorlag - irreführend, gerade weil dieser Fall typischerweise
+durch einen Neustart ausgelöst wird (siehe Lektion 2) und die
+Außentemperatur zu dem Zeitpunkt oft gar nicht niedrig ist. Fix:
+`frost_sensor_missing` als eigene Variable neben `frost_block`
+eingeführt, die zwei einzelnen Fälle in unterschiedliche `reason`-Werte
+aufgeteilt (`"frost"` vs. `"frost_unavailable"`) und dafür einen eigenen,
+ehrlichen Benachrichtigungstext (`CONF_MSG_CLOSE_FROST_UNAVAILABLE`)
+sowie einen eigenen Dashboard-Auslöser-Text ergänzt. Lektion: Wann immer
+ein und dieselbe Aktion (hier: schließen) aus einem "echten" Grund und
+einem "wir wissen es nicht, spielen aber sicher"-Grund ausgelöst werden
+kann, verdient das zwei unterschiedliche `reason`-Codes - sonst wird die
+konservative Sicherheitsannahme in der Kommunikation zur (falschen)
+Tatsachenbehauptung.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

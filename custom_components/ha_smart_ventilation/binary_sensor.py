@@ -43,6 +43,7 @@ from .const import (
     CONF_MSG_CLOSE_DEFAULT,
     CONF_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_FROST,
+    CONF_MSG_CLOSE_FROST_UNAVAILABLE,
     CONF_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
@@ -85,6 +86,7 @@ from .const import (
     DEFAULT_MSG_CLOSE_DEFAULT,
     DEFAULT_MSG_CLOSE_DURATION,
     DEFAULT_MSG_CLOSE_FROST,
+    DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE,
     DEFAULT_MSG_CLOSE_HEAT,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
@@ -518,6 +520,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # andere Integrationen noch laden), wird sicherheitshalber so
         # getan, als könnte Frost vorliegen (blockiert das Öffnen) - statt
         # das fälschlich wie "kein Sensor konfiguriert" zu behandeln.
+        # frost_sensor_missing unterscheidet den konservativen Fallback
+        # (Sensor konfiguriert, aber gerade unavailable/unknown) von einer
+        # tatsächlich niedrigen Außentemperatur - beide lösen weiterhin
+        # gleichermaßen frost_block aus (sicherer Standard bleibt
+        # unverändert), aber nur Ersteres bekommt unten einen eigenen,
+        # ehrlichen Auslöser-Grund statt fälschlich "frost" zu melden.
+        frost_sensor_missing = outdoor_entity is not None and outdoor_temp is None
         frost_block = outdoor_entity is not None and (
             outdoor_temp is None or outdoor_temp <= frost_temp
         )
@@ -724,7 +733,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         _LOGGER.debug(
             "%s: is_on=%s indoor_temp=%s outdoor_temp=%s humidity=%s co2=%s | "
             "needs open/close: temp=%s/%s hum=%s/%s co2=%s/%s | "
-            "open_by: temp=%s hum=%s co2=%s | frost_block=%s heat_block=%s | "
+            "open_by: temp=%s hum=%s co2=%s | frost_block=%s (sensor_missing=%s) heat_block=%s | "
             "still_needed: temp=%s hum=%s co2=%s | "
             "close_by: temp=%s hum=%s co2=%s summer=%s duration=%s frost=%s heat=%s | "
             "should_open=%s should_close=%s",
@@ -744,6 +753,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             open_by_humidity,
             open_by_co2,
             frost_block,
+            frost_sensor_missing,
             heat_block,
             temp_still_needed,
             humidity_still_needed,
@@ -773,7 +783,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         elif should_close and self._attr_is_on:
             new_state = False
             if close_by_frost:
-                reason = "frost"
+                reason = "frost_unavailable" if frost_sensor_missing else "frost"
             elif close_by_heat:
                 reason = "heat"
             elif close_by_duration:
@@ -1047,7 +1057,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._format_measurement(co2, "ppm"),
                 self._format_measurement(threshold, "ppm"),
             )
-        if context_reason == "frost":
+        if context_reason in ("frost", "frost_unavailable"):
             outdoor_temp = self._get_float_state(
                 self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
             )
@@ -1116,6 +1126,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         elif reason == "frost":
             template = self._effective(CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST)
             wert, schwelle = self._measurement_context("frost", opening=False)
+        elif reason == "frost_unavailable":
+            template = self._effective(
+                CONF_MSG_CLOSE_FROST_UNAVAILABLE, DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE
+            )
+            wert, schwelle = self._measurement_context(
+                "frost_unavailable", opening=False
+            )
         elif reason == "heat":
             template = self._effective(CONF_MSG_CLOSE_HEAT, DEFAULT_MSG_CLOSE_HEAT)
             wert, schwelle = self._measurement_context("heat", opening=False)
