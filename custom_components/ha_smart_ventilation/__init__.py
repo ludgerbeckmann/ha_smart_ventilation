@@ -5,12 +5,18 @@ import logging
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 
 from .const import CONF_IS_GLOBAL, DOMAIN, GLOBAL_ENTRY_ID_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["binary_sensor"]
+
+# Diese Integration lässt sich ausschließlich über den Config-Flow (UI)
+# einrichten, nicht über configuration.yaml - hassfest verlangt trotzdem
+# ein CONFIG_SCHEMA, sobald async_setup implementiert ist.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 def _create_global_settings_entry(hass: HomeAssistant) -> None:

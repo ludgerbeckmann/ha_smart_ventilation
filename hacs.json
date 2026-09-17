@@ -1,6 +1,5 @@
 {
   "name": "Smart Ventilation",
   "render_readme": true,
-  "domains": ["climate", "sensor", "number", "input_number", "binary_sensor", "media_player", "tts", "notify"],
   "homeassistant": "2024.9.0"
 }
