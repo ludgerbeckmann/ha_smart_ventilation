@@ -142,21 +142,57 @@ nicht zuverlässig vorhersagbar - dafür bräuchte es eine echte
 Home-Assistant-Instanz.
 
 **8. `{platzhalter}` in `strings.json`/`translations/*.json` niemals als
-reinen Beispieltext in `description`/`data_description` schreiben.** Home
-Assistants Frontend rendert diese Texte über ICU MessageFormat
-(formatjs) - jedes `{wort}` darin wird als echter, zu befüllender
-Platzhalter interpretiert, nicht als Literal. Ohne übergebenen Wert zeigt
-die Oberfläche statt des Texts einen Fehler wie `[formatjs Error:
-MISSING_VALUE] The intl string context variable "raum" was not
-provided...`. Betroffen war z. B. die Beschreibung der
-Benachrichtigungstexte, die `{raum}`/`{wert}`/`{schwelle}` als Beispiel
-nennt. Fix: den Platzhalter in einfache Anführungszeichen einschließen,
-das rendert ihn laut ICU-Syntax als reinen Text: `'{raum}'` erscheint als
-`{raum}`. Betrifft ausschließlich diese Beschreibungstexte in
-`strings.json`/`translations/*.json` - die eigentlichen, vom Nutzer
-editierbaren Benachrichtigungsvorlagen (`DEFAULT_MSG_*` in `const.py`)
-sind reine Python-Strings und verwenden `{raum}` etc. ganz normal
-unescaped für `str.format()`.
+reinen Beispieltext in `description`/`data_description` schreiben - auch
+nicht in einfachen Anführungszeichen escaped.** Home Assistants Frontend
+rendert diese Texte über ICU MessageFormat (formatjs) - jedes `{wort}`
+darin wird als echter, zu befüllender Platzhalter interpretiert, nicht
+als Literal. Ohne übergebenen Wert zeigt die Oberfläche statt des Texts
+einen Fehler wie `[formatjs Error: MISSING_VALUE] The intl string context
+variable "raum" was not provided...`. Betroffen war z. B. die
+Beschreibung der Benachrichtigungstexte, die `{raum}`/`{wert}`/
+`{schwelle}` als Beispiel nennt.
+
+Der ursprüngliche Fix (`'{raum}'` in einfachen Anführungszeichen, laut
+ICU-Syntax reiner Text) behob zwar den formatjs-Fehler im Frontend, fiel
+aber bei der ersten Einrichtung von `.github/workflows/validate.yml`
+(hassfest) durch: hassfest hat eine eigene, unabhängige Regel
+(`script/hassfest/translations.py`,
+`RE_PLACEHOLDER_IN_SINGLE_QUOTES = re.compile(r"'{\w+}'")`), die genau
+dieses `'{wort}'`-Muster als Fehler ablehnt ("the string should not
+contain placeholders inside single quotes") - unabhängig davon, ob
+tatsächlich `description_placeholders` übergeben werden. Ein rohes,
+unescaped `{wort}` wäre für hassfest zwar erlaubt, würde aber wieder den
+ursprünglichen formatjs-Fehler auslösen, da wir keine
+`description_placeholders` übergeben (das sind reine Beispieltexte,
+keine echten Config-Flow-Platzhalter).
+
+**Endgültiger Fix:** ASCII-geschweifte Klammern in diesen
+Beschreibungstexten komplett vermeiden und durch optisch ähnliche, aber
+syntaktisch unauffällige Fullwidth-Klammern ersetzen: `｛raum｝` (U+FF5B/
+FF5D) statt `{raum}` oder `'{raum}'`. Weder ICU MessageFormat noch
+hassfests Regex reagieren auf diese Zeichen, sie sehen für Lesende aber
+weiterhin fast identisch aus. Betrifft ausschließlich diese
+Beschreibungstexte in `strings.json`/`translations/*.json` - die
+eigentlichen, vom Nutzer editierbaren Benachrichtigungsvorlagen
+(`DEFAULT_MSG_*` in `const.py`) sind reine Python-Strings und verwenden
+`{raum}` etc. ganz normal unescaped für `str.format()`.
+
+**Allgemeinere Lektion:** `validate.yml` (hassfest + HACS) existierte
+lange nicht in diesem Repo - Änderungen an `manifest.json`, `hacs.json`
+und `strings.json`/`translations/*.json` wurden vorher nie gegen die
+tatsächlichen hassfest-/HACS-Schemas geprüft. Bekannte, dadurch erst
+nachträglich aufgefallene Verstöße: `manifest.json`-Schlüssel müssen
+nach `domain`/`name` strikt alphabetisch sortiert sein; `hacs.json`
+erlaubt nur eine feste Schlüsselmenge (`content_in_root`, `country`,
+`filename`, `hacs`, `hide_default_branch`, `homeassistant`,
+`persistent_directory`, `render_readme`, `zip_release`, `name`) - ein
+früher hinzugefügtes `domains`-Feld existiert dort schlicht nicht und
+lässt die HACS-Validierung mit "extra keys not allowed" fehlschlagen;
+eine Integration mit `async_setup` (siehe `__init__.py`) braucht ein
+`CONFIG_SCHEMA` (hier `cv.config_entry_only_config_schema(DOMAIN)`,
+da ausschließlich über den Config-Flow einrichtbar). Bei künftigen
+Änderungen an diesen Dateien: `validate.yml`-Ergebnis auf `main`
+abwarten/prüfen, nicht nur `py_compile`/den Import-Check.
 
 ## Versionierung & Release
 
