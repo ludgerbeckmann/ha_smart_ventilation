@@ -625,7 +625,8 @@ content: >
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
   {% set body = body ~ spacer ~ notify_table %}
   {% set body = body ~ ('\n\n' ~ dev_line if dev_line else '') %}
-  {% set sep_before = '\n\n<hr><hr><hr>\n\n' if not loop.first else '' %}
+  {% set sep_line = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━' %}
+  {% set sep_before = '\n\n<mark>' ~ sep_line ~ '</mark>\n\n' if not loop.first else '' %}
   {{ sep_before ~ header ~ '\n\n' ~ body }}
   {% endfor %}
 ```
