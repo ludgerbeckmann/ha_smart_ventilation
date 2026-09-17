@@ -199,6 +199,12 @@ CONF_MSG_OPEN_HUMIDITY = "msg_open_humidity"
 CONF_MSG_OPEN_CO2 = "msg_open_co2"
 CONF_MSG_OPEN_TEMP = "msg_open_temp"
 CONF_MSG_CLOSE_FROST = "msg_close_frost"
+# Eigener Text für den Fall, dass der Außentemperatur-Sensor gerade
+# unavailable/unknown ist (nicht: die Temperatur tatsächlich am/unter der
+# Frostschutz-Grenze) - siehe frost_sensor_missing in binary_sensor.py.
+# Ohne diese Trennung meldete die Integration hier fälschlich eine
+# konkrete Frostgefahr, obwohl schlicht keine Messung vorliegt.
+CONF_MSG_CLOSE_FROST_UNAVAILABLE = "msg_close_frost_unavailable"
 CONF_MSG_CLOSE_HEAT = "msg_close_heat"
 CONF_MSG_CLOSE_DURATION = "msg_close_duration"
 CONF_MSG_CLOSE_HUMIDITY = "msg_close_humidity"
@@ -224,6 +230,11 @@ DEFAULT_MSG_CLOSE_FROST = (
     "Bitte das Fenster im {raum} wegen Frostgefahr wieder schließen - die "
     "Außentemperatur liegt mit {wert} auf/unter der Frostschutz-Grenze "
     "von {schwelle}."
+)
+DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE = (
+    "Bitte das Fenster im {raum} wieder schließen - der Außentemperatur-"
+    "Sensor liefert aktuell keinen Wert, daher wird vorsorglich von "
+    "möglichem Frost ausgegangen (Grenze: {schwelle})."
 )
 DEFAULT_MSG_CLOSE_HEAT = (
     "Bitte das Fenster im {raum} wieder schließen - draußen ist es mit "
