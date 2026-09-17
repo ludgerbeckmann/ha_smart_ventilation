@@ -51,10 +51,13 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
    hier ein Bereich gewählt, wird im folgenden Hauptformular der Raumname
    automatisch mit der Bezeichnung dieses Bereichs vorbelegt, und alle
    Sensor-/Geräte-Auswahllisten (Temperatur, Luftfeuchtigkeit, CO2,
-   Fensterkontakt, Lautsprecher, Anwesenheits-Entität, Luftentfeuchter,
-   Klimaanlage, Fenstersperre/Rollladen) zeigen nur noch die diesem
-   Bereich zugeordneten Entitäten an. Enthält der gewählte Bereich für
-   eine bestimmte Domain keine passende Entität, bleibt die betreffende
+   Fensterkontakt, Lautsprecher, Luftentfeuchter, Klimaanlage,
+   Fenstersperre/Rollladen) zeigen nur noch die diesem Bereich
+   zugeordneten Entitäten an - die **Anwesenheits-Entität** bei den
+   Benachrichtigungszielen ist bewusst ausgenommen, da eine Person bzw.
+   deren Gerät (`person`/`device_tracker`) keinem Raum zugeordnet ist.
+   Enthält der gewählte Bereich für eine bestimmte Domain keine passende
+   Entität, bleibt die betreffende
    Liste unverändert unbeschränkt (kein Sensor "verschwindet" dadurch).
    Bleibt dieser Schritt leer, funktioniert alles wie bisher – Raumname
    frei eintippen, alle Entitäten wählbar
