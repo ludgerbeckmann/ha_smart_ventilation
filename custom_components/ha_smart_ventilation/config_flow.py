@@ -36,7 +36,6 @@ from .const import (
     CONF_MSG_CLOSE_DEFAULT,
     CONF_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_FROST,
-    CONF_MSG_CLOSE_FROST_UNAVAILABLE,
     CONF_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
@@ -80,7 +79,6 @@ from .const import (
     DEFAULT_MSG_CLOSE_DEFAULT,
     DEFAULT_MSG_CLOSE_DURATION,
     DEFAULT_MSG_CLOSE_FROST,
-    DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE,
     DEFAULT_MSG_CLOSE_HEAT,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
@@ -249,7 +247,6 @@ _MESSAGE_FIELD_DEFAULTS = {
     CONF_MSG_CLOSE_HUMIDITY: DEFAULT_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_CO2: DEFAULT_MSG_CLOSE_CO2,
     CONF_MSG_CLOSE_FROST: DEFAULT_MSG_CLOSE_FROST,
-    CONF_MSG_CLOSE_FROST_UNAVAILABLE: DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE,
     CONF_MSG_CLOSE_HEAT: DEFAULT_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_DURATION: DEFAULT_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_OUTDOOR_WARMER: DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
@@ -799,15 +796,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             CONF_MSG_CLOSE_FROST,
                             default=defaults.get(
                                 CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST
-                            ),
-                        ): selector.TextSelector(
-                            selector.TextSelectorConfig(multiline=True)
-                        ),
-                        vol.Required(
-                            CONF_MSG_CLOSE_FROST_UNAVAILABLE,
-                            default=defaults.get(
-                                CONF_MSG_CLOSE_FROST_UNAVAILABLE,
-                                DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE,
                             ),
                         ): selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)

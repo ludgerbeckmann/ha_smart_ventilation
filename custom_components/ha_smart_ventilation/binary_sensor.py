@@ -43,7 +43,6 @@ from .const import (
     CONF_MSG_CLOSE_DEFAULT,
     CONF_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_FROST,
-    CONF_MSG_CLOSE_FROST_UNAVAILABLE,
     CONF_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
@@ -86,7 +85,6 @@ from .const import (
     DEFAULT_MSG_CLOSE_DEFAULT,
     DEFAULT_MSG_CLOSE_DURATION,
     DEFAULT_MSG_CLOSE_FROST,
-    DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE,
     DEFAULT_MSG_CLOSE_HEAT,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
@@ -771,6 +769,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         new_state = self._attr_is_on
         reason = None
+        silent_frost_close = False
 
         if should_open and not self._attr_is_on:
             new_state = True
@@ -783,7 +782,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         elif should_close and self._attr_is_on:
             new_state = False
             if close_by_frost:
-                reason = "frost_unavailable" if frost_sensor_missing else "frost"
+                if frost_sensor_missing:
+                    # Kein tatsächlicher Messwert, nur ein konservativer
+                    # Sicherheits-Fallback (siehe frost_sensor_missing oben) -
+                    # das Schließen bleibt aus Sicherheitsgründen bestehen,
+                    # aber ohne eigenen Auslöser/Benachrichtigung, da es sich
+                    # um kein echtes Ereignis handelt, das gemeldet werden
+                    # sollte (typischerweise nur durch einen HA-Neustart
+                    # bedingt).
+                    silent_frost_close = True
+                else:
+                    reason = "frost"
             elif close_by_heat:
                 reason = "heat"
             elif close_by_duration:
@@ -799,13 +808,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         if new_state != self._attr_is_on:
             self._attr_is_on = new_state
-            self._last_reason = reason
+            self._last_reason = None if silent_frost_close else reason
             if new_state:
                 self._open_since = dt_util.utcnow()
             else:
                 self._open_since = None
             self.async_write_ha_state()
-            if self._window_action_needed(new_state):
+            if silent_frost_close:
+                self._last_notified_at = None
+            elif self._window_action_needed(new_state):
                 self._last_notified_at = dt_util.utcnow()
                 await self._notify(new_state, reason)
             else:
@@ -1057,7 +1068,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._format_measurement(co2, "ppm"),
                 self._format_measurement(threshold, "ppm"),
             )
-        if context_reason in ("frost", "frost_unavailable"):
+        if context_reason == "frost":
             outdoor_temp = self._get_float_state(
                 self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
             )
@@ -1126,13 +1137,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         elif reason == "frost":
             template = self._effective(CONF_MSG_CLOSE_FROST, DEFAULT_MSG_CLOSE_FROST)
             wert, schwelle = self._measurement_context("frost", opening=False)
-        elif reason == "frost_unavailable":
-            template = self._effective(
-                CONF_MSG_CLOSE_FROST_UNAVAILABLE, DEFAULT_MSG_CLOSE_FROST_UNAVAILABLE
-            )
-            wert, schwelle = self._measurement_context(
-                "frost_unavailable", opening=False
-            )
         elif reason == "heat":
             template = self._effective(CONF_MSG_CLOSE_HEAT, DEFAULT_MSG_CLOSE_HEAT)
             wert, schwelle = self._measurement_context("heat", opening=False)

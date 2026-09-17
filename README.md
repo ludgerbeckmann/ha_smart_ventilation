@@ -194,9 +194,8 @@ Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
 Textfeld für:
 - Öffnen wegen Temperatur / wegen Luftfeuchtigkeit / wegen CO2
 - Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / CO2 /
-  Frostschutz / **nicht verfügbarem Außentemperatur-Sensor** (eigener
-  Text, da hierbei kein `{wert}` vorliegt - siehe "Logik im Detail") /
-  Hitzeschutz / Winter-Höchstdauer / weil draußen wärmer geworden ist
+  Frostschutz / Hitzeschutz / Winter-Höchstdauer / weil draußen wärmer
+  geworden ist
 - Erinnerung (falls die Empfehlung ignoriert wird)
 
 Drei Platzhalter stehen zur Verfügung und werden automatisch ersetzt:
@@ -327,11 +326,11 @@ zur unbeschränkten Auswahl zurückzukehren.
   Frostschutz hat immer Vorrang) - **oder** der Außentemperatur-Sensor ist
   zwar konfiguriert, meldet aber gerade `unavailable`/`unknown` (z. B.
   während Home Assistant startet/stoppt). Aus Sicherheitsgründen wird dann
-  ebenso vorsorglich geschlossen, aber mit einem eigenen Grund
-  (`frost_unavailable` statt `frost`) und einem eigenen, ehrlichen
-  Benachrichtigungstext festgehalten - so wird nicht fälschlich eine
-  konkrete Frostgefahr gemeldet, wo eigentlich nur eine Messung fehlt,
-  **oder**
+  ebenso vorsorglich geschlossen - dieser zweite Fall bleibt aber
+  bewusst **stumm**: kein Auslöser-Eintrag in der Empfehlungs-Tabelle,
+  keine Benachrichtigung, da kein tatsächlicher Messwert dahinter steht
+  und es sich meist nur um einen vorübergehenden Zustand beim Neustart
+  handelt, **oder**
 - **Hitzeschutz**: die Außentemperatur ist auf/über die Hitzeschutz-Grenze
   gestiegen (Pendant zum Frostschutz, greift genauso sofort und unabhängig
   von allen anderen Bedingungen - Lüften würde absehbar nur noch Hitze
@@ -510,7 +509,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
-| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `frost_unavailable`, `heat`, `duration`, `outdoor_warmer`) - `frost_unavailable` bedeutet: Außentemperatur-Sensor gerade ohne Messwert, kein tatsächlich niedriger Wert (siehe "Logik im Detail") |
+| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
@@ -533,7 +532,7 @@ ohne zusätzliche Custom Cards:
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'frost_unavailable': 'Frostschutz (Sensor n. verfügbar)', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
+  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
