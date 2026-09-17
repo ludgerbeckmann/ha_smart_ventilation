@@ -431,7 +431,6 @@ def _build_room_schema(
     fields[vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, ""))] = str
 
     sonos_include = _area_include_entities(area_entities, "media_player")
-    presence_include = _area_include_entities(area_entities, PRESENCE_DOMAINS)
 
     fields[vol.Required(SECTION_NOTIFY)] = section(
         vol.Schema(
@@ -466,12 +465,7 @@ def _build_room_schema(
                                 "required": False,
                                 "selector": selector.EntitySelector(
                                     selector.EntitySelectorConfig(
-                                        domain=PRESENCE_DOMAINS,
-                                        **(
-                                            {"include_entities": presence_include}
-                                            if presence_include
-                                            else {}
-                                        ),
+                                        domain=PRESENCE_DOMAINS
                                     )
                                 ),
                             },

@@ -194,6 +194,22 @@ da ausschließlich über den Config-Flow einrichtbar). Bei künftigen
 Änderungen an diesen Dateien: `validate.yml`-Ergebnis auf `main`
 abwarten/prüfen, nicht nur `py_compile`/den Import-Check.
 
+**9. Nicht jede im Raum-Formular referenzierte Entität ist tatsächlich
+an den HA-Bereich dieses Raums gebunden.** Beim Einführen der
+Bereichs-basierten Sensor-Filterung (`config_flow.py`:
+`_area_include_entities`) wurde die Filterung versehentlich auch auf
+die **Anwesenheits-Entität** (`person`/`device_tracker`) bei den
+Benachrichtigungszielen angewendet. Das ist konzeptionell falsch: eine
+Person bzw. ihr Tracking-Gerät ist ortsungebunden und wird in HA so gut
+wie nie einem Raum-Bereich zugeordnet - die Filterung lief in der Praxis
+entweder ins Leere (Fallback auf unbeschränkt, harmlos) oder, schlimmer,
+schränkte die Auswahl auf eine dort zufällig zugeordnete, aber völlig
+falsche Entität ein, sodass die eigentlich gewünschte Person gar nicht
+mehr wählbar war. Lektion: Vor dem Anwenden einer Bereichs-Filterung auf
+ein Feld erst prüfen, ob die dahinterliegende Entität überhaupt sinnvoll
+einem Raum zugeordnet sein kann (Sensoren/Lautsprecher/Aktoren: ja -
+Personen/Geräte-Tracker: nein).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
