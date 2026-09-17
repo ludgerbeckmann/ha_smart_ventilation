@@ -552,7 +552,7 @@ content: >
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'Offen' if w == 'on' else ('Geschlossen' if w == 'off' else 'Unbekannt') %}
-  {% if not no_window and not never_triggered and w in ['on', 'off'] %}
+  {% if not no_window and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
   {% endif %}
@@ -603,7 +603,7 @@ content: >
   {% endif %}
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
-  {% set empfehlung_text = 'Kein Lüftungsbedarf' if never_triggered else (status_icon) %}
+  {% set empfehlung_text = '–' if never_triggered else (status_icon) %}
   {% set uhrzeit_val = '–' if never_triggered else changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
@@ -675,8 +675,11 @@ die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
 **Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Empfehlung/Fenster/
-Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser/Uhrzeit zeigen
-"–", solange noch nie ausgelöst) → Status (Luftentfeuchter/Klimaanlage/
+Auslöser/Uhrzeit - nur für Räume mit Fenster; Empfehlung/Auslöser/Uhrzeit
+zeigen "–", solange noch nie ausgelöst - das 🟢/🔴-Icon am Raumnamen wird
+davon unabhängig trotzdem angezeigt, sobald ein Fensterkontakt hinterlegt
+ist: es vergleicht weiterhin, ob der tatsächliche Fensterzustand zum
+aktuellen Empfehlungs-Zustand passt) → Status (Luftentfeuchter/Klimaanlage/
 Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
 aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
 CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungsmethoden-
