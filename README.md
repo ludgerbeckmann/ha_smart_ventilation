@@ -540,7 +540,7 @@ content: >
   {% set never_triggered = s.state == 'off' and a.letzter_grund is not defined %}
   {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
   {% set highlight_code = grund_code if s.state == 'on' else '' %}
-  {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚫ Schließen' %}
+  {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '🔘 Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
   {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if highlight_code == 'temp' else temp_val %}
@@ -552,7 +552,7 @@ content: >
   {% set match_icon = '' %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
-  {% set window_state_text = '🟢 Offen' if w == 'on' else ('⚫ Geschlossen' if w == 'off' else 'Unbekannt') %}
+  {% set window_state_text = '🟢 Offen' if w == 'on' else ('🔘 Geschlossen' if w == 'off' else 'Unbekannt') %}
   {% if not no_window and not never_triggered and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
@@ -578,22 +578,29 @@ content: >
   {% endif %}
   {% set dev1 = '' %}
   {% if a.luftentfeuchter_an is defined %}
-  {% set dev1 = 'Luftentfeuchter ' ~ ('🟢 an' if a.luftentfeuchter_an else '⚫ aus') %}
+  {% set dev1 = ('🟢' if a.luftentfeuchter_an else '🔘') ~ ' Luftentfeuchter' %}
   {% endif %}
   {% set dev2 = '' %}
   {% if a.klimaanlage_an is defined %}
-  {% set dev2 = 'Klimaanlage ' ~ ('🟢 an' if a.klimaanlage_an else '⚫ aus') %}
+  {% set dev2 = ('🟢' if a.klimaanlage_an else '🔘') ~ ' Klimaanlage' %}
   {% endif %}
   {% set dev3 = '' %}
   {% if a.duschen_erkannt is defined %}
-  {% set dev3 = 'Dusche ' ~ ('🟢 an' if a.duschen_erkannt else '⚫ aus') %}
+  {% set dev3 = ('🟢' if a.duschen_erkannt else '🔘') ~ ' Dusche' %}
   {% endif %}
-  {% set status_parts = dev1 %}
-  {% set status_parts = (status_parts ~ ' · ' ~ dev2) if (status_parts != '' and dev2 != '') else (status_parts ~ dev2) %}
-  {% set status_parts = (status_parts ~ ' · ' ~ dev3) if (status_parts != '' and dev3 != '') else (status_parts ~ dev3) %}
+  {% set status_lines = '' %}
+  {% if dev1 != '' %}
+  {% set status_lines = status_lines ~ '<br>' ~ dev1 %}
+  {% endif %}
+  {% if dev2 != '' %}
+  {% set status_lines = status_lines ~ '<br>' ~ dev2 %}
+  {% endif %}
+  {% if dev3 != '' %}
+  {% set status_lines = status_lines ~ '<br>' ~ dev3 %}
+  {% endif %}
   {% set dev_line = '' %}
-  {% if status_parts != '' %}
-  {% set dev_line = 'Status: ' ~ status_parts %}
+  {% if status_lines != '' %}
+  {% set dev_line = 'Status:' ~ status_lines %}
   {% endif %}
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
@@ -605,13 +612,13 @@ content: >
   {% endif %}
   {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
-  {% set n1_status = '🟢 an' if a.sprachausgabe_aktiv is defined else '⚫ aus' %}
+  {% set n1_status = '🟢' if a.sprachausgabe_aktiv is defined else '🔘' %}
   {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
   {% set n2 = 'App-Benachrichtigung' %}
-  {% set n2_status = '🟢 an' if a.app_aktiv is defined else '⚫ aus' %}
+  {% set n2_status = '🟢' if a.app_aktiv is defined else '🔘' %}
   {% set n2_ziel = (a.app_ziele | join(', ')) if a.app_ziele is defined else '–' %}
   {% set n3 = 'Persistente Benachrichtigung' %}
-  {% set n3_status = '🟢 an' if a.persistent_aktiv is defined else '⚫ aus' %}
+  {% set n3_status = '🟢' if a.persistent_aktiv is defined else '🔘' %}
   {% set n3_ziel = '–' %}
   {% set notify_table = '| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
@@ -660,7 +667,7 @@ Version verzichtet komplett auf `style`-Attribute:
   normalen Erreichen der Schließen-Schwelle, oder `frost`/`heat`, wenn
   Frost- bzw. Hitzeschutz das Schließen erzwungen hat), obwohl aktuell gar
   keine Maßnahme mehr nötig ist. Ohne diese Einschränkung würde sonst auch
-  bei "⚫ Schließen" (kein Handlungsbedarf) noch die Zelle des ursprünglichen
+  bei "🔘 Schließen" (kein Handlungsbedarf) noch die Zelle des ursprünglichen
   Schließen-Grundes gelb markiert bleiben
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
@@ -677,7 +684,7 @@ CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungsmethoden-
 Tabelle**.
 
 Icons dienen ausschließlich zur **Status-Signalisierung** (🟢 = an/offen/
-übereinstimmend, ⚫ = aus/geschlossen, 🔴 = Abweichung). Die Schwellenwerte
+übereinstimmend, 🔘 = aus/geschlossen, 🔴 = Abweichung). Die Schwellenwerte
 sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
 des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
 Einzelschritte zerlegt - das macht sie robuster gegenüber Kopier-/
