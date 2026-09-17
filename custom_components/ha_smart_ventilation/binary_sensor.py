@@ -289,7 +289,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._open_since = dt_util.parse_datetime(
                     attrs["empfehlung_aktiv_seit"]
                 )
-            if "letzter_grund" in attrs:
+            if "letzter_grund" in attrs and attrs["letzter_grund"] != "frost_unavailable":
+                # "frost_unavailable" ist ein seit 0.35.0 entfernter Grund-Code
+                # (siehe CLAUDE.md, Lektion 11) - ohne diesen Ausschluss würde
+                # ein vor dem Update gespeicherter, seitdem nie neu berechneter
+                # Wert (Raum bleibt durchgehend "aus", solange der Sensor
+                # weiterhin fehlt, also ohne neuen Zustandswechsel) bei jedem
+                # Neustart unverändert wiederhergestellt und weiterhin als
+                # veralteter Auslöser angezeigt.
                 self._last_reason = attrs["letzter_grund"]
             if "luftentfeuchter_an" in attrs:
                 self._dehumidifier_state = bool(attrs["luftentfeuchter_an"])

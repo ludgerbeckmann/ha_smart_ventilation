@@ -273,6 +273,28 @@ Meldung/einen Tabelleneintrag verdient, ist eine **separate** Frage, die
 der Nutzer entscheidet, nicht automatisch mit "ja, aber ehrlich
 formuliert" zu beantworten ist.
 
+**Nachtrag (0.35.1), erneutes Beispiel für Lektion 10:** Direkt nach dem
+zweiten Fix meldete der Nutzer, der alte Auslöser-Text erscheine
+weiterhin. Ursache: `letzter_grund="frost_unavailable"` war in genau
+diesem Raum schon **vor** dem Update gespeichert worden, und
+`_last_reason` wird ausschließlich innerhalb des
+Zustandswechsel-Zweigs (`if new_state != self._attr_is_on:`) neu
+berechnet. Bleibt der Sensor weiterhin dauerhaft nicht verfügbar, bleibt
+der Raum durchgehend "aus" - es gibt also gar keinen neuen
+Zustandswechsel, der den veralteten Wert überschreiben könnte. Bei jedem
+Neustart stellt `RestoreEntity` (`async_added_to_hass`) den alten,
+längst obsoleten Attributwert einfach unverändert wieder her. Fix:
+Beim Wiederherstellen wird der Wert `"frost_unavailable"` explizit
+ausgeschlossen (wie ein nicht vorhandenes Attribut behandelt, `_last_reason`
+bleibt `None`). Lektion, die Lektion 10 präzisiert: Es reicht nicht, nur
+Felder zu betrachten, die komplett fehlen können ("nie neu gespeichert,
+seit der Rename passiert ist") - auch ein Wert, der schlicht **niemals
+neu berechnet wird**, weil die zugehörige Bedingung (hier: ein
+Zustandswechsel) einfach nicht eintritt, bleibt für immer auf dem
+Stand vor dem Update stehen. Bei jedem entfernten `reason`-/Code-Wert
+diesen Fall explizit prüfen: kann die Entität in einem Zustand
+"stecken bleiben", in dem der alte Wert nie neu geschrieben wird?
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
