@@ -7,7 +7,16 @@ from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_IS_GLOBAL, DOMAIN, GLOBAL_ENTRY_ID_KEY
+from .const import (
+    CONF_IS_GLOBAL,
+    CONF_MOBILE_ENABLED,
+    CONF_NOTIFY_METHOD,
+    CONF_PERSISTENT_ENABLED,
+    DOMAIN,
+    GLOBAL_ENTRY_ID_KEY,
+    NOTIFY_METHOD_MOBILE,
+    NOTIFY_METHOD_PERSISTENT,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +48,47 @@ def _create_global_settings_entry(hass: HomeAssistant) -> None:
     )
 
 
+def _migrate_legacy_notify_method(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Migriert Raum-Einträge von der historischen, einmalig beim Speichern
+    berechneten CONF_NOTIFY_METHOD-Liste (siehe Git-Historie/CLAUDE.md) auf
+    die seitdem verwendeten CONF_MOBILE_ENABLED/CONF_PERSISTENT_ENABLED-
+    Felder.
+
+    Ohne diese Migration bleiben Räume, die seit jener Umstellung nie neu
+    gespeichert wurden, dauerhaft ohne aktive Benachrichtigung: _effective()
+    findet für CONF_MOBILE_ENABLED/CONF_PERSISTENT_ENABLED weder einen
+    Raum- noch einen globalen Wert (beide fehlen im alten Datenformat
+    komplett) und fällt auf den fest einprogrammierten Standard False
+    zurück - selbst wenn der Raum weiterhin ein konfiguriertes
+    Benachrichtigungsziel (mobile_targets) hat.
+
+    Läuft bei jedem Setup, ist aber nach der ersten Migration wirkungslos,
+    da CONF_NOTIFY_METHOD danach nicht mehr im Eintrag vorhanden ist.
+    """
+    if entry.data.get(CONF_IS_GLOBAL):
+        return
+    legacy_methods = entry.data.get(CONF_NOTIFY_METHOD)
+    if legacy_methods is None:
+        return
+
+    new_data = dict(entry.data)
+    if CONF_MOBILE_ENABLED not in new_data:
+        new_data[CONF_MOBILE_ENABLED] = NOTIFY_METHOD_MOBILE in legacy_methods
+    if CONF_PERSISTENT_ENABLED not in new_data:
+        new_data[CONF_PERSISTENT_ENABLED] = NOTIFY_METHOD_PERSISTENT in legacy_methods
+    new_data.pop(CONF_NOTIFY_METHOD, None)
+
+    _LOGGER.debug(
+        "Migriere veraltete notify_method-Liste (%s) für Raum %s auf "
+        "mobile_enabled=%s/persistent_enabled=%s",
+        legacy_methods,
+        entry.title,
+        new_data[CONF_MOBILE_ENABLED],
+        new_data[CONF_PERSISTENT_ENABLED],
+    )
+    hass.config_entries.async_update_entry(entry, data=new_data)
+
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Läuft einmal beim (ersten) Setup der Integration in dieser
     Home-Assistant-Sitzung. Stellt sicher, dass der Eintrag "Smart
@@ -50,6 +100,8 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Richtet einen Raum oder die allgemeinen Einstellungen ein."""
+    _migrate_legacy_notify_method(hass, entry)
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
 
