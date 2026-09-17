@@ -1,5 +1,10 @@
 # Smart Ventilation für Home Assistant
 
+[![Validate](https://github.com/ludgerbeckmann/ha_smart_ventilation/actions/workflows/validate.yml/badge.svg)](https://github.com/ludgerbeckmann/ha_smart_ventilation/actions/workflows/validate.yml)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![GitHub release](https://img.shields.io/github/release/ludgerbeckmann/ha_smart_ventilation.svg)](https://github.com/ludgerbeckmann/ha_smart_ventilation/releases/)
+[![GitHub license](https://img.shields.io/github/license/ludgerbeckmann/ha_smart_ventilation.svg)](LICENSE)
+
 Eine Custom Integration, die pro Raum überwacht, ob gelüftet werden sollte –
 basierend auf der Innentemperatur, der Luftfeuchtigkeit und der
 Außentemperatur. Bei einem Zustandswechsel wird automatisch per
