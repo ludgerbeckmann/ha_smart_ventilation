@@ -563,10 +563,10 @@ content: >
   {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
-  {% if a.absolute_luftfeuchtigkeit is defined %}
-  {% set abs_in = (a.absolute_luftfeuchtigkeit | string) %}
-  {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string) if a.aussen_absolute_luftfeuchtigkeit is defined else '–' %}
-  {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' g/m³ | ' ~ abs_out ~ ' g/m³ | – | – |' %}
+  {% if a.luftfeuchtigkeit is defined %}
+  {% set abs_in = (a.absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none) else '–' %}
+  {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none) else '–' %}
+  {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' | ' ~ abs_out ~ ' | – | – |' %}
   {% endif %}
   {% set dev1 = '' %}
   {% if a.luftentfeuchter_an is defined %}
