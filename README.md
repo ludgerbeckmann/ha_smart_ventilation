@@ -523,13 +523,14 @@ content: >
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
   {% set never_triggered = s.state == 'off' and a.letzter_grund is not defined %}
   {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
+  {% set highlight_code = grund_code if s.state == 'on' else '' %}
   {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚫ Schließen' %}
   {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
-  {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if grund_code == 'temp' else temp_val %}
+  {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if highlight_code == 'temp' else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
-  {% set outdoor_temp_val = ('<mark>' ~ outdoor_temp_val ~ '</mark>') if grund_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
+  {% set outdoor_temp_val = ('<mark>' ~ outdoor_temp_val ~ '</mark>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_line = '' %}
@@ -546,13 +547,13 @@ content: >
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_val = ('<mark>' ~ hum_val ~ '</mark>') if grund_code == 'humidity' else hum_val %}
+  {% set hum_val = ('<mark>' ~ hum_val ~ '</mark>') if highlight_code == 'humidity' else hum_val %}
   {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | string) ~ ' % |' %}
   {% endif %}
   {% set co2_row = '' %}
   {% if a.co2 is defined %}
   {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
-  {% set co2_val = ('<mark>' ~ co2_val ~ '</mark>') if grund_code == 'co2' else co2_val %}
+  {% set co2_val = ('<mark>' ~ co2_val ~ '</mark>') if highlight_code == 'co2' else co2_val %}
   {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
@@ -637,7 +638,15 @@ Version verzichtet komplett auf `style`-Attribute:
   Luftfeuchtigkeit (`humidity`), CO2 (`co2`) sowie die Außentemperatur bei
   Frost-/Hitzeschutz und dem Sommer-Fall (`frost`/`heat`/`outdoor_warmer`) -
   bei Winter-Höchstdauer (`duration`) gibt es keinen einzelnen Messwert zum
-  Hervorheben, dort bleibt nur die Zeile in der Zuletzt-geändert-Tabelle
+  Hervorheben, dort bleibt nur die Zeile in der Zuletzt-geändert-Tabelle.
+  Die Hervorhebung greift dabei **ausschließlich**, solange die Empfehlung
+  für den Raum aktuell "Öffnen" lautet (`s.state == 'on'`) - `letzter_grund`
+  beschreibt sonst nur, warum zuletzt geschlossen wurde (z. B. `temp` beim
+  normalen Erreichen der Schließen-Schwelle, oder `frost`/`heat`, wenn
+  Frost- bzw. Hitzeschutz das Schließen erzwungen hat), obwohl aktuell gar
+  keine Maßnahme mehr nötig ist. Ohne diese Einschränkung würde sonst auch
+  bei "⚫ Schließen" (kein Handlungsbedarf) noch die Zelle des ursprünglichen
+  Schließen-Grundes gelb markiert bleiben
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
 aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
