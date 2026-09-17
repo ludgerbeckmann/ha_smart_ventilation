@@ -245,17 +245,33 @@ konkrete Frostgefahr meldeten ("die Außentemperatur liegt mit {wert}
 auf/unter der Frostschutz-Grenze"), obwohl in Wahrheit gar kein
 Messwert vorlag - irreführend, gerade weil dieser Fall typischerweise
 durch einen Neustart ausgelöst wird (siehe Lektion 2) und die
-Außentemperatur zu dem Zeitpunkt oft gar nicht niedrig ist. Fix:
-`frost_sensor_missing` als eigene Variable neben `frost_block`
-eingeführt, die zwei einzelnen Fälle in unterschiedliche `reason`-Werte
-aufgeteilt (`"frost"` vs. `"frost_unavailable"`) und dafür einen eigenen,
-ehrlichen Benachrichtigungstext (`CONF_MSG_CLOSE_FROST_UNAVAILABLE`)
-sowie einen eigenen Dashboard-Auslöser-Text ergänzt. Lektion: Wann immer
-ein und dieselbe Aktion (hier: schließen) aus einem "echten" Grund und
-einem "wir wissen es nicht, spielen aber sicher"-Grund ausgelöst werden
-kann, verdient das zwei unterschiedliche `reason`-Codes - sonst wird die
-konservative Sicherheitsannahme in der Kommunikation zur (falschen)
-Tatsachenbehauptung.
+Außentemperatur zu dem Zeitpunkt oft gar nicht niedrig ist. Erster Fix (0.34.0): `frost_sensor_missing` als eigene Variable neben
+`frost_block` eingeführt, die zwei einzelnen Fälle in unterschiedliche
+`reason`-Werte aufgeteilt (`"frost"` vs. `"frost_unavailable"`) und dafür
+einen eigenen, ehrlichen Benachrichtigungstext
+(`CONF_MSG_CLOSE_FROST_UNAVAILABLE`) sowie einen eigenen
+Dashboard-Auslöser-Text ergänzt.
+
+Nutzer-Feedback nach diesem ersten Fix: auch der eigene, "ehrliche" Text
+war noch zu viel - ein Auslöser-Eintrag ("Frostschutz (Sensor n.
+verfügbar)") in der Empfehlungs-Tabelle bei jedem Neustart wurde weiterhin
+als störendes Rauschen empfunden, nicht als nützliche Information. Zweiter,
+endgültiger Fix: `frost_sensor_missing` löst zwar weiterhin das
+vorsorgliche Schließen aus (Sicherheit bleibt unverändert bestehen), aber
+`_last_reason` wird für diesen Fall explizit auf `None` gesetzt statt auf
+`"frost_unavailable"`, und die Benachrichtigung wird komplett unterdrückt
+(`silent_frost_close` in `binary_sensor.py`) - dadurch verschwundene, jetzt
+tote Textbausteine (`CONF_MSG_CLOSE_FROST_UNAVAILABLE`,
+`msg_close_frost_unavailable` in `strings.json`/`translations/*.json`,
+das zugehörige Optionsfeld) wurden komplett entfernt statt nur
+unbenutzt liegen zu lassen. Lektion: Wann immer ein und dieselbe Aktion
+(hier: schließen) aus einem "echten" Grund und einem "wir wissen es
+nicht, spielen aber sicher"-Grund ausgelöst werden kann, muss die
+konservative Sicherheitsmaßnahme selbst (hier: das Schließen)
+unverändert bestehen bleiben - ob sie aber überhaupt eine sichtbare
+Meldung/einen Tabelleneintrag verdient, ist eine **separate** Frage, die
+der Nutzer entscheidet, nicht automatisch mit "ja, aber ehrlich
+formuliert" zu beantworten ist.
 
 ## Versionierung & Release
 
