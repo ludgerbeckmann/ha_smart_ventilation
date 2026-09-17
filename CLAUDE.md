@@ -28,6 +28,8 @@ custom_components/ha_smart_ventilation/
 ├── binary_sensor.py     # Kernlogik: Bewertung, Benachrichtigung, Geräte
 ├── config_flow.py       # Config-/Options-Flow für Räume + globale Optionen
 ├── const.py             # Alle CONF_*/DEFAULT_*-Konstanten
+├── diagnostics.py       # "Diagnose herunterladen" - Config + Live-Zustand
+│                          referenzierter Sensoren, zur Ferndiagnose
 ├── strings.json / translations/{de,en}.json
 brand/                   # Icons (Root UND custom_components/.../brand/ - beide nötig)
 .github/release.yml               # Release-Notes-Kategorisierung
