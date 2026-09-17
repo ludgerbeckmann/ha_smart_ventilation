@@ -585,7 +585,7 @@ content: >
   {% set status_parts = (status_parts ~ ' · ' ~ dev3) if (status_parts != '' and dev3 != '') else (status_parts ~ dev3) %}
   {% set dev_line = '' %}
   {% if status_parts != '' %}
-  {% set dev_line = '\n\nStatus: ' ~ status_parts %}
+  {% set dev_line = 'Status: ' ~ status_parts %}
   {% endif %}
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
@@ -607,9 +607,10 @@ content: >
   {% set n3_ziel = '–' %}
   {% set notify_table = '| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
-  {% set body = empf_table ~ dev_line %}
+  {% set body = empf_table %}
   {% set body = body ~ spacer ~ values_table %}
   {% set body = body ~ spacer ~ notify_table %}
+  {% set body = body ~ (spacer ~ dev_line if dev_line else '') %}
   {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
   {{ sep_before ~ header ~ '\n\n' ~ body }}
   {% endfor %}
