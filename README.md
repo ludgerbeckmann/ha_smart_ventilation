@@ -533,7 +533,6 @@ content: >
   {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
   {% set highlight_code = grund_code if s.state == 'on' else '' %}
   {% set status_icon = '🟢 Öffnen' if s.state == 'on' else '⚫ Schließen' %}
-  {% set change_action = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
   {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if highlight_code == 'temp' else temp_val %}
@@ -541,12 +540,11 @@ content: >
   {% set outdoor_temp_val = ('<mark>' ~ outdoor_temp_val ~ '</mark>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
-  {% set window_line = '' %}
+  {% set window_state_text = '–' %}
   {% set match_icon = '' %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = '🟢 Offen' if w == 'on' else ('⚫ Geschlossen' if w == 'off' else 'Unbekannt') %}
-  {% set window_line = '\nFenster: ' ~ window_state_text %}
   {% if not no_window and not never_triggered and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
@@ -592,12 +590,12 @@ content: >
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = 'Kein Lüftungsbedarf' if never_triggered else (status_icon) %}
-  {% set status_line = '' if no_window else ('Empfehlung: ' ~ empfehlung_text ~ window_line) %}
-  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ co2_row ~ abs_row %}
-  {% set changed_table = '' %}
-  {% if not never_triggered %}
-  {% set changed_table = '| Uhrzeit | Auslöser | Empfehlung |\n|---|---|---|\n| ' ~ changed_time ~ ' | ' ~ grund_label ~ ' | ' ~ change_action ~ ' |' %}
+  {% set uhrzeit_val = '–' if never_triggered else changed_time %}
+  {% set empf_table = '' %}
+  {% if not no_window %}
+  {% set empf_table = '| Empfehlung | Fenster | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ empfehlung_text ~ ' | ' ~ window_state_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
   {% endif %}
+  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ co2_row ~ abs_row %}
   {% set n1 = 'Sprachausgabe' %}
   {% set n1_status = '🟢 an' if a.sprachausgabe_aktiv is defined else '⚫ aus' %}
   {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
@@ -609,8 +607,7 @@ content: >
   {% set n3_ziel = '–' %}
   {% set notify_table = '| Methode | Status | Ziel(e) |\n|---|---|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
-  {% set body = status_line ~ dev_line %}
-  {% set body = body ~ (spacer ~ changed_table if changed_table else '') %}
+  {% set body = empf_table ~ dev_line %}
   {% set body = body ~ spacer ~ values_table %}
   {% set body = body ~ spacer ~ notify_table %}
   {% set sep_before = '\n\n<hr>\n\n' if not loop.first else '' %}
@@ -646,7 +643,8 @@ Version verzichtet komplett auf `style`-Attribute:
   Luftfeuchtigkeit (`humidity`), CO2 (`co2`) sowie die Außentemperatur bei
   Frost-/Hitzeschutz und dem Sommer-Fall (`frost`/`heat`/`outdoor_warmer`) -
   bei Winter-Höchstdauer (`duration`) gibt es keinen einzelnen Messwert zum
-  Hervorheben, dort bleibt nur die Zeile in der Zuletzt-geändert-Tabelle.
+  Hervorheben, dort bleibt nur die Auslöser-Spalte in der
+  Empfehlungs-Tabelle.
   Die Hervorhebung greift dabei **ausschließlich**, solange die Empfehlung
   für den Raum aktuell "Öffnen" lautet (`s.state == 'on'`) - `letzter_grund`
   beschreibt sonst nur, warum zuletzt geschlossen wurde (z. B. `temp` beim
@@ -661,12 +659,13 @@ aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
 die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
-**Reihenfolge:** Raumname → Empfehlung/Fenster → Status (Luftentfeuchter/
-Klimaanlage/Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für
-den Raum aktiv) → **Zuletzt-geändert-Tabelle** (Uhrzeit/Auslöser/
-Empfehlung, nur falls schon einmal ausgelöst) → **Werte-Tabelle** (mit
-Spaltenüberschrift "Messgröße", inkl. CO2-Zeile falls ein CO2-Sensor
-hinterlegt ist) → **Benachrichtigungsmethoden-Tabelle**.
+**Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Empfehlung/Fenster/
+Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser/Uhrzeit zeigen
+"–", solange noch nie ausgelöst) → Status (Luftentfeuchter/Klimaanlage/
+Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
+aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
+CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungsmethoden-
+Tabelle**.
 
 Icons dienen ausschließlich zur **Status-Signalisierung** (🟢 = an/offen/
 übereinstimmend, ⚫ = aus/geschlossen, 🔴 = Abweichung). Die Schwellenwerte
