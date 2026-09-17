@@ -716,6 +716,15 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   zu übernehmen. Um einen bereits konfigurierten Raum auf "globale
   Einstellung nutzen" umzustellen, musst du das entsprechende Dropdown im
   Formular einmal manuell auf die leere Option zurücksetzen.
+- **Automatische Migration noch älterer Räume**: Räume, die aus einer Zeit
+  vor der obigen Umstellung stammen und seitdem nie neu gespeichert wurden,
+  hatten intern noch eine ältere, längst nicht mehr ausgewertete
+  `notify_method`-Liste anstelle von "Home Assistant Companion App"/
+  "Persistente Benachrichtigung" - dadurch blieben sie trotz konfigurierter
+  Benachrichtigungsziele dauerhaft stumm (weder Raum- noch globaler Wert
+  vorhanden). Seit Version 0.33.2 migriert die Integration solche Räume beim
+  nächsten Start automatisch einmalig auf die aktuellen Felder - kein
+  manuelles Eingreifen nötig.
 - **Wegfall des Sprachausgabe-Schalters**: Der frühere Ja/Nein/leer-Schalter
   "Sprachausgabe" (Raum und global) und die globale Lautsprecherliste
   wurden entfernt. Ein bereits konfigurierter Raum mit ausgewählten

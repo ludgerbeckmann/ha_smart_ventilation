@@ -210,6 +210,30 @@ ein Feld erst prüfen, ob die dahinterliegende Entität überhaupt sinnvoll
 einem Raum zugeordnet sein kann (Sensoren/Lautsprecher/Aktoren: ja -
 Personen/Geräte-Tracker: nein).
 
+**10. Ein Architektur-Refactor macht bereits gespeicherte Config-Entry-Daten
+nicht automatisch mit.** Die Umstellung von der historischen
+`CONF_NOTIFY_METHOD`-Liste (einmalig beim Speichern berechnet) auf die
+live über `_effective()` aufgelösten `CONF_MOBILE_ENABLED`/
+`CONF_PERSISTENT_ENABLED`-Felder hat für Räume, die seitdem nie neu
+gespeichert wurden, keinen der beiden neuen Schlüssel gesetzt - `_effective()`
+fand dafür weder einen Raum- noch einen globalen Wert und fiel auf den
+fest einprogrammierten Standard `False` zurück. Ergebnis: Räume mit
+weiterhin korrekt konfiguriertem Benachrichtigungsziel (`mobile_targets`)
+blieben stumm, ohne dass Config-Flow/Options-Flow oder die Anzeige einen
+Hinweis darauf gaben - das alte Feld existierte im gespeicherten
+Config-Entry einfach unverändert weiter, nur wird es vom neuen Code
+nirgends mehr gelesen. Gefunden über eine vom Nutzer hochgeladene
+Diagnose-Datei (`entry_data.notify_method` vorhanden, `mobile_enabled`
+fehlend). Fix: `_migrate_legacy_notify_method()` in `__init__.py`, läuft
+bei jedem `async_setup_entry` einmalig pro Eintrag (danach wirkungslos, da
+`CONF_NOTIFY_METHOD` entfernt wird). Lektion: Bei jeder Umstellung von
+einem "einmalig berechnet und gespeichert" - auf ein "live aufgelöst"-Muster
+(oder allgemein bei jedem Feld-Rename/-Ersatz) explizit prüfen, ob
+bestehende, nie neu gespeicherte Einträge dadurch stillschweigend in einen
+anderen Zustand fallen - und wenn ja, eine Migration in `async_setup_entry`
+ergänzen, nicht nur auf "wird beim nächsten Speichern schon aktualisiert"
+hoffen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
