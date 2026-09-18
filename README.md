@@ -129,6 +129,12 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
      Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
+     - **Tankstatus-Sensor (Luftentfeuchter)** (optional): eine
+       `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
+       bzw. ein Fehler vorliegt - rein informativ, wird auf der
+       Dashboard-Karte als Zusatz "(Fehler)" beim Luftentfeuchter-Status
+       angezeigt; hat keine Auswirkung auf die Lüftungs- oder
+       Geräte-Steuerung selbst
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität
      - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
        `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
@@ -530,6 +536,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind |
+| `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
 | `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn der Raum mindestens einen Lautsprecher ausgewählt hat |
@@ -624,6 +631,7 @@ content: >
   {% set dev1 = '' %}
   {% if a.luftentfeuchter_an is defined %}
   {% set dev1 = ('🟢' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
+  {% set dev1 = dev1 ~ ' (Fehler)' if a.luftentfeuchter_tank_fehler else dev1 %}
   {% endif %}
   {% set dev2 = '' %}
   {% if a.klimaanlage_an is defined %}
@@ -811,7 +819,10 @@ Luftentfeuchter/Klimaanlage). Da zu jedem Zeitpunkt nur ein Auslöser als
 "der" Grund gilt (siehe Prioritätsreihenfolge unten), gibt es nie einen
 Konflikt zwischen 🟠 und 🔴 für ein und denselben Raum. Bei Geräte-Status
 und Benachrichtigungs-
-methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
+methoden steht 🟢 für an, ⚫ für aus - der Luftentfeuchter-Status ergänzt
+zusätzlich "(Fehler)" in Klammern, sobald der optionale Tankstatus-Sensor
+"an" meldet (Tank voll/Fehler), unabhängig vom 🟢/⚫-Icon selbst. Die
+Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" für die
 Empfehlung bzw. "geöffnet"/"geschlossen" für den tatsächlichen
 Fensterzustand - klein geschrieben, da kein eigenständiger Satzanfang,

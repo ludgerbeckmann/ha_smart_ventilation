@@ -83,6 +83,10 @@ CONF_FROST_DEBOUNCE_MINUTES = "frost_debounce_minutes"
 
 # Optionale Geräte-Steuerung
 CONF_DEHUMIDIFIER_ENTITY = "dehumidifier_entity"
+# Optional: ein binary_sensor, der "an" meldet, sobald der Tank des
+# Luftentfeuchters voll ist/einen Fehler hat - nur zur Anzeige (Dashboard-
+# Karte), keine Auswirkung auf die Lüftungs-/Geräte-Logik selbst.
+CONF_DEHUMIDIFIER_TANK_FULL_ENTITY = "dehumidifier_tank_full_entity"
 CONF_AC_ENTITY = "ac_entity"
 CONF_SHUTTER_ENTITY = "shutter_entity"
 CONF_POWER_ENTITY = "power_entity"
