@@ -673,7 +673,7 @@ content: >
   {% set n3 = 'Persistente Benachrichtigung' %}
   {% set n3_status = '🟢' if a.persistent_aktiv is defined else '⚫' %}
   {% set n3_ziel = '–' %}
-  {% set notify_table = '| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
+  {% set notify_table = '<details>\n<summary>Benachrichtigung</summary>\n\n| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |\n\n</details>' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
   {% set body = empf_table %}
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
