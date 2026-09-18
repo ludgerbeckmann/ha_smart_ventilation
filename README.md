@@ -558,22 +558,23 @@ content: >
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else grund_code)) %}
   {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)))) %}
   {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
+  {% set has_live_reason = highlight_code != '' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
-  {% set match_icon = '⚫ ' if no_window else '' %}
+  {% set match_icon = '⚫ ' if (no_window or not has_live_reason) else '' %}
   {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'Offen' if w == 'on' else ('Geschlossen' if w == 'off' else 'Unbekannt') %}
-  {% if not no_window and w in ['on', 'off'] %}
+  {% if not no_window and has_live_reason and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
   {% set highlight_ok = is_match %}
   {% endif %}
   {% endif %}
   {% set highlight_open = '<font color="green"><strong>' if highlight_ok else '<font color="red"><strong>' %}
-  {% set status_icon = 'Öffnen' if s.state == 'on' else 'Schließen' %}
-  {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
+  {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
+  {% set changed_time = (as_local(s.last_changed).strftime('%d.%m. %H:%M')) if has_live_reason else '–' %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
   {% set temp_val = (highlight_open ~ temp_val ~ '</strong></font>') if highlight_code == 'temp' else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
@@ -703,11 +704,18 @@ Version verzichtet komplett auf `style`-Attribute:
   die sich nicht live aus den angezeigten Werten nachrechnen lassen:
   Sommer-Fall und Winter-Höchstdauer (`outdoor_warmer`/`duration` - fehlende
   Toleranz-Marge bzw. bisherige Öffnungsdauer im Vergleich zur Karte).
-  Trifft weder ein Live-Check noch dieser Rückfallwert zu (z. B. ein Raum,
-  der noch nie geöffnet werden musste und aktuell in keiner Richtung an
-  einer Schwelle liegt), zeigt die Auslöser-Spalte "–" - Innen-/Außenwerte
-  bleiben dann unhervorgehoben, da es aktuell schlicht keinen
-  ausschlaggebenden Grund gibt.
+  Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
+  eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
+  liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell
+  zieht), zeigt die Karte konsequent überall neutral "–" statt einer
+  veralteten Empfehlung: Auslöser, Empfehlung **und** Uhrzeit werden dann
+  alle "–", das 🟢/🔴-Icon am Raumnamen wird ⚫ (wie bei Räumen ohne
+  Fenster). Der zugrunde liegende `binary_sensor` behält seinen letzten
+  Zustand technisch unverändert bei (er ändert sich erst bei einem echten
+  neuen Auslöser) - die Karte soll aber nicht länger eine aktive
+  Empfehlung suggerieren, für die es aktuell keinen nachvollziehbaren
+  Grund gibt. Innen-/Außenwerte bleiben in diesem Fall unhervorgehoben, da
+  es keinen ausschlaggebenden Grund gibt.
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
 aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
@@ -715,14 +723,17 @@ die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
 **Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Empfehlung/Fenster/
-Auslöser/Uhrzeit - nur für Räume mit Fenster; Empfehlung zeigt immer
-"Öffnen"/"Schließen" entsprechend dem aktuellen Zustand, Uhrzeit immer den
-Zeitpunkt der letzten tatsächlichen Zustandsänderung. Auslöser wird live
-aus den aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
-ausschlaggebenden Werts" oben) und zeigt "–" nur, wenn aktuell wirklich
-keine Größe an einer Schwelle liegt. Das 🟢/🔴-Icon am Raumnamen vergleicht
-davon unabhängig, sobald ein Fensterkontakt hinterlegt ist, ob der
-tatsächliche Fensterzustand zum aktuellen Empfehlungs-Zustand passt) →
+Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
+aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
+ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
+Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand und
+Uhrzeit den Zeitpunkt der letzten tatsächlichen Zustandsänderung; liegt
+aktuell **kein** Auslöser vor ("Totzone", siehe oben), zeigen Empfehlung
+und Uhrzeit ebenfalls "–" statt einer sonst nicht mehr begründbaren
+Empfehlung. Das 🟢/🔴-Icon am Raumnamen vergleicht, sobald ein
+Fensterkontakt hinterlegt ist und ein Auslöser vorliegt, ob der
+tatsächliche Fensterzustand zum aktuellen Empfehlungs-Zustand passt - ohne
+Auslöser wird es ebenfalls neutral ⚫) →
 Status (Luftentfeuchter/Klimaanlage/
 Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
 aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
@@ -732,8 +743,10 @@ Tabelle**.
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🔴 am
 Raumnamen zeigen, ob der Fenster-Zustand mit der Empfehlung übereinstimmt
 (🟢) oder davon abweicht (🔴); bei Räumen ohne Fenster ("Dieser Raum hat
-kein Fenster" aktiviert) steht dort stattdessen immer ⚫, da es dafür
-keine Empfehlung gibt. Bei Geräte-Status und Benachrichtigungs-
+kein Fenster" aktiviert) sowie bei Räumen ohne aktuell live nachvollziehbaren
+Auslöser ("Totzone", siehe oben) steht dort stattdessen immer ⚫, da es
+dafür keine (aussagekräftige) Empfehlung gibt. Bei Geräte-Status und
+Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
 "Offen"/"Geschlossen"). Die Schwellenwerte
