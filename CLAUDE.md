@@ -462,6 +462,44 @@ liest das nur noch synchron aus und exponiert es als
 `integration_version`-Attribut (identisch für jeden Raum). `manifest.json`
 bleibt dadurch die einzige Stelle, an der die Version tatsächlich steht.
 
+**16. Nicht jeder "echte" Schließen-Grund ist gleich dringend - manche
+dürfen ohne Benachrichtigung bleiben, ohne dafür "silent" wie in Lektion 11
+zu sein (0.40.0).** Auf die Frage, ob es für CO2 einen "zu niedrig"-
+Gefahrenfall gibt (analog zu Frost/Hitze bei der Temperatur): nein - ein
+CO2-Wert unter der Schließen-Schwelle bedeutet nur "Luftqualität wieder
+gut genug", kein Sicherheitsrisiko. Der Nutzer folgerte daraus: das
+Schließen wegen CO2-Rückgang sollte dann auch nicht zwingend eine
+Benachrichtigung erzeugen. Wichtiger Unterschied zu Lektion 11
+(`silent_frost_close`): dort gab es GAR KEINEN echten Messwert (Sensor
+fehlte), weshalb sowohl die Benachrichtigung als auch der `reason`/
+`letzter_grund`-Wert selbst unterdrückt wurden (`_last_reason = None`),
+um keine irreführende Anzeige zu erzeugen. Hier dagegen gibt es einen
+echten, korrekten Messwert - `reason = "co2"` bleibt ehrlich gesetzt
+(Diagnose/Dashboard funktionieren unverändert), nur die Benachrichtigung
+selbst entfällt (`silent_co2_close` in `binary_sensor.py`, gesetzt bevor
+`_attr_is_on` überschrieben wird, da die Prüfung `should_close and
+self._attr_is_on` denselben - dann bereits veralteten - Zustand braucht
+wie die vorausgehende `elif`-Kette). Lektion: "Silent" (keine Anzeige)
+und "keine Benachrichtigung" sind zwei unabhängige Entscheidungen, die
+aus unterschiedlichen Gründen getroffen werden - fehlender Messwert
+(Lektion 11) rechtfertigt beides, ein echter, nur nicht dringender
+Messwert rechtfertigt nur Letzteres.
+
+**17. Bei nur zwei tatsächlich unterschiedlichen Bedeutungen keine dritte
+Farbe erfinden (0.40.0).** Die Dashboard-Karte nutzte 🔴/rot für
+"Fensterzustand passt nicht zur Empfehlung" und 🟠/orange für "Wert außer-
+halb des Bereichs, aber Raum ohne Fenster" (0.39.0, siehe README-Historie) -
+zwei Farben für im Grunde dieselbe Aussage ("aktuell nicht optimal, aber
+unterschiedlich handhabbar"). Auf Nutzerwunsch komplett vereinheitlicht:
+nur noch 🟢 (passt) und 🟠 (passt nicht - ob wegen Fenster-Mismatch oder
+weil gar kein Fenster vorhanden ist) verwendet, Rot vollständig aus der
+Kartenlogik entfernt (Icon, Werte-Hervorhebung, Übersichts-Tabelle jetzt
+nur noch zweispaltig 🟢/🟠). Lektion: Wenn zwei Fälle zwar unterschiedlich
+entstehen, aber für den Betrachter dieselbe Handlungsaufforderung
+bedeuten ("schau hier hin"), ist eine zusätzliche Farbe eher verwirrend
+als informativ - erst recht, wenn (wie hier) eine der beiden Bedeutungen
+ohnehin schon dieselbe Farbe nutzt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

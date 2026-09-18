@@ -314,7 +314,13 @@ zur unbeschränkten Auswahl zurückzukehren.
 - Luftfeuchtigkeit ≤ "Schwelle zum Schließen" – *außer* es wird gerade noch
   aus Temperatur- oder CO2-Gründen gelüftet, **oder**
 - CO2 ≤ "CO2-Schwelle zum Schließen" – *außer* es wird gerade noch aus
-  Temperatur- oder Feuchtigkeits-Gründen gelüftet, **oder**
+  Temperatur- oder Feuchtigkeits-Gründen gelüftet. Anders als bei
+  Frostschutz/Hitzeschutz gibt es für CO2 keinen "zu niedrig ist
+  gefährlich"-Fall - ein niedriger CO2-Wert ist unproblematisch, das
+  Schließen dient hier nur der Ordnung, nicht der Sicherheit. Der
+  Auslöser-Eintrag in der Empfehlungs-Tabelle erscheint trotzdem ganz
+  normal (der Grund ist ja real), nur die Benachrichtigung entfällt -
+  kein zwingender Handlungsbedarf, **oder**
 - **Sommer-Fall**: draußen ist mittlerweile mindestens um die Toleranz-Marge
   wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeits- oder
   CO2-Gründen gelüftet, **oder**
@@ -547,7 +553,7 @@ title: Lüftungsübersicht
 content: >
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
-  {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
+  {% set ns = namespace(green=0, orange=0, rooms='', version=none) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -574,7 +580,7 @@ content: >
   {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
   {% if not no_window and has_live_reason and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
-  {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
+  {% set match_icon = ('🟢 ' if is_match else '🟠 ') %}
   {% set highlight_ok = is_match %}
   {% endif %}
   {% endif %}
@@ -585,10 +591,8 @@ content: >
   {% set ns.green = ns.green + 1 %}
   {% elif match_icon == '🟠 ' %}
   {% set ns.orange = ns.orange + 1 %}
-  {% elif match_icon == '🔴 ' %}
-  {% set ns.red = ns.red + 1 %}
   {% endif %}
-  {% set highlight_open = '<font color="orange"><strong>' if no_window else ('<font color="green"><strong>' if highlight_ok else '<font color="red"><strong>') %}
+  {% set highlight_open = '<font color="green"><strong>' if highlight_ok else '<font color="orange"><strong>' %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
   {% set changed_time = (as_local(s.last_changed).strftime('%d.%m. %H:%M')) if has_live_reason else '–' %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
@@ -670,7 +674,7 @@ content: >
   {% set version_header = ' Version |' if ns.version is not none else '' %}
   {% set version_sep = ':---:|' if ns.version is not none else '' %}
   {% set version_cell = ' ' ~ ns.version ~ ' |' if ns.version is not none else '' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ version_header ~ '\n|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ version_cell %}
+  {% set overview = '| 🟢 | 🟠 |' ~ version_header ~ '\n|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' |' ~ version_cell %}
   {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
@@ -702,14 +706,14 @@ Version verzichtet komplett auf `style`-Attribute:
   wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
   nicht nur `34.2`) - **grün**, wenn der tatsächliche Fensterzustand mit
   der Empfehlung übereinstimmt (identisch zum 🟢-Icon am Raumnamen - die
-  Empfehlung wird also korrekt befolgt), **rot** bei Abweichung (das
-  Fenster steht nicht so, wie es die Empfehlung vorsieht - hier kann
+  Empfehlung wird also korrekt befolgt), sonst **orange**: entweder weil
+  das Fenster nicht so steht, wie es die Empfehlung vorsieht (hier kann
   direkt eingegriffen werden, indem das Fenster geöffnet/geschlossen
-  wird), oder **orange** bei Räumen ohne Fenster ("Dieser Raum hat kein
-  Fenster" aktiviert) - dort lässt sich der Wert nicht durch Lüften
-  beeinflussen, ein knalliges Rot würde also fälschlich zum Eingreifen
-  auffordern, obwohl höchstens Luftentfeuchter/Klimaanlage automatisch
-  reagieren.
+  wird), oder bei Räumen ohne Fenster ("Dieser Raum hat kein Fenster"
+  aktiviert), wo sich der Wert gar nicht durch Lüften beeinflussen lässt
+  (höchstens Luftentfeuchter/Klimaanlage reagieren automatisch). Bewusst
+  keine dritte Farbe (z. B. Rot) für diese beiden unterschiedlichen
+  Fälle - beide bedeuten "aktuell nicht optimal", nicht "Alarm".
 
   Auslöser und Hervorhebung werden dabei **live** aus den aktuell
   angezeigten Werten und Schwellen berechnet, nicht aus dem historischen
@@ -750,7 +754,7 @@ die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
 **Reihenfolge:** Zu Beginn der Karte (einmalig, vor der Raumliste) eine
-**Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
+**Übersichts-Tabelle** (🟢/🟠 als Spaltenköpfe, darunter zentriert die
 Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
 Icon am jeweiligen Raumnamen weiter unten - sowie eine vierte Spalte
 "Version" mit der aktuell installierten Versionsnummer, liest
@@ -768,7 +772,7 @@ aktuell **kein** Auslöser vor ("Totzone", siehe oben), zeigen Empfehlung
 und Uhrzeit ebenfalls "–" statt einer sonst nicht mehr begründbaren
 Empfehlung. Das Icon am Raumnamen vergleicht, sobald ein Fensterkontakt
 hinterlegt ist und ein Auslöser vorliegt, ob der tatsächliche
-Fensterzustand zum aktuellen Empfehlungs-Zustand passt (🟢/🔴) - ohne
+Fensterzustand zum aktuellen Empfehlungs-Zustand passt (🟢/🟠) - ohne
 Auslöser ("Totzone") liegt aktuell nichts vor, das ein Eingreifen
 nahelegt, daher ebenfalls 🟢, unabhängig vom Fensterzustand) →
 Status (Luftentfeuchter/Klimaanlage/
@@ -777,18 +781,20 @@ aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
 CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungs-
 Tabelle**.
 
-Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🔴 am
+Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠 am
 Raumnamen zeigen, ob der Fenster-Zustand mit der Empfehlung übereinstimmt
-(🟢) oder davon abweicht (🔴); liegt aktuell kein Auslöser vor ("Totzone",
+(🟢) oder davon abweicht (🟠); liegt aktuell kein Auslöser vor ("Totzone",
 siehe oben) zeigt das Icon ebenfalls 🟢, da es dann nichts gibt, das ein
 Eingreifen nahelegt. Bei Räumen ohne Fenster ("Dieser Raum hat kein
 Fenster" aktiviert) gibt es keinen Fenster-Zustand zum Abgleichen, daher
 richtet sich das Icon dort stattdessen danach, ob aktuell ein Auslöser
 vorliegt: 🟢, solange alle Werte im jeweils passenden Bereich liegen, sonst
-🟠 (identisch zur orangen Hervorhebung des betroffenen Werts, siehe oben -
-Handlungsbedarf besteht, aber nicht über das Fenster, sondern höchstens
-über Luftentfeuchter/Klimaanlage). Bei Geräte-Status und
-Benachrichtigungs-
+ebenfalls 🟠 (identisch zur orangen Hervorhebung des betroffenen Werts,
+siehe oben - Handlungsbedarf besteht, aber nicht über das Fenster,
+sondern höchstens über Luftentfeuchter/Klimaanlage). Bewusst keine
+eigene dritte Farbe für diesen Fall - beide Bedeutungen von 🟠 (Fenster
+falsch, oder kein Fenster vorhanden) heißen "aktuell nicht optimal",
+nicht "Alarm". Bei Geräte-Status und Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" für die
 Empfehlung bzw. "geöffnet"/"geschlossen" für den tatsächlichen
@@ -798,12 +804,12 @@ passend). Der Empfehlungstext ("Öffnen"/"Schließen") wird
 zusätzlich fett und in derselben Farbe wie der ausschlaggebende Wert
 dargestellt, solange dafür ein Auslöser vorliegt - **grün**, wenn der
 tatsächliche Fensterzustand mit der Empfehlung übereinstimmt (identisch
-zum 🟢-Icon am Raumnamen), sonst **rot** (Abweichung, oder kein
+zum 🟢-Icon am Raumnamen), sonst **orange** (Abweichung, oder kein
 Fensterkontakt zum Abgleich vorhanden); liegt kein Auslöser vor
 ("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung. Die
 Hervorhebung der Innen-/Außenwerte in der Werte-Tabelle folgt derselben
-grün/rot-Logik, bei Räumen ohne Fenster jedoch orange statt rot (siehe
-"Hervorhebung des ausschlaggebenden Werts" oben).
+grün/orange-Logik (siehe "Hervorhebung des ausschlaggebenden Werts"
+oben).
 Die Schwellenwerte
 sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
 des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
