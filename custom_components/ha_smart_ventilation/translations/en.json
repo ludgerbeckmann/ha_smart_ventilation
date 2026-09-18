@@ -72,21 +72,21 @@
               "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
-              "temp_threshold_open": "Empty = use the value from the global settings",
-              "temp_threshold_close": "Empty = use the value from the global settings",
-              "humidity_threshold_open": "Empty = use the value from the global settings",
-              "humidity_threshold_close": "Empty = use the value from the global settings",
-              "co2_threshold_open": "Empty = use the value from the global settings",
-              "co2_threshold_close": "Empty = use the value from the global settings",
-              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay",
-              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2",
-              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
+              "temp_threshold_open": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Empty = use the value from the global settings. Currently global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Empty = use the value from the global settings. Currently global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Empty = use the value from the global settings. Currently global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Empty = use the value from the global settings. Currently global: {global_co2_threshold_close}",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Currently global: {global_temp_margin}",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately. Currently global: {global_frost_protection_temp}",
+              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay. Currently global: {global_frost_debounce_minutes}",
+              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
-              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section"
+              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}"
             }
           },
           "devices": {
@@ -103,8 +103,8 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
-              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long"
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
           }
         }
@@ -181,21 +181,21 @@
               "shower_rise_threshold": "Shower detection rise threshold"
             },
             "data_description": {
-              "temp_threshold_open": "Empty = use the value from the global settings",
-              "temp_threshold_close": "Empty = use the value from the global settings",
-              "humidity_threshold_open": "Empty = use the value from the global settings",
-              "humidity_threshold_close": "Empty = use the value from the global settings",
-              "co2_threshold_open": "Empty = use the value from the global settings",
-              "co2_threshold_close": "Empty = use the value from the global settings",
-              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay",
-              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2",
-              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
+              "temp_threshold_open": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Empty = use the value from the global settings. Currently global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Empty = use the value from the global settings. Currently global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Empty = use the value from the global settings. Currently global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Empty = use the value from the global settings. Currently global: {global_co2_threshold_close}",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Currently global: {global_temp_margin}",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately. Currently global: {global_frost_protection_temp}",
+              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay. Currently global: {global_frost_debounce_minutes}",
+              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
-              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section"
+              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}"
             }
           },
           "devices": {
@@ -212,8 +212,8 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
-              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long"
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
           }
         },

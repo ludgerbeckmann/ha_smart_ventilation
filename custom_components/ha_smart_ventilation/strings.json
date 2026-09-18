@@ -72,21 +72,21 @@
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung"
             },
             "data_description": {
-              "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "temp_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "humidity_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "humidity_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "co2_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "co2_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
-              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung",
-              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
+              "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_close}",
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Aktuell global: {global_temp_margin}",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen. Aktuell global: {global_frost_protection_temp}",
+              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung. Aktuell global: {global_frost_debounce_minutes}",
+              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist"
+              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}"
             }
           },
           "devices": {
@@ -103,8 +103,8 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
+              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
           }
         }
@@ -181,21 +181,21 @@
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung"
             },
             "data_description": {
-              "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "temp_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "humidity_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "humidity_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "co2_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "co2_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden",
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
-              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung",
-              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert",
+              "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_close}",
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Aktuell global: {global_temp_margin}",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen. Aktuell global: {global_frost_protection_temp}",
+              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung. Aktuell global: {global_frost_debounce_minutes}",
+              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist"
+              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}"
             }
           },
           "devices": {
@@ -212,8 +212,8 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet"
+              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
           }
         },
