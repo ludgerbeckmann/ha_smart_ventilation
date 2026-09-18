@@ -366,6 +366,44 @@ bewussten Asymmetrie zwischen zwei Fällen derselben Bedingung noch einmal
 prüfen, ob die Begründung wirklich zwei unterschiedliche Risikoprofile
 beschreibt - oder nur eine vermeidbare Vereinfachung ist.
 
+**13. Ein "historischer Grund" ist nicht dasselbe wie ein "aktuell
+gültiger Grund" - und die Dashboard-Karte hatte das lange durcheinander
+geworfen (0.37.0).** Direkt im Anschluss an Lektion 12 meldete der Nutzer
+(Raum Küche): Auslöser zeigte "Frostschutz" mit Zeitstempel exakt zum
+letzten Neustart, obwohl die aktuelle Außentemperatur (14,3 °C) meilenweit
+über der Frostschutz-Grenze lag - der Debounce-Fix allein hatte das
+zugrundeliegende Anzeige-Problem also nicht gelöst, nur seine Häufigkeit
+verringert. Ursache: `letzter_grund` wird ausschließlich beim tatsächlichen
+Zustandswechsel geschrieben (siehe Lektionen 10/11) und bleibt danach exakt
+so stehen, bis der nächste echte Wechsel passiert - unabhängig davon, ob
+die ursprüngliche Ursache (hier: ein einzelner Ausreißer-Messwert oder eine
+kurze Sensor-Nichtverfügbarkeit beim Neustart, siehe Lektion 12) längst
+nicht mehr zutrifft. Für Temperatur/Luftfeuchtigkeit/CO2 wurde das bereits
+in einem früheren Schritt behoben (Auslöser + Hervorhebung live aus den
+angezeigten Werten/Schwellen berechnet, nicht aus `letzter_grund`) - für
+Frost-/Hitzeschutz fehlte dafür aber bis dahin schlicht die Datenbasis: die
+Frostschutz-/Hitzeschutz-Grenze war kein Dashboard-Attribut, die Karte
+konnte "ist es aktuell wirklich kalt/heiß genug" also gar nicht selbst
+nachrechnen und musste sich auf die (potenziell veraltete) Historie
+verlassen. Fix: `schwelle_frostschutz`/`schwelle_hitzeschutz` als neue,
+schlanke Attribute ergänzt (nur die beiden Zahlenwerte, kein zusätzlicher
+Zustand) - die Karte prüft Frost/Hitze jetzt genauso live wie die anderen
+drei Größen (aktuelle Außentemperatur gegen die neue Schwelle), in der
+korrekten Priorität (Frost/Hitze vor Luftfeuchtigkeit/CO2/Temperatur, wie
+in `binary_sensor.py`). `letzter_grund` bleibt nur noch Rückfallwert für
+die zwei Fälle, die sich wirklich nicht aus angezeigten Werten
+nachrechnen lassen (Winter-Höchstdauer, Sommer-Fall - dafür fehlen
+Toleranz-Marge bzw. bisherige Öffnungsdauer als Attribut; das könnte man
+grundsätzlich ebenso ergänzen, wurde hier aber als seltenerer Fall
+zurückgestellt). Lektion: Bei jeder auf `letzter_grund` (oder allgemein
+einem nur-bei-Zustandswechsel geschriebenen Attribut) basierenden
+Anzeige zuerst fragen, ob eine **live** Neuberechnung aus bereits
+vorhandenen oder leicht ergänzbaren Attributen möglich ist, bevor man
+sich mit dem historischen Wert (und seiner unvermeidlichen Staleness)
+abfindet - ein Debounce/Filter an der Quelle (wie in Lektion 12) macht
+das Problem seltener, löst aber nicht das grundsätzliche Anzeige-Problem
+"zeigt Vergangenheit, wo Gegenwart gemeint ist".
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

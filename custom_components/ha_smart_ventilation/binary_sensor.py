@@ -190,7 +190,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         indoor_temp = self._get_indoor_temperature()
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
         co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
-        outdoor_temp = self._get_float_state(self._effective(CONF_OUTDOOR_TEMP_ENTITY, None))
+        outdoor_temp_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+        outdoor_temp = self._get_float_state(outdoor_temp_entity)
         outdoor_humidity = self._get_float_state(
             self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
         )
@@ -213,6 +214,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["hat_fenster"] = False
         if outdoor_temp is not None:
             attrs["aussentemperatur"] = outdoor_temp
+        if outdoor_temp_entity:
+            # Nur für Dashboard-Karten (Live-Auswertung "Frostschutz"/
+            # "Hitzeschutz" ohne Rückgriff auf das historische letzter_grund) -
+            # unabhängig vom aktuellen Sensorwert, damit die Schwelle auch bei
+            # kurzzeitig fehlendem Sensor sichtbar bleibt.
+            attrs["schwelle_frostschutz"] = self._effective(
+                CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP
+            )
+            attrs["schwelle_hitzeschutz"] = self._effective(
+                CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
+            )
         if self._config.get(CONF_HUMIDITY_ENTITY):
             attrs["luftfeuchtigkeit"] = humidity
             attrs["schwelle_feuchtigkeit_oeffnen"] = self._effective(

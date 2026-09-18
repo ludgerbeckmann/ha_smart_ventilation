@@ -512,6 +512,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `innentemperatur` | aktueller Messwert |
 | `aussentemperatur` | aktueller Messwert (aus "Smart Ventilation Optionen") |
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
+| `schwelle_frostschutz` / `schwelle_hitzeschutz` | aktuell wirksame Frostschutz-/Hitzeschutz-Grenze - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient hauptsächlich der Dashboard-Karte, um Frost-/Hitzeschutz live gegen die aktuelle Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
 | `co2`, `schwelle_co2_oeffnen` / `_schliessen` | nur vorhanden, falls ein CO2-Sensor hinterlegt ist |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
@@ -551,8 +552,11 @@ content: >
   {% set hum_needs_close = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit <= a.schwelle_feuchtigkeit_schliessen %}
   {% set co2_needs_open = a.co2 is defined and a.co2 is not none and a.co2 >= a.schwelle_co2_oeffnen %}
   {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
+  {% set frost_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_frostschutz is defined and a.aussentemperatur <= a.schwelle_frostschutz %}
+  {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
+  {% set close_fallback = grund_code if grund_code in ['duration', 'outdoor_warmer'] else '' %}
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else grund_code)) %}
-  {% set live_grund_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else grund_code)) %}
+  {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)))) %}
   {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
   {% set status_icon = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
@@ -677,23 +681,26 @@ Version verzichtet komplett auf `style`-Attribute:
   angezeigten Werten und Schwellen berechnet, nicht aus dem historischen
   `letzter_grund`-Attribut: Bei "Öffnen" wird geprüft, welche der drei
   Größen (Innentemperatur, Luftfeuchtigkeit, CO2, in dieser Reihenfolge)
-  aktuell ihre Öffnen-Schwelle erreicht; bei "Schließen" symmetrisch,
-  welche ihre Schließen-Schwelle erreicht (Reihenfolge Luftfeuchtigkeit,
-  CO2, Temperatur - identisch zur tatsächlichen Prioritätsreihenfolge in
-  `binary_sensor.py`). Das funktioniert unabhängig davon, ob die Empfehlung
-  schon einmal einen echten Zustandswechsel hatte, und beschreibt immer den
-  **aktuellen** Zustand, nicht nur die Historie.
-  `letzter_grund` dient dabei nur noch als **Rückfallwert**, wenn keine der
-  drei Größen live zutrifft - das betrifft ausschließlich Frost-/
-  Hitzeschutz, Sommer-Fall und Winter-Höchstdauer (`frost`/`heat`/
-  `outdoor_warmer`/`duration`), da sich diese vier nicht allein aus den in
-  der Karte angezeigten Werten/Schwellen nachrechnen lassen (fehlende
-  Frostschutz-/Hitzeschutz-Grenze, Toleranz-Marge, bisherige
-  Öffnungsdauer). Trifft auch der Rückfallwert nicht zu (z. B. ein Raum, der
-  noch nie geöffnet werden musste und aktuell in keiner Richtung an einer
-  Schwelle liegt), zeigt die Auslöser-Spalte "–" - Innen-/Außenwerte bleiben
-  dann unhervorgehoben, da es aktuell schlicht keinen ausschlaggebenden
-  Grund gibt.
+  aktuell ihre Öffnen-Schwelle erreicht; bei "Schließen" wird zusätzlich
+  zuerst Frost- und Hitzeschutz live geprüft (aktuelle Außentemperatur
+  gegen `schwelle_frostschutz`/`schwelle_hitzeschutz`), dann symmetrisch
+  Luftfeuchtigkeit, CO2, Temperatur gegen ihre Schließen-Schwelle -
+  identisch zur tatsächlichen Prioritätsreihenfolge in `binary_sensor.py`
+  (Frostschutz hat immer Vorrang). Das funktioniert unabhängig davon, ob
+  die Empfehlung schon einmal einen echten Zustandswechsel hatte, und
+  beschreibt immer den **aktuellen** Zustand, nicht nur die Historie -
+  wurde z. B. wegen eines längst vorbeigezogenen Kälte-Einbruchs
+  geschlossen und ist die Außentemperatur inzwischen wieder deutlich über
+  der Frostschutz-Grenze, zeigt der Auslöser das nicht mehr an.
+  `letzter_grund` dient nur noch als **Rückfallwert** für die zwei Fälle,
+  die sich nicht live aus den angezeigten Werten nachrechnen lassen:
+  Sommer-Fall und Winter-Höchstdauer (`outdoor_warmer`/`duration` - fehlende
+  Toleranz-Marge bzw. bisherige Öffnungsdauer im Vergleich zur Karte).
+  Trifft weder ein Live-Check noch dieser Rückfallwert zu (z. B. ein Raum,
+  der noch nie geöffnet werden musste und aktuell in keiner Richtung an
+  einer Schwelle liegt), zeigt die Auslöser-Spalte "–" - Innen-/Außenwerte
+  bleiben dann unhervorgehoben, da es aktuell schlicht keinen
+  ausschlaggebenden Grund gibt.
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
 aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
