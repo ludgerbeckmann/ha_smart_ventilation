@@ -135,16 +135,43 @@ Jinja-Einschränkungen) fängt die meisten Fehler zuverlässig ab, bevor der
 Nutzer sie in der echten Oberfläche entdeckt:
 
 ```python
-import yaml, jinja2.sandbox
+import yaml, jinja2, jinja2.sandbox
 data = yaml.safe_load(card_yaml_text)
-env = jinja2.sandbox.SandboxedEnvironment(trim_blocks=True, lstrip_blocks=True)
+env = jinja2.sandbox.SandboxedEnvironment(
+    trim_blocks=True, lstrip_blocks=True, undefined=jinja2.StrictUndefined
+)
 tmpl = env.from_string(data["content"])
 output = tmpl.render(states=FakeStatesObj(), now=lambda: ..., as_local=lambda dt: dt)
 ```
 
+**Wichtig: `undefined=jinja2.StrictUndefined` nicht vergessen** (siehe
+Nachtrag unten) - ohne das fängt dieser Test einen ganzen Fehlertyp nicht.
+
 Trotz dieses Tests bleiben CSS/Rendering-Details (Abstände, Style-Filterung)
 nicht zuverlässig vorhersagbar - dafür bräuchte es eine echte
 Home-Assistant-Instanz.
+
+**Nachtrag (nach 0.41.0, reiner Dashboard-Karten-Fix ohne eigenen
+Versionsbump):** Ein neues Attribut (`luftentfeuchter_tank_fehler`,
+nur gesetzt, falls für den Raum ein Tankstatus-Sensor konfiguriert ist)
+wurde in der Karte ohne das sonst überall befolgte `a.attr is defined`-
+Muster referenziert (`... if a.luftentfeuchter_tank_fehler else ...`).
+Der Fehler lief in der eigenen Sandbox-Simulation klaglos durch - ein
+`dict` (unser `FakeState.attributes`) liefert bei fehlendem Key über
+Jinja2s normale, nachsichtige `Undefined`-Klasse einfach einen falsy
+Wert zurück. In der echten Home-Assistant-Oberfläche crashte die Karte
+dagegen mit `UndefinedError: 'ReadOnlyDict object' has no attribute
+'luftentfeuchter_tank_fehler'` - HAs eigene Jinja-Umgebung behandelt
+einen fehlenden Attributzugriff dort strenger. Reproduziert und der Fix
+bestätigt durch `undefined=jinja2.StrictUndefined` in der Simulation
+(dann schlägt exakt derselbe Fehler auch lokal fehl, der Fix mit
+`is defined`-Guard besteht dagegen). Lektion: Die eigene Simulation war
+bis dahin **nachsichtiger** als die echte Oberfläche, nicht strenger -
+das Gegenteil der bis dahin angenommenen Richtung ("Simulation fängt
+das meiste ab, Rendering-Details bleiben ungewiss"). Ab sofort immer
+`StrictUndefined` verwenden, damit ein fehlender `is defined`-Guard bei
+einem neuen/optionalen Attribut zuverlässig schon lokal auffällt, nicht
+erst beim Nutzer in der echten Karte.
 
 **8. `{platzhalter}` in `strings.json`/`translations/*.json` niemals als
 reinen Beispieltext in `description`/`data_description` schreiben - auch

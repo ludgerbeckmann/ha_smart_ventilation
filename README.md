@@ -631,7 +631,7 @@ content: >
   {% set dev1 = '' %}
   {% if a.luftentfeuchter_an is defined %}
   {% set dev1 = ('🟢' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
-  {% set dev1 = dev1 ~ ' (Fehler)' if a.luftentfeuchter_tank_fehler else dev1 %}
+  {% set dev1 = dev1 ~ ' (Fehler)' if (a.luftentfeuchter_tank_fehler is defined and a.luftentfeuchter_tank_fehler) else dev1 %}
   {% endif %}
   {% set dev2 = '' %}
   {% if a.klimaanlage_an is defined %}
