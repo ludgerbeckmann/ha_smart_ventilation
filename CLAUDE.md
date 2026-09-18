@@ -106,11 +106,16 @@ Dashboard-Karten) NICHT - `SecurityError: access to attribute 'append' of
 Ausdrücke aufgebaut werden, nicht über Listen mit Append-Schleifen.
 
 **5. Home Assistants Markdown-Karte filtert das `style`-Attribut aus
-eingebettetem HTML.** `<div style="height: 6px;">` oder `<hr style="...">`
-werden zu wirkungslosen/leeren Standard-Tags reduziert. Funktioniert haben
+eingebettetem HTML - andere, rein präsentative Attribute/Tags dagegen
+nicht.** `<div style="height: 6px;">` oder `<hr style="...">` werden zu
+wirkungslosen/leeren Standard-Tags reduziert. Funktioniert haben
 stattdessen: `<mark>` (Hervorhebung, gelber Hintergrund statt frei wählbarer
 Farbe), `<small>` (Schriftgröße, mehrfach verschachtelbar für kompakteren
-Abstand), `<br>`, `<hr>` (ohne Attribute), und reiner Zeichentext. Noch
+Abstand), `<br>`, `<hr>` (ohne Attribute), reiner Zeichentext, sowie -
+vom Nutzer in der echten Oberfläche bestätigt - `<font color="red">`
+(frei wählbare Textfarbe über das alte, rein präsentative `color`-Attribut,
+das offenbar NICHT wie `style` gefiltert wird) und `<strong>` (Fettschrift,
+reines Standard-Tag ohne jedes Attribut). Noch
 nicht abschließend getestet, ob es noch weitere Einschränkungen gibt -
 falls Karten-Änderungen nicht wirken, zuerst prüfen ob ein Style-Attribut
 im Spiel ist.
