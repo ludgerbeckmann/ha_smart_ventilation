@@ -27,6 +27,7 @@ from .const import (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
+    CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -74,6 +75,7 @@ from .const import (
     CONF_WINTER_OUTDOOR_THRESHOLD,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
+    DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
@@ -172,6 +174,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
         self._dehumidifier_low_power_since = None
         self._ac_low_power_since = None
+
+        # Seit wann die Außentemperatur ununterbrochen auf/unter der
+        # Frostschutz-Grenze liegt (für den Debounce, siehe _evaluate()) -
+        # nur für tatsächliche Messwerte, nicht für einen fehlenden Sensor.
+        self._frost_cold_since = None
 
         # Rollierendes Zeitfenster (Zeitpunkt, Luftfeuchtigkeit) für die
         # Duscherkennung - siehe _update_shower_detection().
@@ -499,6 +506,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         co2_close = self._effective(CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE)
         margin = self._effective(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
         frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
+        frost_debounce_minutes = self._effective(
+            CONF_FROST_DEBOUNCE_MINUTES, DEFAULT_FROST_DEBOUNCE_MINUTES
+        )
         heat_temp = self._effective(CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP)
         winter_threshold = self._effective(
             CONF_WINTER_OUTDOOR_THRESHOLD, DEFAULT_WINTER_OUTDOOR_THRESHOLD
@@ -534,6 +544,30 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         frost_sensor_missing = outdoor_entity is not None and outdoor_temp is None
         frost_block = outdoor_entity is not None and (
             outdoor_temp is None or outdoor_temp <= frost_temp
+        )
+
+        # --- Debounce für das tatsächliche Schließen wegen Frost ---
+        # Ein einzelner Ausreißer-Messwert (Sensor-Glitch) soll nicht sofort
+        # eine bereits aktive Öffnen-Empfehlung samt Benachrichtigung
+        # beenden. Das reine Blockieren des Öffnens (frost_block oben)
+        # bleibt bewusst sofort/ungebounct - konservativ zu bleiben ist
+        # risikofrei. Nur der fehlende Sensor (frost_sensor_missing) bleibt
+        # ebenfalls sofort wirksam, da es dort keinen Messwert gibt, der
+        # "anhalten" könnte. frost_debounce_minutes <= 0 schaltet den
+        # Debounce komplett ab (sofortiges Schließen wie zuvor).
+        frost_real_cold = outdoor_temp is not None and outdoor_temp <= frost_temp
+        if frost_real_cold:
+            if self._frost_cold_since is None:
+                self._frost_cold_since = dt_util.utcnow()
+        else:
+            self._frost_cold_since = None
+        frost_cold_confirmed = frost_real_cold and (
+            frost_debounce_minutes <= 0
+            or (
+                self._frost_cold_since is not None
+                and (dt_util.utcnow() - self._frost_cold_since).total_seconds() / 60
+                >= frost_debounce_minutes
+            )
         )
 
         # --- Hitzeschutz: harte Grenze, Pendant zum Frostschutz ---
@@ -696,7 +730,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
 
         # --- Schließen: Frost-/Hitzeschutz erzwingt sofortiges Schließen ---
-        close_by_frost = self._attr_is_on and frost_block
+        # close_by_frost nutzt bewusst NICHT frost_block direkt, sondern
+        # frost_sensor_missing (sofort) bzw. frost_cold_confirmed (erst nach
+        # Debounce) - siehe deren Definition oben.
+        close_by_frost = self._attr_is_on and (frost_sensor_missing or frost_cold_confirmed)
         close_by_heat = self._attr_is_on and heat_block
 
         # Jede der drei reinen Schließbedingungen (Temperatur, Luftfeuchtigkeit,
@@ -738,7 +775,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         _LOGGER.debug(
             "%s: is_on=%s indoor_temp=%s outdoor_temp=%s humidity=%s co2=%s | "
             "needs open/close: temp=%s/%s hum=%s/%s co2=%s/%s | "
-            "open_by: temp=%s hum=%s co2=%s | frost_block=%s (sensor_missing=%s) heat_block=%s | "
+            "open_by: temp=%s hum=%s co2=%s | frost_block=%s (sensor_missing=%s cold_confirmed=%s) heat_block=%s | "
             "still_needed: temp=%s hum=%s co2=%s | "
             "close_by: temp=%s hum=%s co2=%s summer=%s duration=%s frost=%s heat=%s | "
             "should_open=%s should_close=%s",
@@ -759,6 +796,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             open_by_co2,
             frost_block,
             frost_sensor_missing,
+            frost_cold_confirmed,
             heat_block,
             temp_still_needed,
             humidity_still_needed,

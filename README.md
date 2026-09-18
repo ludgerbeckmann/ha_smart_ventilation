@@ -119,9 +119,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert):
      - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
-       und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Hitzeschutz-Grenze,
-       Winter-Schwelle, Winter-Höchstdauer und Erinnerungsintervall –
-       Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+       und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Debounce-Zeit
+       Frostschutz, Hitzeschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer
+       und Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
      - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
        Abschnitt "Sensoren" aktiviert ist)
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
@@ -321,15 +321,21 @@ zur unbeschränkten Auswahl zurückzukehren.
   CO2 haben Vorrang vor Winter-Höchstdauer" ist aktiv (Standard) **und** es
   wird gerade noch aus Feuchtigkeits- oder CO2-Gründen gelüftet, **oder**
 - **Frostschutz**: die Außentemperatur ist auf/unter die Frostschutz-Grenze
-  gefallen (greift sofort, unabhängig von allen anderen Bedingungen,
-  **auch** falls noch aus Feuchtigkeits- oder CO2-Gründen gelüftet wird -
-  Frostschutz hat immer Vorrang) - **oder** der Außentemperatur-Sensor ist
-  zwar konfiguriert, meldet aber gerade `unavailable`/`unknown` (z. B.
-  während Home Assistant startet/stoppt). Aus Sicherheitsgründen wird dann
-  ebenso vorsorglich geschlossen - dieser zweite Fall bleibt aber
-  bewusst **stumm**: kein Auslöser-Eintrag in der Empfehlungs-Tabelle,
-  keine Benachrichtigung, da kein tatsächlicher Messwert dahinter steht
-  und es sich meist nur um einen vorübergehenden Zustand beim Neustart
+  gefallen. Das reine **Blockieren des Öffnens** greift dabei immer sofort
+  (unabhängig von allen anderen Bedingungen, **auch** falls noch aus
+  Feuchtigkeits- oder CO2-Gründen gelüftet wird - Frostschutz hat immer
+  Vorrang) - konservativ zu bleiben ist risikofrei. Das tatsächliche
+  **Schließen eines bereits offenen Zustands** greift dagegen erst, sobald
+  die Außentemperatur ununterbrochen für mindestens die eingestellte
+  "Debounce-Zeit Frostschutz" (Standard 10 Minuten, 0 = ohne Verzögerung)
+  auf/unter der Grenze liegt - das verhindert ein sofortiges, ungewolltes
+  Schließen durch einen einzelnen unplausiblen Ausreißer-Messwert. **Oder**:
+  der Außentemperatur-Sensor ist zwar konfiguriert, meldet aber gerade
+  `unavailable`/`unknown` (z. B. während Home Assistant startet/stoppt) -
+  dieser Fall greift weiterhin ohne Debounce sofort, da es dort keinen
+  Messwert gibt, der "anhalten" könnte, bleibt aber bewusst **stumm**: kein
+  Auslöser-Eintrag in der Empfehlungs-Tabelle, keine Benachrichtigung,
+  da es sich meist nur um einen vorübergehenden Zustand beim Neustart
   handelt, **oder**
 - **Hitzeschutz**: die Außentemperatur ist auf/über die Hitzeschutz-Grenze
   gestiegen (Pendant zum Frostschutz, greift genauso sofort und unabhängig
