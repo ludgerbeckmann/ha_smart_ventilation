@@ -530,6 +530,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 | `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
+| `integration_version` | aktuell installierte Version der Integration (aus `manifest.json`) - identisch für jeden Raum, dient nur der Dashboard-Karte zur Anzeige der Versionsnummer |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
 wann der aktuelle Öffnen/Schließen-Status gilt.
@@ -545,6 +546,8 @@ type: markdown
 title: Lüftungsübersicht
 content: >
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
+  {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
+  {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -568,12 +571,22 @@ content: >
   {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
-  {% set window_state_text = 'Offen' if w == 'on' else ('Geschlossen' if w == 'off' else 'Unbekannt') %}
+  {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
   {% if not no_window and has_live_reason and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
   {% set highlight_ok = is_match %}
   {% endif %}
+  {% endif %}
+  {% if ns.version is none and a.integration_version is defined %}
+  {% set ns.version = a.integration_version %}
+  {% endif %}
+  {% if match_icon == '🟢 ' %}
+  {% set ns.green = ns.green + 1 %}
+  {% elif match_icon == '🟠 ' %}
+  {% set ns.orange = ns.orange + 1 %}
+  {% elif match_icon == '🔴 ' %}
+  {% set ns.red = ns.red + 1 %}
   {% endif %}
   {% set highlight_open = '<font color="orange"><strong>' if no_window else ('<font color="green"><strong>' if highlight_ok else '<font color="red"><strong>') %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
@@ -651,10 +664,13 @@ content: >
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
   {% set body = body ~ spacer ~ notify_table %}
   {% set body = body ~ ('\n\n' ~ dev_line if dev_line else '') %}
-  {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
-  {{ sep_before ~ header ~ '\n\n' ~ body }}
+  {% set ns.rooms = ns.rooms ~ sep_before ~ header ~ '\n\n' ~ body %}
   {% endfor %}
+  {% set overview = '| 🟢 | 🟠 | 🔴 |\n|:---:|:---:|:---:|\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' %}
+  {% set version_table = ('| Version |\n|:---:|\n| ' ~ ns.version ~ ' |') if ns.version is not none else '' %}
+  {% set overview_block = overview ~ ('\n\n' ~ version_table if version_table else '') %}
+  {{ overview_block ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
@@ -732,7 +748,13 @@ aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
 die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
-**Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Fenster/Empfehlung/
+**Reihenfolge:** Zu Beginn der Karte (einmalig, vor der Raumliste) eine
+**Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
+Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
+Icon am jeweiligen Raumnamen weiter unten) sowie separat darunter eine
+einzeilige **Versions-Tabelle** (liest `integration_version` vom ersten
+Raum, für den das Attribut vorhanden ist - der Wert ist für jeden Raum
+identisch). Danach pro Raum: Raumname → **Empfehlungs-Tabelle** (Fenster/Empfehlung/
 Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
 aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
 ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
@@ -764,8 +786,11 @@ Handlungsbedarf besteht, aber nicht über das Fenster, sondern höchstens
 über Luftentfeuchter/Klimaanlage). Bei Geräte-Status und
 Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
-kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
-"Offen"/"Geschlossen"). Der Empfehlungstext ("Öffnen"/"Schließen") wird
+kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" für die
+Empfehlung bzw. "geöffnet"/"geschlossen" für den tatsächlichen
+Fensterzustand - klein geschrieben, da kein eigenständiger Satzanfang,
+und als Partizip sprachlich zu "das Fenster ist geöffnet/geschlossen"
+passend). Der Empfehlungstext ("Öffnen"/"Schließen") wird
 zusätzlich fett und in derselben Farbe wie der ausschlaggebende Wert
 dargestellt, solange dafür ein Auslöser vorliegt - **grün**, wenn der
 tatsächliche Fensterzustand mit der Empfehlung übereinstimmt (identisch

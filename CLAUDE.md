@@ -429,6 +429,39 @@ Speichern ohne Änderung einen Override auf genau diesen Wert einfrieren
 statt wie gewollt "leer = folgt weiterhin live der globalen Einstellung"
 zu bleiben (siehe `_override_selector()`).
 
+**15. Über eine `{% for %}`-Schleife hinweg zählen/akkumulieren geht in
+Home Assistants Jinja-Sandbox nur über `namespace()`, nicht über normales
+`{% set %}` (0.39.0).** Für eine Übersichts-Tabelle am Kartenanfang
+(Anzahl Räume je Icon-Status 🟢/🟠/🔴) mussten Werte aus JEDER
+Schleifen-Iteration aufsummiert werden - ein normales `{% set count = ... %}`
+scheidet dafür aus, weil (anders als bei `{% if %}`, siehe frühere
+Erfahrung mit `match_icon`/`highlight_ok`) ein `{% for %}` in Jinja pro
+Durchlauf einen eigenen Scope aufmacht; Änderungen darin gehen nach jeder
+Iteration wieder verloren. Jinja2s `namespace()`-Objekt ist genau dafür
+gedacht und wird von Home Assistants Sandbox ausdrücklich erlaubt (anders
+als z. B. `list.append()`, siehe Lektion 4) - `{% set ns = namespace(...) %}`
+vor der Schleife, darin `{% set ns.attr = ... %}` zum Fortschreiben.
+Genutzt außerdem, um die einzelnen Raum-Blöcke selbst erst in `ns.rooms`
+zu sammeln (statt sie direkt pro Iteration auszugeben) - nötig, weil die
+Übersichts-Tabelle VOR der Raumliste erscheinen soll, ihre Werte (die
+Zählung) aber erst NACH Durchlauf aller Räume feststehen; erst nach
+`{% endfor %}` wird die endgültige Reihenfolge (Übersicht, dann
+`ns.rooms`) ausgegeben.
+
+Für die dabei ebenfalls neu angezeigte Versionsnummer wurde bewusst
+NICHT die Version fest im Karten-Text hinterlegt (müsste bei jedem
+Release manuell im Dashboard nachgezogen werden) und auch nicht separat
+in `const.py` dupliziert (zweite Quelle der Wahrheit, könnte von
+`manifest.json` abweichen) - stattdessen liest `__init__.py:async_setup()`
+sie einmalig zur Laufzeit über Home Assistants eigene
+`homeassistant.loader.async_get_integration(hass, DOMAIN)` aus (liefert
+u. a. `.version`, direkt aus `manifest.json` geparst) und legt sie unter
+einem neuen `hass.data[DOMAIN]`-Schlüssel (`VERSION_KEY`, analog zum
+bereits bestehenden `GLOBAL_ENTRY_ID_KEY`-Muster) ab; `binary_sensor.py`
+liest das nur noch synchron aus und exponiert es als
+`integration_version`-Attribut (identisch für jeden Raum). `manifest.json`
+bleibt dadurch die einzige Stelle, an der die Version tatsächlich steht.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
