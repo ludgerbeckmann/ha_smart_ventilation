@@ -648,7 +648,7 @@ content: >
   {% if not no_window %}
   {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
   {% endif %}
-  {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
+  {% set values_table = '| Messwert | Innen | Außen | Öffnen | Schließen |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
   {% set n1_status = '🟢' if a.sprachausgabe_aktiv is defined else '⚫' %}
   {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
@@ -658,7 +658,7 @@ content: >
   {% set n3 = 'Persistente Benachrichtigung' %}
   {% set n3_status = '🟢' if a.persistent_aktiv is defined else '⚫' %}
   {% set n3_ziel = '–' %}
-  {% set notify_table = '| Methode | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
+  {% set notify_table = '| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
   {% set body = empf_table %}
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
@@ -773,8 +773,8 @@ Auslöser ("Totzone") liegt aktuell nichts vor, das ein Eingreifen
 nahelegt, daher ebenfalls 🟢, unabhängig vom Fensterzustand) →
 Status (Luftentfeuchter/Klimaanlage/
 Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
-aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
-CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungsmethoden-
+aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
+CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungs-
 Tabelle**.
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🔴 am
