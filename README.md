@@ -558,34 +558,37 @@ content: >
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else grund_code)) %}
   {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)))) %}
   {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
-  {% set status_icon = 'Öffnen' if s.state == 'on' else 'Schließen' %}
-  {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
-  {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
-  {% set temp_val = ('<font color="red"><strong>' ~ temp_val ~ '</strong></font>') if highlight_code == 'temp' else temp_val %}
-  {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
-  {% set outdoor_temp_val = ('<font color="red"><strong>' ~ outdoor_temp_val ~ '</strong></font>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
-  {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
   {% set match_icon = '⚫ ' if no_window else '' %}
+  {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'Offen' if w == 'on' else ('Geschlossen' if w == 'off' else 'Unbekannt') %}
   {% if not no_window and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if is_match else '🔴 ') %}
+  {% set highlight_ok = is_match %}
   {% endif %}
   {% endif %}
+  {% set highlight_open = '<font color="green"><strong>' if highlight_ok else '<font color="red"><strong>' %}
+  {% set status_icon = 'Öffnen' if s.state == 'on' else 'Schließen' %}
+  {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
+  {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
+  {% set temp_val = (highlight_open ~ temp_val ~ '</strong></font>') if highlight_code == 'temp' else temp_val %}
+  {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
+  {% set outdoor_temp_val = (highlight_open ~ outdoor_temp_val ~ '</strong></font>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
+  {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_val = ('<font color="red"><strong>' ~ hum_val ~ '</strong></font>') if highlight_code == 'humidity' else hum_val %}
+  {% set hum_val = (highlight_open ~ hum_val ~ '</strong></font>') if highlight_code == 'humidity' else hum_val %}
   {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | round(0) | int | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | round(0) | int | string) ~ ' % |' %}
   {% endif %}
   {% set co2_row = '' %}
   {% if a.co2 is defined %}
   {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
-  {% set co2_val = ('<font color="red"><strong>' ~ co2_val ~ '</strong></font>') if highlight_code == 'co2' else co2_val %}
+  {% set co2_val = (highlight_open ~ co2_val ~ '</strong></font>') if highlight_code == 'co2' else co2_val %}
   {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | round(0) | int | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | round(0) | int | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
@@ -669,13 +672,17 @@ Version verzichtet komplett auf `style`-Attribute:
   zu gestalten, führte je nach Bildschirmbreite zu Zeilenumbrüchen; das
   Standard-`<hr>` ist dafür zuverlässig über die volle Kartenbreite
 - **Hervorhebung des ausschlaggebenden Werts**: `<font color="red"><strong>`
-  statt `<span style="color: red; font-weight: bold;">` - das `style`-
-  Attribut wird gefiltert (siehe oben), das ältere, rein präsentative
-  `color`-Attribut auf `<font>` sowie das attributlose `<strong>` aber
-  nicht. Zuvor kam `<mark>` (gelber Hintergrund) zum Einsatz; auf
-  Nutzerwunsch durch fette, rote Schrift ersetzt, da die gelbe Markierung
-  als zu unauffällig wahrgenommen wurde. Hervorgehoben wird jeweils die
-  Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`, nicht nur `34.2`).
+  bzw. `<font color="green"><strong>` statt `<span style="...">` - das
+  `style`-Attribut wird gefiltert (siehe oben), das ältere, rein
+  präsentative `color`-Attribut auf `<font>` sowie das attributlose
+  `<strong>` aber nicht. Zuvor kam `<mark>` (gelber Hintergrund) zum
+  Einsatz; auf Nutzerwunsch durch fette, farbige Schrift ersetzt, da die
+  gelbe Markierung als zu unauffällig wahrgenommen wurde. Hervorgehoben
+  wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
+  nicht nur `34.2`) - **grün**, wenn der tatsächliche Fensterzustand mit
+  der Empfehlung übereinstimmt (identisch zum 🟢-Icon am Raumnamen - die
+  Empfehlung wird also korrekt befolgt), sonst **rot** (Abweichung, oder
+  kein Fensterkontakt zum Abgleich vorhanden).
 
   Auslöser und Hervorhebung werden dabei **live** aus den aktuell
   angezeigten Werten und Schwellen berechnet, nicht aus dem historischen
