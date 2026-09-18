@@ -544,9 +544,16 @@ content: >
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
-  {% set never_triggered = s.state == 'off' and a.letzter_grund is not defined %}
   {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
-  {% set highlight_code = grund_code if s.state == 'on' else '' %}
+  {% set temp_needs_open = a.innentemperatur is not none and a.innentemperatur >= a.schwelle_temperatur_oeffnen %}
+  {% set temp_needs_close = a.innentemperatur is not none and a.innentemperatur <= a.schwelle_temperatur_schliessen %}
+  {% set hum_needs_open = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit >= a.schwelle_feuchtigkeit_oeffnen %}
+  {% set hum_needs_close = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit <= a.schwelle_feuchtigkeit_schliessen %}
+  {% set co2_needs_open = a.co2 is defined and a.co2 is not none and a.co2 >= a.schwelle_co2_oeffnen %}
+  {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
+  {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else grund_code)) %}
+  {% set live_grund_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else grund_code)) %}
+  {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
   {% set status_icon = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
@@ -609,10 +616,10 @@ content: >
   {% if status_lines != '' %}
   {% set dev_line = 'Status:' ~ status_lines %}
   {% endif %}
-  {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
+  {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = status_icon %}
-  {% set uhrzeit_val = '–' if never_triggered else changed_time %}
+  {% set uhrzeit_val = changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
   {% set empf_table = '| Empfehlung | Fenster | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ empfehlung_text ~ ' | ' ~ window_state_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
@@ -664,22 +671,29 @@ Version verzichtet komplett auf `style`-Attribute:
   nicht. Zuvor kam `<mark>` (gelber Hintergrund) zum Einsatz; auf
   Nutzerwunsch durch fette, rote Schrift ersetzt, da die gelbe Markierung
   als zu unauffällig wahrgenommen wurde. Hervorgehoben wird jeweils die
-  Zelle mit der Maßeinheit
-  zusammen (z. B. `34.2 °C`, nicht nur `34.2`) und für **jeden** Auslöser,
-  der einem konkreten Messwert zuordenbar ist: Innentemperatur (`temp`),
-  Luftfeuchtigkeit (`humidity`), CO2 (`co2`) sowie die Außentemperatur bei
-  Frost-/Hitzeschutz und dem Sommer-Fall (`frost`/`heat`/`outdoor_warmer`) -
-  bei Winter-Höchstdauer (`duration`) gibt es keinen einzelnen Messwert zum
-  Hervorheben, dort bleibt nur die Auslöser-Spalte in der
-  Empfehlungs-Tabelle.
-  Die Hervorhebung greift dabei **ausschließlich**, solange die Empfehlung
-  für den Raum aktuell "Öffnen" lautet (`s.state == 'on'`) - `letzter_grund`
-  beschreibt sonst nur, warum zuletzt geschlossen wurde (z. B. `temp` beim
-  normalen Erreichen der Schließen-Schwelle, oder `frost`/`heat`, wenn
-  Frost- bzw. Hitzeschutz das Schließen erzwungen hat), obwohl aktuell gar
-  keine Maßnahme mehr nötig ist. Ohne diese Einschränkung würde sonst auch
-  bei "Schließen" (kein Handlungsbedarf) noch die Zelle des ursprünglichen
-  Schließen-Grundes rot eingefärbt bleiben
+  Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`, nicht nur `34.2`).
+
+  Auslöser und Hervorhebung werden dabei **live** aus den aktuell
+  angezeigten Werten und Schwellen berechnet, nicht aus dem historischen
+  `letzter_grund`-Attribut: Bei "Öffnen" wird geprüft, welche der drei
+  Größen (Innentemperatur, Luftfeuchtigkeit, CO2, in dieser Reihenfolge)
+  aktuell ihre Öffnen-Schwelle erreicht; bei "Schließen" symmetrisch,
+  welche ihre Schließen-Schwelle erreicht (Reihenfolge Luftfeuchtigkeit,
+  CO2, Temperatur - identisch zur tatsächlichen Prioritätsreihenfolge in
+  `binary_sensor.py`). Das funktioniert unabhängig davon, ob die Empfehlung
+  schon einmal einen echten Zustandswechsel hatte, und beschreibt immer den
+  **aktuellen** Zustand, nicht nur die Historie.
+  `letzter_grund` dient dabei nur noch als **Rückfallwert**, wenn keine der
+  drei Größen live zutrifft - das betrifft ausschließlich Frost-/
+  Hitzeschutz, Sommer-Fall und Winter-Höchstdauer (`frost`/`heat`/
+  `outdoor_warmer`/`duration`), da sich diese vier nicht allein aus den in
+  der Karte angezeigten Werten/Schwellen nachrechnen lassen (fehlende
+  Frostschutz-/Hitzeschutz-Grenze, Toleranz-Marge, bisherige
+  Öffnungsdauer). Trifft auch der Rückfallwert nicht zu (z. B. ein Raum, der
+  noch nie geöffnet werden musste und aktuell in keiner Richtung an einer
+  Schwelle liegt), zeigt die Auslöser-Spalte "–" - Innen-/Außenwerte bleiben
+  dann unhervorgehoben, da es aktuell schlicht keinen ausschlaggebenden
+  Grund gibt.
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
 aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
@@ -688,12 +702,14 @@ gefiltert werden oder noch mehr).
 
 **Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Empfehlung/Fenster/
 Auslöser/Uhrzeit - nur für Räume mit Fenster; Empfehlung zeigt immer
-"Öffnen"/"Schließen" entsprechend dem aktuellen Zustand, auch wenn dieser
-noch nie durch einen konkreten Grund ausgelöst wurde - nur Auslöser/
-Uhrzeit zeigen dann "–", da es dafür keinen konkreten Grund/Zeitpunkt
-gibt. Das 🟢/🔴-Icon am Raumnamen vergleicht davon unabhängig, sobald ein
-Fensterkontakt hinterlegt ist, ob der tatsächliche Fensterzustand zum
-aktuellen Empfehlungs-Zustand passt) → Status (Luftentfeuchter/Klimaanlage/
+"Öffnen"/"Schließen" entsprechend dem aktuellen Zustand, Uhrzeit immer den
+Zeitpunkt der letzten tatsächlichen Zustandsänderung. Auslöser wird live
+aus den aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
+ausschlaggebenden Werts" oben) und zeigt "–" nur, wenn aktuell wirklich
+keine Größe an einer Schwelle liegt. Das 🟢/🔴-Icon am Raumnamen vergleicht
+davon unabhängig, sobald ein Fensterkontakt hinterlegt ist, ob der
+tatsächliche Fensterzustand zum aktuellen Empfehlungs-Zustand passt) →
+Status (Luftentfeuchter/Klimaanlage/
 Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
 aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
 CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungsmethoden-
