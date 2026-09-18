@@ -611,7 +611,7 @@ content: >
   {% endif %}
   {% set grund_label = grund_text.get(grund_code, grund_code) if grund_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
-  {% set empfehlung_text = '–' if never_triggered else (status_icon) %}
+  {% set empfehlung_text = status_icon %}
   {% set uhrzeit_val = '–' if never_triggered else changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
@@ -687,10 +687,12 @@ die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
 **Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Empfehlung/Fenster/
-Auslöser/Uhrzeit - nur für Räume mit Fenster; Empfehlung/Auslöser/Uhrzeit
-zeigen "–", solange noch nie ausgelöst - das 🟢/🔴-Icon am Raumnamen wird
-davon unabhängig trotzdem angezeigt, sobald ein Fensterkontakt hinterlegt
-ist: es vergleicht weiterhin, ob der tatsächliche Fensterzustand zum
+Auslöser/Uhrzeit - nur für Räume mit Fenster; Empfehlung zeigt immer
+"Öffnen"/"Schließen" entsprechend dem aktuellen Zustand, auch wenn dieser
+noch nie durch einen konkreten Grund ausgelöst wurde - nur Auslöser/
+Uhrzeit zeigen dann "–", da es dafür keinen konkreten Grund/Zeitpunkt
+gibt. Das 🟢/🔴-Icon am Raumnamen vergleicht davon unabhängig, sobald ein
+Fensterkontakt hinterlegt ist, ob der tatsächliche Fensterzustand zum
 aktuellen Empfehlungs-Zustand passt) → Status (Luftentfeuchter/Klimaanlage/
 Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
 aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
