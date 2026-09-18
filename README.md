@@ -561,7 +561,7 @@ content: >
   {% set has_live_reason = highlight_code != '' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
-  {% set match_icon = '⚫ ' if (no_window or not has_live_reason) else '' %}
+  {% set match_icon = '⚫ ' if no_window else ('🟢 ' if not has_live_reason else '') %}
   {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
@@ -572,7 +572,7 @@ content: >
   {% set highlight_ok = is_match %}
   {% endif %}
   {% endif %}
-  {% set highlight_open = '<font color="green"><strong>' if highlight_ok else '<font color="red"><strong>' %}
+  {% set highlight_open = '<font color="orange"><strong>' if no_window else ('<font color="green"><strong>' if highlight_ok else '<font color="red"><strong>') %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
   {% set changed_time = (as_local(s.last_changed).strftime('%d.%m. %H:%M')) if has_live_reason else '–' %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
@@ -682,8 +682,14 @@ Version verzichtet komplett auf `style`-Attribute:
   wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
   nicht nur `34.2`) - **grün**, wenn der tatsächliche Fensterzustand mit
   der Empfehlung übereinstimmt (identisch zum 🟢-Icon am Raumnamen - die
-  Empfehlung wird also korrekt befolgt), sonst **rot** (Abweichung, oder
-  kein Fensterkontakt zum Abgleich vorhanden).
+  Empfehlung wird also korrekt befolgt), **rot** bei Abweichung (das
+  Fenster steht nicht so, wie es die Empfehlung vorsieht - hier kann
+  direkt eingegriffen werden, indem das Fenster geöffnet/geschlossen
+  wird), oder **orange** bei Räumen ohne Fenster ("Dieser Raum hat kein
+  Fenster" aktiviert) - dort lässt sich der Wert nicht durch Lüften
+  beeinflussen, ein knalliges Rot würde also fälschlich zum Eingreifen
+  auffordern, obwohl höchstens Luftentfeuchter/Klimaanlage automatisch
+  reagieren.
 
   Auslöser und Hervorhebung werden dabei **live** aus den aktuell
   angezeigten Werten und Schwellen berechnet, nicht aus dem historischen
@@ -709,8 +715,9 @@ Version verzichtet komplett auf `style`-Attribute:
   liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell
   zieht), zeigt die Karte konsequent überall neutral "–" statt einer
   veralteten Empfehlung: Auslöser, Empfehlung **und** Uhrzeit werden dann
-  alle "–", das 🟢/🔴-Icon am Raumnamen wird ⚫ (wie bei Räumen ohne
-  Fenster). Der zugrunde liegende `binary_sensor` behält seinen letzten
+  alle "–", das Icon am Raumnamen wird 🟢 (aktuell liegt kein Grund zum
+  Eingreifen vor, unabhängig vom Fensterzustand). Der zugrunde liegende
+  `binary_sensor` behält seinen letzten
   Zustand technisch unverändert bei (er ändert sich erst bei einem echten
   neuen Auslöser) - die Karte soll aber nicht länger eine aktive
   Empfehlung suggerieren, für die es aktuell keinen nachvollziehbaren
@@ -730,10 +737,11 @@ Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand und
 Uhrzeit den Zeitpunkt der letzten tatsächlichen Zustandsänderung; liegt
 aktuell **kein** Auslöser vor ("Totzone", siehe oben), zeigen Empfehlung
 und Uhrzeit ebenfalls "–" statt einer sonst nicht mehr begründbaren
-Empfehlung. Das 🟢/🔴-Icon am Raumnamen vergleicht, sobald ein
-Fensterkontakt hinterlegt ist und ein Auslöser vorliegt, ob der
-tatsächliche Fensterzustand zum aktuellen Empfehlungs-Zustand passt - ohne
-Auslöser wird es ebenfalls neutral ⚫) →
+Empfehlung. Das Icon am Raumnamen vergleicht, sobald ein Fensterkontakt
+hinterlegt ist und ein Auslöser vorliegt, ob der tatsächliche
+Fensterzustand zum aktuellen Empfehlungs-Zustand passt (🟢/🔴) - ohne
+Auslöser ("Totzone") liegt aktuell nichts vor, das ein Eingreifen
+nahelegt, daher ebenfalls 🟢, unabhängig vom Fensterzustand) →
 Status (Luftentfeuchter/Klimaanlage/
 Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
 aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messgröße", inkl.
@@ -742,10 +750,11 @@ Tabelle**.
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🔴 am
 Raumnamen zeigen, ob der Fenster-Zustand mit der Empfehlung übereinstimmt
-(🟢) oder davon abweicht (🔴); bei Räumen ohne Fenster ("Dieser Raum hat
-kein Fenster" aktiviert) sowie bei Räumen ohne aktuell live nachvollziehbaren
-Auslöser ("Totzone", siehe oben) steht dort stattdessen immer ⚫, da es
-dafür keine (aussagekräftige) Empfehlung gibt. Bei Geräte-Status und
+(🟢) oder davon abweicht (🔴); liegt aktuell kein Auslöser vor ("Totzone",
+siehe oben) zeigt das Icon ebenfalls 🟢, da es dann nichts gibt, das ein
+Eingreifen nahelegt. Bei Räumen ohne Fenster ("Dieser Raum hat kein
+Fenster" aktiviert) steht dort dagegen immer ⚫, da ein Fenster-Abgleich
+dort grundsätzlich nicht möglich ist. Bei Geräte-Status und
 Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
@@ -755,7 +764,10 @@ dargestellt, solange dafür ein Auslöser vorliegt - **grün**, wenn der
 tatsächliche Fensterzustand mit der Empfehlung übereinstimmt (identisch
 zum 🟢-Icon am Raumnamen), sonst **rot** (Abweichung, oder kein
 Fensterkontakt zum Abgleich vorhanden); liegt kein Auslöser vor
-("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung.
+("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung. Die
+Hervorhebung der Innen-/Außenwerte in der Werte-Tabelle folgt derselben
+grün/rot-Logik, bei Räumen ohne Fenster jedoch orange statt rot (siehe
+"Hervorhebung des ausschlaggebenden Werts" oben).
 Die Schwellenwerte
 sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
 des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
