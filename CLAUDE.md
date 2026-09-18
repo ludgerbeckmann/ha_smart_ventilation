@@ -485,20 +485,32 @@ aus unterschiedlichen Gründen getroffen werden - fehlender Messwert
 (Lektion 11) rechtfertigt beides, ein echter, nur nicht dringender
 Messwert rechtfertigt nur Letzteres.
 
-**17. Bei nur zwei tatsächlich unterschiedlichen Bedeutungen keine dritte
-Farbe erfinden (0.40.0).** Die Dashboard-Karte nutzte 🔴/rot für
-"Fensterzustand passt nicht zur Empfehlung" und 🟠/orange für "Wert außer-
-halb des Bereichs, aber Raum ohne Fenster" (0.39.0, siehe README-Historie) -
-zwei Farben für im Grunde dieselbe Aussage ("aktuell nicht optimal, aber
-unterschiedlich handhabbar"). Auf Nutzerwunsch komplett vereinheitlicht:
-nur noch 🟢 (passt) und 🟠 (passt nicht - ob wegen Fenster-Mismatch oder
-weil gar kein Fenster vorhanden ist) verwendet, Rot vollständig aus der
-Kartenlogik entfernt (Icon, Werte-Hervorhebung, Übersichts-Tabelle jetzt
-nur noch zweispaltig 🟢/🟠). Lektion: Wenn zwei Fälle zwar unterschiedlich
-entstehen, aber für den Betrachter dieselbe Handlungsaufforderung
-bedeuten ("schau hier hin"), ist eine zusätzliche Farbe eher verwirrend
-als informativ - erst recht, wenn (wie hier) eine der beiden Bedeutungen
-ohnehin schon dieselbe Farbe nutzt.
+**17. "Alle rot angezeigten Daten sollen orange werden" war zu breit
+interpretiert - die eigentliche Absicht war viel enger (Dashboard-Karte,
+kein Versionsbump nötig, Backend-Teil weiterhin 0.40.0).**
+Nach der Frage "gibt es für CO2 einen zu niedrigen Wert" (Antwort: nein,
+siehe Lektion 16) sagte der Nutzer, das solle "auch nicht zwingend eine
+Benachrichtigung erzeugen" und "außerdem alle rot angezeigten Daten nur
+orange dargestellt werden". Eine Rückfrage (AskUserQuestion) dazu, ob
+damit wirklich jeder rote Zustand kartenweit gemeint sei, wurde mit "ja"
+beantwortet - entsprechend wurde Rot zunächst komplett aus der
+Kartenlogik entfernt (nur noch 🟢/🟠, siehe Git-Historie). Direkt danach
+korrigierte der Nutzer das explizit: orange sollte **nur** für den
+CO2-zu-niedrig-Fall gelten, alle anderen bisher roten Fälle (echter
+Fenster-Mismatch aus einem anderen Grund) sollten **rot bleiben** - nur
+das schon zuvor (0.39.0) bestehende, unabhängige Orange für Räume ohne
+Fenster sollte unverändert bleiben. Endgültige Logik: 🟢 (passt) / 🔴
+(Mismatch aus echtem Grund) / 🟠 (Mismatch, aber der gewinnende Auslöser
+ist CO2-Schließen oder der Raum hat kein Fenster) - `co2_close_exception`
+im Karten-Template, analog zu `silent_co2_close` im Backend. Lektion: Eine
+"ja"-Antwort auf eine klärende Rückfrage validiert nur die konkret
+gestellte Frage, nicht automatisch die davor formulierte, oft unpräzise
+gemeinte Ursprungsanweisung - bei einer sprachlich absoluten Formulierung
+("alle", "immer", "nie") im Nachgang einer engeren, konkreten Beobachtung
+(hier: die CO2-Erkenntnis) lohnt sich eine zweite, noch konkretere
+Rückfrage ("nur für X, oder wirklich überall?"), bevor eine
+kartenweite Änderung umgesetzt wird - auch wenn die erste Rückfrage
+bereits explizit "ja, überall" bestätigt hat.
 
 ## Versionierung & Release
 
