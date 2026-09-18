@@ -626,7 +626,7 @@ content: >
   {% endif %}
   {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
-  {% set empfehlung_text = ('<font color="red"><strong>' ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
+  {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
   {% set uhrzeit_val = changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
@@ -750,11 +750,12 @@ Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
 "Offen"/"Geschlossen"). Der Empfehlungstext ("Öffnen"/"Schließen") wird
-zusätzlich rot und fett dargestellt, solange dafür ein Auslöser vorliegt
-(dieselbe `<font color="red"><strong>`-Technik wie bei der Hervorhebung
-des ausschlaggebenden Werts, siehe oben - hier aber unabhängig davon, ob
-das Fenster tatsächlich mit der Empfehlung übereinstimmt); liegt kein
-Auslöser vor ("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung.
+zusätzlich fett und in derselben Farbe wie der ausschlaggebende Wert
+dargestellt, solange dafür ein Auslöser vorliegt - **grün**, wenn der
+tatsächliche Fensterzustand mit der Empfehlung übereinstimmt (identisch
+zum 🟢-Icon am Raumnamen), sonst **rot** (Abweichung, oder kein
+Fensterkontakt zum Abgleich vorhanden); liegt kein Auslöser vor
+("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung.
 Die Schwellenwerte
 sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
 des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
