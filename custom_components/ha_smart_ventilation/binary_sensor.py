@@ -109,6 +109,7 @@ from .const import (
     GLOBAL_ENTRY_ID_KEY,
     SHOWER_RISE_LOOKBACK_MINUTES,
     TTS_PLAYBACK_MODE_PAUSE,
+    VERSION_KEY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -207,6 +208,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE
             ),
         }
+        integration_version = self.hass.data.get(DOMAIN, {}).get(VERSION_KEY)
+        if integration_version:
+            # Nur für die Dashboard-Karte (Versionsanzeige) - identisch für
+            # jeden Raum, da es sich um die Version der gesamten Integration
+            # handelt, nicht um eine Raum-Eigenschaft.
+            attrs["integration_version"] = integration_version
         if self._config.get(CONF_NO_WINDOW, False):
             # Nur gesetzt, wenn "kein Fenster" - Standardfall (Fenster
             # vorhanden) fügt bewusst nichts hinzu, um bestehende Dashboards

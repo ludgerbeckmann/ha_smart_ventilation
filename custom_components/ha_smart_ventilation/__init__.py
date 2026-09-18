@@ -6,6 +6,7 @@ import logging
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.loader import async_get_integration
 
 from .const import (
     CONF_IS_GLOBAL,
@@ -16,6 +17,7 @@ from .const import (
     GLOBAL_ENTRY_ID_KEY,
     NOTIFY_METHOD_MOBILE,
     NOTIFY_METHOD_PERSISTENT,
+    VERSION_KEY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,6 +96,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     Home-Assistant-Sitzung. Stellt sicher, dass der Eintrag "Smart
     Ventilation Options" existiert - z. B. nach einem Neustart, falls er
     aus irgendeinem Grund fehlt."""
+    hass.data.setdefault(DOMAIN, {})
+    # Für die Dashboard-Karte (Versionsanzeige) - liest die tatsächlich
+    # installierte Version aus manifest.json, statt sie separat im Code zu
+    # duplizieren (single source of truth bleibt manifest.json).
+    integration = await async_get_integration(hass, DOMAIN)
+    if integration.version is not None:
+        hass.data[DOMAIN][VERSION_KEY] = str(integration.version)
     _create_global_settings_entry(hass)
     return True
 

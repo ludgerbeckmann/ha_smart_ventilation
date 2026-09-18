@@ -11,6 +11,10 @@ GLOBAL_SETTINGS_UNIQUE_ID = "ha_smart_ventilation_global_settings"
 # Schlüssel in hass.data[DOMAIN], unter dem die entry_id der globalen
 # Einstellungen (falls vorhanden) hinterlegt wird.
 GLOBAL_ENTRY_ID_KEY = "_global_entry_id"
+# Schlüssel in hass.data[DOMAIN], unter dem die aktuell installierte
+# Versionsnummer (aus manifest.json) für die Dashboard-Karte hinterlegt
+# wird (siehe __init__.py:async_setup / binary_sensor.py:extra_state_attributes).
+VERSION_KEY = "_integration_version"
 
 CONF_ROOM_NAME = "room_name"
 # Optional: die HA-Bereich-ID (area_registry), aus der beim Anlegen der
