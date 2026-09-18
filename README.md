@@ -564,7 +564,7 @@ content: >
   {% set has_live_reason = highlight_code != '' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
-  {% set match_icon = '⚫ ' if no_window else ('🟢 ' if not has_live_reason else '') %}
+  {% set match_icon = '🟢 ' if not has_live_reason else ('🟠 ' if no_window else '') %}
   {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
@@ -756,8 +756,12 @@ Raumnamen zeigen, ob der Fenster-Zustand mit der Empfehlung übereinstimmt
 (🟢) oder davon abweicht (🔴); liegt aktuell kein Auslöser vor ("Totzone",
 siehe oben) zeigt das Icon ebenfalls 🟢, da es dann nichts gibt, das ein
 Eingreifen nahelegt. Bei Räumen ohne Fenster ("Dieser Raum hat kein
-Fenster" aktiviert) steht dort dagegen immer ⚫, da ein Fenster-Abgleich
-dort grundsätzlich nicht möglich ist. Bei Geräte-Status und
+Fenster" aktiviert) gibt es keinen Fenster-Zustand zum Abgleichen, daher
+richtet sich das Icon dort stattdessen danach, ob aktuell ein Auslöser
+vorliegt: 🟢, solange alle Werte im jeweils passenden Bereich liegen, sonst
+🟠 (identisch zur orangen Hervorhebung des betroffenen Werts, siehe oben -
+Handlungsbedarf besteht, aber nicht über das Fenster, sondern höchstens
+über Luftentfeuchter/Klimaanlage). Bei Geräte-Status und
 Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
