@@ -295,6 +295,44 @@ Stand vor dem Update stehen. Bei jedem entfernten `reason`-/Code-Wert
 diesen Fall explizit prüfen: kann die Entität in einem Zustand
 "stecken bleiben", in dem der alte Wert nie neu geschrieben wird?
 
+**12. Frost-/Hitzeschutz brauchte eine Debounce-Zeit für das erzwungene
+Schließen, nicht nur für das Blockieren des Öffnens (0.36.0).** Nutzer-
+Meldung: der Frostschutz schließt "zu schnell" - Nachfrage ergab, dass die
+tatsächliche Außentemperatur nachts noch weit von der Frostschutz-Grenze
+entfernt war, ein Flackern nahe der Schwelle also ausgeschlossen werden
+konnte. Wahrscheinlichste Ursache: ein einzelner unplausibler
+Ausreißer-Messwert einer der (hier: drei kombinierten) Außentemperatur-
+Quellen, auf den `frost_block`/`close_by_frost` bis dahin ungefiltert und
+sofort reagierte - jeder einzelne Messwert unterhalb der Grenze reichte,
+um eine bereits aktive Öffnen-Empfehlung samt Benachrichtigung zu beenden.
+Die eigentliche Fehlerursache ließ sich nachträglich nicht mehr zweifelsfrei
+belegen (weder das HA-Systemlog noch der Logbuch-Export enthielten den
+fraglichen Zeitpunkt - Logbuch protokolliert bei `device_class: opening`
+grundsätzlich keine "Schließen"-Ereignisse, nur "Öffnen"), das Debounce-
+Konzept wurde aber unabhängig davon als sinnvolle generelle Absicherung
+umgesetzt.
+
+Fix: `_frost_cold_since` (Zeitstempel, analog zum bereits vorhandenen
+Muster `_dehumidifier_low_power_since`/`_ac_low_power_since` für die
+Einspeiseleistung) verfolgt, seit wann die Außentemperatur *ununterbrochen*
+tatsächlich (nicht: fehlend) auf/unter der Frostschutz-Grenze liegt. Das
+erzwungene Schließen (`close_by_frost`) greift für einen echten Messwert
+erst, wenn das neue, konfigurierbare `CONF_FROST_DEBOUNCE_MINUTES`
+(Standard 10 Minuten, 0 = deaktiviert, per `_effective()` raum- oder
+global überschreibbar) erreicht ist. Bewusst **nicht** debounct: das reine
+Blockieren einer neuen Öffnen-Empfehlung (`frost_block`, bleibt sofort
+wirksam - konservativ zu bleiben ist risikofrei) und der Fall eines
+fehlenden Sensors (`frost_sensor_missing`, bleibt ebenfalls sofort und
+weiterhin stumm wirksam, siehe Lektion 11 - dort gibt es keinen Messwert,
+der "anhalten" könnte). Lektion: Ein Debounce/Hysterese-Bedarf betrifft oft
+nur eine von mehreren Verwendungen ein und derselben Bedingung
+(hier: `frost_block`) - die konservative "Öffnen blockieren"-Seite einer
+Sicherheitsbedingung braucht i. d. R. keine Verzögerung (das Risiko eines
+zu späten Blockierens ist einseitig), während die aktive "bereits offenen
+Zustand beenden"-Seite von einem einzelnen Ausreißer-Messwert unnötig
+Fehlalarme auslösen kann - beide Seiten sollten daher nicht automatisch
+denselben Debounce-Wert erben, sondern einzeln bewertet werden.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

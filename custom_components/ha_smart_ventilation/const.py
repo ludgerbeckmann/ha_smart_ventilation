@@ -75,6 +75,7 @@ CONF_HEAT_PROTECTION_TEMP = "heat_protection_temp"
 CONF_WINTER_OUTDOOR_THRESHOLD = "winter_outdoor_threshold"
 CONF_MAX_OPEN_DURATION_WINTER = "max_open_duration_winter_minutes"
 CONF_REMINDER_INTERVAL = "reminder_interval_minutes"
+CONF_FROST_DEBOUNCE_MINUTES = "frost_debounce_minutes"
 
 # Optionale Geräte-Steuerung
 CONF_DEHUMIDIFIER_ENTITY = "dehumidifier_entity"
@@ -116,8 +117,19 @@ DEFAULT_CO2_THRESHOLD_CLOSE = 800.0
 DEFAULT_TEMP_MARGIN = 1.0
 
 # Unterhalb dieser Außentemperatur wird nie geöffnet (Frostschutz); ein
-# bereits geöffneter Zustand wird sofort auf "Schließen" gesetzt.
+# bereits geöffneter Zustand wird auf "Schließen" gesetzt, sobald die
+# Außentemperatur ununterbrochen für mindestens DEFAULT_FROST_DEBOUNCE_MINUTES
+# darunter liegt (siehe unten) - das reine Blockieren des Öffnens greift
+# dagegen weiterhin sofort, ohne Verzögerung.
 DEFAULT_FROST_PROTECTION_TEMP = 0.0
+
+# Mindestdauer (Minuten), die die Außentemperatur ununterbrochen auf/unter
+# der Frostschutz-Grenze liegen muss, bevor ein bereits geöffneter Zustand
+# tatsächlich auf "Schließen" gesetzt wird. Schützt vor einem einzelnen
+# unplausiblen Ausreißer-Messwert (Sensor-Glitch), der sonst sofort und ohne
+# echten Grund schließen würde. 0 = kein Debounce, sofortiges Schließen wie
+# vor Einführung dieser Einstellung.
+DEFAULT_FROST_DEBOUNCE_MINUTES = 10
 
 # Oberhalb dieser Außentemperatur wird nie geöffnet (Hitzeschutz, Pendant
 # zum Frostschutz) - Lüften würde absehbar nur noch Hitze hereinlassen und

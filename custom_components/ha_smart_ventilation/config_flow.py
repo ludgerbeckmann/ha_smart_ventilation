@@ -19,6 +19,7 @@ from .const import (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
+    CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -68,6 +69,7 @@ from .const import (
     COMMON_TEMP_ATTRIBUTES,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
+    DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
@@ -128,6 +130,7 @@ _THRESHOLD_FIELDS = {
     CONF_CO2_THRESHOLD_CLOSE: (DEFAULT_CO2_THRESHOLD_CLOSE, 400, 5000, 50, "ppm"),
     CONF_TEMP_MARGIN: (DEFAULT_TEMP_MARGIN, 0, 5, 0.5, "°C"),
     CONF_FROST_PROTECTION_TEMP: (DEFAULT_FROST_PROTECTION_TEMP, -20, 15, 0.5, "°C"),
+    CONF_FROST_DEBOUNCE_MINUTES: (DEFAULT_FROST_DEBOUNCE_MINUTES, 0, 60, 1, "min"),
     CONF_HEAT_PROTECTION_TEMP: (DEFAULT_HEAT_PROTECTION_TEMP, 20, 45, 0.5, "°C"),
     CONF_WINTER_OUTDOOR_THRESHOLD: (DEFAULT_WINTER_OUTDOOR_THRESHOLD, -10, 20, 0.5, "°C"),
     CONF_MAX_OPEN_DURATION_WINTER: (DEFAULT_MAX_OPEN_DURATION_WINTER, 5, 120, 5, "min"),
@@ -151,6 +154,7 @@ _CORE_PARAMETER_KEYS = (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_TEMP_MARGIN,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_FROST_DEBOUNCE_MINUTES,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
@@ -397,6 +401,9 @@ def _build_room_schema(
     co2_close_marker, co2_close_sel = _override_selector(CONF_CO2_THRESHOLD_CLOSE, defaults)
     margin_marker, margin_sel = _override_selector(CONF_TEMP_MARGIN, defaults)
     frost_marker, frost_sel = _override_selector(CONF_FROST_PROTECTION_TEMP, defaults)
+    frost_debounce_marker, frost_debounce_sel = _override_selector(
+        CONF_FROST_DEBOUNCE_MINUTES, defaults
+    )
     heat_marker, heat_sel = _override_selector(CONF_HEAT_PROTECTION_TEMP, defaults)
     winter_marker, winter_sel = _override_selector(CONF_WINTER_OUTDOOR_THRESHOLD, defaults)
     duration_marker, duration_sel = _override_selector(CONF_MAX_OPEN_DURATION_WINTER, defaults)
@@ -558,6 +565,7 @@ def _build_room_schema(
                 co2_close_marker: co2_close_sel,
                 margin_marker: margin_sel,
                 frost_marker: frost_sel,
+                frost_debounce_marker: frost_debounce_sel,
                 heat_marker: heat_sel,
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
