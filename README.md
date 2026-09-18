@@ -117,7 +117,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        Fenster" deaktiviert ist)
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
-     gelassen gilt der dort hinterlegte Wert):
+     gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
+     Hinweistext unter jedem dieser Felder zusätzlich den aktuell
+     wirksamen globalen Wert an, z. B. "Aktuell global: 23.0 °C"):
      - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
        und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Debounce-Zeit
        Frostschutz, Hitzeschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer
@@ -135,7 +137,8 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
        optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort
-       hinterlegbar, nicht mehr pro Raum)
+       hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
+       Hinweistext den aktuell wirksamen globalen Wert an
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 

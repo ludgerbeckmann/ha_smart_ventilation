@@ -404,6 +404,31 @@ abfindet - ein Debounce/Filter an der Quelle (wie in Lektion 12) macht
 das Problem seltener, löst aber nicht das grundsätzliche Anzeige-Problem
 "zeigt Vergangenheit, wo Gegenwart gemeint ist".
 
+**14. `description_placeholders` mit echten `{platzhalter}` ist der
+Normalfall - Lektion 8s Fullwidth-Klammer-Trick ist nur ein Workaround
+für Text OHNE echte Platzhalterbefüllung (0.38.0).** Bei der Frage "wie
+zeigt man im Raum-Formular den aktuell wirksamen globalen Wert an, an dem
+man sich beim Setzen eines Overrides orientieren kann" wurde `data_description`
+(HA-Hinweistext je Formularfeld) mit einem echten, pro Formularaufruf neu
+berechneten `{global_<feldname>}`-Platzhalter kombiniert: `config_flow.py`
+liest dafür bei jedem `async_show_form()` für den Raum-Schritt (sowohl
+Config- als auch Options-Flow) über `_room_override_placeholders()` den
+aktuellen Wert aus den globalen Einstellungen (bzw. dessen Standardwert)
+für jedes per `_override_selector()` überschreibbare Feld aus und übergibt
+ihn als `description_placeholders`. Anders als bei Lektion 8 muss hier
+NICHT auf Fullwidth-Klammern (`｛｜｝`) ausgewichen werden - die dortige
+Regel greift nur, wenn ein `{wort}` im Text steht, OHNE dass tatsächlich
+ein passender Wert übergeben wird (reiner Beispieltext); hier wird der
+Wert bei jedem Rendern des Formulars neu und korrekt befüllt, also ist
+ein echtes, unescapetes `{global_temp_threshold_open}` genau richtig und
+nötig (führt weder zu einem formatjs- noch zu einem hassfest-Fehler).
+Wichtig: der aktuelle globale Wert wird NUR im Hinweistext angezeigt,
+NICHT über `suggested_value` ins leere Feld vorbefüllt - das würde beim
+Speichern ohne Änderung einen Override auf genau diesen Wert einfrieren
+(dauerhaft losgelöst von künftigen Änderungen der globalen Einstellung),
+statt wie gewollt "leer = folgt weiterhin live der globalen Einstellung"
+zu bleiben (siehe `_override_selector()`).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

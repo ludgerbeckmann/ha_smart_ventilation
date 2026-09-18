@@ -101,6 +101,7 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DEHUMIDIFIER_DOMAINS,
     DOMAIN,
+    GLOBAL_ENTRY_ID_KEY,
     GLOBAL_SETTINGS_UNIQUE_ID,
     PRESENCE_DOMAINS,
     SHUTTER_DOMAINS,
@@ -216,6 +217,34 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
         )
     )
     return marker, field_selector
+
+
+def _global_config(hass) -> dict:
+    """Liefert die Daten der globalen Einstellungen (falls vorhanden) - via
+    hass.data, genau wie binary_sensor.py:_global_config()/diagnostics.py
+    (hier gibt es keine Entität, die self._config hätte)."""
+    domain_data = hass.data.get(DOMAIN, {})
+    global_entry_id = domain_data.get(GLOBAL_ENTRY_ID_KEY)
+    if not global_entry_id:
+        return {}
+    return domain_data.get(global_entry_id) or {}
+
+
+def _room_override_placeholders(hass) -> dict[str, str]:
+    """description_placeholders fürs Raum-Formular: für jedes per
+    _override_selector() überschreibbare Feld der aktuell wirksame globale
+    Wert (globale Einstellung, sonst deren Standardwert) als Text - zeigt
+    im Formular per data_description an, worauf sich ein leer gelassenes
+    Feld gerade bezieht, ohne das Feld selbst vorzubelegen (das würde beim
+    Speichern einen Override einfrieren, siehe _override_selector)."""
+    global_data = _global_config(hass)
+    placeholders = {}
+    for key, (default_value, _min, _max, _step, unit) in _THRESHOLD_FIELDS.items():
+        value = global_data.get(key)
+        if value in (None, ""):
+            value = default_value
+        placeholders[f"global_{key}"] = f"{value} {unit}".strip()
+    return placeholders
 
 
 def _tri_state_bool_selector(
@@ -927,6 +956,7 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="room",
             data_schema=_build_room_schema(defaults, area_entities=area_entities),
             errors=errors,
+            description_placeholders=_room_override_placeholders(self.hass),
         )
 
     async def async_step_import(
@@ -1006,6 +1036,7 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 defaults, area_entities=area_entities, show_area_selector=True
             ),
             errors=errors,
+            description_placeholders=_room_override_placeholders(self.hass),
         )
 
     async def async_step_global(
