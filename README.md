@@ -548,9 +548,9 @@ content: >
   {% set status_icon = 'Öffnen' if s.state == 'on' else 'Schließen' %}
   {% set changed_time = as_local(s.last_changed).strftime('%d.%m. %H:%M') %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
-  {% set temp_val = ('<mark>' ~ temp_val ~ '</mark>') if highlight_code == 'temp' else temp_val %}
+  {% set temp_val = ('<font color="red">' ~ temp_val ~ '</font>') if highlight_code == 'temp' else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
-  {% set outdoor_temp_val = ('<mark>' ~ outdoor_temp_val ~ '</mark>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
+  {% set outdoor_temp_val = ('<font color="red">' ~ outdoor_temp_val ~ '</font>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
@@ -566,13 +566,13 @@ content: >
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_val = ('<mark>' ~ hum_val ~ '</mark>') if highlight_code == 'humidity' else hum_val %}
+  {% set hum_val = ('<font color="red">' ~ hum_val ~ '</font>') if highlight_code == 'humidity' else hum_val %}
   {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | round(0) | int | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | round(0) | int | string) ~ ' % |' %}
   {% endif %}
   {% set co2_row = '' %}
   {% if a.co2 is defined %}
   {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
-  {% set co2_val = ('<mark>' ~ co2_val ~ '</mark>') if highlight_code == 'co2' else co2_val %}
+  {% set co2_val = ('<font color="red">' ~ co2_val ~ '</font>') if highlight_code == 'co2' else co2_val %}
   {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | round(0) | int | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | round(0) | int | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
@@ -655,11 +655,13 @@ Version verzichtet komplett auf `style`-Attribute:
   Style-Attribut) - ein Versuch, die Linie über Text-Zeichen dicker/dunkler
   zu gestalten, führte je nach Bildschirmbreite zu Zeilenumbrüchen; das
   Standard-`<hr>` ist dafür zuverlässig über die volle Kartenbreite
-- **Hervorhebung des ausschlaggebenden Werts**: `<mark>` (Standard-HTML-Tag
-  für Hervorhebungen) statt `<span style="color: orange;">` - Browser/
-  Home-Assistant-Frontend stellen das meist mit gelbem Hintergrund dar,
-  nicht exakt Orange, aber ebenfalls gut sichtbar und garantiert
-  funktionsfähig. Hervorgehoben wird jeweils die Zelle mit der Maßeinheit
+- **Hervorhebung des ausschlaggebenden Werts**: `<font color="red">` statt
+  `<span style="color: red;">` - das `style`-Attribut wird gefiltert (siehe
+  oben), das ältere, rein präsentative `color`-Attribut auf `<font>` aber
+  nicht. Zuvor kam `<mark>` (gelber Hintergrund) zum Einsatz; auf
+  Nutzerwunsch durch rote Schriftfarbe ersetzt, da die gelbe Markierung als
+  zu unauffällig wahrgenommen wurde. Hervorgehoben wird jeweils die Zelle
+  mit der Maßeinheit
   zusammen (z. B. `34.2 °C`, nicht nur `34.2`) und für **jeden** Auslöser,
   der einem konkreten Messwert zuordenbar ist: Innentemperatur (`temp`),
   Luftfeuchtigkeit (`humidity`), CO2 (`co2`) sowie die Außentemperatur bei
@@ -674,7 +676,7 @@ Version verzichtet komplett auf `style`-Attribute:
   Frost- bzw. Hitzeschutz das Schließen erzwungen hat), obwohl aktuell gar
   keine Maßnahme mehr nötig ist. Ohne diese Einschränkung würde sonst auch
   bei "Schließen" (kein Handlungsbedarf) noch die Zelle des ursprünglichen
-  Schließen-Grundes gelb markiert bleiben
+  Schließen-Grundes rot eingefärbt bleiben
 
 Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
 aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
