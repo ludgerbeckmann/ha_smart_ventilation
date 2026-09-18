@@ -94,6 +94,7 @@
             "description": "Luftentfeuchter und/oder Klimaanlage, die automatisch gestartet und gestoppt werden.",
             "data": {
               "dehumidifier_entity": "Luftentfeuchter",
+              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
               "ac_entity": "Klimaanlage",
               "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
@@ -101,6 +102,7 @@
             },
             "data_description": {
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
@@ -203,6 +205,7 @@
             "description": "Luftentfeuchter und/oder Klimaanlage, die automatisch gestartet und gestoppt werden.",
             "data": {
               "dehumidifier_entity": "Luftentfeuchter",
+              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
               "ac_entity": "Klimaanlage",
               "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
@@ -210,6 +213,7 @@
             },
             "data_description": {
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",

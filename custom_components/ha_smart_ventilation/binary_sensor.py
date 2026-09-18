@@ -27,6 +27,7 @@ from .const import (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
+    CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
@@ -293,6 +294,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["letzter_grund"] = self._last_reason
         if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
             attrs["luftentfeuchter_an"] = bool(self._dehumidifier_state)
+        tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
+        if tank_full_entity:
+            # Rein informativ für die Dashboard-Karte (Zusatz "(Fehler)" beim
+            # Luftentfeuchter-Status) - live gelesen, kein RestoreEntity nötig,
+            # da es sich um eine fremde, bereits selbst zustandsbehaftete
+            # Entität handelt, keinen internen Zustand dieser Integration.
+            tank_full_state = self.hass.states.get(tank_full_entity)
+            attrs["luftentfeuchter_tank_fehler"] = (
+                tank_full_state is not None and tank_full_state.state == "on"
+            )
         if self._config.get(CONF_AC_ENTITY):
             attrs["klimaanlage_an"] = bool(self._ac_state)
         return attrs

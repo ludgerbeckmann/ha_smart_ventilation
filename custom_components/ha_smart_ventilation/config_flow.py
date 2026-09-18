@@ -19,6 +19,7 @@ from .const import (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
+    CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
@@ -625,6 +626,14 @@ def _build_room_schema(
                             if dehumidifier_include
                             else {}
                         ),
+                    )
+                ),
+                _entity_marker(
+                    CONF_DEHUMIDIFIER_TANK_FULL_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="binary_sensor",
+                        **({"include_entities": window_include} if window_include else {}),
                     )
                 ),
                 _entity_marker(
