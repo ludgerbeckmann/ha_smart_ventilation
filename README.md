@@ -321,22 +321,24 @@ zur unbeschränkten Auswahl zurückzukehren.
   CO2 haben Vorrang vor Winter-Höchstdauer" ist aktiv (Standard) **und** es
   wird gerade noch aus Feuchtigkeits- oder CO2-Gründen gelüftet, **oder**
 - **Frostschutz**: die Außentemperatur ist auf/unter die Frostschutz-Grenze
-  gefallen. Das reine **Blockieren des Öffnens** greift dabei immer sofort
-  (unabhängig von allen anderen Bedingungen, **auch** falls noch aus
-  Feuchtigkeits- oder CO2-Gründen gelüftet wird - Frostschutz hat immer
-  Vorrang) - konservativ zu bleiben ist risikofrei. Das tatsächliche
-  **Schließen eines bereits offenen Zustands** greift dagegen erst, sobald
-  die Außentemperatur ununterbrochen für mindestens die eingestellte
-  "Debounce-Zeit Frostschutz" (Standard 10 Minuten, 0 = ohne Verzögerung)
-  auf/unter der Grenze liegt - das verhindert ein sofortiges, ungewolltes
-  Schließen durch einen einzelnen unplausiblen Ausreißer-Messwert. **Oder**:
-  der Außentemperatur-Sensor ist zwar konfiguriert, meldet aber gerade
-  `unavailable`/`unknown` (z. B. während Home Assistant startet/stoppt) -
-  dieser Fall greift weiterhin ohne Debounce sofort, da es dort keinen
-  Messwert gibt, der "anhalten" könnte, bleibt aber bewusst **stumm**: kein
-  Auslöser-Eintrag in der Empfehlungs-Tabelle, keine Benachrichtigung,
-  da es sich meist nur um einen vorübergehenden Zustand beim Neustart
-  handelt, **oder**
+  gefallen **oder** der Außentemperatur-Sensor ist zwar konfiguriert, meldet
+  aber gerade `unavailable`/`unknown` (z. B. während Home Assistant
+  startet/stoppt - beide Fälle werden gleich behandelt). Das reine
+  **Blockieren des Öffnens** greift dabei immer sofort (unabhängig von
+  allen anderen Bedingungen, **auch** falls noch aus Feuchtigkeits- oder
+  CO2-Gründen gelüftet wird - Frostschutz hat immer Vorrang) - konservativ
+  zu bleiben ist risikofrei. Das tatsächliche **Schließen eines bereits
+  offenen Zustands** greift dagegen erst, sobald einer dieser beiden Fälle
+  ununterbrochen für mindestens die eingestellte "Debounce-Zeit
+  Frostschutz" (Standard 10 Minuten, 0 = ohne Verzögerung) anhält - das
+  verhindert ein sofortiges, ungewolltes Schließen sowohl durch einen
+  einzelnen unplausiblen Ausreißer-Messwert als auch durch eine kurze
+  Sensor-Nichtverfügbarkeit beim Neustart. Das durch einen tatsächlich
+  niedrigen Messwert ausgelöste Schließen erhält einen Auslöser-Eintrag
+  samt Benachrichtigung; das durch einen fehlenden Sensor ausgelöste
+  Schließen bleibt bewusst **stumm**: kein Auslöser-Eintrag in der
+  Empfehlungs-Tabelle, keine Benachrichtigung, da es sich meist nur um
+  einen vorübergehenden Zustand beim Neustart handelt, **oder**
 - **Hitzeschutz**: die Außentemperatur ist auf/über die Hitzeschutz-Grenze
   gestiegen (Pendant zum Frostschutz, greift genauso sofort und unabhängig
   von allen anderen Bedingungen - Lüften würde absehbar nur noch Hitze
