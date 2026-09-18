@@ -667,10 +667,11 @@ content: >
   {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
   {% set ns.rooms = ns.rooms ~ sep_before ~ header ~ '\n\n' ~ body %}
   {% endfor %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |\n|:---:|:---:|:---:|\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' %}
-  {% set version_table = ('| Version |\n|:---:|\n| ' ~ ns.version ~ ' |') if ns.version is not none else '' %}
-  {% set overview_block = overview ~ ('\n\n' ~ version_table if version_table else '') %}
-  {{ overview_block ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
+  {% set version_header = ' Version |' if ns.version is not none else '' %}
+  {% set version_sep = ':---:|' if ns.version is not none else '' %}
+  {% set version_cell = ' ' ~ ns.version ~ ' |' if ns.version is not none else '' %}
+  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ version_header ~ '\n|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ version_cell %}
+  {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
@@ -751,10 +752,13 @@ gefiltert werden oder noch mehr).
 **Reihenfolge:** Zu Beginn der Karte (einmalig, vor der Raumliste) eine
 **Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
 Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
-Icon am jeweiligen Raumnamen weiter unten) sowie separat darunter eine
-einzeilige **Versions-Tabelle** (liest `integration_version` vom ersten
-Raum, für den das Attribut vorhanden ist - der Wert ist für jeden Raum
-identisch). Danach pro Raum: Raumname → **Empfehlungs-Tabelle** (Fenster/Empfehlung/
+Icon am jeweiligen Raumnamen weiter unten - sowie eine vierte Spalte
+"Version" mit der aktuell installierten Versionsnummer, liest
+`integration_version` vom ersten Raum, für den das Attribut vorhanden
+ist; nebeneinander platzierte, aber getrennte Tabellen sind in Home
+Assistants Markdown-Karte ohne das gefilterte `style`-Attribut nicht
+zuverlässig umsetzbar, siehe "Hervorhebung des ausschlaggebenden Werts"
+oben - daher eine gemeinsame Tabelle). Danach pro Raum: Raumname → **Empfehlungs-Tabelle** (Fenster/Empfehlung/
 Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
 aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
 ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
