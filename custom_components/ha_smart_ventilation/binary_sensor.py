@@ -874,6 +874,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             elif close_by_summer_outdoor:
                 reason = "outdoor_warmer"
 
+        # Schließen wegen CO2 (Rückkehr unter die Schließen-Schwelle) ist
+        # anders als Frost-/Hitzeschutz kein Sicherheitsrisiko - niedriges
+        # CO2 ist unproblematisch, es gibt dafür keine "zu niedrig"-Gefahr.
+        # Der Grund bleibt trotzdem ehrlich "co2" (anders als
+        # silent_frost_close - hier gibt es einen echten Messwert, keine
+        # irreführende Anzeige zu vermeiden), nur die Benachrichtigung
+        # entfällt, da kein zwingender Handlungsbedarf besteht.
+        silent_co2_close = reason == "co2" and should_close and self._attr_is_on
+
         if new_state != self._attr_is_on:
             self._attr_is_on = new_state
             self._last_reason = None if silent_frost_close else reason
@@ -882,7 +891,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             else:
                 self._open_since = None
             self.async_write_ha_state()
-            if silent_frost_close:
+            if silent_frost_close or silent_co2_close:
                 self._last_notified_at = None
             elif self._window_action_needed(new_state):
                 self._last_notified_at = dt_util.utcnow()
