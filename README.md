@@ -626,11 +626,11 @@ content: >
   {% endif %}
   {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
-  {% set empfehlung_text = status_icon %}
+  {% set empfehlung_text = ('<font color="red"><strong>' ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
   {% set uhrzeit_val = changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
-  {% set empf_table = '| Empfehlung | Fenster | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ empfehlung_text ~ ' | ' ~ window_state_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
+  {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
   {% endif %}
   {% set values_table = '| Messgröße | Innen | Außen | Öffnen ab | Schließen ab |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
@@ -722,7 +722,7 @@ aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
 die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
-**Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Empfehlung/Fenster/
+**Reihenfolge:** Raumname → **Empfehlungs-Tabelle** (Fenster/Empfehlung/
 Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
 aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
 ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
@@ -749,7 +749,13 @@ dafür keine (aussagekräftige) Empfehlung gibt. Bei Geräte-Status und
 Benachrichtigungs-
 methoden steht 🟢 für an, ⚫ für aus. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" bzw.
-"Offen"/"Geschlossen"). Die Schwellenwerte
+"Offen"/"Geschlossen"). Der Empfehlungstext ("Öffnen"/"Schließen") wird
+zusätzlich rot und fett dargestellt, solange dafür ein Auslöser vorliegt
+(dieselbe `<font color="red"><strong>`-Technik wie bei der Hervorhebung
+des ausschlaggebenden Werts, siehe oben - hier aber unabhängig davon, ob
+das Fenster tatsächlich mit der Empfehlung übereinstimmt); liegt kein
+Auslöser vor ("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung.
+Die Schwellenwerte
 sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
 des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
 Einzelschritte zerlegt - das macht sie robuster gegenüber Kopier-/
