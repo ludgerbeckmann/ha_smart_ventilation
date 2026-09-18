@@ -553,7 +553,7 @@ title: Lüftungsübersicht
 content: >
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
-  {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
+  {% set ns = namespace(green=0, orange=0, rooms='', version=none) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -592,8 +592,6 @@ content: >
   {% set ns.green = ns.green + 1 %}
   {% elif match_icon == '🟠 ' %}
   {% set ns.orange = ns.orange + 1 %}
-  {% elif match_icon == '🔴 ' %}
-  {% set ns.red = ns.red + 1 %}
   {% endif %}
   {% set highlight_open = '<font color="green"><strong>' if highlight_ok else (('<font color="orange"><strong>' if (no_window or co2_close_exception) else '<font color="red"><strong>')) %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
@@ -677,7 +675,7 @@ content: >
   {% set version_header = ' Version |' if ns.version is not none else '' %}
   {% set version_sep = ':---:|' if ns.version is not none else '' %}
   {% set version_cell = ' ' ~ ns.version ~ ' |' if ns.version is not none else '' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ version_header ~ '\n|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ version_cell %}
+  {% set overview = '| 🟢 | 🟠 |' ~ version_header ~ '\n|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' |' ~ version_cell %}
   {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
@@ -767,7 +765,7 @@ die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
 gefiltert werden oder noch mehr).
 
 **Reihenfolge:** Zu Beginn der Karte (einmalig, vor der Raumliste) eine
-**Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
+**Übersichts-Tabelle** (🟢/🟠 als Spaltenköpfe, darunter zentriert die
 Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
 Icon am jeweiligen Raumnamen weiter unten - sowie eine vierte Spalte
 "Version" mit der aktuell installierten Versionsnummer, liest
