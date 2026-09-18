@@ -338,6 +338,34 @@ Zustand beenden"-Seite von einem einzelnen Ausreißer-Messwert unnötig
 Fehlalarme auslösen kann - beide Seiten sollten daher nicht automatisch
 denselben Debounce-Wert erben, sondern einzeln bewertet werden.
 
+**Nachtrag (0.36.1), Korrektur der eigenen Lektion 12:** Nutzer-Meldung,
+mehrere Räume seien nach einem HA-Neustart wieder "auf Frostschutz"
+gegangen - mit Diagnose-Beleg (aktuelle Außentemperatur 13,8 °C, weit über
+der Grenze, Auslöser trotzdem "Frostschutz" mit Zeitstempel exakt zur
+Neustart-Zeit). Der ursprüngliche Fix (0.36.0) hatte den fehlenden-Sensor-
+Fall bewusst OHNE Debounce gelassen ("dort gibt es keinen Messwert, der
+anhalten könnte") - das war zu kurz gedacht: Man kann sehr wohl verfolgen,
+seit wann ein Sensor ununterbrochen fehlt, genau wie bei einem echten
+Messwert. Ein HA-Neustart ist zudem der typische Moment, in dem der
+Außensensor kurzzeitig noch lädt (siehe Lektion 2) - also genau der Fall,
+den der fehlende-Sensor-Zweig unverzögert durchließ und der (bei mehreren
+Räumen mit demselben globalen Außensensor) gleich mehrere Räume auf einmal
+betraf. Fix: `_frost_cold_since` zu `_frost_block_since` verallgemeinert -
+verfolgt jetzt, seit wann `frost_block` (die Bedingung, die sowohl einen
+echten niedrigen Messwert als auch einen fehlenden Sensor abdeckt)
+ununterbrochen aktiv ist, statt zwei getrennte Fälle mit unterschiedlicher
+Verzögerung zu behandeln. `frost_sensor_missing` wird weiterhin separat
+ausgewertet, aber nur noch dafür, ob das schließlich erzwungene Schließen
+einen Auslöser-Eintrag bekommt (echter Messwert) oder stumm bleibt
+(fehlender Sensor) - nicht mehr dafür, ob überhaupt gewartet wird.
+Lektion, die Lektion 12 präzisiert: "Es gibt hier keinen Wert, der
+anhalten könnte" ist kein Grund, einen Debounce auszulassen - man kann
+genauso gut verfolgen, wie lange ein *Zustand* (hier: "kein Wert
+vorhanden") anhält, wie man einen *Messwert* verfolgt. Vor jeder
+bewussten Asymmetrie zwischen zwei Fällen derselben Bedingung noch einmal
+prüfen, ob die Begründung wirklich zwei unterschiedliche Risikoprofile
+beschreibt - oder nur eine vermeidbare Vereinfachung ist.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
