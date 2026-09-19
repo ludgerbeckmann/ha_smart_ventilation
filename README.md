@@ -284,10 +284,11 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 > Beim Bearbeiten eines Raums steht - anders als beim Neuanlegen - kein
 > eigener erster Schritt für den HA-Bereich zur Verfügung; das Feld
 > "HA-Bereich" findet sich hier direkt ganz oben im selben Formular, neben
-> dem Raumnamen. Die darunter angezeigten, auf den Bereich eingeschränkten
-> Sensor-/Geräte-Auswahllisten richten sich dabei noch nach dem zuletzt
-> **gespeicherten** Bereich - änderst du den Bereich hier, wirkt sich das
-> auf die Auswahllisten erst beim nächsten Öffnen dieses Formulars aus.
+> dem Raumnamen. Änderst du den Bereich hier und speicherst, werden beim
+> ersten Speichern zunächst nur die darunter angezeigten Sensor-/
+> Geräte-Auswahllisten auf den neuen Bereich aktualisiert (das Formular
+> bleibt offen, bereits gemachte Eingaben bleiben erhalten) - erst ein
+> zweites Speichern übernimmt die Änderungen tatsächlich.
 
 ## HA-Bereich nachträglich zuordnen oder ändern
 
@@ -295,8 +296,9 @@ Ein Raum, der schon vor diesem Feature angelegt wurde (oder bei dem der
 erste Schritt leer gelassen wurde), hat keinen HA-Bereich hinterlegt - die
 Sensor-Auswahllisten zeigen dann weiterhin, wie gewohnt, alle Entitäten.
 Das lässt sich jederzeit nachträglich ändern: Eintrag über "Konfigurieren"
-öffnen, oben das Feld "HA-Bereich" setzen und speichern - ab dem nächsten
-Öffnen des Formulars sind die Auswahllisten dann entsprechend eingeschränkt.
+öffnen, oben das Feld "HA-Bereich" setzen und speichern - die Auswahllisten
+darunter werden daraufhin sofort entsprechend eingeschränkt angezeigt
+(Formular bleibt offen), ein zweites Speichern übernimmt die Änderung.
 Umgekehrt lässt sich ein einmal gesetzter Bereich genauso wieder leeren, um
 zur unbeschränkten Auswahl zurückzukehren.
 
