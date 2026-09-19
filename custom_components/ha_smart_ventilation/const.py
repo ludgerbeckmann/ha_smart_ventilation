@@ -234,6 +234,7 @@ CONF_MSG_CLOSE_DURATION = "msg_close_duration"
 CONF_MSG_CLOSE_HUMIDITY = "msg_close_humidity"
 CONF_MSG_CLOSE_CO2 = "msg_close_co2"
 CONF_MSG_CLOSE_OUTDOOR_WARMER = "msg_close_outdoor_warmer"
+CONF_MSG_CLOSE_OUTDOOR_WETTER = "msg_close_outdoor_wetter"
 CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
 CONF_MSG_REMINDER = "msg_reminder"
 
@@ -276,6 +277,11 @@ DEFAULT_MSG_CLOSE_CO2 = (
 DEFAULT_MSG_CLOSE_OUTDOOR_WARMER = (
     "Draußen ist es mit {wert} jetzt wärmer als im {raum} ({schwelle}) - "
     "bitte Fenster wieder schließen."
+)
+DEFAULT_MSG_CLOSE_OUTDOOR_WETTER = (
+    "Draußen ist die Luft mit {wert} inzwischen feuchter als im {raum} "
+    "({schwelle}) - Lüften würde die Luftfeuchtigkeit jetzt erhöhen statt "
+    "senken, bitte Fenster wieder schließen."
 )
 DEFAULT_MSG_CLOSE_DEFAULT = (
     "Bitte das Fenster im {raum} wieder schließen - die Innentemperatur "

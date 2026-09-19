@@ -315,6 +315,7 @@
               "msg_close_heat": "Close due to heat protection",
               "msg_close_duration": "Close due to winter max duration",
               "msg_close_outdoor_warmer": "Close because it's warmer outside",
+              "msg_close_outdoor_wetter": "Close because it's more humid outside",
               "msg_reminder": "Reminder"
             },
             "data_description": {
@@ -328,6 +329,7 @@
               "msg_close_heat": "｛raum｝ = room name. ｛wert｝ = current outdoor temperature, ｛schwelle｝ = heat protection limit (each incl. °C).",
               "msg_close_duration": "｛raum｝ = room name. ｛wert｝ = time open so far, ｛schwelle｝ = winter max duration (each incl. minutes).",
               "msg_close_outdoor_warmer": "｛raum｝ = room name. ｛wert｝ = current outdoor temperature, ｛schwelle｝ = current indoor temperature (each incl. °C).",
+              "msg_close_outdoor_wetter": "｛raum｝ = room name. ｛wert｝ = current absolute outdoor humidity, ｛schwelle｝ = current absolute indoor humidity (each incl. g/m³).",
               "msg_reminder": "｛raum｝ = room name. ｛wert｝/｛schwelle｝ = current value and open threshold of the original ventilation reason (temperature/humidity/CO2), each incl. its unit."
             }
           }
