@@ -227,6 +227,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # vorhanden) fügt bewusst nichts hinzu, um bestehende Dashboards
             # nicht zu verändern.
             attrs["hat_fenster"] = False
+        if self._config.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False):
+            # Nur gesetzt, wenn aktiv - Dashboard-Karten berechnen Auslöser/
+            # Empfehlung sonst komplett live aus Messwerten/Schwellen (siehe
+            # README), unabhängig vom tatsächlichen should_close in
+            # _evaluate(). Ohne dieses Attribut würde eine Karte für diesen
+            # Raum weiterhin eine reine Komfort-Schließempfehlung (Temperatur/
+            # Feuchtigkeit/CO2/Winter-Höchstdauer) anzeigen, obwohl der Raum
+            # genau das deaktiviert hat. Frost-/Hitzeschutz bleiben davon
+            # unberührt.
+            attrs["schliessempfehlung_deaktiviert"] = True
         if outdoor_temp is not None:
             attrs["aussentemperatur"] = outdoor_temp
         if outdoor_temp_entity:
