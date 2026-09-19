@@ -42,6 +42,7 @@ from .const import (
     CONF_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
+    CONF_MSG_CLOSE_OUTDOOR_WETTER,
     CONF_MSG_OPEN_CO2,
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
@@ -86,6 +87,7 @@ from .const import (
     DEFAULT_MSG_CLOSE_HEAT,
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+    DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
     DEFAULT_MSG_OPEN_CO2,
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
@@ -291,6 +293,7 @@ _MESSAGE_FIELD_DEFAULTS = {
     CONF_MSG_CLOSE_HEAT: DEFAULT_MSG_CLOSE_HEAT,
     CONF_MSG_CLOSE_DURATION: DEFAULT_MSG_CLOSE_DURATION,
     CONF_MSG_CLOSE_OUTDOOR_WARMER: DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+    CONF_MSG_CLOSE_OUTDOOR_WETTER: DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
     CONF_MSG_REMINDER: DEFAULT_MSG_REMINDER,
 }
 
@@ -881,6 +884,15 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             default=defaults.get(
                                 CONF_MSG_CLOSE_OUTDOOR_WARMER,
                                 DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_CLOSE_OUTDOOR_WETTER,
+                            default=defaults.get(
+                                CONF_MSG_CLOSE_OUTDOOR_WETTER,
+                                DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
                             ),
                         ): selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)

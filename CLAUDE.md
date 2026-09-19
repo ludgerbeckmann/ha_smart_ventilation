@@ -732,6 +732,51 @@ klafft zwischen "was die Integration tatsächlich empfiehlt" und "was die
 Karte anzeigt" eine Lücke, die dem Nutzer nur zufällig aus genau dem
 Blickwinkel auffällt, aus dem er gerade die neue Option nutzt.
 
+**23. Der Außenluft-Vergleich für Luftfeuchtigkeit (`outdoor_drier_enough`)
+war nur ein Öffnen-Gate, kein fortlaufend geprüfter Zustand - anders als
+beim strukturell identischen Temperatur-Fall (0.48.0).** Nutzer-Frage (mit
+Screenshot, Raum Badezimmer): "warum soll das Fenster geöffnet werden,
+obwohl die absolute Luftfeuchtigkeit draußen höher ist als drinnen?" -
+angezeigt waren 11,9 g/m³ innen gegen 13,4 g/m³ außen, die Karte zeigte
+trotzdem "Öffnen" mit Auslöser "Luftfeuchtigkeit". Ursache: `outdoor_drier_enough`
+(siehe absolute-vs-relative-Feuchtigkeit-Vergleich, README) wird nur
+einmalig beim Übergang von "aus" nach "an" geprüft (`open_by_humidity`,
+Teil von `should_open`) - ist die Empfehlung erst einmal aktiv, bleibt sie
+bestehen, bis eine der "echten" Schließbedingungen (`close_by_humidity`:
+Innen-Luftfeuchtigkeit unter die Schließen-Schwelle) greift. Wird die
+Außenluft NACH dem Öffnen absolut feuchter als die Innenluft (z. B. weil es
+zu regnen beginnt), gibt es dafür keine Schließbedingung - die Empfehlung
+bleibt fälschlich "Öffnen" bestehen, obwohl Lüften die Luftfeuchtigkeit
+jetzt nur noch verschlimmern würde. Auffällig: Für Temperatur existiert
+genau diese Absicherung bereits (`close_by_summer_outdoor`/`outdoor_warmer_again`
+- schließt, wenn die Außentemperatur nach dem Öffnen wieder über die
+Innentemperatur + Toleranz-Marge steigt), für Luftfeuchtigkeit fehlte das
+strukturell identische Pendant einfach. Fix: neue Bedingung
+`outdoor_humidity_confirmed_worse`/`close_by_humidity_outdoor_reversal`,
+1:1 nach demselben Muster wie `close_by_summer_outdoor` (schließt nicht,
+solange Temperatur oder CO2 noch Lüftungsbedarf anzeigen; reiner
+Komfort-Grund, daher über `CONF_DISABLE_CLOSE_RECOMMENDATION` weiterhin
+abschaltbar, siehe Lektion 21). Bewusst NUR bei vollständig vorliegenden
+Innen-/Außenwerten aktiv, nicht schon bei fehlendem Sensor/Messwert -
+anders als beim konservativen Öffnen-Gate (Lektion 2) ist ein fehlender
+Wert hier kein Sicherheits-, sondern ein reiner Komfort-Fall, der ohne
+positive Bestätigung nicht vorsorglich schließen soll. Neuer Grund-Code
+`outdoor_wetter` (Nachricht `CONF_MSG_CLOSE_OUTDOOR_WETTER`, Werte als
+absolute Luftfeuchtigkeit in g/m³ statt %, da genau dieser Vergleich die
+Bedingung auslöst) - analog zu `outdoor_warmer` von der Dashboard-Karte
+nur als Rückfallwert aus `letzter_grund` behandelt (nicht live
+nachrechenbar, siehe Lektion 13), inkl. Hervorhebung der passenden
+Außen-Zelle (hier: absolute Luftfeuchtigkeit außen, nicht die relative %-
+Spalte, da diese die tatsächlich auslösende Größe ist). Lektion: Wird für
+eine Größe (hier: Temperatur) ein "Außenluft-Vorteil ist nach dem Öffnen
+wieder verschwunden"-Schließmechanismus eingeführt, prüfen, ob eine
+strukturell identische zweite Größe (hier: Luftfeuchtigkeit, die genauso
+einen einmaligen Außenluft-Vergleich als Öffnen-Gate nutzt) denselben
+Mechanismus ebenfalls braucht - ein Öffnen-Gate, das nur beim Übergang
+geprüft wird, ist implizit eine Momentaufnahme, die durch spätere
+Änderungen der Außenbedingungen ungültig werden kann, ohne dass der Code
+das von sich aus bemerkt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

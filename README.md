@@ -226,7 +226,7 @@ Textfeld für:
 - Öffnen wegen Temperatur / wegen Luftfeuchtigkeit / wegen CO2
 - Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / CO2 /
   Frostschutz / Hitzeschutz / Winter-Höchstdauer / weil draußen wärmer
-  geworden ist
+  geworden ist / weil draußen feuchter geworden ist
 - Erinnerung (falls die Empfehlung ignoriert wird)
 
 Drei Platzhalter stehen zur Verfügung und werden automatisch ersetzt:
@@ -354,6 +354,17 @@ zur unbeschränkten Auswahl zurückzukehren.
 - **Sommer-Fall**: draußen ist mittlerweile mindestens um die Toleranz-Marge
   wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeits- oder
   CO2-Gründen gelüftet, **oder**
+- **Außenluft inzwischen feuchter**: das Pendant zum Sommer-Fall für
+  Luftfeuchtigkeit – die Öffnen-Empfehlung wegen Luftfeuchtigkeit prüft
+  einmalig beim Öffnen, ob die Außenluft absolut trockener ist als die
+  Innenluft (siehe oben); ändert sich das *danach* (Außenluft wird absolut
+  feuchter als die Innenluft, z. B. weil es zu regnen beginnt), würde
+  Lüften die Situation nur noch verschlimmern. Schließt daher genauso
+  nach, *außer* es wird gerade noch aus Temperatur- oder CO2-Gründen
+  gelüftet. Nur bei vollständig vorliegenden Innen-/Außenwerten aktiv -
+  ein nur fehlender Messwert schließt hier bewusst **nicht**
+  vorsorglich (reiner Komfort-, kein Sicherheitsfall wie beim
+  Frostschutz), **oder**
 - **Winter-Höchstdauer**: es herrschen "Winter"-Bedingungen (Außentemperatur
   unter der Winter-Schwelle) **und** die Empfehlung ist bereits länger als die
   eingestellte Höchstdauer aktiv – *außer* die Einstellung "Luftfeuchtigkeit/
@@ -385,8 +396,9 @@ zur unbeschränkten Auswahl zurückzukehren.
   CO2 gelüftet werden sollte)
 
 Ist im Raum-Formular "Schließempfehlung deaktivieren" aktiviert, entfallen
-alle fünf oben genannten **Komfort**-Schließgründe (Temperatur,
-Luftfeuchtigkeit, CO2, Winter-Höchstdauer, Sommer-Fall) komplett - einmal
+alle sechs oben genannten **Komfort**-Schließgründe (Temperatur,
+Luftfeuchtigkeit, CO2, Winter-Höchstdauer, Sommer-Fall, Außenluft
+inzwischen feuchter) komplett - einmal
 geöffnet, bleibt die Empfehlung "Öffnen" bestehen, bis Frost- oder
 Hitzeschutz greift. Frost-/Hitzeschutz selbst sind von dieser Einstellung
 **nicht** betroffen und schließen weiterhin wie gewohnt sofort - das sind
@@ -565,7 +577,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
-| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
+| `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`, `outdoor_wetter`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat) |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
@@ -591,7 +603,7 @@ ohne zusätzliche Custom Cards:
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer'} %}
+  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
@@ -607,7 +619,7 @@ content: >
   {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
   {% set frost_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_frostschutz is defined and a.aussentemperatur <= a.schwelle_frostschutz %}
   {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
-  {% set close_fallback = grund_code if grund_code in ['duration', 'outdoor_warmer'] else '' %}
+  {% set close_fallback = grund_code if grund_code in ['duration', 'outdoor_warmer', 'outdoor_wetter'] else '' %}
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else grund_code)) %}
   {% set comfort_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)) %}
   {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('' if no_close_rec else comfort_close)) %}
@@ -661,6 +673,7 @@ content: >
   {% if a.luftfeuchtigkeit is defined %}
   {% set abs_in = (a.absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none) else '–' %}
   {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none) else '–' %}
+  {% set abs_out = (highlight_open ~ abs_out ~ '</strong></font>') if highlight_code == 'outdoor_wetter' else abs_out %}
   {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' | ' ~ abs_out ~ ' | – | – |' %}
   {% endif %}
   {% set dev1 = '' %}
@@ -788,10 +801,11 @@ Version verzichtet komplett auf `style`-Attribute:
   wurde z. B. wegen eines längst vorbeigezogenen Kälte-Einbruchs
   geschlossen und ist die Außentemperatur inzwischen wieder deutlich über
   der Frostschutz-Grenze, zeigt der Auslöser das nicht mehr an.
-  `letzter_grund` dient nur noch als **Rückfallwert** für die zwei Fälle,
+  `letzter_grund` dient nur noch als **Rückfallwert** für die drei Fälle,
   die sich nicht live aus den angezeigten Werten nachrechnen lassen:
-  Sommer-Fall und Winter-Höchstdauer (`outdoor_warmer`/`duration` - fehlende
-  Toleranz-Marge bzw. bisherige Öffnungsdauer im Vergleich zur Karte).
+  Sommer-Fall, "Außenluft inzwischen feuchter" und Winter-Höchstdauer
+  (`outdoor_warmer`/`outdoor_wetter`/`duration` - fehlende Toleranz-Marge
+  bzw. bisherige Öffnungsdauer im Vergleich zur Karte).
   Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
   eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
   liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell
