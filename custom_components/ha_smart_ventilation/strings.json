@@ -41,6 +41,7 @@
               "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
+              "disable_close_recommendation": "Schließempfehlung deaktivieren",
               "no_window": "Dieser Raum hat kein Fenster"
             },
             "data_description": {
@@ -48,6 +49,7 @@
               "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
               "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Parameter\"",
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
+              "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
           },
@@ -152,6 +154,7 @@
               "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
+              "disable_close_recommendation": "Schließempfehlung deaktivieren",
               "no_window": "Dieser Raum hat kein Fenster"
             },
             "data_description": {
@@ -159,6 +162,7 @@
               "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
               "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Parameter\"",
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
+              "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
           },

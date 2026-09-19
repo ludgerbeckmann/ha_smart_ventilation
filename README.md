@@ -115,6 +115,17 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
        eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
        Fenster" deaktiviert ist)
+     - **Schließempfehlung deaktivieren** (Checkbox, Standard: aus): bei
+       "an" wird für diesen Raum nie mehr "bitte schließen" empfohlen -
+       Temperatur, Luftfeuchtigkeit, CO2, Winter-Höchstdauer und der
+       Sommer-Fall bleiben ohne Wirkung aufs Schließen. Sinnvoll für Räume,
+       in denen eine Schließen-Empfehlung nicht sinnvoll umsetzbar ist,
+       z. B. weil der Fensterkontakt den tatsächlichen Zustand nicht
+       zuverlässig widerspiegelt (etwa eine Schiebetür) oder weil eine
+       Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt.
+       Frost-/Hitzeschutz sind davon **unberührt** und schließen weiterhin
+       sofort (Sicherheits-, keine Komfort-Bedingung) - Öffnen-Empfehlungen
+       ebenfalls unberührt
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
@@ -361,6 +372,14 @@ zur unbeschränkten Auswahl zurückzukehren.
   von allen anderen Bedingungen - Lüften würde absehbar nur noch Hitze
   hereinlassen, egal ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder
   CO2 gelüftet werden sollte)
+
+Ist im Raum-Formular "Schließempfehlung deaktivieren" aktiviert, entfallen
+alle fünf oben genannten **Komfort**-Schließgründe (Temperatur,
+Luftfeuchtigkeit, CO2, Winter-Höchstdauer, Sommer-Fall) komplett - einmal
+geöffnet, bleibt die Empfehlung "Öffnen" bestehen, bis Frost- oder
+Hitzeschutz greift. Frost-/Hitzeschutz selbst sind von dieser Einstellung
+**nicht** betroffen und schließen weiterhin wie gewohnt sofort - das sind
+Sicherheits-, keine Komfort-Bedingungen.
 
 **Vorrang zwischen Temperatur/Luftfeuchtigkeit/CO2:** Die drei Größen
 schützen sich gegenseitig davor, allein wegen einer der beiden anderen

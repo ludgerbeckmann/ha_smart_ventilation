@@ -28,6 +28,7 @@ from .const import (
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
+    CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
@@ -814,14 +815,27 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             co2_needs_close and not temp_still_needed and not humidity_still_needed
         )
 
-        should_close = (
-            close_by_temp
-            or close_by_humidity
-            or close_by_co2
-            or close_by_summer_outdoor
-            or close_by_duration
-            or close_by_frost
-            or close_by_heat
+        # Auf Raumwunsch abschaltbar: Temperatur/Luftfeuchtigkeit/CO2/
+        # Winter-Höchstdauer/Sommer-Fall sind reine Komfort-Empfehlungen und
+        # werden komplett übersprungen, wenn eine "bitte schließen"-
+        # Empfehlung für diesen Raum nicht sinnvoll umsetzbar ist (z. B.
+        # unzuverlässiger Fensterkontakt oder eine Klimaanlage, die die
+        # Kühlung ohnehin übernimmt) - siehe CONF_DISABLE_CLOSE_RECOMMENDATION
+        # in const.py. Frost-/Hitzeschutz sind davon bewusst AUSGENOMMEN:
+        # das sind Sicherheits-, keine Komfort-Bedingungen und schließen
+        # weiterhin immer sofort.
+        disable_close_recommendation = self._config.get(
+            CONF_DISABLE_CLOSE_RECOMMENDATION, False
+        )
+        should_close = close_by_frost or close_by_heat or (
+            not disable_close_recommendation
+            and (
+                close_by_temp
+                or close_by_humidity
+                or close_by_co2
+                or close_by_summer_outdoor
+                or close_by_duration
+            )
         )
 
         # Ein einziger strukturierter Debug-Log-Eintrag pro Neubewertung mit

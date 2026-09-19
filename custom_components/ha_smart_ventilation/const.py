@@ -42,6 +42,16 @@ CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
 # nicht pro Raum überschreibbar - wie CONF_OUTDOOR_TEMP_ENTITY.
 CONF_OUTDOOR_HUMIDITY_ENTITY = "outdoor_humidity_entity"
 CONF_WINDOW_ENTITY = "window_entity"
+# Standard False. True = für diesen Raum wird nie "bitte schließen"
+# empfohlen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall
+# bleiben ohne Wirkung auf das Schließen) - gedacht für Räume, in denen eine
+# Schließen-Empfehlung nicht sinnvoll umsetzbar ist, z. B. weil der
+# Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt
+# (z. B. eine Schiebetür) oder weil eine Klimaanlage die Kühlung ohnehin
+# unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon
+# UNBERÜHRT und schließen weiterhin sofort - das sind Sicherheits-, keine
+# reinen Komfort-Bedingungen. Öffnen-Empfehlungen sind ebenfalls unberührt.
+CONF_DISABLE_CLOSE_RECOMMENDATION = "disable_close_recommendation"
 CONF_TEMP_THRESHOLD_OPEN = "temp_threshold_open"
 CONF_TEMP_THRESHOLD_CLOSE = "temp_threshold_close"
 CONF_HUMIDITY_THRESHOLD_OPEN = "humidity_threshold_open"
