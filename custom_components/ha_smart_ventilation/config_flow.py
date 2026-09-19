@@ -1011,33 +1011,42 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
         current = dict(self.config_entry.data)
         defaults = current
 
+        # Bereich, mit dem die aktuell angezeigten Auswahllisten gefiltert
+        # wurden/werden - zu Beginn der gespeicherte, nach einer
+        # Bereichs-Änderung (siehe unten) der zuletzt vom Nutzer gewählte.
+        if not hasattr(self, "_room_filter_area_id"):
+            self._room_filter_area_id = current.get(CONF_AREA_ID)
+
         if user_input is not None:
             defaults = _flatten_step_data(user_input)
-            error = _validate_room_submission(defaults)
-            if error:
-                errors["base"] = error
-            else:
-                # Bestehende Werte behalten, neue Eingaben überschreiben sie.
-                # Ein Feld, das jetzt leer gelassen wurde, entfernt eine
-                # zuvor gesetzte Raum-Override wieder (zurück auf "global").
-                new_data = {**current, **defaults}
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data=new_data,
-                    title=new_data[CONF_ROOM_NAME],
-                )
-                return self.async_create_entry(title="", data={})
+            submitted_area_id = defaults.get(CONF_AREA_ID) or None
 
-        # Die Filterung nutzt bewusst den GESPEICHERTEN Bereich (aus
-        # config_entry.data), nicht einen hier gerade erst ausgewählten -
-        # ein hier geänderter Bereich wirkt sich also erst beim nächsten
-        # Öffnen dieses Formulars auf die Auswahllisten aus (siehe Hinweis
-        # im Feld selbst). Ein einstufiges Formular wie bisher bleibt damit
-        # für den häufigen Fall (nur einen Schwellenwert anpassen) ohne
-        # zusätzlichen Zwischenschritt möglich.
-        area_entities = _entities_for_area(
-            self.hass, current.get(CONF_AREA_ID)
-        )
+            if submitted_area_id != self._room_filter_area_id:
+                # Der Bereich wurde gerade erst geändert: noch nicht
+                # speichern, sondern zunächst nur die Auswahllisten mit dem
+                # neuen Bereich neu berechnen und das Formular mit den
+                # bereits gemachten übrigen Eingaben erneut anzeigen - ohne
+                # das würden Sensor-/Geräte-Listen trotz Änderung weiterhin
+                # auf den alten Bereich eingeschränkt bleiben (siehe
+                # CLAUDE.md, Lektion 20).
+                self._room_filter_area_id = submitted_area_id
+            else:
+                error = _validate_room_submission(defaults)
+                if error:
+                    errors["base"] = error
+                else:
+                    # Bestehende Werte behalten, neue Eingaben überschreiben sie.
+                    # Ein Feld, das jetzt leer gelassen wurde, entfernt eine
+                    # zuvor gesetzte Raum-Override wieder (zurück auf "global").
+                    new_data = {**current, **defaults}
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        data=new_data,
+                        title=new_data[CONF_ROOM_NAME],
+                    )
+                    return self.async_create_entry(title="", data={})
+
+        area_entities = _entities_for_area(self.hass, self._room_filter_area_id)
 
         return self.async_show_form(
             step_id="room",

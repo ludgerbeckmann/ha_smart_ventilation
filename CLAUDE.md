@@ -632,6 +632,42 @@ zuletzt angeschaltet?") - bei jedem Attribut, das für ein Dashboard
 gedacht ist, prüfen, ob es wirklich den live abfragbaren Ist-Zustand
 widerspiegelt, nicht nur einen internen Kontrollfluss-Zwischenstand.
 
+**20. Ein bewusst dokumentiertes Verhalten kann trotzdem ein Bug bleiben,
+wenn es die Nutzer-Erwartung enttäuscht (0.45.0).** Beim Bearbeiten eines
+bestehenden Raums (Options-Flow) sitzen das Feld "HA-Bereich" und die
+davon abhängigen, gefilterten Sensor-/Geräte-Auswahllisten im selben,
+einstufigen Formular - anders als beim Neuanlegen, wo der Bereich in
+einem eigenen ersten Schritt gewählt wird (siehe `async_step_user` vs.
+`async_step_room`). Home-Assistant-Formulare sind innerhalb eines
+einzigen `async_show_form()`-Renderings nicht reaktiv: Auswahllisten
+lassen sich nicht live neu berechnen, wenn der Nutzer nur ein anderes
+Feld im selben, noch offenen Formular ändert. Der Code nutzte deshalb
+bewusst den **gespeicherten** Bereich für die Filterung - mit einem
+erklärenden Hinweistext direkt am Feld ("ändern wirkt sich erst beim
+nächsten Öffnen dieses Formulars aus") und einem ausführlichen Absatz in
+der README. Ein Nutzer meldete das Verhalten trotzdem als Problem
+("erst muss ich die Konfiguration speichern und neu öffnen") - er hatte
+den Hinweistext entweder nicht gelesen oder ihn zwar gelesen, aber als
+unnötige Einschränkung statt als Erklärung wahrgenommen. Fix: Home
+Assistant erlaubt zwar keine live-reaktiven Formulare, aber ein Submit
+muss nicht zwingend sofort speichern - `async_step_room()` vergleicht
+den gerade übermittelten Bereich (`submitted_area_id`) mit dem Bereich,
+der die aktuell angezeigten Listen gefiltert hat
+(`self._room_filter_area_id`, ein Instanzattribut, das über die Schritte
+desselben Flows hinweg erhalten bleibt - analog zum bereits bestehenden
+Muster `self._area_id` im Config-Flow). Weichen beide voneinander ab
+(Bereich wurde gerade geändert), wird NICHT gespeichert, sondern
+dasselbe Formular mit den bereits gemachten übrigen Eingaben und den neu
+nach dem geänderten Bereich gefilterten Auswahllisten erneut angezeigt -
+ein zweites, unverändertes Speichern übernimmt die Änderungen dann
+tatsächlich. Für den häufigen Fall (kein Bereichswechsel) bleibt es beim
+bisherigen einzigen Speichern ohne Zwischenschritt. Lektion: Eine im Code
+und in der Doku sauber erklärte Einschränkung ist kein Ersatz dafür, sie
+tatsächlich zu beheben, wenn eine Behebung möglich ist (hier: über einen
+impliziten Submit-Zwischenschritt statt einer echten Live-Reaktivität,
+die Home-Assistant-Formulare grundsätzlich nicht bieten) - "gut
+dokumentiert" und "kein Bug mehr" sind zwei verschiedene Dinge.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

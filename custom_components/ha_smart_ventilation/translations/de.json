@@ -222,7 +222,7 @@
           }
         },
         "data_description": {
-          "area_id": "Schränkt die Sensor-/Geräte-Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt) - ändern wirkt sich erst beim nächsten Öffnen dieses Formulars aus. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
+          "area_id": "Schränkt die Sensor-/Geräte-Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Nach einer Änderung hier bitte einmal speichern - die Auswahllisten werden dann mit dem neuen Bereich aktualisiert angezeigt, bereits gemachte Eingaben bleiben erhalten; erst ein zweites Speichern übernimmt die Änderungen endgültig. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
         }
       },
       "global": {
