@@ -167,6 +167,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._last_reason: str | None = None
         self._unsub_tick = None
 
+        # Ob aktuell eine Push-Benachrichtigung auf dem Gerät angezeigt wird,
+        # die noch nicht durch eine "clean notification" aufgelöst wurde -
+        # siehe _maybe_clear_mobile_notification().
+        self._mobile_notification_active = False
+
         # Zuletzt kommandierter Soll-Zustand der optionalen Geräte.
         # None = noch nicht initial synchronisiert.
         self._dehumidifier_state: bool | None = None
@@ -911,6 +916,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 # Fensterkontakt zeigt bereits den gewünschten Zustand
                 # (offen/geschlossen) - keine Benachrichtigung nötig.
                 self._last_notified_at = None
+            await self._maybe_clear_mobile_notification()
             await self._update_devices(
                 temp_needs_open=temp_needs_open,
                 temp_needs_close=temp_needs_close,
@@ -951,6 +957,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if elapsed >= reminder_interval:
                 self._last_notified_at = dt_util.utcnow()
                 await self._notify(True, "reminder")
+
+        # Auch ohne Zustandswechsel der Empfehlung selbst kann sich eine
+        # laufende Push-Benachrichtigung erledigt haben - z. B. wenn die
+        # Person das Fenster bereits geöffnet/geschlossen hat, die
+        # zugrunde liegenden Werte sich aber noch nicht normalisiert haben
+        # (Fensterkontakt ist eine verfolgte Entität, löst also ebenfalls
+        # eine Neubewertung aus).
+        await self._maybe_clear_mobile_notification()
+
+    async def _maybe_clear_mobile_notification(self) -> None:
+        """Löst eine zuvor gesendete Push-Benachrichtigung auf, sobald der
+        Fensterkontakt bereits den aktuell gewünschten Zustand erreicht hat
+        - unabhängig davon, ob dies durch einen echten Zustandswechsel der
+        Empfehlung ausgelöst wurde oder die Person das Fenster einfach
+        bereits von sich aus bedient hat. Analog zu
+        persistent_notification.dismiss für die Web-Benachrichtigung
+        (siehe _notify()), nur eben nicht an einen Zustandswechsel
+        gebunden."""
+        if self._mobile_notification_active and not self._window_action_needed(
+            self._attr_is_on
+        ):
+            await self._clear_mobile_notification()
 
     @staticmethod
     def _as_list(value) -> list:
@@ -1400,6 +1428,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     "Keine notify-Entität für Raum %s konfiguriert", room
                 )
             else:
+                # Fester tag pro Raum: eine neue Benachrichtigung ersetzt auf
+                # dem Gerät automatisch eine ggf. noch angezeigte ältere
+                # (z. B. "bitte öffnen" -> "bitte schließen"), und markiert,
+                # dass hier ggf. noch eine "clean notification" fällig wird
+                # (siehe _maybe_clear_mobile_notification()).
+                self._mobile_notification_active = True
                 for target in targets:
                     entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
                     if not entity_id:
@@ -1413,6 +1447,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                                 "entity_id": entity_id,
                                 "title": "Lüften",
                                 "message": message,
+                                "data": {"tag": self._mobile_notification_tag()},
                             },
                             blocking=False,
                         )
@@ -1449,3 +1484,33 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     {"notification_id": notification_id},
                     blocking=False,
                 )
+
+    def _mobile_notification_tag(self) -> str:
+        """Fester, raumeindeutiger tag für Push-Benachrichtigungen (analog
+        zur notification_id der Web-Benachrichtigung) - erlaubt sowohl das
+        Ersetzen einer bereits angezeigten Benachrichtigung durch eine neue
+        als auch das gezielte Auflösen per clear_notification."""
+        return f"smart_ventilation_{self._entry.entry_id}"
+
+    async def _clear_mobile_notification(self) -> None:
+        """Löst eine zuvor gesendete Push-Benachrichtigung auf allen
+        konfigurierten Zielgeräten auf ("clean notification") - unabhängig
+        von der aktuellen Anwesenheit, da ein clear_notification an ein
+        Gerät ohne passende (oder bereits aufgelöste) Benachrichtigung
+        wirkungslos, aber unschädlich ist."""
+        tag = self._mobile_notification_tag()
+        for target in self._get_mobile_targets():
+            entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
+            if not entity_id:
+                continue
+            await self.hass.services.async_call(
+                "notify",
+                "send_message",
+                {
+                    "entity_id": entity_id,
+                    "message": "clear_notification",
+                    "data": {"tag": tag},
+                },
+                blocking=False,
+            )
+        self._mobile_notification_active = False
