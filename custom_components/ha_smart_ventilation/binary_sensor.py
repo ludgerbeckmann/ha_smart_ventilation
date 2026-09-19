@@ -507,6 +507,25 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         is_open = state.state == "on"
         return is_open != target_open
 
+    def _is_window_confirmed_open(self) -> bool:
+        """Liest den Fensterkontakt-Sensor live und liefert True nur bei
+        einer tatsächlichen Bestätigung "offen" - ohne konfigurierten
+        Fensterkontakt oder bei unbekanntem/unverfügbarem Zustand wird
+        permissiv False zurückgegeben (kein Grund, davon auszugehen, dass
+        das Fenster offen ist). Für die Luftentfeuchter-Pausier-Logik
+        gedacht (siehe _update_devices()) - bewusst unabhängig von
+        _window_action_needed(), das eine andere Frage beantwortet
+        (Benachrichtigung nötig?) und bei fehlenden Daten absichtlich das
+        Gegenteil (True) liefert.
+        """
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        if not window_entity:
+            return False
+        state = self.hass.states.get(window_entity)
+        if state is None or state.state not in ("on", "off"):
+            return False
+        return state.state == "on"
+
     def _is_device_on(self, entity_id: str) -> bool:
         """Liest den tatsächlichen Live-Zustand einer Geräte-Entität
         (Luftentfeuchter/Klimaanlage) für die Dashboard-Anzeige - unabhängig
@@ -691,6 +710,20 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and self._absolute_humidity(outdoor_temp, outdoor_humidity)
             < self._absolute_humidity(indoor_temp, humidity)
         )
+        # --- Luftentfeuchter pausieren, solange das Fenster offen ist UND
+        # die Außenluft dabei nicht hilft (nicht absolut trockener als
+        # drinnen) - sonst arbeitet er nur gegen ständig nachströmende
+        # feuchte Luft an und verschwendet Energie. Nutzt bewusst dasselbe
+        # outdoor_drier_enough-Flag wie die Fenster-Öffnen-Empfehlung (keine
+        # doppelte Vergleichslogik): ohne Außen-Luftfeuchtigkeitssensor
+        # bleibt es wie bisher permissiv (nie pausiert), mit Sensor pausiert
+        # es sowohl bei bestätigt feuchterer Außenluft als auch - konservativ
+        # - bei fehlenden Werten. Ist das Fenster geschlossen, hat diese
+        # Bedingung keine Wirkung - der Luftentfeuchter läuft dann weiterhin
+        # rein nach den Innen-Luftfeuchtigkeits-Schwellen.
+        dehumidifier_pause_open_window = (
+            self._is_window_confirmed_open() and not outdoor_drier_enough
+        )
         # --- Schließen: Außenluft ist inzwischen (wieder) absolut feuchter
         # als die Innenluft - das Pendant zu outdoor_warmer_again weiter
         # unten, nur für Luftfeuchtigkeit statt Temperatur. outdoor_drier_enough
@@ -782,6 +815,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 humidity_needs_open=humidity_needs_open,
                 humidity_needs_close=humidity_needs_close,
                 outdoor_cooler_enough=outdoor_cooler_enough,
+                dehumidifier_pause_open_window=dehumidifier_pause_open_window,
             )
             return
 
@@ -1008,6 +1042,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 humidity_needs_open=humidity_needs_open,
                 humidity_needs_close=humidity_needs_close,
                 outdoor_cooler_enough=outdoor_cooler_enough,
+                dehumidifier_pause_open_window=dehumidifier_pause_open_window,
             )
             return
 
@@ -1017,6 +1052,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             humidity_needs_open=humidity_needs_open,
             humidity_needs_close=humidity_needs_close,
             outdoor_cooler_enough=outdoor_cooler_enough,
+            dehumidifier_pause_open_window=dehumidifier_pause_open_window,
         )
 
         # Immer schreiben (nicht nur bei Zustandswechsel), damit die
@@ -1120,11 +1156,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         humidity_needs_open: bool,
         humidity_needs_close: bool,
         outdoor_cooler_enough: bool,
+        dehumidifier_pause_open_window: bool,
     ) -> None:
         """Steuert optionalen Luftentfeuchter und optionale Klimaanlage.
 
         - Luftentfeuchter: an bei hoher Luftfeuchtigkeit, aus bei niedriger -
-          unabhängig vom Fenster-Status.
+          unabhängig vom Fenster-Status, außer das Fenster ist offen UND die
+          Außenluft ist dabei nicht absolut trockener als drinnen
+          (dehumidifier_pause_open_window - siehe _evaluate()) - dann
+          pausiert er, statt gegen nachströmende feuchte Luft zu arbeiten.
         - Klimaanlage: an, wenn drinnen zu warm UND Lüften nicht helfen würde
           (draußen nicht kühler) - ergänzt also die Fensterlogik, statt sie zu
           duplizieren. Aus, sobald die Zieltemperatur erreicht ist oder Lüften
@@ -1138,8 +1178,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             entity_key=CONF_DEHUMIDIFIER_ENTITY,
             state_attr="_dehumidifier_state",
             low_power_attr="_dehumidifier_low_power_since",
-            want_on=humidity_needs_open,
-            want_off=humidity_needs_close,
+            want_on=humidity_needs_open and not dehumidifier_pause_open_window,
+            want_off=humidity_needs_close or dehumidifier_pause_open_window,
         )
         await self._update_single_device(
             entity_key=CONF_AC_ENTITY,
