@@ -132,9 +132,9 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
      - **Tankstatus-Sensor (Luftentfeuchter)** (optional): eine
        `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
        bzw. ein Fehler vorliegt - rein informativ, wird auf der
-       Dashboard-Karte als Zusatz "(Fehler)" beim Luftentfeuchter-Status
-       angezeigt; hat keine Auswirkung auf die Lüftungs- oder
-       Geräte-Steuerung selbst
+       Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
+       dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
+       Lüftungs- oder Geräte-Steuerung selbst
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität
      - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
        `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
@@ -630,12 +630,14 @@ content: >
   {% endif %}
   {% set dev1 = '' %}
   {% if a.luftentfeuchter_an is defined %}
-  {% set dev1 = ('🟢' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
-  {% set dev1 = dev1 ~ ' (Fehler)' if (a.luftentfeuchter_tank_fehler is defined and a.luftentfeuchter_tank_fehler) else dev1 %}
+  {% set dev1 = ('🔴' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
+  {% if a.luftentfeuchter_tank_fehler is defined %}
+  {% set dev1 = dev1 ~ ' (' ~ ('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank)' %}
+  {% endif %}
   {% endif %}
   {% set dev2 = '' %}
   {% if a.klimaanlage_an is defined %}
-  {% set dev2 = ('🟢' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
+  {% set dev2 = ('🔴' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
   {% endif %}
   {% set dev3 = '' %}
   {% if a.duschen_erkannt is defined %}
@@ -817,12 +819,14 @@ orangen Hervorhebung des betroffenen Werts, siehe oben - Handlungsbedarf
 besteht, aber nicht über das Fenster, sondern höchstens über
 Luftentfeuchter/Klimaanlage). Da zu jedem Zeitpunkt nur ein Auslöser als
 "der" Grund gilt (siehe Prioritätsreihenfolge unten), gibt es nie einen
-Konflikt zwischen 🟠 und 🔴 für ein und denselben Raum. Bei Geräte-Status
-und Benachrichtigungs-
-methoden steht 🟢 für an, ⚫ für aus - der Luftentfeuchter-Status ergänzt
-zusätzlich "(Fehler)" in Klammern, sobald der optionale Tankstatus-Sensor
-"an" meldet (Tank voll/Fehler), unabhängig vom 🟢/⚫-Icon selbst. Die
-Empfehlungs-Tabelle selbst
+Konflikt zwischen 🟠 und 🔴 für ein und denselben Raum. Bei den
+Benachrichtigungsmethoden steht 🟢 für an, ⚫ für aus. Beim Geräte-Status
+(Luftentfeuchter/Klimaanlage) gilt dagegen 🔴 für an (läuft gerade), ⚫ für
+aus - hier soll ein laufendes Gerät auffallen, nicht als "alles gut"
+grün erscheinen. Der Luftentfeuchter-Status ergänzt zusätzlich ein
+eigenes Status-Icon in Klammern für den optionalen Tankstatus-Sensor: 🔴,
+solange dieser "an" meldet (Tank voll/Fehler), sonst 🟢 - unabhängig vom
+🔴/⚫-Icon des Luftentfeuchters selbst. Die Empfehlungs-Tabelle selbst
 kommt bewusst ohne Icons aus (nur Text: "Öffnen"/"Schließen" für die
 Empfehlung bzw. "geöffnet"/"geschlossen" für den tatsächlichen
 Fensterzustand - klein geschrieben, da kein eigenständiger Satzanfang,
