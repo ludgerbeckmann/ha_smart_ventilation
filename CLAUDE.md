@@ -601,6 +601,37 @@ Web-Benachrichtigung, die dasselbe Grundmuster schon hatte) denselben
 neuen Fall ebenfalls braucht, statt das erst auf explizite Nachfrage
 nachzuholen.
 
+**19. `luftentfeuchter_an`/`klimaanlage_an` zeigten nicht den echten
+Gerätezustand, sondern nur "hat DIESE Integration das Gerät zuletzt
+selbst geschaltet" (0.44.0).** Nutzer-Meldung: "die Klimaanlage ist aktiv
+aber es wird nicht auf dem Dashboard angezeigt". Ursache: `_dehumidifier_state`/
+`_ac_state` sind rein interne, für `_update_single_device()` gedachte
+"zuletzt selbst kommandiert"-Tracker (Zweck: keine doppelten
+turn_on/turn_off-Aufrufe, siehe `current is not True`/`current is not
+False`-Prüfungen) - sie wurden aber 1:1 auch als Wert für die angezeigten
+Attribute `luftentfeuchter_an`/`klimaanlage_an` verwendet. Schaltete der
+Nutzer die Klimaanlage manuell oder eine andere Automation sie ein, blieb
+`_ac_state` unverändert `False`/`None` (die Integration selbst hat ja
+nichts geschaltet) - die Karte zeigte weiterhin ⚫, obwohl das Gerät
+tatsächlich lief. Fix: neue Methode `_is_device_on(entity_id)` liest den
+Zustand jetzt live direkt von der konfigurierten Geräte-Entität (analog
+zum bereits bestehenden Live-Read-Muster für `luftentfeuchter_tank_fehler`,
+siehe Nachtrag zu Lektion 7) - unabhängig davon, wer das Gerät geschaltet
+hat. Da `climate`-Entitäten (Klimaanlage) kein binäres on/off-`state`-
+Schema wie `switch`/`humidifier` haben, sondern echte Betriebsmodi
+(`cool`/`heat`/`auto`/... vs. `off`), prüft die Methode dort auf
+"Zustand ungleich `off`" statt auf "Zustand gleich `on`". Die internen
+`_dehumidifier_state`/`_ac_state`-Tracker selbst bleiben unverändert für
+die Steuerungslogik in `_update_single_device()` zuständig - nur die für
+die Karte exponierten Attribute wurden auf Live-Lesen umgestellt.
+Lektion: Ein intern für eine ganz andere Aufgabe (hier: Idempotenz beim
+Schalten) gepflegter Zustands-Tracker beantwortet nicht automatisch die
+Frage, die ein nach außen exponiertes Anzeige-Attribut mit ähnlichem
+Namen eigentlich beantworten soll ("ist das Gerät an?" vs. "habe ICH es
+zuletzt angeschaltet?") - bei jedem Attribut, das für ein Dashboard
+gedacht ist, prüfen, ob es wirklich den live abfragbaren Ist-Zustand
+widerspiegelt, nicht nur einen internen Kontrollfluss-Zwischenstand.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
