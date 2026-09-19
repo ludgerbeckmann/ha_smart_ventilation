@@ -573,6 +573,34 @@ Kanal wirklich identisch mit einem Zustandswechsel ist, wie beim ersten
 bereits aus, ganz ohne dass sich die eigentliche Empfehlung selbst
 ändert.
 
+**Nachtrag (0.43.0):** Direkt nach 0.42.0 fragte der Nutzer, ob dasselbe
+auch für die persistente Web-Benachrichtigung gilt - Antwort: nein, war
+es nicht. Fall (a) (echter Zustandswechsel) war für die Web-Benachrichtigung
+schon immer über `persistent_notification.dismiss` in `_notify()` abgedeckt
+gewesen (das bestand ja schon vor 0.42.0 und war gerade das Vorbild für den
+Push-Fix) - aber Fall (b) (Fensterkontakt allein löst das Bedürfnis auf,
+ohne dass sich `self._attr_is_on` ändert) wurde beim Push-Fix nur für den
+Push-Kanal ergänzt, nicht für die Web-Benachrichtigung, obwohl dieselbe
+Begründung identisch auch dort gilt. Fix: `_maybe_clear_mobile_notification()`
+zu `_maybe_clear_notifications()` verallgemeinert - prüft weiterhin
+einmalig `_window_action_needed(self._attr_is_on)`, löst bei Erfüllung
+aber beide Kanäle auf, sofern jeweils eine eigene `_..._notification_active`-
+Flag aktiv ist (`_mobile_notification_active`, neu:
+`_persistent_notification_active`, von `_notify()` bei Create/Dismiss
+gepflegt). `_mobile_notification_tag()` in `_notification_id()`
+umbenannt, da der Bezeichner jetzt für beide Kanäle gemeinsam verwendet
+wird (als `tag` bei Push, als `notification_id` bei der Web-
+Benachrichtigung - beide nutzten ohnehin schon denselben String). Lektion,
+die Lektion 18 präzisiert: Wird ein "löst sich automatisch auf"-Muster für
+einen zweiten Kanal um einen neuen Auslösefall erweitert, der ohne
+Zustandswechsel auskommt, gilt dieser neue Fall grundsätzlich für JEDEN
+Kanal mit demselben Muster gleichermaßen, nicht nur für den Kanal, an dem
+die Erweiterung gerade konkret bemerkt/angefragt wurde - beim Ergänzen
+also sofort prüfen, ob ein struktur-identischer Nachbar-Kanal (hier: die
+Web-Benachrichtigung, die dasselbe Grundmuster schon hatte) denselben
+neuen Fall ebenfalls braucht, statt das erst auf explizite Nachfrage
+nachzuholen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
