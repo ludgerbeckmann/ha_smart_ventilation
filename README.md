@@ -639,14 +639,14 @@ content: >
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
   {% set co2_close_exception = s.state == 'off' and highlight_code == 'co2' %}
-  {% set match_icon = '🟢 ' if not has_live_reason else ('🟠 ' if (no_window or co2_close_exception) else '') %}
+  {% set match_icon = '🟢 ' if (not has_live_reason or co2_close_exception) else ('🟠 ' if no_window else '') %}
   {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
   {% if not no_window and has_live_reason and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
-  {% set match_icon = '🟢 ' if is_match else ('🟠 ' if co2_close_exception else '🔴 ') %}
+  {% set match_icon = '🟢 ' if (is_match or co2_close_exception) else '🔴 ' %}
   {% set highlight_ok = is_match %}
   {% endif %}
   {% endif %}
@@ -660,7 +660,7 @@ content: >
   {% elif match_icon == '🔴 ' %}
   {% set ns.red = ns.red + 1 %}
   {% endif %}
-  {% set highlight_open = '<font color="green"><strong>' if highlight_ok else (('<font color="orange"><strong>' if (no_window or co2_close_exception) else '<font color="red"><strong>')) %}
+  {% set highlight_open = '<font color="green"><strong>' if (highlight_ok or co2_close_exception) else (('<font color="orange"><strong>' if no_window else '<font color="red"><strong>')) %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
   {% set changed_time = (as_local(s.last_changed).strftime('%d.%m. %H:%M')) if has_live_reason else '–' %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
@@ -776,26 +776,27 @@ Version verzichtet komplett auf `style`-Attribute:
   Einsatz; auf Nutzerwunsch durch fette, farbige Schrift ersetzt, da die
   gelbe Markierung als zu unauffällig wahrgenommen wurde. Hervorgehoben
   wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
-  nicht nur `34.2`) - **grün**, wenn der tatsächliche Fensterzustand mit
-  der Empfehlung übereinstimmt (identisch zum 🟢-Icon am Raumnamen - die
-  Empfehlung wird also korrekt befolgt), sonst **orange** in genau zwei
-  Fällen - bei Räumen ohne Fenster ("Dieser Raum hat kein Fenster"
-  aktiviert), da sich der Wert dort gar nicht durch Lüften beeinflussen
-  lässt (höchstens Luftentfeuchter/Klimaanlage reagieren automatisch),
-  oder wenn "CO2" der aktuelle Schließen-Auslöser ist - ein niedriger
+  nicht nur `34.2`) - **grün**, wenn entweder der tatsächliche
+  Fensterzustand mit der Empfehlung übereinstimmt (identisch zum
+  🟢-Icon am Raumnamen - die Empfehlung wird also korrekt befolgt)
+  **oder** "CO2" der aktuelle Schließen-Auslöser ist - ein niedriger
   CO2-Wert ist kein Sicherheitsrisiko (anders als Frost-/Hitzeschutz),
   das Schließen dient nur der Ordnung, nicht der Sicherheit (siehe
-  "Logik im Detail" unten) - **rot** in allen übrigen Fällen (Fenster
-  steht nicht so, wie es die Empfehlung vorsieht, aus einem tatsächlich
-  handlungsrelevanten Grund - hier kann direkt eingegriffen werden, indem
-  das Fenster geöffnet/geschlossen wird). Da zu jedem Zeitpunkt ohnehin
-  immer nur **ein** Auslöser als "der" Grund gilt (siehe
-  Prioritätsreihenfolge unten - Frostschutz vor Hitzeschutz vor
-  Luftfeuchtigkeit vor CO2 vor Temperatur), stellt sich die Frage
+  "Logik im Detail" unten), es besteht also unabhängig vom tatsächlichen
+  Fensterzustand kein Handlungsbedarf. Sonst **orange** bei Räumen ohne
+  Fenster ("Dieser Raum hat kein Fenster" aktiviert), da sich der Wert
+  dort gar nicht durch Lüften beeinflussen lässt (höchstens
+  Luftentfeuchter/Klimaanlage reagieren automatisch) - **rot** in allen
+  übrigen Fällen (Fenster steht nicht so, wie es die Empfehlung vorsieht,
+  aus einem tatsächlich handlungsrelevanten Grund - hier kann direkt
+  eingegriffen werden, indem das Fenster geöffnet/geschlossen wird). Da
+  zu jedem Zeitpunkt ohnehin immer nur **ein** Auslöser als "der" Grund
+  gilt (siehe Prioritätsreihenfolge unten - Frostschutz vor Hitzeschutz
+  vor Luftfeuchtigkeit vor CO2 vor Temperatur), stellt sich die Frage
   "mehrere Auslöser gleichzeitig" für die Farbe nicht: Rot ist der
-  Normalfall, die Orange-Ausnahme greift nur, wenn dieser eine,
-  gewinnende Auslöser tatsächlich CO2 (Schließen) ist bzw. der Raum
-  generell kein Fenster hat.
+  Normalfall, die Grün-Ausnahme greift, sobald dieser eine, gewinnende
+  Auslöser tatsächlich CO2 (Schließen) ist - unabhängig vom Fensterstatus
+  -, die Orange-Ausnahme nur, wenn der Raum generell kein Fenster hat.
 
   Auslöser und Hervorhebung werden dabei **live** aus den aktuell
   angezeigten Werten und Schwellen berechnet, nicht aus dem historischen

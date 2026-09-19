@@ -539,6 +539,29 @@ Rückfrage ("nur für X, oder wirklich überall?"), bevor eine
 kartenweite Änderung umgesetzt wird - auch wenn die erste Rückfrage
 bereits explizit "ja, überall" bestätigt hat.
 
+**Nachtrag (0.49.0, reiner Dashboard-Karten-Fix ohne eigenen
+Versionsbump):** Weitere Verfeinerung derselben Farblogik - der Nutzer
+bat darum, den CO2-zu-niedrig-Fall (`co2_close_exception`) nicht mehr
+orange, sondern **grün** darzustellen (Icon am Raumnamen UND
+Empfehlungstext/Werte-Hervorhebung), da hierbei ohnehin kein
+Handlungsbedarf besteht - orange bleibt seitdem ausschließlich Räumen
+ohne Fenster vorbehalten. Endgültige Logik damit: 🟢 (passt **oder**
+CO2-Schließen-Ausnahme) / 🟠 (Raum ohne Fenster) / 🔴 (Mismatch aus
+echtem, handlungsrelevanten Grund). Technisch: an allen drei Stellen, an
+denen bisher `no_window or co2_close_exception` gemeinsam die
+orange-Farbe auslösten, wurde `co2_close_exception` aus dieser
+Oder-Verknüpfung herausgelöst und stattdessen der grün-Bedingung
+hinzugefügt (`is_match or co2_close_exception` bzw. `highlight_ok or
+co2_close_exception`) - `no_window` allein entscheidet jetzt noch über
+Orange. Lektion: Eine als "Ausnahme von Rot" eingeführte Zwischenfarbe
+(hier: Orange für "technischer Mismatch, aber unproblematisch") ist kein
+Selbstzweck - wenn sich im Nachhinein herausstellt, dass ein Fall davon
+eigentlich näher an "alles in Ordnung" liegt als an "Achtung nötig",
+lohnt sich die Rückfrage, ob er nicht direkt in die Grün-Kategorie
+gehört, statt dauerhaft in einer Zwischenfarbe zu verbleiben, die
+ursprünglich für einen anderen, strukturell unterschiedlichen Fall
+(Raum ohne Fenster) gedacht war.
+
 **18. Die Web-Benachrichtigung hatte ein "clean notification"-Muster
 (automatisches Auflösen, sobald sich eine Empfehlung erledigt hat)
 längst über `persistent_notification.dismiss`, das App-Push aber nicht
