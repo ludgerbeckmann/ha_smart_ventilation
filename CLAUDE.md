@@ -539,6 +539,40 @@ Rückfrage ("nur für X, oder wirklich überall?"), bevor eine
 kartenweite Änderung umgesetzt wird - auch wenn die erste Rückfrage
 bereits explizit "ja, überall" bestätigt hat.
 
+**18. Die Web-Benachrichtigung hatte ein "clean notification"-Muster
+(automatisches Auflösen, sobald sich eine Empfehlung erledigt hat)
+längst über `persistent_notification.dismiss`, das App-Push aber nicht
+(0.42.0).** Auf die Anforderung, dieselbe Klarheit auch für Push
+sicherzustellen, ergaben sich zwei separate Auslöser, nicht nur einer:
+(a) ein echter Zustandswechsel der Empfehlung selbst (spiegelbildlich
+zum bereits bestehenden Verhalten der Web-Benachrichtigung) und (b) der
+Fall, dass die Person das Fenster bereits von sich aus bedient hat,
+während die zugrunde liegenden Werte sich noch gar nicht normalisiert
+haben - hier bleibt `self._attr_is_on` unverändert (kein
+Zustandswechsel), nur `_window_action_needed()` wechselt von "Aktion
+nötig" zu "bereits erledigt". Fix: Home Assistants App-Benachrichtigung
+unterstützt genau dafür einen `tag` im `data`-Feld von
+`notify.send_message` - eine neue Nachricht mit demselben `tag` ersetzt
+eine bereits angezeigte automatisch (praktisch z. B. bei "bitte öffnen"
+→ "bitte schließen", ohne zwei Benachrichtigungen gleichzeitig stehen zu
+lassen), und `message: "clear_notification"` mit demselben `tag` löst
+sie ganz ohne Ersatz auf. `_mobile_notification_active` (nicht über
+Neustarts hinweg wiederhergestellt, bewusst wie bereits `_last_notified_at`
+- siehe Kommentar dort) verfolgt, ob aktuell überhaupt eine Push-
+Benachrichtigung offen "aussteht"; `_maybe_clear_mobile_notification()`
+prüft nach **jeder** Neubewertung (nicht nur bei einem Zustandswechsel,
+da auch der Fensterkontakt selbst eine verfolgte, Neubewertungen
+auslösende Entität ist) einheitlich `_window_action_needed(self._attr_is_on)`
+und deckt damit beide Fälle (a) und (b) mit derselben Prüfung ab, statt
+zwei getrennte Sonderfälle zu behandeln. Lektion: Wenn ein Kanal (hier:
+Web-Benachrichtigung) bereits ein "löst sich automatisch auf"-Muster
+implementiert, das ein anderer, strukturell ähnlicher Kanal (hier: Push)
+noch nicht hat, prüfen, ob die Bedingung für "erledigt" beim zweiten
+Kanal wirklich identisch mit einem Zustandswechsel ist, wie beim ersten
+- hier war sie es nicht: die Fensterkontakt-Bedienung allein reicht
+bereits aus, ganz ohne dass sich die eigentliche Empfehlung selbst
+ändert.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

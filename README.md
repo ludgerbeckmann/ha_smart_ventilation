@@ -950,6 +950,18 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   direkt über die laufende Wiedergabe.
 - Für App-Benachrichtigungen wird `notify.send_message` auf die gewählte
   notify-Entität aufgerufen (benötigt Home Assistant 2024.9 oder neuer).
+- **"Clean Notification"**: Erledigt sich eine Lüften-Empfehlung (Fenster
+  wurde geöffnet/geschlossen und/oder die Werte haben sich normalisiert),
+  wird eine zuvor gesendete Push-Benachrichtigung automatisch auf dem
+  Gerät aufgelöst - genau wie die persistente Web-Benachrichtigung dafür
+  bereits `persistent_notification.dismiss` nutzt. Technisch über einen
+  festen, raumeindeutigen `tag` gelöst: eine neue Benachrichtigung
+  ersetzt eine ältere auf demselben Gerät automatisch, und ein
+  `clear_notification` löst sie ohne Ersatz auf. Das greift auch, wenn
+  die Person das Fenster bereits selbst geöffnet/geschlossen hat, bevor
+  sich die zugrunde liegenden Werte normalisiert haben - dafür ist kein
+  vollständiger Zustandswechsel der Empfehlung nötig, es reicht, dass der
+  konfigurierte Fensterkontakt den gewünschten Zustand erreicht.
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
   sie informiert nur. Falls du motorisierte Fenster hast, kannst du den
   `binary_sensor` als Trigger in einer eigenen Automation verwenden, um
