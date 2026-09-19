@@ -519,6 +519,7 @@ def _build_room_schema(
     temp_source_include = _area_include_entities(area_entities, TEMP_SOURCE_DOMAINS)
     sensor_include = _area_include_entities(area_entities, "sensor")
     window_include = _area_include_entities(area_entities, "binary_sensor")
+    shutter_include = _area_include_entities(area_entities, SHUTTER_DOMAINS)
 
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
@@ -580,6 +581,18 @@ def _build_room_schema(
                         **({"include_entities": window_include} if window_include else {}),
                     )
                 ),
+                _entity_marker(
+                    CONF_SHUTTER_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=SHUTTER_DOMAINS,
+                        **(
+                            {"include_entities": shutter_include}
+                            if shutter_include
+                            else {}
+                        ),
+                    )
+                ),
                 vol.Optional(
                     CONF_DISABLE_CLOSE_RECOMMENDATION,
                     default=defaults.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False),
@@ -614,7 +627,6 @@ def _build_room_schema(
 
     dehumidifier_include = _area_include_entities(area_entities, DEHUMIDIFIER_DOMAINS)
     ac_include = _area_include_entities(area_entities, AC_DOMAINS)
-    shutter_include = _area_include_entities(area_entities, SHUTTER_DOMAINS)
 
     # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
     # für einen Teil der Räume relevant
@@ -647,18 +659,6 @@ def _build_room_schema(
                     selector.EntitySelectorConfig(
                         domain=AC_DOMAINS,
                         **({"include_entities": ac_include} if ac_include else {}),
-                    )
-                ),
-                _entity_marker(
-                    CONF_SHUTTER_ENTITY, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=SHUTTER_DOMAINS,
-                        **(
-                            {"include_entities": shutter_include}
-                            if shutter_include
-                            else {}
-                        ),
                     )
                 ),
                 power_marker: power_sel,
