@@ -668,6 +668,39 @@ impliziten Submit-Zwischenschritt statt einer echten Live-Reaktivität,
 die Home-Assistant-Formulare grundsätzlich nicht bieten) - "gut
 dokumentiert" und "kein Bug mehr" sind zwei verschiedene Dinge.
 
+**21. `should_close` musste in "Sicherheit" und "Komfort" aufgeteilt
+werden, um eine raumweite Abschaltung nur des Komfort-Teils zu erlauben
+(0.46.0).** Auf Nutzerwunsch: eine Schiebetür im Esszimmer, deren
+Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt,
+sowie ein Raum (Flur OG), in dem eine Klimaanlage die Kühlung ohnehin
+unabhängig vom Fenster übernimmt - in beiden Fällen ist eine "bitte
+schließen"-Empfehlung nicht sinnvoll umsetzbar bzw. störend. Neue
+Raum-Option `CONF_DISABLE_CLOSE_RECOMMENDATION` ("Schließempfehlung
+deaktivieren"). Wichtig dabei: `should_close` war bis dahin eine flache
+Oder-Verknüpfung aus sieben Einzelbedingungen
+(`close_by_temp/humidity/co2/summer_outdoor/duration/frost/heat`) ohne
+Unterscheidung zwischen "reiner Komfort" und "Sicherheit" - ein
+pauschales `should_close and not disable_close_recommendation` hätte
+also auch `close_by_frost`/`close_by_heat` mit abgeschaltet, was gegen
+das in diesem Projekt durchgehend befolgte Prinzip verstoßen hätte, dass
+Frost-/Hitzeschutz als Sicherheitsmechanismen NIE durch eine
+Komfort-Einstellung deaktivierbar sein dürfen (siehe Lektionen 2, 11,
+12). Fix: `should_close = close_by_frost or close_by_heat or (not
+disable_close_recommendation and (close_by_temp or close_by_humidity or
+close_by_co2 or close_by_summer_outdoor or close_by_duration))` - Frost-/
+Hitzeschutz stehen jetzt explizit VOR der Klammer und bleiben so in
+jedem Fall wirksam, nur die fünf reinen Komfort-Bedingungen (inkl.
+Winter-Höchstdauer und Sommer-Fall - beides Energiespar-/Komfort-, keine
+Sicherheits-Heuristiken) werden gemeinsam abgeschaltet. Öffnen-
+Empfehlungen (`should_open`) sind von der neuen Option unberührt - nur
+die "bereits offen, jetzt bitte schließen"-Seite entfällt. Lektion: Bevor
+eine neue "Bedingung X abschalten"-Option eingeführt wird, die eine
+bereits bestehende Oder-Verknüpfung mehrerer Einzelbedingungen betrifft,
+erst prüfen, ob innerhalb dieser Verknüpfung Sicherheits- und reine
+Komfort-Gründe vermischt sind - ein pauschales Ausklammern der GESAMTEN
+Verknüpfung würde sonst versehentlich auch Sicherheitsmechanismen mit
+abschalten, die von der Nutzerabsicht gar nicht gemeint waren.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

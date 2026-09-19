@@ -20,6 +20,7 @@ from .const import (
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
+    CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
@@ -579,6 +580,10 @@ def _build_room_schema(
                         **({"include_entities": window_include} if window_include else {}),
                     )
                 ),
+                vol.Optional(
+                    CONF_DISABLE_CLOSE_RECOMMENDATION,
+                    default=defaults.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False),
+                ): selector.BooleanSelector(),
             }
         ),
         {"collapsed": False},
