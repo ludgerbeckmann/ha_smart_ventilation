@@ -118,6 +118,12 @@ SECTION_DEVICES = "devices"
 SECTION_PARAMETERS = "parameters"
 SECTION_MESSAGES = "messages"
 
+# Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
+# async_step_global) - wird nie in den Config-Entry übernommen, sondern vor
+# dem Speichern wieder herausgenommen. Kein CONF_*-Konstante in const.py,
+# da es sich um keinen gespeicherten Wert handelt.
+RESET_TO_DEFAULTS_KEY = "reset_to_defaults"
+
 # Schwellenwerte und weitere Zahlen-Parameter mit Pfeil-hoch/-runter-Steuerung.
 # Beim Bearbeiten der GLOBALEN Einstellungen immer mit Standardwert
 # vorausgefüllt und beim Leeren automatisch wieder aufgefüllt (siehe
@@ -699,6 +705,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
 
     return vol.Schema(
         {
+            vol.Required(
+                RESET_TO_DEFAULTS_KEY, default=False
+            ): selector.BooleanSelector(),
             vol.Required(SECTION_SENSORS): section(
                 vol.Schema(
                     {
@@ -1068,7 +1077,19 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
         current = dict(self.config_entry.data)
 
         if user_input is not None:
-            flat = _apply_threshold_defaults(_flatten_step_data(user_input))
+            flat = _flatten_step_data(user_input)
+            if flat.pop(RESET_TO_DEFAULTS_KEY, False):
+                # Ignoriert, was aktuell in den Schwellenwert-/Text-Feldern
+                # steht, und lässt _apply_threshold_defaults sie unten wie
+                # bei geleerten Feldern mit dem einprogrammierten Standard
+                # auffüllen. Ausgewählte Entitäten, Sprachausgabe-Modus und
+                # Benachrichtigungsmethoden bleiben bewusst unberührt - das
+                # sind funktionale Einstellungen, keine Kalibrierungswerte.
+                for key in _THRESHOLD_FIELDS:
+                    flat[key] = None
+                for key in _MESSAGE_FIELD_DEFAULTS:
+                    flat[key] = None
+            flat = _apply_threshold_defaults(flat)
             flat[CONF_IS_GLOBAL] = True
             # Name/Titel bleibt unverändert - im Formular nicht editierbar
             flat[CONF_ROOM_NAME] = current.get(

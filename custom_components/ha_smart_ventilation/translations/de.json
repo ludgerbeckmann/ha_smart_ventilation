@@ -232,6 +232,12 @@
       "global": {
         "title": "- Smart Ventilation Optionen - bearbeiten",
         "description": "Diese Werte gelten als Standard für alle Räume, die das jeweilige Feld nicht selbst überschreiben.",
+        "data": {
+          "reset_to_defaults": "Auf Standardwerte zurücksetzen"
+        },
+        "data_description": {
+          "reset_to_defaults": "Setzt beim Speichern alle Schwellenwerte im Abschnitt \"Parameter\" sowie alle Benachrichtigungstexte im Abschnitt \"Benachrichtigungstexte\" auf die einprogrammierten Standardwerte zurück - unabhängig davon, was aktuell in diesen Feldern eingetragen ist. Ausgewählte Entitäten (Sensoren, TTS, Leistungssensor, Benachrichtigungsziele) sowie Sprachausgabe-Modus und Benachrichtigungsmethoden bleiben davon unberührt."
+        },
         "sections": {
           "sensors": {
             "name": "Sensoren",
