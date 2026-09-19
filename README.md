@@ -534,7 +534,18 @@ Optional kann pro Raum ein Luftentfeuchter und/oder eine Klimaanlage
 hinterlegt werden, die automatisch gestartet und gestoppt werden:
 
 - **Luftentfeuchter**: an bei Luftfeuchtigkeit ≥ "Schwelle zum Öffnen", aus
-  bei ≤ "Schwelle zum Schließen" - unabhängig vom Fenster-Status.
+  bei ≤ "Schwelle zum Schließen" - grundsätzlich unabhängig vom
+  Fenster-Status. Eine Ausnahme: Meldet der Fensterkontakt-Sensor das
+  Fenster als **offen**, pausiert der Luftentfeuchter, sofern die Außenluft
+  dabei nicht absolut trockener ist als die Innenluft (derselbe Vergleich
+  wie bei der Öffnen-Empfehlung wegen Luftfeuchtigkeit, siehe "Absolute vs.
+  relative Luftfeuchtigkeit" unten) - sonst würde er nur gegen ständig
+  nachströmende feuchte Luft anarbeiten und dabei Energie verschwenden. Ist
+  die Außenluft dagegen absolut trockener, läuft er bei offenem Fenster
+  unverändert weiter, da das Lüften die Entfeuchtung zusätzlich
+  unterstützt. Ohne konfigurierten Fensterkontakt-Sensor oder ohne
+  Außen-Luftfeuchtigkeitssensor entfällt diese Ausnahme komplett (wie
+  bisher rein nach den Innen-Schwellen).
 - **Klimaanlage**: an, wenn Innentemperatur ≥ "Schwelle zum Öffnen" **und**
   Lüften nicht helfen würde (draußen nicht ausreichend kühler). Aus, sobald
   die Innentemperatur die "Schwelle zum Schließen" erreicht **oder** Lüften

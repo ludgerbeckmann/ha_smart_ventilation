@@ -777,6 +777,42 @@ geprüft wird, ist implizit eine Momentaufnahme, die durch spätere
 Änderungen der Außenbedingungen ungültig werden kann, ohne dass der Code
 das von sich aus bemerkt.
 
+**24. Der Luftentfeuchter lief bislang komplett unabhängig vom
+Fenster-Status - auf Nutzer-Nachfrage ("gibt es da noch etwas zu
+optimieren, z. B. Berücksichtigung absoluter Luftfeuchtigkeit?") wurde
+daraus eine gezielte Pausier-Bedingung, kein genereller
+Fenster-Kopplungs-Automatismus (0.49.0).** Auf die (rein informative)
+Frage, welche Kriterien beim Ein-/Ausschalten des Luftentfeuchters
+mitwirken, folgte die exploratorische Frage nach Optimierungspotenzial.
+Erster eigener Vorschlag ("bei offenem Fenster grundsätzlich pausieren")
+wäre zu grob gewesen: ein offenes Fenster allein sagt nichts darüber aus,
+ob das Lüften die Entfeuchtung unterstützt oder ihr entgegenwirkt - das
+hängt exakt von demselben absoluten Außen-/Innen-Luftfeuchtigkeits-
+Vergleich ab, der bereits die Fenster-Öffnen-Empfehlung gattet
+(`outdoor_drier_enough`, siehe Lektion 23). Der Nutzer korrigierte das
+selbst treffend: "ist das Fenster offen und die Luft draußen trockener,
+kann der Luftentfeuchter weiterlaufen" - das bereits vorhandene
+`outdoor_drier_enough`-Flag ließ sich dafür 1:1 wiederverwenden (keine
+doppelte Vergleichslogik nötig), kombiniert mit einem neuen
+`_is_window_confirmed_open()`-Helper (bewusst NICHT der bereits
+bestehende `_window_action_needed()` - der beantwortet eine andere Frage
+für einen anderen Zweck und liefert bei fehlenden Daten absichtlich das
+Gegenteil, `True`). Ergebnis: `dehumidifier_pause_open_window = window
+offen UND NICHT outdoor_drier_enough` - pausiert bei bestätigt
+feuchterer Außenluft ebenso wie bei fehlenden Werten (konservativ, wie
+`outdoor_drier_enough` es für sein eigentliches Öffnen-Gate ohnehin
+schon vorsieht), bleibt aber wie bisher komplett unbeeinflusst, sobald
+entweder kein Fensterkontakt-Sensor oder gar kein
+Außen-Luftfeuchtigkeitssensor konfiguriert ist. Lektion: Bei einer
+exploratorischen "was könnte man optimieren"-Frage den ersten eigenen,
+naheliegenden Vorschlag nicht overengineeren, aber auch nicht zu simpel
+lassen - der Nutzer hat hier selbst den entscheidenden Verfeinerungs-
+Schritt (welcher Vergleich genau?) beigesteuert; wichtig war, das
+bereits vorhandene, für einen strukturell identischen Zweck (Fenster-
+Öffnen-Gate) längst etablierte Flag wiederzuerkennen und direkt
+wiederzuverwenden, statt eine zweite, eigene Vergleichslogik für den
+Luftentfeuchter zu bauen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
