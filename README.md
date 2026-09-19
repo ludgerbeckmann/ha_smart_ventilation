@@ -54,7 +54,7 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
    Fensterkontakt, Lautsprecher, Luftentfeuchter, Klimaanlage,
    Fenstersperre/Rollladen) zeigen nur noch die diesem Bereich
    zugeordneten Entitäten an - die **Anwesenheits-Entität** bei den
-   Benachrichtigungszielen ist bewusst ausgenommen, da eine Person bzw.
+   App-Benachrichtigungszielen ist bewusst ausgenommen, da eine Person bzw.
    deren Gerät (`person`/`device_tracker`) keinem Raum zugeordnet ist.
    Enthält der gewählte Bereich für eine bestimmte Domain keine passende
    Entität, bleibt die betreffende
@@ -72,7 +72,7 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
        auswählbar
      - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
-       eine Liste von **Benachrichtigungszielen** (leer = globale Ziele
+       eine Liste von **App-Benachrichtigungszielen** (leer = globale Ziele
        verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
        optional eine **Anwesenheits-Entität** (`person` oder
        `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
@@ -96,7 +96,7 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
-     - Optional: Luftfeuchtigkeit
+     - Optional: Innen-Luftfeuchtigkeit
      - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
        einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
        unter "Logik im Detail". Die zugehörige Anstiegs-Schwelle findet
@@ -174,7 +174,7 @@ setzt sie sämtliche Schwellenwerte im Abschnitt "Parameter" sowie
 sämtliche Benachrichtigungstexte im Abschnitt "Benachrichtigungstexte" auf
 die einprogrammierten Standardwerte zurück - unabhängig davon, was gerade
 in diesen Feldern eingetragen ist. Ausgewählte Entitäten (Sensoren, TTS,
-Leistungssensor, Benachrichtigungsziele), der Sprachausgabe-Modus und die
+Leistungssensor, App-Benachrichtigungsziele), der Sprachausgabe-Modus und die
 Benachrichtigungsmethoden bleiben davon unberührt. Einzelne Felder lassen
 sich weiterhin wie gewohnt zurücksetzen, indem man nur sie leert und
 speichert (siehe unten) - die Checkbox ist für den Fall gedacht, dass
@@ -204,7 +204,7 @@ Danach folgen drei Abschnitte:
   Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
   Werte selbst bleiben pro Raum überschreibbar, siehe Geräte-Abschnitt
   im Raum-Formular)
-- **Home Assistant Companion App** + **Benachrichtigungsziele**: globaler
+- **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
   Standard, pro Raum überschreibbar
 - **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
   Standard, pro Raum überschreibbar
