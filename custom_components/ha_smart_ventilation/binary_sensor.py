@@ -299,7 +299,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._last_reason is not None:
             attrs["letzter_grund"] = self._last_reason
         if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
-            attrs["luftentfeuchter_an"] = bool(self._dehumidifier_state)
+            attrs["luftentfeuchter_an"] = self._is_device_on(
+                self._config[CONF_DEHUMIDIFIER_ENTITY]
+            )
         tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
         if tank_full_entity:
             # Rein informativ für die Dashboard-Karte (Zusatz "(Fehler)" beim
@@ -311,7 +313,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 tank_full_state is not None and tank_full_state.state == "on"
             )
         if self._config.get(CONF_AC_ENTITY):
-            attrs["klimaanlage_an"] = bool(self._ac_state)
+            attrs["klimaanlage_an"] = self._is_device_on(self._config[CONF_AC_ENTITY])
         return attrs
 
     async def async_added_to_hass(self) -> None:
@@ -491,6 +493,26 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return True
         is_open = state.state == "on"
         return is_open != target_open
+
+    def _is_device_on(self, entity_id: str) -> bool:
+        """Liest den tatsächlichen Live-Zustand einer Geräte-Entität
+        (Luftentfeuchter/Klimaanlage) für die Dashboard-Anzeige - unabhängig
+        davon, ob DIESE Integration das Gerät zuletzt selbst ein-/
+        ausgeschaltet hat (dafür dienen weiterhin die intern getrackten
+        _dehumidifier_state/_ac_state, siehe _update_single_device()).
+        Ohne diesen Live-Read zeigte die Karte ein manuell oder von einer
+        anderen Automation eingeschaltetes Gerät fälschlich als "aus" an.
+
+        `switch`/`humidifier` nutzen das binäre "on"/"off"-Schema; `climate`
+        dagegen echte Betriebsmodi (z. B. "cool"/"heat"/"auto") - dort
+        bedeutet "an" jeder Zustand außer "off".
+        """
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable"):
+            return False
+        if entity_id.split(".")[0] == "climate":
+            return state.state != "off"
+        return state.state == "on"
 
     def _get_float_state(self, entity_id: str | None) -> float | None:
         if not entity_id:
