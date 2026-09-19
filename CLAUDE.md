@@ -701,6 +701,37 @@ Komfort-Gründe vermischt sind - ein pauschales Ausklammern der GESAMTEN
 Verknüpfung würde sonst versehentlich auch Sicherheitsmechanismen mit
 abschalten, die von der Nutzerabsicht gar nicht gemeint waren.
 
+**22. Eine neue Backend-Option wirkt sich nicht automatisch auf die
+Dashboard-Karte aus, wenn diese ihre Werte komplett eigenständig live
+berechnet (0.47.2).** Direkt nach Lektion 21 meldete der Nutzer (mit
+Screenshot): Im Esszimmer wurde trotz aktivierter "Schließempfehlung
+deaktivieren"-Option weiterhin ein CO2-Auslöser mit "Schließen"-Empfehlung
+angezeigt (orange). Ursache: Die Dashboard-Karte berechnet Auslöser und
+Empfehlung für Temperatur/Luftfeuchtigkeit/CO2 seit Lektion 13 bewusst
+**komplett live** aus den angezeigten Messwerten/Schwellen, unabhängig vom
+tatsächlichen `should_close` der Integration - genau das macht die Karte
+robust gegenüber veralteten `letzter_grund`-Werten (siehe Lektion 13), hat
+aber als Kehrseite: Sie wusste schlicht nichts von der neuen, rein im
+Backend (`_evaluate()`) wirksamen `disable_close_recommendation`-Option und
+berechnete den CO2-Komfort-Auslöser unverändert weiter. Ein Backend-Fix
+allein (Lektion 21) reicht also nicht, wenn ein zweiter, unabhängiger
+"Konsument" derselben Entscheidung (hier: die Karte) eigene, parallele
+Logik hat. Fix: neues Attribut `schliessempfehlung_deaktiviert` (nur
+gesetzt, wenn aktiv, analog zu `hat_fenster`) in `extra_state_attributes`
+ergänzt; die Karte prüft es jetzt genauso wie die Integration selbst -
+Frost-/Hitzeschutz (`frost_live`/`heat_live`) bleiben davon unberührt,
+nur die Komfort-Auslöser (`comfort_close`, aus Temperatur/Feuchtigkeit/
+CO2/Winter-Höchstdauer/Sommer-Fall zusammengesetzt) werden bei aktiver
+Option auf `''` gesetzt - identisch zum Sicherheit/Komfort-Split im
+Backend. Lektion: Wann immer eine neue Bedingung eingeführt wird, die
+eine Empfehlung beeinflusst, UND die Dashboard-Karte dieselbe Art von
+Empfehlung bereits unabhängig live nachrechnet (wie seit Lektion 13 für
+Temperatur/Feuchtigkeit/CO2/Frost/Hitze der Fall), sofort mitprüfen, ob
+die Karte diese neue Bedingung ebenfalls als Attribut braucht - sonst
+klafft zwischen "was die Integration tatsächlich empfiehlt" und "was die
+Karte anzeigt" eine Lücke, die dem Nutzer nur zufällig aus genau dem
+Blickwinkel auffällt, aus dem er gerade die neue Option nutzt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

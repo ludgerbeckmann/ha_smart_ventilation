@@ -570,6 +570,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat) |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
+| `schliessempfehlung_deaktiviert` | nur vorhanden (mit Wert `true`), falls "Schließempfehlung deaktivieren" für diesen Raum aktiviert ist. Dient der Dashboard-Karte, damit sie die reinen Komfort-Schließgründe (Temperatur/Feuchtigkeit/CO2/Winter-Höchstdauer) live genauso unterdrückt wie die Integration selbst - Frost-/Hitzeschutz bleiben davon unberührt |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
 | `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn der Raum mindestens einen Lautsprecher ausgewählt hat |
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
@@ -596,6 +597,7 @@ content: >
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
+  {% set no_close_rec = a.schliessempfehlung_deaktiviert is defined and a.schliessempfehlung_deaktiviert %}
   {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
   {% set temp_needs_open = a.innentemperatur is not none and a.innentemperatur >= a.schwelle_temperatur_oeffnen %}
   {% set temp_needs_close = a.innentemperatur is not none and a.innentemperatur <= a.schwelle_temperatur_schliessen %}
@@ -607,7 +609,8 @@ content: >
   {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
   {% set close_fallback = grund_code if grund_code in ['duration', 'outdoor_warmer'] else '' %}
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else grund_code)) %}
-  {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)))) %}
+  {% set comfort_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)) %}
+  {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('' if no_close_rec else comfort_close)) %}
   {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
   {% set has_live_reason = highlight_code != '' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
