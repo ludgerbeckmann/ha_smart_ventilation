@@ -168,7 +168,18 @@ deinen Räumen auf. Dieser Eintrag erzeugt keine eigene Entität und keinen
 eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 
 **Bearbeiten:** Beim Eintrag "- Smart Ventilation Optionen -" auf
-**Konfigurieren** (Zahnrad-Symbol) klicken. Zwei Abschnitte:
+**Konfigurieren** (Zahnrad-Symbol) klicken. Ganz oben im Formular steht die
+Checkbox **"Auf Standardwerte zurücksetzen"**: aktiviert und gespeichert,
+setzt sie sämtliche Schwellenwerte im Abschnitt "Parameter" sowie
+sämtliche Benachrichtigungstexte im Abschnitt "Benachrichtigungstexte" auf
+die einprogrammierten Standardwerte zurück - unabhängig davon, was gerade
+in diesen Feldern eingetragen ist. Ausgewählte Entitäten (Sensoren, TTS,
+Leistungssensor, Benachrichtigungsziele), der Sprachausgabe-Modus und die
+Benachrichtigungsmethoden bleiben davon unberührt. Einzelne Felder lassen
+sich weiterhin wie gewohnt zurücksetzen, indem man nur sie leert und
+speichert (siehe unten) - die Checkbox ist für den Fall gedacht, dass
+gleich mehrere oder alle Werte auf einmal zurückgesetzt werden sollen.
+Danach folgen drei Abschnitte:
 
 **Abschnitt "Sensoren"**:
 - **Außentemperatur**: wird für **alle** Räume verwendet – kann seit

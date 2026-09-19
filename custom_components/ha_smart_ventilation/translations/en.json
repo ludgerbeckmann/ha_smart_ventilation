@@ -232,6 +232,12 @@
       "global": {
         "title": "Edit Smart Ventilation Options",
         "description": "These values act as the default for every room that doesn't override the respective field itself.",
+        "data": {
+          "reset_to_defaults": "Reset to defaults"
+        },
+        "data_description": {
+          "reset_to_defaults": "When saved, resets all thresholds in the \"Parameters\" section and all notification message texts in the \"Notification texts\" section to their built-in defaults - regardless of what is currently entered in those fields. Selected entities (sensors, TTS, power sensor, notification targets) as well as the voice playback mode and notification methods are unaffected."
+        },
         "sections": {
           "sensors": {
             "name": "Sensors",
