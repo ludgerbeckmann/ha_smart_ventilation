@@ -115,6 +115,10 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
        eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
        Fenster" deaktiviert ist)
+     - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
+       `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
+       beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
+       "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
      - **Schließempfehlung deaktivieren** (Checkbox, Standard: aus): bei
        "an" wird für diesen Raum nie mehr "bitte schließen" empfohlen -
        Temperatur, Luftfeuchtigkeit, CO2, Winter-Höchstdauer und der
@@ -147,10 +151,6 @@ Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
        dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
        Lüftungs- oder Geräte-Steuerung selbst
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität
-     - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
-       `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
-       beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
-       "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
        optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort

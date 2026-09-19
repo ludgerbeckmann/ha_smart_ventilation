@@ -41,6 +41,7 @@
               "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
+              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "disable_close_recommendation": "Schließempfehlung deaktivieren",
               "no_window": "Dieser Raum hat kein Fenster"
             },
@@ -49,6 +50,7 @@
               "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
               "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Parameter\"",
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
+              "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
@@ -98,7 +100,6 @@
               "dehumidifier_entity": "Luftentfeuchter",
               "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
               "ac_entity": "Klimaanlage",
-              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
@@ -106,7 +107,6 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
               "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
@@ -154,6 +154,7 @@
               "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
+              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "disable_close_recommendation": "Schließempfehlung deaktivieren",
               "no_window": "Dieser Raum hat kein Fenster"
             },
@@ -162,6 +163,7 @@
               "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität gewählt wurde",
               "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Parameter\"",
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
+              "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
             }
@@ -211,7 +213,6 @@
               "dehumidifier_entity": "Luftentfeuchter",
               "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
               "ac_entity": "Klimaanlage",
-              "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
@@ -219,7 +220,6 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
               "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
