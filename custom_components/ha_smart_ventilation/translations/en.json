@@ -21,7 +21,7 @@
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "Notification targets",
+              "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
@@ -37,7 +37,7 @@
             "data": {
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
-              "humidity_entity": "Humidity (optional)",
+              "humidity_entity": "Indoor humidity (optional)",
               "shower_detection_enabled": "Shower detection",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Window contact sensor (optional)",
@@ -134,7 +134,7 @@
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "Notification targets",
+              "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
@@ -150,7 +150,7 @@
             "data": {
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
-              "humidity_entity": "Humidity (optional)",
+              "humidity_entity": "Indoor humidity (optional)",
               "shower_detection_enabled": "Shower detection",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Window contact sensor (optional)",
@@ -226,7 +226,7 @@
           }
         },
         "data_description": {
-          "area_id": "Restricts the sensor/device selection lists below to the entities assigned to this area (domains without a matching entity in the area remain unrestricted). After changing this, save once - the selection lists are then shown updated for the new area, and anything else you already entered is kept; a second save applies the changes for good. Leave empty to choose from all entities as before."
+          "area_id": "HA area for this room - restricts the sensor/device selection lists below to the entities assigned to this area (domains without a matching entity in the area remain unrestricted). After changing this, save once - the selection lists are then shown updated for the new area, and anything else you already entered is kept; a second save applies the changes for good. Leave empty to choose from all entities as before."
         }
       },
       "global": {
@@ -252,7 +252,7 @@
               "min_surplus_power_watts": "Minimum surplus power to turn on",
               "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
               "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "Notification targets",
+              "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {

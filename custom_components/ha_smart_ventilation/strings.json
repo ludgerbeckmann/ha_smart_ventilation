@@ -21,7 +21,7 @@
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "Benachrichtigungsziele",
+              "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
@@ -35,9 +35,9 @@
             "name": "Sensoren",
             "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
             "data": {
-              "temperature_source_entity": "Temperatur",
+              "temperature_source_entity": "Innentemperatur",
               "temperature_attribute": "Temperatur-Attribut",
-              "humidity_entity": "Luftfeuchtigkeit (optional)",
+              "humidity_entity": "Innen-Luftfeuchtigkeit (optional)",
               "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
@@ -134,7 +134,7 @@
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "Benachrichtigungsziele",
+              "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
@@ -148,9 +148,9 @@
             "name": "Sensoren",
             "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
             "data": {
-              "temperature_source_entity": "Temperatur",
+              "temperature_source_entity": "Innentemperatur",
               "temperature_attribute": "Temperatur-Attribut",
-              "humidity_entity": "Luftfeuchtigkeit (optional)",
+              "humidity_entity": "Innen-Luftfeuchtigkeit (optional)",
               "shower_detection_enabled": "Duscherkennung",
               "co2_entity": "CO2 (optional)",
               "window_entity": "Fensterkontakt (optional)",
@@ -226,7 +226,7 @@
           }
         },
         "data_description": {
-          "area_id": "Schränkt die Sensor-/Geräte-Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Nach einer Änderung hier bitte einmal speichern - die Auswahllisten werden dann mit dem neuen Bereich aktualisiert angezeigt, bereits gemachte Eingaben bleiben erhalten; erst ein zweites Speichern übernimmt die Änderungen endgültig. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
+          "area_id": "HA-Bereich für diesen Raum - schränkt die Sensor-/Geräte-Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Nach einer Änderung hier bitte einmal speichern - die Auswahllisten werden dann mit dem neuen Bereich aktualisiert angezeigt, bereits gemachte Eingaben bleiben erhalten; erst ein zweites Speichern übernimmt die Änderungen endgültig. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
         }
       },
       "global": {
@@ -252,7 +252,7 @@
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
               "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "Benachrichtigungsziele",
+              "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
