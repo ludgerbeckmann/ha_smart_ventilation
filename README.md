@@ -622,7 +622,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 1** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 2** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -635,7 +635,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 1 %}
+  {% set card_version = 2 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
@@ -765,10 +765,10 @@ content: >
   {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
   {% set ns.rooms = ns.rooms ~ sep_before ~ header ~ '\n\n' ~ body %}
   {% endfor %}
-  {% set version_header = ' Version |' if ns.version is not none else '' %}
-  {% set version_sep = ':---:|' if ns.version is not none else '' %}
-  {% set version_cell = ' ' ~ ns.version ~ ' |' if ns.version is not none else '' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 | Karte |' ~ version_header ~ '\n|:---:|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' | ' ~ card_version ~ ' |' ~ version_cell %}
+  {% set version_header = (' Integration |' if ns.version is not none else '') ~ ' Karte |' %}
+  {% set version_sep = (':---:|' if ns.version is not none else '') ~ ':---:|' %}
+  {% set version_cell = (' ' ~ ns.version ~ ' |' if ns.version is not none else '') ~ ' ' ~ card_version ~ ' |' %}
+  {% set overview = '| 🟢 | 🟠 | 🔴 |  |' ~ version_header ~ '\n|:---:|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |  |' ~ version_cell %}
   {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
