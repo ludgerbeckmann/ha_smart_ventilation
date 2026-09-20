@@ -603,6 +603,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`, `outdoor_wetter`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat) |
+| `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `schliessempfehlung_deaktiviert` | nur vorhanden (mit Wert `true`), falls "Schließempfehlung deaktivieren" für diesen Raum aktiviert ist. Dient der Dashboard-Karte, damit sie die reinen Komfort-Schließgründe (Temperatur/Feuchtigkeit/CO2/Winter-Höchstdauer) live genauso unterdrückt wie die Integration selbst - Frost-/Hitzeschutz bleiben davon unberührt |
@@ -622,7 +623,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 3** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 4** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -635,10 +636,10 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 3 %}
+  {% set card_version = 4 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
-  {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
+  {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -703,35 +704,26 @@ content: >
   {% set abs_out = (highlight_open ~ abs_out ~ '</strong></font>') if highlight_code == 'outdoor_wetter' else abs_out %}
   {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' | ' ~ abs_out ~ ' | – | – |' %}
   {% endif %}
-  {% set dev1 = '' %}
+  {% set device_rows = '' %}
   {% if a.luftentfeuchter_an is defined %}
-  {% set dev1 = ('🔴' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
+  {% set dehum_status = '🔴' if a.luftentfeuchter_an else '⚫' %}
   {% if a.luftentfeuchter_tank_fehler is defined %}
-  {% set dev1 = dev1 ~ ' (' ~ ('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank)' %}
+  {% set dehum_status = dehum_status ~ ' (' ~ ('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank)' %}
   {% endif %}
+  {% set dehum_grund = a.luftentfeuchter_grund if a.luftentfeuchter_grund is defined else '–' %}
+  {% set device_rows = device_rows ~ '\n| Luftentfeuchter | ' ~ dehum_status ~ ' | ' ~ dehum_grund ~ ' |' %}
   {% endif %}
-  {% set dev2 = '' %}
   {% if a.klimaanlage_an is defined %}
-  {% set dev2 = ('🔴' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
+  {% set ac_status = '🔴' if a.klimaanlage_an else '⚫' %}
+  {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
+  {% set device_rows = device_rows ~ '\n| Klimaanlage | ' ~ ac_status ~ ' | ' ~ ac_grund ~ ' |' %}
   {% endif %}
+  {% set device_table = ('| Gerät | Status | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
   {% set dev3 = '' %}
   {% if a.duschen_erkannt is defined %}
   {% set dev3 = ('🟢' if a.duschen_erkannt else '⚫') ~ ' Dusche' %}
   {% endif %}
-  {% set status_lines = '' %}
-  {% if dev1 != '' %}
-  {% set status_lines = status_lines ~ '<br>' ~ dev1 %}
-  {% endif %}
-  {% if dev2 != '' %}
-  {% set status_lines = status_lines ~ '<br>' ~ dev2 %}
-  {% endif %}
-  {% if dev3 != '' %}
-  {% set status_lines = status_lines ~ '<br>' ~ dev3 %}
-  {% endif %}
-  {% set dev_line = '' %}
-  {% if status_lines != '' %}
-  {% set dev_line = 'Status:' ~ status_lines %}
-  {% endif %}
+  {% set dev_line = ('Status:<br>' ~ dev3) if dev3 else '' %}
   {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
@@ -750,19 +742,24 @@ content: >
   {% set n3 = 'Persistente Benachrichtigung' %}
   {% set n3_status = '🟢' if a.persistent_aktiv is defined else '⚫' %}
   {% set n3_ziel = '–' %}
-  {% set notify_table = '<details>\n<summary>Benachrichtigung</summary>\n\n| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |\n\n</details>' %}
+  {% set notify_table = '<details open>\n<summary><strong>Benachrichtigungen</strong></summary>\n\n| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |\n\n</details>' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
   {% set body = empf_table %}
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
+  {% set body = (body ~ spacer ~ device_table) if device_table else body %}
   {% set body = body ~ spacer ~ notify_table %}
   {% set body = body ~ ('\n\n' ~ dev_line if dev_line else '') %}
+  {% set sort_key = ('0' if has_live_reason else '1') ~ a.raum %}
+  {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body}] %}
+  {% endfor %}
+  {% for entry in ns.entries | sort(attribute='key') %}
   {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
-  {% set ns.rooms = ns.rooms ~ sep_before ~ header ~ '\n\n' ~ body %}
+  {% set ns.rooms = ns.rooms ~ sep_before ~ entry.block %}
   {% endfor %}
   {% set version_header = (' Integration |' if ns.version is not none else '') ~ ' Karte |' %}
   {% set version_sep = (':---:|' if ns.version is not none else '') ~ ':---:|' %}
   {% set version_cell = (' ' ~ ns.version ~ ' |' if ns.version is not none else '') ~ ' ' ~ card_version ~ ' |' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |  |' ~ version_header ~ '\n|:---:|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |  |' ~ version_cell %}
+  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ version_header ~ '\n|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ version_cell %}
   {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
@@ -857,9 +854,8 @@ gefiltert werden oder noch mehr).
 **Reihenfolge:** Zu Beginn der Karte (einmalig, vor der Raumliste) eine
 **Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
 Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
-Icon am jeweiligen Raumnamen weiter unten - danach eine leere Trennspalte
-zur optischen Abgrenzung, gefolgt von - falls vorhanden - einer Spalte
-"Integration" mit der aktuell installierten Versionsnummer **der
+Icon am jeweiligen Raumnamen weiter unten - gefolgt von - falls vorhanden -
+einer Spalte "Integration" mit der aktuell installierten Versionsnummer **der
 Integration**, liest `integration_version` vom ersten Raum, für den das
 Attribut vorhanden ist, und zuletzt einer Spalte "Karte" mit der
 Versionsnummer **dieser Karten-Vorlage selbst** (`card_version`, eine
@@ -867,7 +863,12 @@ reine Konstante ganz am Anfang der Vorlage, siehe unten); nebeneinander
 platzierte, aber getrennte Tabellen sind in Home Assistants Markdown-
 Karte ohne das gefilterte `style`-Attribut nicht zuverlässig umsetzbar,
 siehe "Hervorhebung des ausschlaggebenden Werts" oben - daher eine
-gemeinsame Tabelle). Danach pro Raum: Raumname → **Empfehlungs-Tabelle** (Fenster/Empfehlung/
+gemeinsame Tabelle). Die Raumliste selbst ist zweistufig sortiert: zuerst
+alle Räume mit **aktuell vorliegender Empfehlung** (alphabetisch
+untereinander), danach alle Räume **ohne** aktuellen Auslöser ("Totzone",
+siehe unten) - ebenfalls alphabetisch. Räume mit Handlungsbedarf stehen
+so immer oben, unabhängig vom Raumnamen. Pro Raum dann: Raumname →
+**Empfehlungs-Tabelle** (Fenster/Empfehlung/
 Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
 aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
 ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
@@ -880,11 +881,15 @@ aktuell ein Auslöser vorliegt und, falls ja, welcher (🟢/🔴, außer der
 Auslöser ist CO2 (Schließen): dann 🟢, siehe unten) - der tatsächliche
 Fensterzustand fließt in die Farbe **nicht** mehr ein, er wird nur noch
 informativ in der Empfehlungs-Tabelle angezeigt) →
-Status (Luftentfeuchter/Klimaanlage/
-Dusche, jeweils nur falls vorhanden bzw. Duscherkennung für den Raum
-aktiv) → **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
-CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungs-
-Tabelle**.
+**Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
+CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Geräte-Tabelle**
+(Gerät/Status/Grund - nur für Luftentfeuchter und Klimaanlage, jeweils
+nur falls konfiguriert; "Grund" zeigt eine rein informative, live bei
+jeder Neubewertung berechnete Kurzbeschreibung, warum das Gerät gerade
+an/aus ist bzw. pausiert, ohne selbst Einfluss auf die Steuerung zu haben
+- siehe `binary_sensor.py`) → **Benachrichtigungen** (ein-/ausklappbare
+Tabelle, standardmäßig aufgeklappt) → Duscherkennung (eigene Statuszeile,
+nur falls für den Raum aktiviert).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
