@@ -196,6 +196,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._dehumidifier_state: bool | None = None
         self._ac_state: bool | None = None
 
+        # Rein informativer Ein-/Ausschalt-Grund für die Dashboard-Karte
+        # (neue Geräte-Tabelle, siehe README) - live bei jeder Neubewertung
+        # in _evaluate() gesetzt, keine Steuerungswirkung.
+        self._dehumidifier_reason = ""
+        self._ac_reason = ""
+
         # Seit wann die Einspeiseleistung ununterbrochen zu niedrig ist,
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
         self._dehumidifier_low_power_since = None
@@ -343,6 +349,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["luftentfeuchter_an"] = self._is_device_on(
                 self._config[CONF_DEHUMIDIFIER_ENTITY]
             )
+            attrs["luftentfeuchter_grund"] = self._dehumidifier_reason
         tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
         if tank_full_entity:
             # Rein informativ für die Dashboard-Karte (Zusatz "(Fehler)" beim
@@ -355,6 +362,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if self._config.get(CONF_AC_ENTITY):
             attrs["klimaanlage_an"] = self._is_device_on(self._config[CONF_AC_ENTITY])
+            attrs["klimaanlage_grund"] = self._ac_reason
         return attrs
 
     async def async_added_to_hass(self) -> None:
@@ -752,6 +760,42 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         dehumidifier_pause_open_window = (
             self._is_window_confirmed_open() and not outdoor_drier_enough
         )
+        # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
+        # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
+        # spiegeln dieselbe Priorität wie want_on/want_off in
+        # _update_devices() wider, haben selbst aber keine Steuerungswirkung.
+        # Live bei jeder Neubewertung neu gesetzt (wie self._showering),
+        # nicht nur bei einem tatsächlichen Zustandswechsel.
+        if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
+            if not self._config.get(CONF_HUMIDITY_ENTITY):
+                self._dehumidifier_reason = "kein Feuchtigkeitssensor konfiguriert"
+            elif humidity_needs_close:
+                self._dehumidifier_reason = "Luftfeuchtigkeit unter Schwelle"
+            elif dehumidifier_pause_open_window:
+                self._dehumidifier_reason = (
+                    "pausiert: Fenster offen, Außenluft nicht trockener"
+                )
+            elif humidity_needs_open:
+                self._dehumidifier_reason = "Luftfeuchtigkeit über Schwelle"
+            else:
+                self._dehumidifier_reason = "im Sollbereich, hält letzten Zustand"
+            if self._effective(CONF_POWER_ENTITY, None) and not self._check_power_ok():
+                self._dehumidifier_reason += " (Einspeiseleistung zu gering)"
+        if self._config.get(CONF_AC_ENTITY):
+            if temp_needs_close:
+                self._ac_reason = "Innentemperatur unter Schwelle"
+            elif outdoor_cooler_enough:
+                self._ac_reason = (
+                    "Lüften reicht aus (Außenluft kühler)"
+                    if temp_needs_open
+                    else "im Sollbereich, hält letzten Zustand"
+                )
+            elif temp_needs_open:
+                self._ac_reason = "Innentemperatur über Schwelle"
+            else:
+                self._ac_reason = "im Sollbereich, hält letzten Zustand"
+            if self._effective(CONF_POWER_ENTITY, None) and not self._check_power_ok():
+                self._ac_reason += " (Einspeiseleistung zu gering)"
         # --- Schließen: Außenluft ist inzwischen (wieder) absolut feuchter
         # als die Innenluft - das Pendant zu outdoor_warmer_again weiter
         # unten, nur für Luftfeuchtigkeit statt Temperatur. outdoor_drier_enough
