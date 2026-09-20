@@ -623,7 +623,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 4** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 5** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -636,7 +636,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 4 %}
+  {% set card_version = 5 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -718,12 +718,12 @@ content: >
   {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
   {% set device_rows = device_rows ~ '\n| Klimaanlage | ' ~ ac_status ~ ' | ' ~ ac_grund ~ ' |' %}
   {% endif %}
-  {% set device_table = ('| Gerät | Status | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
-  {% set dev3 = '' %}
   {% if a.duschen_erkannt is defined %}
-  {% set dev3 = ('🟢' if a.duschen_erkannt else '⚫') ~ ' Dusche' %}
+  {% set dusche_status = '🟢' if a.duschen_erkannt else '⚫' %}
+  {% set dusche_grund = 'Luftfeuchtigkeit steigt schnell' if a.duschen_erkannt else '–' %}
+  {% set device_rows = device_rows ~ '\n| Dusche | ' ~ dusche_status ~ ' | ' ~ dusche_grund ~ ' |' %}
   {% endif %}
-  {% set dev_line = ('Status:<br>' ~ dev3) if dev3 else '' %}
+  {% set device_table = ('| Gerät | Status | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
   {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
@@ -748,7 +748,6 @@ content: >
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
   {% set body = (body ~ spacer ~ device_table) if device_table else body %}
   {% set body = body ~ spacer ~ notify_table %}
-  {% set body = body ~ ('\n\n' ~ dev_line if dev_line else '') %}
   {% set sort_key = ('0' if has_live_reason else '1') ~ a.raum %}
   {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body}] %}
   {% endfor %}
@@ -883,13 +882,14 @@ Fensterzustand fließt in die Farbe **nicht** mehr ein, er wird nur noch
 informativ in der Empfehlungs-Tabelle angezeigt) →
 **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
 CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Geräte-Tabelle**
-(Gerät/Status/Grund - nur für Luftentfeuchter und Klimaanlage, jeweils
-nur falls konfiguriert; "Grund" zeigt eine rein informative, live bei
-jeder Neubewertung berechnete Kurzbeschreibung, warum das Gerät gerade
-an/aus ist bzw. pausiert, ohne selbst Einfluss auf die Steuerung zu haben
-- siehe `binary_sensor.py`) → **Benachrichtigungen** (ein-/ausklappbare
-Tabelle, standardmäßig aufgeklappt) → Duscherkennung (eigene Statuszeile,
-nur falls für den Raum aktiviert).
+(Gerät/Status/Grund - Zeilen für Luftentfeuchter, Klimaanlage und Dusche,
+jeweils nur falls konfiguriert bzw. für den Raum aktiviert; "Grund" zeigt
+bei Luftentfeuchter/Klimaanlage eine rein informative, live bei jeder
+Neubewertung berechnete Kurzbeschreibung, warum das Gerät gerade an/aus
+ist bzw. pausiert, ohne selbst Einfluss auf die Steuerung zu haben - siehe
+`binary_sensor.py`; bei Dusche entsprechend, ob und warum die
+Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
+(ein-/ausklappbare Tabelle, standardmäßig aufgeklappt).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
