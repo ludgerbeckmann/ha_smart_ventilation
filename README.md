@@ -750,8 +750,8 @@ content: >
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
   {% set body = empf_table %}
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
-  {% set body = (body ~ spacer ~ device_table) if device_table else body %}
   {% set body = body ~ spacer ~ notify_table %}
+  {% set body = (body ~ spacer ~ device_table) if device_table else body %}
   {% set sort_key = ('0' if has_live_reason else '1') ~ a.raum %}
   {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body}] %}
   {% endfor %}
