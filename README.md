@@ -623,7 +623,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 8** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 9** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -636,7 +636,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 8 %}
+  {% set card_version = 9 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -752,7 +752,8 @@ content: >
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
   {% set body = body ~ spacer ~ notify_table %}
   {% set body = (body ~ spacer ~ device_table) if device_table else body %}
-  {% set sort_key = ('0' if has_live_reason else '1') ~ a.raum %}
+  {% set color_rank = '0' if match_icon == '🔴 ' else ('1' if match_icon == '🟠 ' else '2') %}
+  {% set sort_key = color_rank ~ a.raum %}
   {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body}] %}
   {% endfor %}
   {% for entry in ns.entries | sort(attribute='key') %}
@@ -870,11 +871,14 @@ reine Konstante ganz am Anfang der Vorlage, siehe unten); nebeneinander
 platzierte, aber getrennte Tabellen sind in Home Assistants Markdown-
 Karte ohne das gefilterte `style`-Attribut nicht zuverlässig umsetzbar,
 siehe "Hervorhebung des ausschlaggebenden Werts" oben - daher eine
-gemeinsame Tabelle). Die Raumliste selbst ist zweistufig sortiert: zuerst
-alle Räume mit **aktuell vorliegender Empfehlung** (alphabetisch
-untereinander), danach alle Räume **ohne** aktuellen Auslöser ("Totzone",
-siehe unten) - ebenfalls alphabetisch. Räume mit Handlungsbedarf stehen
-so immer oben, unabhängig vom Raumnamen. Pro Raum dann: Raumname →
+gemeinsame Tabelle). Die Raumliste selbst ist nach demselben Icon-Status
+wie am Raumnamen sortiert (identisch zur Zählung in der Übersichts-
+Tabelle): zuerst alle 🔴-Räume (echter Fenster-Mismatch, größter
+Handlungsbedarf), danach alle 🟠-Räume (Fenster steht schon korrekt, aber
+Werte noch außerhalb der Norm, oder Raum ohne Fenster), zuletzt alle
+🟢-Räume (CO2-Ausnahme oder gar kein Auslöser) - innerhalb jeder der drei
+Gruppen jeweils alphabetisch. Räume mit dem größten Handlungsbedarf
+stehen so immer ganz oben, unabhängig vom Raumnamen. Pro Raum dann: Raumname →
 **Empfehlungs-Tabelle** (Fenster/Empfehlung/
 Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
 aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
