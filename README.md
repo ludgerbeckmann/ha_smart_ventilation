@@ -623,7 +623,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 6** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 7** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -636,7 +636,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 6 %}
+  {% set card_version = 7 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -712,24 +712,24 @@ content: >
   {% endif %}
   {% set device_rows = '' %}
   {% if a.luftentfeuchter_an is defined %}
-  {% set dehum_status = '🔴' if a.luftentfeuchter_an else '⚫' %}
+  {% set dehum_name = ('🔴' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
   {% if a.luftentfeuchter_tank_fehler is defined %}
-  {% set dehum_status = dehum_status ~ ' (' ~ ('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank)' %}
+  {% set dehum_name = dehum_name ~ ' (' ~ ('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank)' %}
   {% endif %}
   {% set dehum_grund = a.luftentfeuchter_grund if a.luftentfeuchter_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| Luftentfeuchter | ' ~ dehum_status ~ ' | ' ~ dehum_grund ~ ' |' %}
+  {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_grund ~ ' |' %}
   {% endif %}
   {% if a.klimaanlage_an is defined %}
-  {% set ac_status = '🔴' if a.klimaanlage_an else '⚫' %}
+  {% set ac_name = ('🔴' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
   {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| Klimaanlage | ' ~ ac_status ~ ' | ' ~ ac_grund ~ ' |' %}
+  {% set device_rows = device_rows ~ '\n| ' ~ ac_name ~ ' | ' ~ ac_grund ~ ' |' %}
   {% endif %}
   {% if a.duschen_erkannt is defined %}
-  {% set dusche_status = '🟢' if a.duschen_erkannt else '⚫' %}
+  {% set dusche_name = ('🟢' if a.duschen_erkannt else '⚫') ~ ' Dusche' %}
   {% set dusche_grund = 'Luftfeuchtigkeit steigt schnell' if a.duschen_erkannt else '–' %}
-  {% set device_rows = device_rows ~ '\n| Dusche | ' ~ dusche_status ~ ' | ' ~ dusche_grund ~ ' |' %}
+  {% set device_rows = device_rows ~ '\n| ' ~ dusche_name ~ ' | ' ~ dusche_grund ~ ' |' %}
   {% endif %}
-  {% set device_table = ('| Gerät | Status | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
+  {% set device_table = ('| Gerät | Grund |\n|---|---|' ~ device_rows) if device_rows else '' %}
   {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
@@ -748,12 +748,12 @@ content: >
   {% set n3 = 'Persistente Benachrichtigung' %}
   {% set n3_status = '🟢' if a.persistent_aktiv is defined else '⚫' %}
   {% set n3_ziel = '–' %}
-  {% set notify_table = '<details open>\n<summary><strong>Benachrichtigungen</strong></summary>\n\n| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |\n\n</details>' %}
+  {% set notify_table = '<details>\n<summary><strong>Benachrichtigungen</strong></summary>\n\n| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |\n\n</details>' %}
   {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
   {% set body = empf_table %}
   {% set body = (body ~ spacer ~ values_table) if body else values_table %}
-  {% set body = (body ~ spacer ~ device_table) if device_table else body %}
   {% set body = body ~ spacer ~ notify_table %}
+  {% set body = (body ~ spacer ~ device_table) if device_table else body %}
   {% set sort_key = ('0' if has_live_reason else '1') ~ a.raum %}
   {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body}] %}
   {% endfor %}
@@ -885,21 +885,23 @@ Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand und
 Uhrzeit den Zeitpunkt der letzten tatsächlichen Zustandsänderung; liegt
 aktuell **kein** Auslöser vor ("Totzone", siehe oben), zeigen Empfehlung
 und Uhrzeit ebenfalls "–" statt einer sonst nicht mehr begründbaren
-Empfehlung. Das Icon am Raumnamen richtet sich ausschließlich danach, ob
-aktuell ein Auslöser vorliegt und, falls ja, welcher (🟢/🔴, außer der
-Auslöser ist CO2 (Schließen): dann 🟢, siehe unten) - der tatsächliche
-Fensterzustand fließt in die Farbe **nicht** mehr ein, er wird nur noch
-informativ in der Empfehlungs-Tabelle angezeigt) →
+Empfehlung. Das Icon am Raumnamen richtet sich danach, ob aktuell ein
+Auslöser vorliegt und, falls ja, ob das Fenster bereits entsprechend
+steht (🔴 bei echtem Fenster-Mismatch, 🟠 wenn das Fenster schon korrekt
+steht, aber die Werte noch außerhalb der Norm liegen, 🟢 bei der
+CO2-Ausnahme oder ganz ohne Auslöser - siehe "Hervorhebung des
+ausschlaggebenden Werts" oben) →
 **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
-CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Geräte-Tabelle**
-(Gerät/Status/Grund - Zeilen für Luftentfeuchter, Klimaanlage und Dusche,
-jeweils nur falls konfiguriert bzw. für den Raum aktiviert; "Grund" zeigt
-bei Luftentfeuchter/Klimaanlage eine rein informative, live bei jeder
+CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Benachrichtigungen**
+(ein-/ausklappbare Tabelle, standardmäßig eingeklappt) → **Geräte-Tabelle**
+(Gerät/Grund - Zeilen für Luftentfeuchter, Klimaanlage und Dusche, jeweils
+nur falls konfiguriert bzw. für den Raum aktiviert; das Status-Icon steht
+direkt vor dem Gerätenamen in der ersten Spalte; "Grund" zeigt bei
+Luftentfeuchter/Klimaanlage eine rein informative, live bei jeder
 Neubewertung berechnete Kurzbeschreibung, warum das Gerät gerade an/aus
 ist bzw. pausiert, ohne selbst Einfluss auf die Steuerung zu haben - siehe
 `binary_sensor.py`; bei Dusche entsprechend, ob und warum die
-Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
-(ein-/ausklappbare Tabelle, standardmäßig aufgeklappt).
+Duscherkennung aktuell anschlägt).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
