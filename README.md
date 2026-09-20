@@ -623,7 +623,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 5** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 6** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -636,7 +636,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 5 %}
+  {% set card_version = 6 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -663,9 +663,15 @@ content: >
   {% set window_state_text = '–' %}
   {% set co2_close_exception = s.state == 'off' and highlight_code == 'co2' %}
   {% set match_icon = '🟢 ' if (not has_live_reason or co2_close_exception) else ('🟠 ' if no_window else '🔴 ') %}
+  {% set highlight_ok = false %}
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
+  {% if not no_window and has_live_reason and not co2_close_exception and w in ['on', 'off'] %}
+  {% set is_match = (s.state == 'on') == (w == 'on') %}
+  {% set match_icon = '🟠 ' if is_match else '🔴 ' %}
+  {% set highlight_ok = is_match %}
+  {% endif %}
   {% endif %}
   {% if ns.version is none and a.integration_version is defined %}
   {% set ns.version = a.integration_version %}
@@ -677,7 +683,7 @@ content: >
   {% elif match_icon == '🔴 ' %}
   {% set ns.red = ns.red + 1 %}
   {% endif %}
-  {% set highlight_open = '<font color="green"><strong>' if co2_close_exception else ('<font color="orange"><strong>' if no_window else '<font color="red"><strong>') %}
+  {% set highlight_open = '<font color="green"><strong>' if co2_close_exception else ('<font color="orange"><strong>' if (no_window or highlight_ok) else '<font color="red"><strong>') %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
   {% set changed_time = (as_local(s.last_changed).strftime('%d.%m. %H:%M')) if has_live_reason else '–' %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
@@ -788,28 +794,32 @@ Version verzichtet komplett auf `style`-Attribute:
   Einsatz; auf Nutzerwunsch durch fette, farbige Schrift ersetzt, da die
   gelbe Markierung als zu unauffällig wahrgenommen wurde. Hervorgehoben
   wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
-  nicht nur `34.2`) - **rot** bei jedem aktiven Auslöser, mit genau einer
-  Ausnahme: **grün**, wenn "CO2" der aktuelle Schließen-Auslöser ist - ein
-  niedriger CO2-Wert ist kein Sicherheitsrisiko (anders als Frost-/
-  Hitzeschutz), das Schließen dient nur der Ordnung, nicht der Sicherheit
-  (siehe "Logik im Detail" unten), es besteht also kein Handlungsbedarf.
-  Der tatsächliche Fensterzustand fließt in diese Farbe **nicht** mehr
-  ein - auch wenn das Fenster bereits korrekt steht, wird eine aktive
-  Empfehlung (außer der CO2-Ausnahme) rot dargestellt, da sie weiterhin
-  gilt. Bei Räumen ohne Fenster ("Dieser Raum hat kein Fenster"
-  aktiviert) gilt stattdessen **orange**, da sich der Wert dort gar nicht
-  durch Lüften beeinflussen lässt (höchstens Luftentfeuchter/Klimaanlage
-  reagieren automatisch). Da zu jedem Zeitpunkt ohnehin immer nur **ein**
-  Auslöser als "der" Grund gilt (siehe Prioritätsreihenfolge unten -
-  Frostschutz vor Hitzeschutz vor Luftfeuchtigkeit vor CO2 vor
-  Temperatur), stellt sich die Frage "mehrere Auslöser gleichzeitig" für
-  die Farbe nicht: Rot ist der Normalfall, die Grün-Ausnahme greift nur,
-  wenn dieser eine, gewinnende Auslöser tatsächlich CO2 (Schließen) ist -
-  überwiegt stattdessen ein anderer, gleichzeitig zutreffender
-  Schließen-Grund (z. B. Luftfeuchtigkeit), wird dieser andere Grund zum
-  gewinnenden Auslöser, und der Raum zeigt ganz normal Rot dafür, nicht
-  Grün. Die Orange-Ausnahme greift unabhängig davon, wenn der Raum
-  generell kein Fenster hat.
+  nicht nur `34.2`) - bei jedem aktiven Auslöser grundsätzlich **rot**,
+  mit zwei Ausnahmen: **grün**, wenn "CO2" der aktuelle Schließen-Auslöser
+  ist - ein niedriger CO2-Wert ist kein Sicherheitsrisiko (anders als
+  Frost-/Hitzeschutz), das Schließen dient nur der Ordnung, nicht der
+  Sicherheit (siehe "Logik im Detail" unten), es besteht also kein
+  Handlungsbedarf; **orange**, wenn das Fenster bereits genau so steht,
+  wie es die aktuelle Empfehlung vorsieht (die Person hat also bereits
+  reagiert), die zugrunde liegenden Werte sich aber noch nicht normalisiert
+  haben - hier ist ebenfalls kein weiteres Handeln nötig, die Werte liegen
+  aber (anders als beim Totzone-Fall) tatsächlich noch außerhalb der Norm,
+  daher nicht grün, sondern nur orange. Bei Räumen ohne Fenster ("Dieser
+  Raum hat kein Fenster" aktiviert) gilt ebenfalls **orange**, unabhängig
+  vom Auslöser, da sich der Wert dort gar nicht durch Lüften beeinflussen
+  lässt (höchstens Luftentfeuchter/Klimaanlage reagieren automatisch). Rot
+  bleibt damit auf den Fall beschränkt, in dem tatsächlich noch etwas zu
+  tun ist: das Fenster steht (noch) nicht so, wie die Empfehlung es
+  vorsieht. Da zu jedem Zeitpunkt ohnehin immer nur **ein** Auslöser als
+  "der" Grund gilt (siehe Prioritätsreihenfolge unten - Frostschutz vor
+  Hitzeschutz vor Luftfeuchtigkeit vor CO2 vor Temperatur), stellt sich
+  die Frage "mehrere Auslöser gleichzeitig" für die Farbe nicht: Rot ist
+  der Normalfall bei einem echten Fenster-Mismatch, die Grün-Ausnahme
+  greift nur, wenn dieser eine, gewinnende Auslöser tatsächlich CO2
+  (Schließen) ist - überwiegt stattdessen ein anderer, gleichzeitig
+  zutreffender Schließen-Grund (z. B. Luftfeuchtigkeit), wird dieser
+  andere Grund zum gewinnenden Auslöser, und der Raum zeigt ganz normal
+  Rot bzw. Orange dafür, nicht Grün.
 
   Auslöser und Hervorhebung werden dabei **live** aus den aktuell
   angezeigten Werten und Schwellen berechnet, nicht aus dem historischen
@@ -893,17 +903,23 @@ Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
-- unabhängig davon, ob das Fenster bereits entsprechend steht. Jede
-aktive Empfehlung wird 🔴 dargestellt, mit genau einer Ausnahme: Ist der
-aktuelle Schließen-Auslöser CO2, ist das 🟢 (ein niedriger CO2-Wert ist
-kein Sicherheitsrisiko, sondern zeigt nur "Luftqualität wieder gut
-genug" - daher kein Handlungsbedarf, auch wenn das Fenster noch offen
-ist). Trifft dieser CO2-Fall mit einem anderen, gleichzeitig aktiven
-Schließen-Grund zusammen (z. B. Luftfeuchtigkeit), überwiegt der andere
-Grund automatisch (Prioritätsreihenfolge unten) - der Raum zeigt dann
-ganz normal 🔴 mit diesem anderen Grund als Auslöser, nicht 🟢. Liegt
-aktuell kein Auslöser vor ("Totzone", siehe oben), zeigt das Icon
-ebenfalls 🟢, da es dann nichts gibt, das ein Eingreifen nahelegt.
+- und, falls ja, ob dafür noch tatsächlich etwas zu tun ist. 🔴 nur, wenn
+das Fenster (noch) nicht so steht, wie es die aktuelle Empfehlung
+vorsieht - hier kann direkt eingegriffen werden. Steht das Fenster
+bereits korrekt (die Person hat also schon reagiert, die zugrunde
+liegenden Werte haben sich nur noch nicht normalisiert), zeigt das Icon
+stattdessen 🟠 - kein Handlungsbedarf mehr, aber auch noch nicht "alles
+gut", da die Werte weiterhin außerhalb der Norm liegen. 🟢 gilt nur bei
+zwei ganz anderen Fällen: Ist der aktuelle Schließen-Auslöser CO2 (ein
+niedriger CO2-Wert ist kein Sicherheitsrisiko, sondern zeigt nur
+"Luftqualität wieder gut genug" - daher kein Handlungsbedarf, unabhängig
+vom Fensterzustand), oder liegt aktuell gar kein Auslöser vor ("Totzone",
+siehe oben) - hier gibt es nichts, das ein Eingreifen nahelegt, und auch
+keine außerhalb der Norm liegenden Werte. Trifft der CO2-Fall mit einem
+anderen, gleichzeitig aktiven Schließen-Grund zusammen (z. B.
+Luftfeuchtigkeit), überwiegt der andere Grund automatisch
+(Prioritätsreihenfolge unten) - der Raum zeigt dann ganz normal 🔴/🟠 mit
+diesem anderen Grund als Auslöser, nicht 🟢.
 Bei Räumen ohne Fenster ("Dieser Raum hat kein Fenster" aktiviert) gibt
 es ohnehin keinen Fenster-Zustand, über den sich lüften ließe, daher
 richtet sich das Icon dort danach, ob aktuell ein Auslöser vorliegt: 🟢,
@@ -926,11 +942,12 @@ Fensterzustand - klein geschrieben, da kein eigenständiger Satzanfang,
 und als Partizip sprachlich zu "das Fenster ist geöffnet/geschlossen"
 passend). Der Empfehlungstext ("Öffnen"/"Schließen") wird
 zusätzlich fett und in derselben Farbe wie der ausschlaggebende Wert
-dargestellt, solange dafür ein Auslöser vorliegt - **rot** im Normalfall
-(Empfehlung mit tatsächlichem Handlungsbedarf, unabhängig vom
-tatsächlichen Fensterzustand), außer der Auslöser ist CO2 (Schließen) -
-dann **grün** (kein Handlungsbedarf) -, oder der Raum hat kein Fenster -
-dann **orange** (siehe "Hervorhebung des ausschlaggebenden Werts" oben);
+dargestellt, solange dafür ein Auslöser vorliegt - **rot**, wenn das
+Fenster noch nicht so steht wie die Empfehlung es vorsieht (echter
+Handlungsbedarf); **orange**, wenn das Fenster bereits korrekt steht,
+aber die Werte noch außerhalb der Norm liegen, oder der Raum kein
+Fenster hat; **grün**, wenn der Auslöser CO2 (Schließen) ist (kein
+Handlungsbedarf, siehe "Hervorhebung des ausschlaggebenden Werts" oben);
 liegt kein Auslöser
 vor ("Totzone"), bleibt der Text schlicht "–" ohne Hervorhebung. Die
 Hervorhebung der Innen-/Außenwerte in der Werte-Tabelle folgt derselben
