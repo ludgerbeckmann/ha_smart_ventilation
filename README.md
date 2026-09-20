@@ -623,7 +623,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 10** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 11** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -636,7 +636,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 10 %}
+  {% set card_version = 11 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -713,12 +713,9 @@ content: >
   {% set device_rows = '' %}
   {% if a.luftentfeuchter_an is defined %}
   {% set dehum_name = ('🔴' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
+  {% set dehum_status = (('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank') if a.luftentfeuchter_tank_fehler is defined else '–' %}
   {% set dehum_grund = a.luftentfeuchter_grund if a.luftentfeuchter_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | – | ' ~ dehum_grund ~ ' |' %}
-  {% if a.luftentfeuchter_tank_fehler is defined %}
-  {% set dehum_tank = '🔴' if a.luftentfeuchter_tank_fehler else '🟢' %}
-  {% set device_rows = device_rows ~ '\n| Wassertank | ' ~ dehum_tank ~ ' | – |' %}
-  {% endif %}
+  {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_status ~ ' | ' ~ dehum_grund ~ ' |' %}
   {% endif %}
   {% if a.klimaanlage_an is defined %}
   {% set ac_name = ('🔴' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
@@ -901,10 +898,10 @@ CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Geräte-Tabelle**
 (Gerät/Status/Grund - Zeilen für Luftentfeuchter, Klimaanlage und Dusche,
 jeweils nur falls konfiguriert bzw. für den Raum aktiviert; das Status-
 Icon steht direkt vor dem Gerätenamen in der ersten Spalte; ist ein
-Tankstatus-Sensor für den Luftentfeuchter hinterlegt, folgt direkt darauf
-eine eigene Zeile "Wassertank" mit dessen Status (🔴 voll/Fehler, 🟢 ok)
-in der "Status"-Spalte; "Grund" zeigt bei Luftentfeuchter/Klimaanlage
-eine rein informative, live bei jeder Neubewertung berechnete
+Tankstatus-Sensor für den Luftentfeuchter hinterlegt, zeigt die
+"Status"-Spalte in dessen Zeile zusätzlich "Wassertank" mit Icon (🔴
+voll/Fehler, 🟢 ok); "Grund" zeigt bei Luftentfeuchter/Klimaanlage eine
+rein informative, live bei jeder Neubewertung berechnete
 Kurzbeschreibung, warum das Gerät gerade an/aus ist bzw. pausiert, ohne
 selbst Einfluss auf die Steuerung zu haben - siehe `binary_sensor.py`;
 bei Dusche entsprechend, ob und warum die Duscherkennung aktuell
