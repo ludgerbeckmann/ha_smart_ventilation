@@ -620,12 +620,22 @@ wann der aktuelle Öffnen/Schließen-Status gilt.
 
 Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
-ohne zusätzliche Custom Cards:
+ohne zusätzliche Custom Cards.
+
+**Aktuelle Karten-Version: 1** – anders als der Integrations-Code wird
+diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
+inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
+Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
+dir in der Übersichts-Tabelle deines Dashboards ("Karte"-Spalte), welchen
+Stand deine eingefügte Karte gerade hat – stimmt sie nicht mit der hier
+im README dokumentierten aktuellen Version überein, ist deine Karte
+veraltet und du solltest den Block unten erneut komplett einfügen.
 
 ```yaml
 type: markdown
 title: Lüftungsübersicht
 content: >
+  {% set card_version = 1 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, rooms='', version=none) %}
@@ -758,7 +768,7 @@ content: >
   {% set version_header = ' Version |' if ns.version is not none else '' %}
   {% set version_sep = ':---:|' if ns.version is not none else '' %}
   {% set version_cell = ' ' ~ ns.version ~ ' |' if ns.version is not none else '' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ version_header ~ '\n|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ version_cell %}
+  {% set overview = '| 🟢 | 🟠 | 🔴 | Karte |' ~ version_header ~ '\n|:---:|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' | ' ~ card_version ~ ' |' ~ version_cell %}
   {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 
@@ -853,7 +863,10 @@ gefiltert werden oder noch mehr).
 **Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
 Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
 Icon am jeweiligen Raumnamen weiter unten - sowie eine vierte Spalte
-"Version" mit der aktuell installierten Versionsnummer, liest
+"Karte" mit der Versionsnummer **dieser Karten-Vorlage selbst**
+(`card_version`, eine reine Konstante ganz am Anfang der Vorlage, siehe
+unten) und - falls vorhanden - eine fünfte Spalte "Version" mit der
+aktuell installierten Versionsnummer **der Integration**, liest
 `integration_version` vom ersten Raum, für den das Attribut vorhanden
 ist; nebeneinander platzierte, aber getrennte Tabellen sind in Home
 Assistants Markdown-Karte ohne das gefilterte `style`-Attribut nicht

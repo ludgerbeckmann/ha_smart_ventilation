@@ -905,4 +905,13 @@ traf) - eine solche Annahme muss nicht im selben Codepfad stehen wie die
 - Dashboard-Karte (siehe README, Abschnitt "Attribute für eine
   Statusübersicht") ist bewusst NICHT Teil des Integrations-Codes, sondern
   wird separat vom Nutzer in eine Home-Assistant-Dashboard-Karte
-  eingefügt - Änderungen daran erfordern keinen Versionsbump/kein Release.
+  eingefügt - Änderungen daran erfordern keinen `manifest.json`-
+  Versionsbump/kein Release. Seit 0.50.0 hat die Karte aber eine eigene,
+  unabhängige Versionierung (Start bei `card_version = 1`, Konstante ganz
+  am Anfang der Jinja-Vorlage): muss bei **jeder** inhaltlichen Änderung
+  an der Karte hochgezählt werden, zusammen mit dem "Aktuelle
+  Karten-Version: N"-Hinweis direkt über dem Codeblock im README - dient
+  dem Nutzer als Selbstdiagnose (Übersichts-Tabelle zeigt "Karte: N" im
+  Dashboard), ob seine eingefügte Karte noch dem aktuellen Stand
+  entspricht, da die Karte (anders als der Code) nie automatisch
+  aktualisiert wird.
