@@ -915,3 +915,9 @@ traf) - eine solche Annahme muss nicht im selben Codepfad stehen wie die
   Dashboard), ob seine eingefügte Karte noch dem aktuellen Stand
   entspricht, da die Karte (anders als der Code) nie automatisch
   aktualisiert wird.
+- **Nutzer-Vorgabe (0.50.0+):** Bei jeder Änderung an der Dashboard-Karte
+  zusätzlich zum README-Diff immer den vollständigen, aktuellen YAML-Code
+  direkt im Chat posten (als Code-Block, nicht nur als angehängte Datei) -
+  damit er ohne Dateizugriff/Download direkt kopiert werden kann. Grund:
+  ein per `SendUserFile` verschicktes YAML allein hatte beim Nutzer zu
+  Unsicherheit geführt, ob wirklich der neueste Stand eingefügt wurde.
