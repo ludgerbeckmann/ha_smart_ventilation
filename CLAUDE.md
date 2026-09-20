@@ -836,6 +836,53 @@ bereits vorhandene, für einen strukturell identischen Zweck (Fenster-
 wiederzuverwenden, statt eine zweite, eigene Vergleichslogik für den
 Luftentfeuchter zu bauen.
 
+**25. Eine zweite, vom Haupt-Sensor abgeleitete Entität führt eine
+Reihenfolge-Abhängigkeit beim gleichzeitigen Hinzufügen ein, die leicht zu
+übersehen ist (0.50.0).** Auf Nutzerwunsch: der Haupt-Sensor sollte
+umbenannt werden (`"Lüften empfohlen ‹Raum›"` → `"‹Raum›
+Lüftungsempfehlung"` - reiner `_attr_name`-Wechsel, die Entity-ID bereits
+bestehender Räume bleibt dabei unverändert, da sie beim Anlegen einmalig
+aus dem damaligen Namen abgeleitet und danach in der Entity-Registry
+fixiert wird, nicht bei jedem Neustart neu generiert) und die
+Duscherkennung sollte zusätzlich zum bestehenden `duschen_erkannt`-
+Attribut eine eigene Entität `"‹Raum› Dusche aktiv"` bekommen - nur
+vorhanden, wenn die Duscherkennung für den Raum aktiviert ist. Die neue
+Entität (`SmartVentilationShowerBinarySensor`) hat bewusst keinen eigenen
+Zustand, sondern liest live `room_sensor.showering` (neue Property) und
+wird vom Haupt-Sensor bei jeder Neubewertung mit aktualisiert
+(`self._shower_sensor.async_write_ha_state()`, Referenz über
+`attach_shower_sensor()` nach dem Anlegen beider Entitäten gesetzt).
+Stolperfalle dabei: `async_setup_entry()` übergibt beide Entitäten in
+einem einzigen `async_add_entities([room_sensor, shower_sensor])`-Aufruf
+- Home Assistant fügt Entitäten aus einem solchen Aufruf nicht garantiert
+streng nacheinander hinzu, und der Haupt-Sensor ruft in seinem eigenen
+`async_added_to_hass()` bereits synchron `await self._evaluate()` auf,
+was sofort `self._shower_sensor.async_write_ha_state()` auslösen würde -
+zu diesem Zeitpunkt könnte `shower_sensor.hass` je nach Ausführungsreihen-
+folge noch `None` sein (Absturz). Fix: der Schreibaufruf beim Haupt-Sensor
+wird mit `self._shower_sensor.hass is not None` abgesichert (überspringt
+den allerersten Schreibversuch im Zweifelsfall einfach), UND der
+Dusche-Sensor bekommt eine eigene `async_added_to_hass()`, die seinen
+Zustand einmalig selbst schreibt, sobald er vollständig hinzugefügt ist -
+so kommt der korrekte Startzustand über einen der beiden Wege in jedem
+Fall zustande, unabhängig von der tatsächlichen Hinzufüge-Reihenfolge.
+Bei diagnostics.py ergab sich eine zweite, verwandte Stolperfalle: die
+bisherige Ein-Entität-pro-Raum-Annahme (`next(reg_entry.entity_id for
+reg_entry in ...)`, nimmt einfach die erste gefundene Entität) trifft
+jetzt für Räume mit aktivierter Duscherkennung nicht mehr zu - ohne Fix
+hätte die Diagnose-Datei nicht-deterministisch mal den Haupt-, mal den
+Dusche-Sensor als "die" Entität des Raums zeigen können. Fix: gezielt
+über die feste `unique_id`-Namenskonvention (`..._lueften_empfohlen` vs.
+`..._dusche_aktiv`) auseinandergehalten, statt sich auf Registrierungs-
+Reihenfolge zu verlassen. Lektion: Sobald eine Integration von "genau
+eine Entität pro Config-Entry" zu "möglicherweise mehrere" wechselt,
+jede Stelle im Code prüfen, die bisher stillschweigend genau eine
+Entität pro Eintrag angenommen hat (hier: sowohl die
+Hinzufüge-Reihenfolge zwischen den Entitäten selbst als auch ein
+komplett anderes Modul, das dieselbe Annahme über die Entity-Registry
+traf) - eine solche Annahme muss nicht im selben Codepfad stehen wie die
+Änderung, die sie bricht.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

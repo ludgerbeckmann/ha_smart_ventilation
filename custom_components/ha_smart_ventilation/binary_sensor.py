@@ -128,8 +128,16 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Legt die binary_sensor Entität für den konfigurierten Raum an."""
-    async_add_entities([SmartVentilationBinarySensor(hass, entry)])
+    """Legt die binary_sensor Entität(en) für den konfigurierten Raum an -
+    den Haupt-Sensor immer, den separaten "Dusche aktiv"-Sensor nur, falls
+    die Duscherkennung für diesen Raum aktiviert ist."""
+    room_sensor = SmartVentilationBinarySensor(hass, entry)
+    entities: list[BinarySensorEntity] = [room_sensor]
+    if entry.data.get(CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED):
+        shower_sensor = SmartVentilationShowerBinarySensor(entry, room_sensor)
+        room_sensor.attach_shower_sensor(shower_sensor)
+        entities.append(shower_sensor)
+    async_add_entities(entities)
 
 
 class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
@@ -161,9 +169,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._config = entry.data
         room = self._config[CONF_ROOM_NAME]
 
-        self._attr_name = f"Lüften empfohlen {room}"
+        self._attr_name = f"{room} Lüftungsempfehlung"
         self._attr_unique_id = f"{entry.entry_id}_lueften_empfohlen"
         self._attr_is_on = False
+
+        # Optionaler, separater "Dusche aktiv"-Sensor (siehe async_setup_entry
+        # unten) - nur gesetzt, falls die Duscherkennung für diesen Raum
+        # aktiviert ist. Referenz wird nach dem Anlegen beider Entitäten via
+        # attach_shower_sensor() gesetzt, damit _evaluate() dessen Zustand
+        # bei jeder Neubewertung mit aktualisieren kann.
+        self._shower_sensor: "SmartVentilationShowerBinarySensor | None" = None
 
         self._open_since = None
         self._last_notified_at = None
@@ -195,6 +210,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Duscherkennung - siehe _update_shower_detection().
         self._humidity_samples: deque[tuple] = deque()
         self._showering = False
+
+    def attach_shower_sensor(
+        self, shower_sensor: "SmartVentilationShowerBinarySensor"
+    ) -> None:
+        """Verknüpft den separaten 'Dusche aktiv'-Sensor mit diesem Raum -
+        siehe async_setup_entry()."""
+        self._shower_sensor = shower_sensor
+
+    @property
+    def showering(self) -> bool:
+        """Aktueller Duscherkennungs-Zustand - vom separaten 'Dusche aktiv'-
+        Sensor gelesen (siehe SmartVentilationShowerBinarySensor)."""
+        return self._showering
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -759,6 +787,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if shower_detection_enabled
             else False
         )
+        if self._shower_sensor is not None and self._shower_sensor.hass is not None:
+            # hass kann bei der allerersten Bewertung noch None sein, falls
+            # beide Entitäten gerade erst gleichzeitig hinzugefügt werden
+            # (Reihenfolge zwischen den beiden async_added_to_hass()-Aufrufen
+            # nicht garantiert) - der Shower-Sensor schreibt seinen eigenen
+            # Startzustand in diesem Fall selbst (siehe dort), spätestens der
+            # nächste Tick/Zustandswechsel holt den Rest nach.
+            self._shower_sensor.async_write_ha_state()
 
         open_by_temp = temp_needs_open and outdoor_cooler_enough
         open_by_humidity = (
@@ -1689,3 +1725,39 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             blocking=False,
         )
         self._persistent_notification_active = False
+
+
+class SmartVentilationShowerBinarySensor(BinarySensorEntity):
+    """True = aktuell wird geduscht (siehe Duscherkennung in
+    SmartVentilationBinarySensor._update_shower_detection()).
+
+    Rein abgeleitete Anzeige-Entität ohne eigenen Zustand - liest den
+    Duscherkennungs-Wert live vom Haupt-Sensor des Raums (`room_sensor`)
+    und wird von diesem bei jeder Neubewertung mit aktualisiert (siehe
+    attach_shower_sensor() dort). Nur vorhanden, wenn die Duscherkennung
+    für diesen Raum aktiviert ist (siehe async_setup_entry()).
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.MOISTURE
+    _attr_should_poll = False
+
+    def __init__(
+        self, entry: ConfigEntry, room_sensor: SmartVentilationBinarySensor
+    ) -> None:
+        self._room_sensor = room_sensor
+        room = entry.data[CONF_ROOM_NAME]
+        self._attr_name = f"{room} Dusche aktiv"
+        self._attr_unique_id = f"{entry.entry_id}_dusche_aktiv"
+
+    @property
+    def is_on(self) -> bool:
+        return self._room_sensor.showering
+
+    async def async_added_to_hass(self) -> None:
+        """Schreibt einmalig den aktuellen Zustand, sobald diese Entität
+        vollständig hinzugefügt ist - unabhängig davon, ob der Haupt-Sensor
+        (der ansonsten bei jeder Neubewertung mit aktualisiert, siehe
+        attach_shower_sensor()) zu diesem Zeitpunkt bereits selbst
+        hinzugefügt wurde (Reihenfolge nicht garantiert)."""
+        await super().async_added_to_hass()
+        self.async_write_ha_state()

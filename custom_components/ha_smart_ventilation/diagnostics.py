@@ -72,15 +72,20 @@ async def async_get_config_entry_diagnostics(
         # Diagnose.
         return diagnostics
 
-    entity_id = next(
-        (
-            reg_entry.entity_id
-            for reg_entry in er.async_entries_for_config_entry(
-                er.async_get(hass), entry.entry_id
-            )
-        ),
-        None,
-    )
+    # Ein Raum kann inzwischen zwei Entitäten haben (Haupt-Sensor + optionaler
+    # "Dusche aktiv"-Sensor bei aktivierter Duscherkennung, siehe
+    # binary_sensor.py) - über die feste unique_id-Namenskonvention gezielt
+    # auseinanderhalten, statt sich auf die (nicht garantierte) Reihenfolge
+    # von async_entries_for_config_entry() zu verlassen.
+    entity_id = None
+    shower_entity_id = None
+    for reg_entry in er.async_entries_for_config_entry(
+        er.async_get(hass), entry.entry_id
+    ):
+        if reg_entry.unique_id == f"{entry.entry_id}_lueften_empfohlen":
+            entity_id = reg_entry.entity_id
+        elif reg_entry.unique_id == f"{entry.entry_id}_dusche_aktiv":
+            shower_entity_id = reg_entry.entity_id
     entity_state = hass.states.get(entity_id) if entity_id else None
     diagnostics["entity"] = (
         {
@@ -91,6 +96,8 @@ async def async_get_config_entry_diagnostics(
         if entity_state is not None
         else None
     )
+    if shower_entity_id:
+        diagnostics["shower_entity"] = _snapshot(hass, shower_entity_id)
 
     # Außentemperatur/-luftfeuchtigkeit stehen nur in den globalen
     # Einstellungen, nicht im Raum-Eintrag selbst (siehe binary_sensor.py:

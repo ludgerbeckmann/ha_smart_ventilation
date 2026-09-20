@@ -13,8 +13,11 @@ Außentemperatur. Bei einem Zustandswechsel wird automatisch per
 
 ## Was die Integration macht
 
-Für jeden konfigurierten Raum wird eine Entität
-`binary_sensor.lueften_empfohlen_<raum>` angelegt:
+Für jeden konfigurierten Raum wird eine Entität mit dem Namen "**‹Raum›
+Lüftungsempfehlung**" angelegt (bei bereits bestehenden Räumen bleibt die
+Entity-ID `binary_sensor.lueften_empfohlen_<raum>` unverändert - nur der
+angezeigte Name ändert sich; neu angelegte Räume erhalten eine daraus
+abgeleitete Entity-ID):
 
 - **on** = Lüften wird empfohlen (Fenster sollte offen sein)
 - **off** = Lüften kann beendet werden
@@ -23,6 +26,14 @@ Bei jedem Wechsel wird automatisch eine Sprachansage und/oder Push-
 Benachrichtigung ausgelöst – ganz ohne zusätzliche Automationen. Du kannst
 den binary_sensor zusätzlich in Dashboards, eigenen Automationen oder
 Skripten verwenden (z. B. um motorisierte Fenster automatisch zu öffnen).
+
+Ist für einen Raum die **Duscherkennung** aktiviert (siehe "Duscherkennung"
+unter "Logik im Detail"), wird zusätzlich eine eigene Entität "**‹Raum›
+Dusche aktiv**" angelegt - ein reiner, vom Haupt-Sensor abgeleiteter
+Anzeige-Sensor ohne eigene Konfiguration, der **on** meldet, solange
+gerade geduscht wird (identisch zum weiterhin vorhandenen
+`duschen_erkannt`-Attribut des Haupt-Sensors, nur eben als eigenständige
+Entität für Dashboards/Automationen).
 
 ## Installation
 
@@ -456,10 +467,11 @@ nichts bringt (es entsteht weiter Dampf). Sobald der Anstieg wieder unter
 die Schwelle fällt (Duschen vorbei, Luftfeuchtigkeit stabilisiert sich oder
 sinkt bereits wieder), greift die normale Feuchtigkeits-Logik und die
 Öffnen-Empfehlung erfolgt wie gewohnt. Der aktuelle Erkennungsstatus steht
-als Attribut `duschen_erkannt` zur Verfügung, sobald die Funktion für den
-Raum aktiviert ist. Rein temperatur- oder anders begründete
-Öffnen-Empfehlungen (siehe oben) sind von der Duscherkennung nicht
-betroffen.
+als Attribut `duschen_erkannt` des Haupt-Sensors zur Verfügung, sowie -
+sobald die Funktion für den Raum aktiviert ist - zusätzlich als eigene
+Entität "‹Raum› Dusche aktiv" (siehe "Was die Integration macht" oben).
+Rein temperatur- oder anders begründete Öffnen-Empfehlungen (siehe oben)
+sind von der Duscherkennung nicht betroffen.
 
 **Zusätzlich:**
 - **Frostschutz** verhindert außerdem grundsätzlich das Öffnen, solange die
