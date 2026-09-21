@@ -883,6 +883,62 @@ komplett anderes Modul, das dieselbe Annahme über die Entity-Registry
 traf) - eine solche Annahme muss nicht im selben Codepfad stehen wie die
 Änderung, die sie bricht.
 
+**26. Eine Bereichs-Filterung auf Auswahllisten (Lektion 9) darf den
+bereits gespeicherten Wert eines Felds nie ausschließen - sonst wird ein
+Raum permanent unspeicherbar, sobald sich die Bereichs-Zuordnung einer
+Entität irgendwo in Home Assistant ändert (0.51.1).** Nutzer-Meldung:
+"ich kann die Einstellungen im Esszimmer nicht speichern" - er wollte die
+CO2-/Luftfeuchtigkeits-Sensoren entfernen, da diese dem HA-Bereich des
+Raums nicht mehr zugeordnet waren, bekam aber `value must be one of
+[...] at 'sensors.humidity_entity'`/`'sensors.co2_entity'` - für BEIDE
+Felder, obwohl er nur etwas entfernen wollte. Zusätzlich, unabhängig
+gemeldet: beim Ändern des HA-Bereichs im Raum-Formular musste er
+"zweimal auf OK drücken", damit gespeichert wird. Beides hatte dieselbe
+Ursache: `_area_include_entities()` (Lektion 9) berechnet die erlaubte
+Auswahlliste für einen `EntitySelector` ausschließlich aus den aktuell
+dem Bereich zugeordneten Entitäten passender Domain - der über
+`_entity_marker()` als `default=` vorbelegte, bereits gespeicherte Wert
+eines Felds wurde dabei nicht automatisch mit aufgenommen. Fällt eine
+zuvor gültige Auswahl (z. B. durch eine nachträgliche Bereichs-Umsortierung
+in Home Assistant selbst, oder einen geänderten Raum-Bereich) aus dieser
+Liste heraus, validiert Home Assistants Data-Entry-Flow den vorbelegten
+Schema-Default schon beim bloßen erneuten Anzeigen/Absenden des
+Formulars gegen die neue, engere Liste - und zwar BEVOR die eigentliche
+`async_step_room()`-Logik (inkl. der in Lektion 20 beschriebenen
+"Bereich geändert, Formular neu anzeigen"-Prüfung) überhaupt zum Zug
+kommt. Der zweite Bug (zweimal OK) war daher kein eigenständiges
+Problem, sondern derselbe Absturz an einer anderen Stelle: der erste
+Submit nach einem Bereichswechsel crashte hart statt wie in Lektion 20
+vorgesehen sauber neu zu rendern, sobald irgendein bereits gesetztes
+Feld durch den neuen Bereich aus der Auswahlliste fiel. Fix:
+`_area_include_entities()` bekommt einen neuen, optionalen Parameter
+`current_values` und nimmt diesen (String oder Liste) immer zusätzlich
+in die erlaubte Liste auf - unabhängig davon, ob der Wert noch dem
+Bereich zugeordnet ist. Alle Aufrufer übergeben jetzt den/die aktuellen
+Wert(e) des jeweiligen Felds aus `defaults`; bei geteilten Include-Listen
+(z. B. `sensor_include` für sowohl `CONF_HUMIDITY_ENTITY` als auch
+`CONF_CO2_ENTITY`, `window_include` für sowohl `CONF_WINDOW_ENTITY` als
+auch `CONF_DEHUMIDIFIER_TANK_FULL_ENTITY`) werden beide Werte als Liste
+übergeben. Wichtige Nebenbedingung beim Fix: `area_entities is None`
+(kein Bereich gewählt) liefert weiterhin bedingungslos `None` (keine
+Einschränkung) zurück, unabhängig von `current_values` - eine erste,
+zu grobe Fassung des Fixes prüfte stattdessen nur `not area_entities`
+und hätte dadurch sowohl "kein Bereich gewählt" als auch "Bereich
+gewählt, aber leer" (zwei laut Lektion 9 bewusst unterschiedliche Fälle)
+gleichbehandelt und im ersten Fall fälschlich auf nur den aktuellen Wert
+eingeschränkt, statt weiterhin alle Entitäten anzubieten - durch einen
+lokalen Test dieser drei Fälle (kein Bereich / leerer Bereich mit
+Altwert / leerer Bereich ohne Altwert) vor dem Commit gefunden und
+korrigiert. Lektion: Eine Auswahlliste, die aus einem *aktuell*
+berechneten Zustand (hier: Bereichs-Zuordnung) gebaut wird, muss den
+bereits gespeicherten Wert eines Felds immer als gültige Option
+mit-garantieren, auch wenn er nach der aktuellen Berechnung eigentlich
+nicht mehr dazugehören würde - sonst wird aus einer reinen
+UI-Komfortfunktion (weniger Auswahl-Rauschen) ein Datenverlust-Risiko:
+ein Raum, dessen Konfiguration nur noch teilweise zur aktuellen
+HA-Bereichs-Struktur passt, muss trotzdem weiterhin änderbar (und sei es
+nur, um genau dieses veraltete Feld zu leeren) bleiben.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
