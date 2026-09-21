@@ -986,6 +986,56 @@ optionalen Feldtyp explizit prüfen (nicht annehmen), ob ein geleertes
 Feld als leerer Wert oder als fehlender Schlüssel übermittelt wird,
 bevor man sich auf einen einfachen Merge verlässt.
 
+**28. Lektionen 26/27 hatten den Merge im Options-Flow repariert - der
+eigentliche Fehler saß aber schon eine Ebene tiefer, in der
+Formular-Definition selbst (0.51.3).** Nutzer-Rückmeldung nach 0.51.2:
+"die werte lassen sich immer noch nicht entfernen. merkwürdig ist auch,
+dass nach entfernen der sensoren aus den feldern in den feldern
+weiterhin der sensorname drinsteht" - das zweite Detail war der
+entscheidende Hinweis: Das Feld zeigte den alten Sensornamen nicht nur
+nach dem Speichern und erneuten Öffnen wieder an (das hätte noch zur
+bisherigen Diagnose gepasst), sondern offenbar bereits beim bloßen
+erneuten Anzeigen des Formulars. Ursache: `_entity_marker()` belegte ein
+optionales EntitySelector-Feld mit einem aktuell gesetzten Wert bislang
+über ein echtes `vol.Optional(key, default=value)` vor - genau das
+Muster, vor dem `_override_selector()`s eigener Docstring seit jeher
+warnt ("echt optional, kein erzwungener Standardwert"), hier aber nicht
+befolgt. Ein `default=` in einer Voluptuous-Marker verankert `value` als
+festen Schema-Fallback; Home Assistants Formular-Frontend behandelt ein
+sichtbar geleertes Feld mit einem solchen Schema-Default nicht als "jetzt
+leer", sondern fällt beim Rendern/Absenden auf genau diesen Fallback
+zurück - das Feld ließ sich dadurch praktisch nie wirklich leeren, ganz
+unabhängig davon, wie sauber der Merge in `async_step_room()` mit dem
+übermittelten `user_input` umging. Die Lektionen 26 und 27 hatten damit
+zwar zwei echte, für sich genommen valide Bugs behoben (Auswahllisten-
+Filterung schloss den gespeicherten Wert aus; der Merge ignorierte
+fehlende Schlüssel nicht korrekt) - aber der eigentliche, vom Nutzer
+beobachtete Effekt ("Wert kommt immer wieder zurück") hatte seine
+Ursache in einer dritten, bis dahin nicht untersuchten Stelle: der
+Schema-Definition selbst, noch bevor überhaupt ein Submit stattfindet.
+Fix: `_entity_marker()` verwendet für optionale Felder jetzt wie
+`_override_selector()` ausschließlich `description={"suggested_value":
+value}` statt `default=value` - der aktuelle Wert wird weiterhin zur
+Vorbelegung angezeigt, aber ohne Schema-Fallback, auf den ein geleertes
+Feld zurückspringen könnte. Die Lektion-27-Absicherung im Merge
+(`ROOM_OPTIONAL_ENTITY_KEYS`) bleibt zusätzlich bestehen und schadet
+nicht - unabhängig davon, ob ein geleertes Feld jetzt als leerer Wert
+oder weiterhin als fehlender Schlüssel übermittelt wird, greift sie
+in beiden Fällen korrekt. Lektion: Ein vom Nutzer nebenbei erwähntes
+Detail ("das Feld zeigt den alten Wert schon beim Ansehen wieder an",
+nicht erst nach einem erneuten Laden aus dem Speicher) kann die
+tatsächliche Fehlerebene präziser eingrenzen als der zuerst gemeldete
+Haupteffekt ("lässt sich nicht entfernen") - und ein bereits reparierter
+Bug in einer Schicht (hier: Merge-Logik) beweist nicht, dass es nicht
+noch einen zweiten, unabhängigen Bug in einer anderen Schicht (hier: der
+Formular-Schema-Definition selbst) für denselben beobachteten Effekt
+gibt. Bei jeder "Default vs. Suggested-Value"-Entscheidung für ein
+optionales Home-Assistant-Formularfeld gilt seitdem durchgängig: nur
+echte Pflichtfelder bekommen `default=`, alles andere ausschließlich
+`suggested_value` - dieselbe Regel, die `_override_selector()` schon
+immer befolgt hatte, aber bis 0.51.3 nicht konsequent auch auf
+`_entity_marker()` übertragen wurde.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
