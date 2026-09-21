@@ -1036,6 +1036,57 @@ echte Pflichtfelder bekommen `default=`, alles andere ausschließlich
 immer befolgt hatte, aber bis 0.51.3 nicht konsequent auch auf
 `_entity_marker()` übertragen wurde.
 
+**29. Der "Totzone neutral"-Fix für die Dashboard-Karte war nur für die
+Schließen-Seite vollständig umgesetzt - die Öffnen-Seite fiel weiterhin
+unbegrenzt auf den historischen `letzter_grund` zurück (reiner
+Dashboard-Karten-Fix, `card_version` 11 → 12, kein Versionsbump nötig).**
+Nutzer-Meldung (Esszimmer, Screenshot): Nachdem die CO2-/Luftfeuchtigkeits-
+Sensoren aus dem Raum entfernt worden waren (siehe Lektionen 26-28), zeigte
+die Karte weiterhin "Öffnen" mit Auslöser "Luftfeuchtigkeit" und einem
+Zeitstempel vom selben Tag - obwohl in der Werte-Tabelle darunter gar keine
+Luftfeuchtigkeits-Zeile mehr auftauchte (Attribut nicht mehr vorhanden, da
+kein Sensor mehr konfiguriert). Die Innentemperatur (22.1 °C) lag zwischen
+Schließen- (21.0 °C) und Öffnen-Schwelle (23.0 °C), CO2 (870 ppm) ebenso
+zwischen den Schwellen (800/1000 ppm) - keine der beiden verbleibenden
+Größen rechtfertigte aktuell ein "Öffnen". Ursache: `live_grund_open`
+(bestimmt den Auslöser-Code, wenn der Sensor-Zustand `on`/"Öffnen" ist)
+prüfte zwar korrekt `temp_needs_open`/`hum_needs_open`/`co2_needs_open`,
+fiel aber im `else`-Zweig unbegrenzt auf `grund_code` (den historischen,
+u. U. längst veralteten `letzter_grund`) zurück - anders als das
+strukturell identische `comfort_close` auf der Schließen-Seite, das seinen
+Rückfallwert bewusst auf die drei einzigen Fälle beschränkt, die sich
+wirklich nicht live nachrechnen lassen (`duration`/`outdoor_warmer`/
+`outdoor_wetter`, alle drei ausschließlich Schließen-Gründe, siehe README-
+Abschnitt "Hervorhebung des ausschlaggebenden Werts"). Für die Öffnen-Seite
+gibt es aber gar keinen strukturell entsprechenden Fall: Temperatur,
+Luftfeuchtigkeit und CO2 sind als Öffnen-Gründe IMMER live nachrechenbar,
+sobald der jeweilige Sensor konfiguriert ist - `grund_code` konnte dort
+also nur noch als Krücke für exakt die "Totzone"-Situation dienen, die der
+bereits früher eingeführte, in der README ausführlich dokumentierte
+Neutral-Mechanismus ("trifft weder ein Live-Check noch dieser Rückfallwert
+zu, zeigt die Karte konsequent überall neutral '–'") eigentlich verhindern
+sollte. Die README-Dokumentation selbst beschrieb das korrekte Verhalten
+bereits akkurat ("`letzter_grund` dient nur noch als Rückfallwert für die
+DREI Fälle...") - nur der Code für die Öffnen-Seite hielt sich nicht
+daran. Fix: `live_grund_open`s letzter Zweig von `grund_code` auf `''`
+geändert - Öffnen-Auslöser werden dadurch ausschließlich live berechnet,
+ganz ohne Rückfallwert, symmetrisch zur bereits korrekten Beschränkung auf
+der Schließen-Seite. Lokal mit zwei Szenarien gegengetestet (Jinja-Sandbox
+mit `StrictUndefined`, siehe Lektion 7): der gemeldete Esszimmer-Fall
+zeigt jetzt korrekt neutral (🟢, Empfehlung/Auslöser/Uhrzeit alle "–"),
+ein echter, weiterhin live zutreffender Luftfeuchtigkeits-Öffnen-Grund
+(Badezimmer-Testfall) bleibt unverändert korrekt rot/orange markiert.
+Lektion: Ein als "Totzone neutral"/"live statt historisch"-Prinzip
+eingeführter Rückfallwert-Filter (hier: `close_fallback`, beschränkt auf
+die drei nicht-live-berechenbaren Gründe) muss bei JEDER Stelle greifen,
+an der `letzter_grund` sonst noch unbegrenzt durchgereicht wird - eine
+zweite, strukturell parallele Stelle (hier: die Öffnen-Seite derselben
+`highlight_code`-Berechnung) kann denselben Bug unabhängig von der bereits
+gefixten Stelle enthalten, obwohl die dazugehörige README-Doku bereits das
+insgesamt korrekte Verhalten beschreibt - eine korrekt dokumentierte
+Absicht ist kein Beleg dafür, dass der Code sie an jeder relevanten Stelle
+auch tatsächlich umsetzt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
