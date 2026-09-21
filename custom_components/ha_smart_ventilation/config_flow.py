@@ -199,13 +199,26 @@ def _entity_marker(
     key: str, defaults: dict | None, required: bool = True
 ) -> vol.Marker:
     """Erzeugt vol.Required/vol.Optional - inkl. Vorbelegung mit dem aktuellen
-    Wert, falls beim Bearbeiten eines bestehenden Eintrags einer vorliegt."""
+    Wert, falls beim Bearbeiten eines bestehenden Eintrags einer vorliegt.
+
+    Für optionale Felder wird die Vorbelegung bewusst NICHT über ein echtes
+    `default=` gesetzt, sondern wie bei _override_selector() über
+    `description={"suggested_value": ...}` - ein `vol.Optional(key,
+    default=value)` verankert `value` als festen Schema-Fallback, auf den
+    Home Assistants Formular ein sichtbar geleertes Feld beim erneuten
+    Anzeigen/Speichern immer wieder zurückfallen lässt. Das Feld ließ sich
+    dadurch in der Praxis nie wirklich leeren, unabhängig davon, wie der
+    Merge in async_step_room() mit dem übermittelten user_input umgeht
+    (siehe ROOM_OPTIONAL_ENTITY_KEYS) - der Fehler saß schon in der
+    Formular-Definition selbst, bevor überhaupt etwas übermittelt wird."""
     defaults = defaults or {}
     value = defaults.get(key)
     marker_cls = vol.Required if required else vol.Optional
-    if value not in (None, "", []):
+    if value in (None, "", []):
+        return marker_cls(key)
+    if required:
         return marker_cls(key, default=value)
-    return marker_cls(key)
+    return marker_cls(key, description={"suggested_value": value})
 
 
 def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
