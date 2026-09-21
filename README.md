@@ -624,7 +624,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 16** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 17** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -637,7 +637,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 16 %}
+  {% set card_version = 17 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -718,8 +718,8 @@ content: >
   {% endif %}
   {% set device_rows = '' %}
   {% if a.luftentfeuchter_an is defined %}
-  {% set dehum_name = ('🔴' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
-  {% set dehum_name = (dehum_name ~ '<br>' ~ (('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank')) if a.luftentfeuchter_tank_fehler is defined else dehum_name %}
+  {% set dehum_name = ('🔴' if a.luftentfeuchter_an else '⚫') ~ '&nbsp;Luftentfeuchter' %}
+  {% set dehum_name = (dehum_name ~ '<br>' ~ (('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ '&nbsp;Wassertank')) if a.luftentfeuchter_tank_fehler is defined else dehum_name %}
   {% set dehum_laufzeit = '–' %}
   {% if a.luftentfeuchter_an and a.luftentfeuchter_seit is defined %}
   {% set dehum_minutes = ((now() - as_datetime(a.luftentfeuchter_seit)).total_seconds() / 60) | int %}
@@ -729,7 +729,7 @@ content: >
   {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_laufzeit ~ ' | ' ~ dehum_grund ~ ' |' %}
   {% endif %}
   {% if a.klimaanlage_an is defined %}
-  {% set ac_name = ('🔴' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
+  {% set ac_name = ('🔴' if a.klimaanlage_an else '⚫') ~ '&nbsp;Klimaanlage' %}
   {% set ac_laufzeit = '–' %}
   {% if a.klimaanlage_an and a.klimaanlage_seit is defined %}
   {% set ac_minutes = ((now() - as_datetime(a.klimaanlage_seit)).total_seconds() / 60) | int %}
@@ -739,7 +739,7 @@ content: >
   {% set device_rows = device_rows ~ '\n| ' ~ ac_name ~ ' | ' ~ ac_laufzeit ~ ' | ' ~ ac_grund ~ ' |' %}
   {% endif %}
   {% if a.duschen_erkannt is defined %}
-  {% set dusche_name = ('🟢' if a.duschen_erkannt else '⚫') ~ ' Dusche' %}
+  {% set dusche_name = ('🟢' if a.duschen_erkannt else '⚫') ~ '&nbsp;Dusche' %}
   {% set dusche_laufzeit = '–' %}
   {% if a.duschen_erkannt and a.dusche_seit is defined %}
   {% set dusche_minutes = ((now() - as_datetime(a.dusche_seit)).total_seconds() / 60) | int %}
