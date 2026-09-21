@@ -1087,6 +1087,61 @@ insgesamt korrekte Verhalten beschreibt - eine korrekt dokumentierte
 Absicht ist kein Beleg dafür, dass der Code sie an jeder relevanten Stelle
 auch tatsächlich umsetzt.
 
+**30. Nicht jeder "Fenster steht schon richtig, Werte aber noch außerhalb
+der Norm"-Fall ist gleich orange - bei den beiden Außenluft-Umkehr-Gründen
+ist der Zustand bereits final, nicht nur "wartend" (reiner
+Dashboard-Karten-Fix, `card_version` 12 → 13, kein Versionsbump nötig).**
+Nutzer-Frage (Badezimmer, Screenshot): Öffnen-Empfehlung wegen
+Luftfeuchtigkeit (61 % > 60 %-Schwelle), obwohl die absolute
+Luftfeuchtigkeit draußen (11,5 g/m³) höher lag als drinnen (11,1 g/m³) -
+Lüften hätte die relative Luftfeuchtigkeit also gar nicht gesenkt. Die
+Antwort ergab: Der dafür zuständige Schließen-Mechanismus
+(`close_by_humidity_outdoor_reversal`, Lektion 23) blockierte in diesem
+Fall, weil `temp_still_needed` bereits `True` war - nicht weil die
+Temperatur tatsächlich noch Lüftungsbedarf anzeigte (`open_by_temp` war
+`False`, die Innentemperatur lag klar unter der Öffnen-Schwelle), sondern
+weil sie schlicht noch nicht bis zur eigenen Schließen-Schwelle gefallen
+war. Das ist ein separates, hier nicht behobenes Verhalten (die Schutz-
+Logik wurde absichtlich 1:1 von den drei primären Schließgründen für
+`close_by_summer_outdoor`/`close_by_humidity_outdoor_reversal`
+übernommen, siehe deren Kommentare) - die zweite Nachfrage bezog sich
+aber auf einen zweiten, tatsächlich schon in Produktion beobachteten Fall
+im Büro, wo dieser Mechanismus BEREITS korrekt gegriffen hatte
+(Auslöser "Außen feuchter", Fenster schon geschlossen, Zustand passt) und
+trotzdem nur orange statt grün angezeigt wurde. Nutzer-Einschätzung dazu:
+Dieser Zustand ist bereits **endgültig**, nicht nur "wartend" - anders
+begründet als die bereits bestehende Grün-Ausnahme für CO2 (Lektion 16/17:
+niedriges CO2 ist kein Sicherheitsrisiko, daher irrelevant ob das Fenster
+überhaupt matcht), aber im Ergebnis ebenso rechtfertigend: Bei den drei
+primären Größen (Temperatur/Luftfeuchtigkeit/CO2) bezieht sich die
+Orange-Bedeutung ("Fenster passt schon, Werte aber noch außerhalb der
+Norm") auf einen INNENWERT, der sich durch die bereits erfolgte
+Fenster-Aktion irgendwann normalisieren wird ("wartend"). Bei
+"Außen wärmer"/"Außen feuchter" (`outdoor_warmer`/`outdoor_wetter`) ist
+die hervorgehobene Zelle dagegen die AUSSEN-Zelle (siehe Lektion 23) - die
+ändert sich unabhängig vom eigenen Fensterzustand, es gibt also nichts,
+"worauf" das Fenster warten würde: Bleibt es geschlossen, bleibt der
+Zustand exakt so, bis sich die Außenbedingungen von selbst ändern - kein
+Unterschied zu "sofort" vs. "in 10 Minuten". Wichtiger Unterschied zur
+CO2-Ausnahme: Die neue `outdoor_final_exception` gilt NUR, wenn das
+Fenster tatsächlich matcht (`is_match`) - anders als bei CO2 (wo Grün
+unabhängig vom Fensterzustand gilt, da Lüften trotz niedrigem CO2 nie
+schadet) verschlimmert Weiterlüften hier tatsächlich die Lage
+(Luftfeuchtigkeit/Temperatur von draußen), ein Fenster-Mismatch bei
+diesen beiden Gründen bleibt daher weiterhin korrekt **rot**, nicht grün.
+Fix: `outdoor_final_exception` (analog zu `co2_close_exception`, aber
+zusätzlich an `is_match` gebunden) ersetzt `match_icon`/`highlight_open`
+von Orange auf Grün, ausschließlich innerhalb des ohnehin schon
+vorhandenen Match-Zweigs. Lokal mit Match- und Mismatch-Fall
+gegengetestet (Jinja-Sandbox, `StrictUndefined`). Lektion: "Fenster passt
+schon, Werte noch außerhalb der Norm" ist nicht immer dasselbe
+Orange-Muster - entscheidend ist, ob die hervorgehobene Größe durch die
+bereits erfolgte Aktion selbst noch beeinflusst/normalisiert werden kann
+(Innenwert, "wartend" → Orange) oder komplett extern ist und sich ohnehin
+nicht durch das eigene Fenster ändert (Außenwert, bereits "endgültig" →
+Grün, aber nur im Match-Fall, da hier - anders als bei der CO2-Ausnahme -
+ein Mismatch tatsächlich schadet statt nur überflüssig zu sein).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
