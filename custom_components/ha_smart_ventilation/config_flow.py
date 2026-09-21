@@ -357,15 +357,36 @@ def _entities_for_area(hass, area_id: str | None) -> set[str] | None:
 
 
 def _area_include_entities(
-    area_entities: set[str] | None, domains: str | list[str]
+    area_entities: set[str] | None,
+    domains: str | list[str],
+    current_values: str | list[str] | None = None,
 ) -> list[str] | None:
     """Schränkt einen EntitySelector auf die dem gewählten Bereich
     zugeordneten Entitäten der passenden Domain(s) ein - liefert None (=
     keine Einschränkung, alle Entitäten wie bisher wählbar), falls kein
     Bereich gewählt wurde oder der Bereich keine passende Entität enthält.
     Ohne diesen Fallback könnte ein Raum, dessen Sensoren (noch) keinem
-    HA-Bereich zugeordnet sind, plötzlich gar keine Auswahl mehr anbieten."""
-    if not area_entities:
+    HA-Bereich zugeordnet sind, plötzlich gar keine Auswahl mehr anbieten.
+
+    `current_values` (der/die aktuell für dieses Feld gespeicherte(n)
+    Wert(e)) wird der erlaubten Liste immer zusätzlich hinzugefügt, auch
+    falls die Entität (mehr) nicht dem Bereich zugeordnet ist - z. B. weil
+    sie nachträglich in Home Assistant einem anderen Bereich zugewiesen
+    wurde, oder der Raum-Bereich selbst geändert wurde. Ohne das würde
+    schon das bloße erneute Anzeigen des Formulars mit einem
+    "value must be one of [...]"-Validierungsfehler fehlschlagen, da der
+    per `_entity_marker()` vorbelegte Wert nicht mehr in der Auswahlliste
+    steckt - unabhängig davon, ob der Nutzer dieses Feld überhaupt ändern
+    wollte. Der Raum bliebe dadurch dauerhaft unspeicherbar, bis der Wert
+    von Hand (z. B. über die YAML-Konfiguration) entfernt wird."""
+    extra = (
+        [current_values]
+        if isinstance(current_values, str)
+        else list(current_values or [])
+    )
+    extra = [e for e in extra if e]
+    if area_entities is None:
+        # Kein Bereich gewählt - keine Einschränkung, unabhängig von extra.
         return None
     allowed_domains = (domains,) if isinstance(domains, str) else tuple(domains)
     filtered = [
@@ -373,7 +394,8 @@ def _area_include_entities(
         for entity_id in area_entities
         if entity_id.split(".", 1)[0] in allowed_domains
     ]
-    return filtered or None
+    combined = list(dict.fromkeys(filtered + extra))
+    return combined or None
 
 
 def _build_area_schema() -> vol.Schema:
@@ -477,7 +499,9 @@ def _build_room_schema(
         fields[area_marker] = area_sel
     fields[vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, ""))] = str
 
-    sonos_include = _area_include_entities(area_entities, "media_player")
+    sonos_include = _area_include_entities(
+        area_entities, "media_player", defaults.get(CONF_SONOS_ENTITY)
+    )
 
     fields[vol.Required(SECTION_NOTIFY)] = section(
         vol.Schema(
@@ -525,10 +549,25 @@ def _build_room_schema(
         {"collapsed": False},
     )
 
-    temp_source_include = _area_include_entities(area_entities, TEMP_SOURCE_DOMAINS)
-    sensor_include = _area_include_entities(area_entities, "sensor")
-    window_include = _area_include_entities(area_entities, "binary_sensor")
-    shutter_include = _area_include_entities(area_entities, SHUTTER_DOMAINS)
+    temp_source_include = _area_include_entities(
+        area_entities, TEMP_SOURCE_DOMAINS, defaults.get(CONF_TEMP_SOURCE_ENTITY)
+    )
+    sensor_include = _area_include_entities(
+        area_entities,
+        "sensor",
+        [defaults.get(CONF_HUMIDITY_ENTITY), defaults.get(CONF_CO2_ENTITY)],
+    )
+    window_include = _area_include_entities(
+        area_entities,
+        "binary_sensor",
+        [
+            defaults.get(CONF_WINDOW_ENTITY),
+            defaults.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
+        ],
+    )
+    shutter_include = _area_include_entities(
+        area_entities, SHUTTER_DOMAINS, defaults.get(CONF_SHUTTER_ENTITY)
+    )
 
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
@@ -634,8 +673,12 @@ def _build_room_schema(
         {"collapsed": True},
     )
 
-    dehumidifier_include = _area_include_entities(area_entities, DEHUMIDIFIER_DOMAINS)
-    ac_include = _area_include_entities(area_entities, AC_DOMAINS)
+    dehumidifier_include = _area_include_entities(
+        area_entities, DEHUMIDIFIER_DOMAINS, defaults.get(CONF_DEHUMIDIFIER_ENTITY)
+    )
+    ac_include = _area_include_entities(
+        area_entities, AC_DOMAINS, defaults.get(CONF_AC_ENTITY)
+    )
 
     # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
     # für einen Teil der Räume relevant
