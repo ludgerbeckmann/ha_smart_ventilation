@@ -1188,6 +1188,48 @@ ersten desynchronisiert - ein reines "wo pflegen wir sonst Zeitstempel"-
 Muster (hier: `_evaluate()`) ist keine Garantie dafür, dass es für JEDEN
 neuen Zeitstempel die richtige Stelle ist.
 
+**32. Die "bereits gelöst, nicht nur wartend"-Grünfärbung eines
+Schließen-Auslösers (Lektion 30) war nur für Räume MIT Fenster
+umgesetzt - bei Räumen ohne Fenster griff sie überhaupt nicht, weil
+deren Farblogik in einem eigenen, komplett getrennten Codezweig steht
+(reiner Dashboard-Karten-Fix, `card_version` 18 → 19, kein
+Versionsbump nötig).** Nutzer-Meldung (Flur KG, kein Fenster
+konfiguriert): Auslöser "Luftfeuchtigkeit" mit bereits unter die
+Schließen-Schwelle gefallenem Wert (54,6 % < 55 %-Schwelle), Karte
+zeigte trotzdem weiterhin 🟠 statt 🟢 - obwohl genau dieser Fall bei
+einem Raum MIT Fenster durch Lektion 30 (`comfort_close_resolved_exception`)
+bereits korrekt grün würde. Ursache: Die Berechnung von `match_icon` für
+Räume ohne Fenster läuft in einer eigenen Zeile VOR dem `{% if
+window_entity %}`-Block (`'🟠 ' if no_window else '🔴 '` als reiner
+Fallback) und wusste von `comfort_close_resolved_exception` nichts - die
+Variable wurde zwar schon berechnet, aber nur innerhalb des
+Fenster-Blocks tatsächlich ausgewertet (`is_match` als zusätzliche
+Bedingung), der für fensterlose Räume nie betreten wird. Fix:
+`no_window_resolved = no_window and comfort_close_resolved_exception`
+(ohne `is_match`-Bedingung, da es dafür kein Fenster gibt) wird jetzt
+zusätzlich in die 🟢-Bedingung von sowohl `match_icon` als auch
+`highlight_open` aufgenommen - symmetrisch zur bereits bestehenden
+CO2-Ausnahme, die ja ebenfalls unabhängig vom Fensterzustand gilt.
+Dabei ergab die Rückfrage beim Nutzer eine wichtige Einschränkung, die
+über die reine Symmetrie zu Lektion 30 hinausgeht: Ist speziell
+Luftfeuchtigkeit der Auslöser UND für den Raum ein Luftentfeuchter
+konfiguriert, soll es trotzdem bei 🟠 bleiben
+(`no_window_dehum_exception`, geprüft über dieselbe `a.luftentfeuchter_an
+is defined`-Markierung wie schon in der Geräte-Tabelle) - der
+Luftfeuchtigkeitswert hängt hier eng mit dem Luftentfeuchter zusammen
+und soll bewusst sichtbar bleiben, statt in Grün zu verschwinden, auch
+wenn er die Schließen-Schwelle bereits erreicht hat. Andere
+Schließen-Gründe (Temperatur, Außen wärmer/feuchter) sind von dieser
+Ausnahme nicht betroffen, ebenso wenig Luftfeuchtigkeit in Räumen ohne
+Luftentfeuchter. Lektion: Eine Farb-/Zustandslogik, die für den
+Fenster-Fall bereits korrekt implementiert ist (Lektion 30), aber in
+einem strukturell getrennten Codezweig für einen anderen Fall (hier:
+kein Fenster, siehe bereits Lektion 17) eine eigene, parallele
+Berechnung hat, überträgt sich nicht automatisch - bei jeder neuen
+"eigentlich schon gelöst"-Ausnahme prüfen, ob sie in JEDEM Zweig
+greifen muss, der dieselbe Grundfrage (hier: Auslöser ist ein
+Schließen-Grund) unabhängig behandelt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
