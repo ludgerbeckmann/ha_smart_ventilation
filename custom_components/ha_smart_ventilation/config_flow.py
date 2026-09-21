@@ -120,6 +120,27 @@ SECTION_DEVICES = "devices"
 SECTION_PARAMETERS = "parameters"
 SECTION_MESSAGES = "messages"
 
+# Alle im Raum-Formular über _entity_marker(..., required=False) erzeugten
+# EntitySelector-Felder (siehe _build_room_schema). Anders als Zahlen-/
+# Text-Felder ohne festen Schema-default (_override_selector) übermittelt
+# Home Assistants Formular ein geleertes EntitySelector-Feld nicht als
+# leeren/None-Wert, sondern lässt den Schlüssel im gesendeten user_input
+# komplett weg - der einfache {**current, **defaults}-Merge in
+# async_step_room würde einen zuvor gesetzten Wert dadurch fälschlich
+# unverändert beibehalten, selbst wenn der Nutzer das Feld sichtbar
+# geleert hat. Für genau diese Felder wird der Merge deshalb gesondert
+# behandelt (siehe async_step_room).
+ROOM_OPTIONAL_ENTITY_KEYS = (
+    CONF_SONOS_ENTITY,
+    CONF_HUMIDITY_ENTITY,
+    CONF_CO2_ENTITY,
+    CONF_WINDOW_ENTITY,
+    CONF_SHUTTER_ENTITY,
+    CONF_DEHUMIDIFIER_ENTITY,
+    CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
+    CONF_AC_ENTITY,
+)
+
 # Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
 # async_step_global) - wird nie in den Config-Entry übernommen, sondern vor
 # dem Speichern wieder herausgenommen. Kein CONF_*-Konstante in const.py,
@@ -1108,6 +1129,14 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                     # Ein Feld, das jetzt leer gelassen wurde, entfernt eine
                     # zuvor gesetzte Raum-Override wieder (zurück auf "global").
                     new_data = {**current, **defaults}
+                    # EntitySelector-Felder werden beim Leeren nicht mit
+                    # übermittelt, sondern fehlen komplett in defaults (anders
+                    # als Zahlen-/Text-Felder) - der obige Merge würde einen
+                    # zuvor gesetzten Wert sonst fälschlich beibehalten, siehe
+                    # ROOM_OPTIONAL_ENTITY_KEYS.
+                    for key in ROOM_OPTIONAL_ENTITY_KEYS:
+                        if not defaults.get(key):
+                            new_data.pop(key, None)
                     self.hass.config_entries.async_update_entry(
                         self.config_entry,
                         data=new_data,
