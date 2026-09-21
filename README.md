@@ -624,7 +624,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 15** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 16** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -637,7 +637,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 15 %}
+  {% set card_version = 16 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -662,6 +662,7 @@ content: >
   {% set has_live_reason = highlight_code != '' %}
   {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
   {% set window_state_text = '–' %}
+  {% set window_changed_time = '–' %}
   {% set co2_close_exception = s.state == 'off' and highlight_code == 'co2' %}
   {% set outdoor_final_exception = s.state == 'off' and highlight_code in ['outdoor_warmer', 'outdoor_wetter'] %}
   {% set match_icon = '🟢 ' if (not has_live_reason or co2_close_exception) else ('🟠 ' if no_window else '🔴 ') %}
@@ -669,6 +670,9 @@ content: >
   {% if window_entity %}
   {% set w = states(window_entity) %}
   {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
+  {% if w in ['on', 'off'] %}
+  {% set window_changed_time = as_local(states[window_entity].last_changed).strftime('%d.%m. %H:%M') %}
+  {% endif %}
   {% if not no_window and has_live_reason and not co2_close_exception and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
   {% set match_icon = ('🟢 ' if outdoor_final_exception else '🟠 ') if is_match else '🔴 ' %}
@@ -751,7 +755,7 @@ content: >
   {% set uhrzeit_val = changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
-  {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
+  {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | – | – | ' ~ window_changed_time ~ ' |\n| – | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
   {% endif %}
   {% set values_table = '| Messwert | Innen | Außen | Öffnen | Schließen |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
@@ -912,12 +916,21 @@ Werte noch außerhalb der Norm, oder Raum ohne Fenster), zuletzt alle
 Gruppen jeweils alphabetisch. Räume mit dem größten Handlungsbedarf
 stehen so immer ganz oben, unabhängig vom Raumnamen. Pro Raum dann: Raumname →
 **Empfehlungs-Tabelle** (Fenster/Empfehlung/
-Auslöser/Uhrzeit - nur für Räume mit Fenster; Auslöser wird live aus den
-aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
+Auslöser/Uhrzeit - nur für Räume mit Fenster, zwei Zeilen: die erste
+zeigt ausschließlich den Fensterzustand mit dem Zeitpunkt seiner letzten
+tatsächlichen Änderung (`last_changed` des Fensterkontakt-Sensors selbst,
+"–" ohne konfigurierten Fensterkontakt), die zweite ausschließlich
+Empfehlung/Auslöser mit dem Zeitpunkt der letzten Empfehlungsänderung -
+dadurch auf einen Blick erkennbar, ob die Fensteraktion vor oder nach dem
+Empfehlungswechsel lag, z. B. um zu prüfen, ob eine fehlende
+Benachrichtigung dadurch erklärbar ist (Fenster stand zum Zeitpunkt des
+Wechsels bereits passend, siehe "Logik im Detail"). Auslöser wird live aus
+den aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
 ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
 Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand und
-Uhrzeit den Zeitpunkt der letzten tatsächlichen Zustandsänderung; liegt
-aktuell **kein** Auslöser vor ("Totzone", siehe oben), zeigen Empfehlung
+Uhrzeit (zweite Zeile) den Zeitpunkt der letzten tatsächlichen
+Zustandsänderung; liegt aktuell **kein** Auslöser vor ("Totzone", siehe
+oben), zeigen Empfehlung
 und Uhrzeit ebenfalls "–" statt einer sonst nicht mehr begründbaren
 Empfehlung. Das Icon am Raumnamen richtet sich danach, ob aktuell ein
 Auslöser vorliegt und, falls ja, ob das Fenster bereits entsprechend
