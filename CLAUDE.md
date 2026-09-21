@@ -939,6 +939,53 @@ ein Raum, dessen Konfiguration nur noch teilweise zur aktuellen
 HA-Bereichs-Struktur passt, muss trotzdem weiterhin änderbar (und sei es
 nur, um genau dieses veraltete Feld zu leeren) bleiben.
 
+**27. Direkt nach Lektion 26 gemeldet: Ein geleertes EntitySelector-Feld
+lässt sich zwar scheinbar erfolgreich speichern, der alte Wert ist aber
+beim nächsten Öffnen wieder da (0.51.2).** Nachdem Lektion 26 das
+"gar nicht speicherbar"-Problem behoben hatte, meldete der Nutzer den
+nächsten Schritt desselben Vorgangs: "ich kann die Sensoren im Raum zwar
+entfernen und auch die Einstellungen speichern, aber beim erneuten
+Aufruf der Einstellungen sind diese wieder da" (Esszimmer,
+CO2-/Luftfeuchtigkeits-Sensor). Ursache: `async_step_room()` im
+Options-Flow merged bislang mit `new_data = {**current, **defaults}` -
+"neue Eingaben überschreiben bestehende Werte". Das setzt voraus, dass
+JEDES vom Formular abgedeckte Feld beim Absenden im `user_input` steckt,
+und sei es als leerer/`None`-Wert - für Zahlen-/Text-Felder ohne festen
+Schema-`default` (`_override_selector`, siehe Lektion 14) stimmt das
+auch, und genau darauf verließ sich der bisherige Kommentar an dieser
+Stelle ("Ein Feld, das jetzt leer gelassen wurde, entfernt eine zuvor
+gesetzte Raum-Override wieder"). Für `EntitySelector`-Felder
+(`_entity_marker(..., required=False)`) gilt das aber NICHT: Home
+Assistants Formular lässt ein geleertes Entity-Feld beim Absenden
+komplett weg, statt es als leer/`None` mitzuschicken - der Schlüssel
+fehlt in `defaults` dann schlicht komplett. Der Merge behält in diesem
+Fall den alten Wert aus `current` unverändert bei, da nur tatsächlich
+vorhandene Schlüssel in `defaults` etwas überschreiben - "erfolgreich
+gespeichert" täuschte also nur vor, weil der Options-Flow ohne
+Fehlermeldung durchlief (der weggelassene Schlüssel ist ja gültig,
+schließlich `required=False`), während im Hintergrund schlicht nichts
+geändert wurde. Fix: neue Konstante `ROOM_OPTIONAL_ENTITY_KEYS` listet
+alle acht über `_entity_marker(..., required=False)` erzeugten
+Entity-Felder des Raum-Formulars (`CONF_SONOS_ENTITY`,
+`CONF_HUMIDITY_ENTITY`, `CONF_CO2_ENTITY`, `CONF_WINDOW_ENTITY`,
+`CONF_SHUTTER_ENTITY`, `CONF_DEHUMIDIFIER_ENTITY`,
+`CONF_DEHUMIDIFIER_TANK_FULL_ENTITY`, `CONF_AC_ENTITY`) - direkt nach dem
+bisherigen Merge wird für jeden dieser Schlüssel geprüft, ob `defaults`
+dafür einen echten (truthy) Wert enthält; falls nicht (weggelassen ODER
+explizit leer übermittelt - beide Fälle einheitlich behandelt), wird der
+Schlüssel aus `new_data` entfernt, statt den alten Wert stehen zu
+lassen. Die Neuanlage eines Raums (`ConfigFlow.async_step_room()`)
+ist von diesem Bug nicht betroffen, da dort `data=defaults` direkt ohne
+Merge mit einem bestehenden Eintrag verwendet wird - es gibt schlicht
+nichts Altes, das stehen bleiben könnte. Lektion, die Lektion 10
+präzisiert: Ein flacher `{**current, **defaults}`-Merge ist nur sicher,
+wenn ALLE Formularfelder garantiert immer im `user_input` stecken - das
+ist bei Home-Assistant-Selectoren nicht einheitlich der Fall
+(Zahlen-/Text-Felder ja, `EntitySelector` nein); bei jedem neuen
+optionalen Feldtyp explizit prüfen (nicht annehmen), ob ein geleertes
+Feld als leerer Wert oder als fehlender Schlüssel übermittelt wird,
+bevor man sich auf einen einfachen Merge verlässt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
