@@ -1142,6 +1142,52 @@ nicht durch das eigene Fenster ändert (Außenwert, bereits "endgültig" →
 Grün, aber nur im Match-Fall, da hier - anders als bei der CO2-Ausnahme -
 ein Mismatch tatsächlich schadet statt nur überflüssig zu sein).
 
+**31. Laufzeit-Tracking für Luftentfeuchter/Klimaanlage/Dusche - bewusst
+innerhalb von `extra_state_attributes` statt in `_evaluate()` (0.52.0).**
+Neue Dashboard-Spalte "Laufzeit" (seit wann das jeweilige Gerät
+ununterbrochen läuft bzw. die Duscherkennung anschlägt). Für
+Luftentfeuchter/Klimaanlage naheliegend wäre gewesen, den Zeitstempel wie
+üblich in `_evaluate()` zu pflegen (siehe `_open_since`,
+`_frost_block_since`) - das würde hier aber zu denselben Inkonsistenzen
+führen, die Lektion 19 für `luftentfeuchter_an`/`klimaanlage_an` bereits
+beheben musste: `_evaluate()` läuft nur bei einer Zustandsänderung einer
+verfolgten Eingangs-Entität (Temperatur/Feuchtigkeit/CO2/Fenster/...),
+NICHT bei einer Zustandsänderung der Geräte-Entität selbst (die wird
+absichtlich nicht verfolgt, siehe `async_added_to_hass()`), Lektion 19
+hat `_is_device_on()` deshalb als Live-Read direkt in
+`extra_state_attributes` verankert. Ein separat in `_evaluate()`
+gepflegter Laufzeit-Zeitstempel würde also potenziell veraltet neben
+einem live-aktuellen `luftentfeuchter_an` stehen (z. B. Gerät gerade
+manuell eingeschaltet, aber `_evaluate()` noch nicht erneut gelaufen -
+"an" zeigt schon `true`, "seit wann" wäre noch `None`/veraltet). Fix:
+`_dehumidifier_on_since`/`_ac_on_since` werden direkt neben dem
+ohnehin schon vorhandenen `_is_device_on()`-Aufruf in
+`extra_state_attributes` selbst gepflegt (Transition erkannt, sobald der
+Live-Wert `True` wird; auf `None` zurückgesetzt, sobald er `False` ist) -
+beide Werte bleiben dadurch untereinander und mit `luftentfeuchter_an`
+zwangsläufig konsistent, da sie aus demselben Live-Read im selben Moment
+stammen. Eine Zustandsmutation innerhalb einer Property ist unüblich,
+hier aber unproblematisch: der Vorgang ist idempotent (wiederholtes Lesen
+ohne echte Zustandsänderung des Geräts ändert nichts) und exakt das
+Muster, das `_is_device_on()` an dieser Stelle bereits etabliert hat. Für
+die Dusche gilt das nicht - `self._showering` wird bereits in
+`_evaluate()` gesetzt (dort steht ohnehin schon der aktuelle
+Feuchtigkeits-Messwert zur Verfügung), daher `_shower_on_since` direkt
+dort neben `self._showering` gepflegt, keine Notwendigkeit für den
+Property-Ansatz. Wie bei `_open_since` (Lektion 3) werden alle drei
+Zeitstempel über `RestoreEntity` wiederhergestellt, damit nach einem
+Neustart nicht fälschlich "0 Min" angezeigt wird, obwohl ein Gerät schon
+länger lief - ein falsch wiederhergestellter Wert (Gerät zwischenzeitlich
+tatsächlich aus) korrigiert sich beim nächsten Lesen von
+`extra_state_attributes` bzw. der nächsten `_evaluate()` sofort selbst.
+Lektion: Wenn ein Attribut aus einem bereits etablierten Live-Read
+abgeleitet wird (hier: "seit wann" aus demselben `_is_device_on()`, der
+auch "an" liefert), muss die Pflege an genau derselben Stelle erfolgen,
+sonst kann leicht ein zweiter, unabhängiger Wert entstehen, der mit dem
+ersten desynchronisiert - ein reines "wo pflegen wir sonst Zeitstempel"-
+Muster (hier: `_evaluate()`) ist keine Garantie dafür, dass es für JEDEN
+neuen Zeitstempel die richtige Stelle ist.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

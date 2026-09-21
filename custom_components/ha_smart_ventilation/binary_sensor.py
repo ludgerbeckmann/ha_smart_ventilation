@@ -217,6 +217,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._humidity_samples: deque[tuple] = deque()
         self._showering = False
 
+        # Seit wann Luftentfeuchter/Klimaanlage/Dusche ununterbrochen aktiv
+        # sind (Dashboard-Karte, Spalte "Laufzeit") - Luftentfeuchter/
+        # Klimaanlage werden live in extra_state_attributes gepflegt (dort
+        # wird ohnehin schon _is_device_on() für die Anzeige gelesen, siehe
+        # Lektion 19), Dusche in _evaluate() neben self._showering.
+        self._dehumidifier_on_since = None
+        self._ac_on_since = None
+        self._shower_on_since = None
+
     def attach_shower_sensor(
         self, shower_sensor: "SmartVentilationShowerBinarySensor"
     ) -> None:
@@ -304,6 +313,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if self._config.get(CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED):
             attrs["duschen_erkannt"] = self._showering
+            if self._shower_on_since is not None:
+                attrs["dusche_seit"] = self._shower_on_since.isoformat()
         if outdoor_humidity is not None:
             attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
         if humidity is not None and indoor_temp is not None:
@@ -346,9 +357,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._last_reason is not None:
             attrs["letzter_grund"] = self._last_reason
         if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
-            attrs["luftentfeuchter_an"] = self._is_device_on(
-                self._config[CONF_DEHUMIDIFIER_ENTITY]
-            )
+            dehumidifier_on = self._is_device_on(self._config[CONF_DEHUMIDIFIER_ENTITY])
+            if dehumidifier_on:
+                if self._dehumidifier_on_since is None:
+                    self._dehumidifier_on_since = dt_util.utcnow()
+                attrs["luftentfeuchter_seit"] = self._dehumidifier_on_since.isoformat()
+            else:
+                self._dehumidifier_on_since = None
+            attrs["luftentfeuchter_an"] = dehumidifier_on
             attrs["luftentfeuchter_grund"] = self._dehumidifier_reason
         tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
         if tank_full_entity:
@@ -361,7 +377,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 tank_full_state is not None and tank_full_state.state == "on"
             )
         if self._config.get(CONF_AC_ENTITY):
-            attrs["klimaanlage_an"] = self._is_device_on(self._config[CONF_AC_ENTITY])
+            ac_on = self._is_device_on(self._config[CONF_AC_ENTITY])
+            if ac_on:
+                if self._ac_on_since is None:
+                    self._ac_on_since = dt_util.utcnow()
+                attrs["klimaanlage_seit"] = self._ac_on_since.isoformat()
+            else:
+                self._ac_on_since = None
+            attrs["klimaanlage_an"] = ac_on
             attrs["klimaanlage_grund"] = self._ac_reason
         return attrs
 
@@ -396,6 +419,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._dehumidifier_state = bool(attrs["luftentfeuchter_an"])
             if "klimaanlage_an" in attrs:
                 self._ac_state = bool(attrs["klimaanlage_an"])
+            # Laufzeit-Zeitstempel wiederherstellen (sonst zeigt die
+            # Dashboard-Karte nach jedem Neustart fälschlich "0 Min", obwohl
+            # das Gerät schon länger läuft) - werden beim nächsten Lesen von
+            # extra_state_attributes sofort korrigiert, falls das Gerät
+            # zwischenzeitlich tatsächlich aus war (siehe dort).
+            if "luftentfeuchter_seit" in attrs:
+                self._dehumidifier_on_since = dt_util.parse_datetime(
+                    attrs["luftentfeuchter_seit"]
+                )
+            if "klimaanlage_seit" in attrs:
+                self._ac_on_since = dt_util.parse_datetime(attrs["klimaanlage_seit"])
+            if "dusche_seit" in attrs:
+                self._shower_on_since = dt_util.parse_datetime(attrs["dusche_seit"])
 
         tracked = [self._config[CONF_TEMP_SOURCE_ENTITY]]
         for key in (
@@ -831,6 +867,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if shower_detection_enabled
             else False
         )
+        if self._showering:
+            if self._shower_on_since is None:
+                self._shower_on_since = dt_util.utcnow()
+        else:
+            self._shower_on_since = None
         if self._shower_sensor is not None and self._shower_sensor.hass is not None:
             # hass kann bei der allerersten Bewertung noch None sein, falls
             # beide Entitäten gerade erst gleichzeitig hinzugefügt werden

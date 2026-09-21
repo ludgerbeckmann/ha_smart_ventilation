@@ -605,6 +605,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat) |
 | `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
+| `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `schliessempfehlung_deaktiviert` | nur vorhanden (mit Wert `true`), falls "Schließempfehlung deaktivieren" für diesen Raum aktiviert ist. Dient der Dashboard-Karte, damit sie die reinen Komfort-Schließgründe (Temperatur/Feuchtigkeit/CO2/Winter-Höchstdauer) live genauso unterdrückt wie die Integration selbst - Frost-/Hitzeschutz bleiben davon unberührt |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
@@ -623,7 +624,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 14** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 15** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -636,7 +637,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 14 %}
+  {% set card_version = 15 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -715,20 +716,35 @@ content: >
   {% if a.luftentfeuchter_an is defined %}
   {% set dehum_name = ('🔴' if a.luftentfeuchter_an else '⚫') ~ ' Luftentfeuchter' %}
   {% set dehum_name = (dehum_name ~ '<br>' ~ (('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ ' Wassertank')) if a.luftentfeuchter_tank_fehler is defined else dehum_name %}
+  {% set dehum_laufzeit = '–' %}
+  {% if a.luftentfeuchter_an and a.luftentfeuchter_seit is defined %}
+  {% set dehum_minutes = ((now() - as_datetime(a.luftentfeuchter_seit)).total_seconds() / 60) | int %}
+  {% set dehum_laufzeit = (dehum_minutes ~ ' Min') if dehum_minutes < 60 else ((dehum_minutes // 60) ~ 'h ' ~ (dehum_minutes % 60) ~ ' Min') %}
+  {% endif %}
   {% set dehum_grund = a.luftentfeuchter_grund if a.luftentfeuchter_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_grund ~ ' |' %}
+  {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_laufzeit ~ ' | ' ~ dehum_grund ~ ' |' %}
   {% endif %}
   {% if a.klimaanlage_an is defined %}
   {% set ac_name = ('🔴' if a.klimaanlage_an else '⚫') ~ ' Klimaanlage' %}
+  {% set ac_laufzeit = '–' %}
+  {% if a.klimaanlage_an and a.klimaanlage_seit is defined %}
+  {% set ac_minutes = ((now() - as_datetime(a.klimaanlage_seit)).total_seconds() / 60) | int %}
+  {% set ac_laufzeit = (ac_minutes ~ ' Min') if ac_minutes < 60 else ((ac_minutes // 60) ~ 'h ' ~ (ac_minutes % 60) ~ ' Min') %}
+  {% endif %}
   {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ ac_name ~ ' | ' ~ ac_grund ~ ' |' %}
+  {% set device_rows = device_rows ~ '\n| ' ~ ac_name ~ ' | ' ~ ac_laufzeit ~ ' | ' ~ ac_grund ~ ' |' %}
   {% endif %}
   {% if a.duschen_erkannt is defined %}
   {% set dusche_name = ('🟢' if a.duschen_erkannt else '⚫') ~ ' Dusche' %}
-  {% set dusche_grund = 'Luftfeuchtigkeit steigt schnell' if a.duschen_erkannt else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ dusche_name ~ ' | ' ~ dusche_grund ~ ' |' %}
+  {% set dusche_laufzeit = '–' %}
+  {% if a.duschen_erkannt and a.dusche_seit is defined %}
+  {% set dusche_minutes = ((now() - as_datetime(a.dusche_seit)).total_seconds() / 60) | int %}
+  {% set dusche_laufzeit = (dusche_minutes ~ ' Min') if dusche_minutes < 60 else ((dusche_minutes // 60) ~ 'h ' ~ (dusche_minutes % 60) ~ ' Min') %}
   {% endif %}
-  {% set device_table = ('| Gerät | Grund |\n|---|---|' ~ device_rows) if device_rows else '' %}
+  {% set dusche_grund = 'Luftfeuchtigkeit steigt schnell' if a.duschen_erkannt else '–' %}
+  {% set device_rows = device_rows ~ '\n| ' ~ dusche_name ~ ' | ' ~ dusche_laufzeit ~ ' | ' ~ dusche_grund ~ ' |' %}
+  {% endif %}
+  {% set device_table = ('| Gerät | Laufzeit | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
   {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
@@ -911,19 +927,22 @@ CO2-Ausnahme oder ganz ohne Auslöser - siehe "Hervorhebung des
 ausschlaggebenden Werts" oben) →
 **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
 CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Geräte-Tabelle**
-(Gerät/Grund - Zeilen für Luftentfeuchter, Klimaanlage und Dusche,
-jeweils nur falls konfiguriert bzw. für den Raum aktiviert; das Status-
-Icon steht direkt vor dem Gerätenamen in der ersten Spalte; ist ein
-Tankstatus-Sensor für den Luftentfeuchter hinterlegt, zeigt dessen Zeile
-in der "Gerät"-Spalte per Zeilenumbruch (`<br>`) zusätzlich "Wassertank"
-mit eigenem Icon (🔴 voll/Fehler, 🟢 ok) direkt unter dem Gerätenamen;
-"Grund" zeigt bei Luftentfeuchter/Klimaanlage eine rein informative, live
-bei jeder Neubewertung berechnete Kurzbeschreibung, warum das Gerät
-gerade an/aus ist bzw. pausiert, ohne selbst Einfluss auf die Steuerung
-zu haben - siehe `binary_sensor.py`; bei Dusche entsprechend, ob und
-warum die Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
-(ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
-Abschnitt pro Raum).
+(Gerät/Laufzeit/Grund - Zeilen für Luftentfeuchter, Klimaanlage und
+Dusche, jeweils nur falls konfiguriert bzw. für den Raum aktiviert; das
+Status-Icon steht direkt vor dem Gerätenamen in der ersten Spalte; ist
+ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt, zeigt dessen
+Zeile in der "Gerät"-Spalte per Zeilenumbruch (`<br>`) zusätzlich
+"Wassertank" mit eigenem Icon (🔴 voll/Fehler, 🟢 ok) direkt unter dem
+Gerätenamen; "Laufzeit" zeigt, seit wann das jeweilige Gerät ununter-
+brochen läuft bzw. die Duscherkennung anschlägt (`Xh YMin`/`XMin`,
+live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`dusche_seit`
+berechnet), sonst "–"; "Grund" zeigt bei Luftentfeuchter/Klimaanlage
+eine rein informative, live bei jeder Neubewertung berechnete
+Kurzbeschreibung, warum das Gerät gerade an/aus ist bzw. pausiert, ohne
+selbst Einfluss auf die Steuerung zu haben - siehe `binary_sensor.py`;
+bei Dusche entsprechend, ob und warum die Duscherkennung aktuell
+anschlägt) → **Benachrichtigungen** (ein-/ausklappbare Tabelle,
+standardmäßig eingeklappt, jetzt als letzter Abschnitt pro Raum).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
