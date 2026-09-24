@@ -1520,6 +1520,36 @@ zu finden, weil sie nicht am Feldnamen, sondern am **Muster** der
 Formularstruktur (hier: `_tri_state_bool_selector()`/Objekt-Listen vs.
 `_override_selector()`) hängen.
 
+**39. `no_window_dehum_exception` (Lektion 32) wieder entfernt - der
+Nutzer entschied sich nach Rückfrage bewusst gegen die eigene, erst kurz
+zuvor eingeführte Ausnahme (reiner Dashboard-Karten-Fix, `card_version`
+19 → 20, kein Versionsbump nötig).** Nutzer-Frage zu einem konkreten
+Fall (Flur KG, fensterlos, Luftfeuchtigkeit 55 % = Schließen-Schwelle,
+Luftentfeuchter konfiguriert und korrekt aus): "warum geht der
+Luftentfeuchter nicht an?" (beantwortet: Schwelle korrekt erreicht,
+kein Bug) - direkt gefolgt von "warum wird der Raum dann orange
+angezeigt?". Antwort verwies auf die bestehende, bewusst so gebaute
+Ausnahme aus Lektion 32 (Luftfeuchtigkeit + konfigurierter
+Luftentfeuchter in fensterlosen Räumen bleibt 🟠 statt 🟢). Auf die
+Rückfrage, ob diese Ausnahme entfernt werden soll, antwortete der
+Nutzer "Ja" - Fix: `no_window_dehum_exception` und die zugehörige
+Sonderbehandlung in `no_window_resolved` ersatzlos entfernt, `no_window_resolved
+= no_window and comfort_close_resolved_exception` (wieder identisch zum
+ursprünglichen Symmetrie-Fix aus Lektion 32, vor der Verfeinerung).
+Fensterlose Räume mit gelöstem Luftfeuchtigkeits-Schließen-Grund zeigen
+jetzt wieder unbedingt 🟢, unabhängig davon, ob ein Luftentfeuchter
+konfiguriert ist - der Gerätezustand selbst (⚫/🔴 in der Geräte-Tabelle)
+bleibt als eigene, unabhängige Information ja ohnehin sichtbar. Lokal
+gegengetestet (Jinja-Sandbox, `StrictUndefined`): Flur-KG-Fall jetzt 🟢,
+Öffnen-Grund-Regression weiterhin 🟠, Fenster-Match-Regression weiterhin
+🟢. Lektion: Eine erst kürzlich auf Zuruf eingeführte Verfeinerung ist
+nicht in Stein gemeißelt - konfrontiert mit einem konkreten Fall, der
+sie auslöst, kann der Nutzer die ursprüngliche Entscheidung revidieren;
+die eigentliche Lektion aus 32 (dass "Aktion nötig, aber nicht über das
+Fenster" bei Geräte-Rückkopplung eine eigene Betrachtung verdienen
+könnte) bleibt als Erfahrungswert dieser Session erhalten, auch wenn die
+daraus abgeleitete Karten-Sonderregel selbst nicht von Dauer war.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
