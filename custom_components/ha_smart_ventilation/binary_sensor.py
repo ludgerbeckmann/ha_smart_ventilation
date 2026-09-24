@@ -1,6 +1,7 @@
 """Binary Sensor Plattform: 'Lüften empfohlen' pro Raum."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 from collections import deque
@@ -1640,6 +1641,56 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         legacy = self._as_list(self._config.get(CONF_MOBILE_NOTIFY_ENTITY))
         return [{CONF_MOBILE_NOTIFY_ENTITY: entity_id} for entity_id in legacy]
 
+    def _get_current_volumes(self, entity_ids: list[str]) -> dict[str, float]:
+        """Liest die aktuelle Lautstärke jedes Lautsprechers, BEVOR sie für
+        die Ansage überschrieben wird - Grundlage für das automatische
+        Zurücksetzen danach (siehe _restore_tts_volume()). Lautsprecher, die
+        aktuell keinen numerischen `volume_level` melden (z. B. gerade aus
+        oder nicht verfügbar), werden ausgelassen - für sie wird später auch
+        nichts zurückgesetzt."""
+        volumes: dict[str, float] = {}
+        for entity_id in entity_ids:
+            state = self.hass.states.get(entity_id)
+            if state is None:
+                continue
+            volume = state.attributes.get("volume_level")
+            if isinstance(volume, (int, float)):
+                volumes[entity_id] = float(volume)
+        return volumes
+
+    async def _restore_tts_volume(
+        self, original_volumes: dict[str, float], message: str
+    ) -> None:
+        """Setzt die Lautstärke je Lautsprecher nach der Ansage auf den
+        zuvor gelesenen Wert zurück.
+
+        `tts.speak` liefert kein plattformübergreifend zuverlässiges
+        "Wiedergabe beendet"-Ereignis (dieselbe Einschränkung, die
+        _play_tts() bereits für das nicht automatisch fortgesetzte
+        Pausieren dokumentiert) - daher wird die ungefähre Sprechdauer aus
+        der Nachrichtenlänge geschätzt (rund 150 Wörter/Minute plus eine
+        Pufferzeit für TTS-Generierung/Netzwerk) und entsprechend lange
+        gewartet, bevor zurückgesetzt wird. Läuft als eigener
+        Hintergrund-Task (siehe _play_tts()), damit die Neubewertung nicht
+        auf die geschätzte Ansagedauer warten muss."""
+        word_count = len(message.split())
+        estimated_seconds = max(2.0, word_count / 2.5) + 1.5
+        await asyncio.sleep(estimated_seconds)
+        for entity_id, volume in original_volumes.items():
+            try:
+                await self.hass.services.async_call(
+                    "media_player",
+                    "volume_set",
+                    {"entity_id": entity_id, "volume_level": volume},
+                    blocking=False,
+                )
+            except (HomeAssistantError, TypeError, ValueError):
+                _LOGGER.debug(
+                    "Konnte Lautstärke für %s nicht zurücksetzen (Raum %s)",
+                    entity_id,
+                    self._config[CONF_ROOM_NAME],
+                )
+
     async def _play_tts(
         self, sonos_entities: list[str], tts_entity: str, message: str
     ) -> None:
@@ -1648,12 +1699,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         Hinweis: `tts.speak` selbst unterstützt keine Lautstärkeangabe: die
         Lautstärke wird deshalb vorher separat per media_player.volume_set
-        gesetzt und danach NICHT automatisch zurückgesetzt. Beim Pausieren
-        wird die vorherige Wiedergabe ebenfalls nicht automatisch
-        fortgesetzt - das ist plattformübergreifend nicht zuverlässig lösbar.
+        gesetzt und nach der (geschätzten) Ansagedauer automatisch wieder
+        auf den vorherigen Wert zurückgesetzt (siehe _restore_tts_volume()).
+        Beim Pausieren wird die vorherige Wiedergabe dagegen weiterhin nicht
+        automatisch fortgesetzt - das ist plattformübergreifend nicht
+        zuverlässig lösbar.
         """
         volume_percent = self._effective(CONF_TTS_VOLUME, DEFAULT_TTS_VOLUME)
         playback_mode = self._effective(CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE)
+        original_volumes = self._get_current_volumes(sonos_entities)
 
         try:
             await self.hass.services.async_call(
@@ -1698,6 +1752,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             },
             blocking=False,
         )
+
+        if original_volumes:
+            self.hass.async_create_task(
+                self._restore_tts_volume(original_volumes, message)
+            )
 
     async def _notify(self, should_ventilate: bool, reason: str | None) -> None:
         """Verschickt die Benachrichtigung per Sprachausgabe, App-Push

@@ -1136,8 +1136,13 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
 - **Lautstärke der Ansage**: `tts.speak` selbst unterstützt keine
   Lautstärkeangabe. Die in den globalen Einstellungen konfigurierte
   Lautstärke wird deshalb vorher separat per `media_player.volume_set`
-  gesetzt und **danach nicht automatisch zurückgesetzt** - die Lautsprecher
-  bleiben auf dieser Lautstärke stehen.
+  gesetzt - die davor aktuelle Lautstärke jedes Lautsprechers wird dabei
+  gemerkt und **nach der Ansage automatisch wieder gesetzt**. Da `tts.speak`
+  kein plattformübergreifend zuverlässiges "Wiedergabe beendet"-Ereignis
+  liefert, wird dafür die ungefähre Sprechdauer aus der Nachrichtenlänge
+  geschätzt (rund 150 Wörter/Minute plus Pufferzeit) - bei sehr langen
+  Ansagen oder einem ungewöhnlich langsamen TTS-Dienst kann die Lautstärke
+  dadurch im Einzelfall etwas zu früh oder zu spät zurückgesetzt werden.
 - **Pausieren vs. Überlagern**: Im Modus "Pausieren" wird die vorhandene
   Wiedergabe vor der Ansage pausiert, aber **nicht automatisch
   fortgesetzt** - ein zuverlässiges automatisches Fortsetzen ist
