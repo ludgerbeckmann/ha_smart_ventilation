@@ -562,7 +562,9 @@ def _build_room_schema(
                                 "label": "Notify-Entität",
                                 "required": True,
                                 "selector": selector.EntitySelector(
-                                    selector.EntitySelectorConfig(domain="notify")
+                                    selector.EntitySelectorConfig(
+                                        domain="notify", integration="mobile_app"
+                                    )
                                 ),
                             },
                             CONF_PRESENCE_ENTITY: {
@@ -852,7 +854,8 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                                         "required": True,
                                         "selector": selector.EntitySelector(
                                             selector.EntitySelectorConfig(
-                                                domain="notify"
+                                                domain="notify",
+                                                integration="mobile_app",
                                             )
                                         ),
                                     },

@@ -1363,6 +1363,46 @@ Validierung, Handler-Exceptions) - dafür ist zwingend `blocking=True`
 nötig, mit dem entsprechenden (meist vernachlässigbaren) Laufzeit-
 Overhead, das tatsächliche Warten auf den Abschluss des Service-Aufrufs.
 
+**36. Die Auswahlliste für App-Benachrichtigungsziele filterte nur auf
+die `notify`-Domain, nicht auf Companion-App-Entitäten speziell -
+direkte Folge von Lektion 35 (0.53.2).** Nach dem Fix für die
+Log-Flut (Lektion 35) fragte der Nutzer folgerichtig, ob die
+Integration nicht von vornherein verhindern sollte, dass eine
+ungeeignete notify-Entität überhaupt auswählbar ist. Bisher nutzten
+beide betroffenen `EntitySelector`-Definitionen (Raum-Formular in
+`_build_room_schema()` sowie die globalen Standard-Ziele in
+`_build_global_edit_schema()`) nur `domain="notify"` - das umfasst
+JEDE notify-Integration (E-Mail, Messenger, etc.), nicht nur die Home
+Assistant Companion App, deren notify-Entitäten zuverlässig das für
+das "Clean Notification"-Muster (Lektion 18) benötigte `data`-Feld mit
+`tag` unterstützen. Fix: `EntitySelectorConfig` bekommt zusätzlich
+`integration="mobile_app"` - schränkt die im Formular angebotene Liste
+auf tatsächliche Companion-App-Ziele ein. Wichtige Abgrenzung zu den
+Lektionen 26-28 (dort verursachte ein zu enger `include_entities`-Filter
+handfeste Speicher-Bugs für bereits gespeicherte, jetzt aus der Liste
+gefallene Werte): `domain`/`integration`-Filter bei `EntitySelector`
+sind in Home Assistant reine Frontend-Hinweise für den Auswahldialog -
+anders als `include_entities`/`exclude_entities` werden sie von der
+Selector-eigenen Schema-Validierung beim Absenden NICHT durchgesetzt.
+Ein bereits gespeichertes, nicht-Companion-App-Ziel (z. B. aus einer
+Zeit vor diesem Fix, oder nachträglich per YAML gesetzt) bleibt daher
+weiterhin gültig und speicherbar - nur die Auswahl NEUER Ziele über das
+Formular wird eingeschränkt. Trotzdem kein Vollschutz: Weiterhin
+möglich bleibt ein Companion-App-Ziel, das der Nutzer nachträglich
+außerhalb dieser Integration löscht/umbenennt, oder eine zukünftige
+Notify-Integration, die sich fälschlich als `mobile_app` meldet - Lektion 35s
+Warnung beim tatsächlichen Sendeversuch bleibt deshalb bewusst als
+zweite Absicherungsebene bestehen, nicht nur als Übergangslösung. Lektion:
+Nicht jeder scheinbar strengere Selector-Filter (`domain`, `integration`,
+`device_class`) hat dieselbe Durchsetzungsstärke wie `include_entities`/
+`exclude_entities` - bevor ein neuer Filter als Fix für "falsche
+Werte gar nicht erst anbieten" eingeführt wird, prüfen, ob er rein
+UI-seitig wirkt (dann bleibt zusätzlich eine echte Validierung/Fehler-
+behandlung nötig, wie hier durch Lektion 35 bereits vorhanden) oder ob
+er tatsächlich in die Schema-Validierung eingreift (dann gilt die
+Lektion-26-Vorsicht: den bereits gespeicherten Wert immer mit
+einschließen).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
