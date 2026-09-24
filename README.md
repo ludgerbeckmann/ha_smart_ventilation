@@ -645,7 +645,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 19** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 20** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -658,7 +658,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 19 %}
+  {% set card_version = 20 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -686,8 +686,7 @@ content: >
   {% set window_changed_time = '–' %}
   {% set co2_close_exception = s.state == 'off' and highlight_code == 'co2' %}
   {% set comfort_close_resolved_exception = s.state == 'off' and highlight_code in ['humidity', 'temp', 'outdoor_warmer', 'outdoor_wetter'] %}
-  {% set no_window_dehum_exception = no_window and highlight_code == 'humidity' and a.luftentfeuchter_an is defined %}
-  {% set no_window_resolved = no_window and comfort_close_resolved_exception and not no_window_dehum_exception %}
+  {% set no_window_resolved = no_window and comfort_close_resolved_exception %}
   {% set match_icon = '🟢 ' if (not has_live_reason or co2_close_exception or no_window_resolved) else ('🟠 ' if no_window else '🔴 ') %}
   {% set highlight_ok = false %}
   {% if window_entity %}
@@ -1019,10 +1018,8 @@ Luftentfeuchter/Klimaanlage). Liegt dagegen ein Schließen-Auslöser vor
 (Temperatur, Luftfeuchtigkeit, "Außen wärmer"/"Außen feuchter"), gilt
 dieselbe "bereits gelöst, nicht nur wartend"-Logik wie bei Räumen mit
 Fenster (siehe oben) - das Icon zeigt 🟢, auch ohne Fenster zum
-Abgleichen. Eine Ausnahme davon: Ist der Auslöser Luftfeuchtigkeit UND
-für den Raum ein Luftentfeuchter konfiguriert, bleibt es bei 🟠 - hier
-hängt der Wert eng mit dem Luftentfeuchter zusammen und soll weiterhin
-auffallen, statt in Grün zu verschwinden. Da zu jedem Zeitpunkt nur ein Auslöser als
+Abgleichen, unabhängig davon, ob für den Raum zusätzlich ein
+Luftentfeuchter/eine Klimaanlage konfiguriert ist. Da zu jedem Zeitpunkt nur ein Auslöser als
 "der" Grund gilt (siehe Prioritätsreihenfolge unten), gibt es nie einen
 Konflikt zwischen 🟠 und 🔴 für ein und denselben Raum. Bei den
 Benachrichtigungsmethoden steht 🟢 für an, ⚫ für aus. Beim Geräte-Status
