@@ -27,6 +27,7 @@ from .const import (
     CONF_HEATING_ENTITY,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
+    CONF_HEATING_USE_TEMP_SOURCE,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
@@ -123,8 +124,13 @@ from .const import (
 )
 
 SECTION_NOTIFY = "notify"
+# Raum-Formular: EIN gemeinsamer Abschnitt für Sensoren UND optional
+# gesteuerte Geräte (siehe _build_room_schema) - eine climate-Entität kann
+# beide Rollen zugleich ausfüllen (Temperatur-Quelle und Heizung), getrennte
+# Abschnitte hätten sie zweimal zur Auswahl gezwungen. In der globalen
+# Formular (_build_global_edit_schema) bezeichnet dieselbe Konstante
+# weiterhin nur den dortigen, unabhängigen "Sensoren"-Abschnitt.
 SECTION_SENSORS = "sensors"
-SECTION_DEVICES = "devices"
 SECTION_PARAMETERS = "parameters"
 SECTION_MESSAGES = "messages"
 
@@ -382,7 +388,7 @@ def _flatten_step_data(data: dict) -> dict:
     """Führt die verschachtelten Sections wieder zu einem flachen Dict
     zusammen. Sections sind nur eine visuelle Gruppierung im Formular -
     intern arbeiten wir weiterhin mit einem flachen dict."""
-    section_keys = (SECTION_NOTIFY, SECTION_SENSORS, SECTION_DEVICES, SECTION_PARAMETERS, SECTION_MESSAGES)
+    section_keys = (SECTION_NOTIFY, SECTION_SENSORS, SECTION_PARAMETERS, SECTION_MESSAGES)
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
         flat.update(data.get(key) or {})
@@ -478,9 +484,15 @@ def _build_room_schema(
     area_entities: set[str] | None = None,
     show_area_selector: bool = False,
 ) -> vol.Schema:
-    """Formular für einen Raum: Raumname, danach vier Abschnitte
-    ('Benachrichtigungsmethoden', 'Sensoren', 'Parameter', 'Geräte' -
-    Parameter und Geräte standardmäßig eingeklappt, da optional).
+    """Formular für einen Raum: Raumname, danach drei Abschnitte
+    ('Benachrichtigungsmethoden', 'Sensoren & Geräte', 'Parameter' - alle
+    standardmäßig eingeklappt). 'Sensoren & Geräte' fasst die Mess-Entitäten
+    UND die optional automatisch gesteuerten Geräte (Luftentfeuchter/
+    Klimaanlage/Heizung) in einem Abschnitt zusammen - beide Themen
+    überschneiden sich (z. B. eine climate-Entität kann sowohl Temperatur-
+    Quelle als auch Heizungs-Gerät sein, siehe CONF_HEATING_USE_TEMP_SOURCE),
+    getrennte Abschnitte hätten sonst eine Entität ggf. an zwei Stellen
+    zur Auswahl gezwungen.
 
     Im Abschnitt "Benachrichtigungsmethoden" aktiviert eine Checkbox die
     App-Benachrichtigung; das zugehörige Feld steht direkt darunter im
@@ -647,7 +659,22 @@ def _build_room_schema(
     shutter_include = _area_include_entities(
         area_entities, SHUTTER_DOMAINS, defaults.get(CONF_SHUTTER_ENTITY)
     )
+    dehumidifier_include = _area_include_entities(
+        area_entities, DEHUMIDIFIER_DOMAINS, defaults.get(CONF_DEHUMIDIFIER_ENTITY)
+    )
+    ac_include = _area_include_entities(
+        area_entities, AC_DOMAINS, defaults.get(CONF_AC_ENTITY)
+    )
+    heating_include = _area_include_entities(
+        area_entities, HEATING_DOMAINS, defaults.get(CONF_HEATING_ENTITY)
+    )
 
+    # "Sensoren & Geräte" - ein gemeinsamer Abschnitt für Mess-Entitäten UND
+    # optional automatisch gesteuerte Geräte (siehe Docstring oben): eine
+    # climate-Entität kann beide Rollen gleichzeitig ausfüllen (Temperatur-
+    # Quelle UND Heizung, siehe CONF_HEATING_USE_TEMP_SOURCE direkt beim
+    # Heizungs-Feld unten), getrennte Abschnitte hätten sie zweimal zur
+    # Auswahl gezwungen.
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
             {
@@ -724,52 +751,6 @@ def _build_room_schema(
                     CONF_DISABLE_CLOSE_RECOMMENDATION,
                     default=defaults.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False),
                 ): selector.BooleanSelector(),
-            }
-        ),
-        {"collapsed": True},
-    )
-
-    fields[vol.Required(SECTION_PARAMETERS)] = section(
-        vol.Schema(
-            {
-                temp_open_marker: temp_open_sel,
-                temp_close_marker: temp_close_sel,
-                hum_open_marker: hum_open_sel,
-                hum_close_marker: hum_close_sel,
-                co2_open_marker: co2_open_sel,
-                co2_close_marker: co2_close_sel,
-                margin_marker: margin_sel,
-                frost_marker: frost_sel,
-                frost_debounce_marker: frost_debounce_sel,
-                heat_marker: heat_sel,
-                winter_marker: winter_sel,
-                duration_marker: duration_sel,
-                priority_marker: priority_sel,
-                reminder_marker: reminder_sel,
-                shower_threshold_marker: shower_threshold_sel,
-                heating_threshold_marker: heating_threshold_sel,
-                heating_comfort_marker: heating_comfort_sel,
-                heating_standby_marker: heating_standby_sel,
-            }
-        ),
-        {"collapsed": True},
-    )
-
-    dehumidifier_include = _area_include_entities(
-        area_entities, DEHUMIDIFIER_DOMAINS, defaults.get(CONF_DEHUMIDIFIER_ENTITY)
-    )
-    ac_include = _area_include_entities(
-        area_entities, AC_DOMAINS, defaults.get(CONF_AC_ENTITY)
-    )
-    heating_include = _area_include_entities(
-        area_entities, HEATING_DOMAINS, defaults.get(CONF_HEATING_ENTITY)
-    )
-
-    # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
-    # für einen Teil der Räume relevant
-    fields[vol.Required(SECTION_DEVICES)] = section(
-        vol.Schema(
-            {
                 _entity_marker(
                     CONF_DEHUMIDIFIER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -798,6 +779,10 @@ def _build_room_schema(
                         **({"include_entities": ac_include} if ac_include else {}),
                     )
                 ),
+                vol.Optional(
+                    CONF_HEATING_USE_TEMP_SOURCE,
+                    default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
+                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_HEATING_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -812,6 +797,32 @@ def _build_room_schema(
                 ),
                 power_marker: power_sel,
                 grace_marker: grace_sel,
+            }
+        ),
+        {"collapsed": True},
+    )
+
+    fields[vol.Required(SECTION_PARAMETERS)] = section(
+        vol.Schema(
+            {
+                temp_open_marker: temp_open_sel,
+                temp_close_marker: temp_close_sel,
+                hum_open_marker: hum_open_sel,
+                hum_close_marker: hum_close_sel,
+                co2_open_marker: co2_open_sel,
+                co2_close_marker: co2_close_sel,
+                margin_marker: margin_sel,
+                frost_marker: frost_sel,
+                frost_debounce_marker: frost_debounce_sel,
+                heat_marker: heat_sel,
+                winter_marker: winter_sel,
+                duration_marker: duration_sel,
+                priority_marker: priority_sel,
+                reminder_marker: reminder_sel,
+                shower_threshold_marker: shower_threshold_sel,
+                heating_threshold_marker: heating_threshold_sel,
+                heating_comfort_marker: heating_comfort_sel,
+                heating_standby_marker: heating_standby_sel,
             }
         ),
         {"collapsed": True},

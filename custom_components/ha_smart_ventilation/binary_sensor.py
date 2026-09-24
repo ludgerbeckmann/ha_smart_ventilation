@@ -36,6 +36,7 @@ from .const import (
     CONF_HEATING_ENTITY,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
+    CONF_HEATING_USE_TEMP_SOURCE,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
@@ -403,9 +404,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._ac_on_since = None
             attrs["klimaanlage_an"] = ac_on
             attrs["klimaanlage_grund"] = self._ac_reason
-        if self._config.get(CONF_HEATING_ENTITY) and not self._device_entity_missing(
-            self._config[CONF_HEATING_ENTITY]
-        ):
+        heating_entity = self._get_heating_entity_id()
+        if heating_entity and not self._device_entity_missing(heating_entity):
             # "an" bedeutet hier nicht (wie bei Luftentfeuchter/Klimaanlage)
             # ein einfaches Ein/Aus, sondern ob der aktuell am Gerät
             # eingestellte Sollwert näher am Comfort- als am
@@ -415,9 +415,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # Integration davon weiß).
             comfort_temp = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
             standby_temp = self._effective(CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP)
-            current_target = self._get_heating_target_temperature(
-                self._config[CONF_HEATING_ENTITY]
-            )
+            current_target = self._get_heating_target_temperature(heating_entity)
             heating_comfort_active = current_target is not None and abs(
                 current_target - comfort_temp
             ) < abs(current_target - standby_temp)
@@ -668,6 +666,24 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if entity_id.split(".")[0] == "climate":
             return state.state != "off"
         return state.state == "on"
+
+    def _get_heating_entity_id(self) -> str | None:
+        """Liefert die für die Heizungssteuerung tatsächlich zu verwendende
+        Entity-ID.
+
+        Ist CONF_HEATING_USE_TEMP_SOURCE aktiv, wird die bereits als
+        Innentemperatur-Quelle gewählte Entität wiederverwendet, statt eine
+        zweite, eigene Auswahl in CONF_HEATING_ENTITY zu verlangen - erspart
+        die doppelte Auswahl derselben climate-Entität. Nur wirksam, wenn
+        diese Entität tatsächlich aus der "climate"-Domain kommt (siehe
+        HEATING_DOMAINS) - eine sensor-/number-/input_number-Temperaturquelle
+        unterstützt kein climate.set_temperature und wird daher wie "keine
+        Heizung konfiguriert" behandelt (permissiv, kein Formularfehler).
+        CONF_HEATING_ENTITY selbst bleibt bei aktivem Schalter unbeachtet."""
+        if self._config.get(CONF_HEATING_USE_TEMP_SOURCE, False):
+            temp_source = self._config[CONF_TEMP_SOURCE_ENTITY]
+            return temp_source if temp_source.split(".")[0] == "climate" else None
+        return self._config.get(CONF_HEATING_ENTITY)
 
     def _get_heating_target_temperature(self, entity_id: str) -> float | None:
         """Liest den aktuell am Heizungs-Gerät eingestellten Sollwert
@@ -948,7 +964,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._ac_reason = "im Sollbereich, hält letzten Zustand"
             if self._effective(CONF_POWER_ENTITY, None) and not self._check_power_ok():
                 self._ac_reason += " (Einspeiseleistung zu gering)"
-        if self._config.get(CONF_HEATING_ENTITY):
+        if self._get_heating_entity_id():
             if window_confirmed_open:
                 self._heating_reason = "pausiert: Fenster offen"
             elif want_heating_standby:
@@ -1524,7 +1540,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Luftentfeuchter/Klimaanlage - für Heizungen ist das die übliche
         Betriebsart. want_standby hat Vorrang vor want_comfort (analog zu
         want_off vs. want_on in _update_single_device())."""
-        entity_id = self._config.get(CONF_HEATING_ENTITY)
+        entity_id = self._get_heating_entity_id()
         if not entity_id:
             return
         if self._device_entity_missing(entity_id):

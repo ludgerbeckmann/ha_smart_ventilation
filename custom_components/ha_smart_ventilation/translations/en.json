@@ -34,8 +34,8 @@
             }
           },
           "sensors": {
-            "name": "Sensors",
-            "description": "Which entities provide the measurements for this room?",
+            "name": "Sensors & Devices",
+            "description": "Which entities provide the measurements for this room, and which devices (dehumidifier, air conditioner, heating) are controlled automatically?",
             "data": {
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
@@ -45,7 +45,14 @@
               "window_entity": "Window contact sensor (optional)",
               "shutter_entity": "Shutter / window lock (with air conditioner)",
               "disable_close_recommendation": "Disable close recommendation",
-              "no_window": "This room has no window"
+              "no_window": "This room has no window",
+              "dehumidifier_entity": "Dehumidifier",
+              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
+              "ac_entity": "Air conditioner",
+              "heating_use_temp_source": "Also use temperature source for heating",
+              "heating_entity": "Heating",
+              "min_surplus_power_watts": "Minimum surplus power to turn on",
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
@@ -54,7 +61,14 @@
               "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
               "disable_close_recommendation": "No \"please close\" recommendation is ever made for this room (temperature/humidity/CO2/winter max duration/summer case have no effect) - useful when the window contact doesn't reliably reflect the actual state (e.g. a sliding door) or an air conditioner handles cooling independently of the window. Frost/heat protection are unaffected and still close immediately. Open recommendations are unaffected too.",
-              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
+              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting.",
+              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
+              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field below is ignored.",
+              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
           },
           "parameters": {
@@ -99,26 +113,6 @@
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Currently global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature reaches the threshold again, or while the window is open. Currently global: {global_heating_standby_temp}"
-            }
-          },
-          "devices": {
-            "name": "Devices (optional)",
-            "description": "Dehumidifier, air conditioner and/or heating that are controlled automatically.",
-            "data": {
-              "dehumidifier_entity": "Dehumidifier",
-              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
-              "ac_entity": "Air conditioner",
-              "heating_entity": "Heating",
-              "min_surplus_power_watts": "Minimum surplus power to turn on",
-              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
-            },
-            "data_description": {
-              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
-              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
-              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
-              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open.",
-              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
           }
         }
@@ -157,8 +151,8 @@
             }
           },
           "sensors": {
-            "name": "Sensors",
-            "description": "Which entities provide the measurements for this room?",
+            "name": "Sensors & Devices",
+            "description": "Which entities provide the measurements for this room, and which devices (dehumidifier, air conditioner, heating) are controlled automatically?",
             "data": {
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
@@ -168,7 +162,14 @@
               "window_entity": "Window contact sensor (optional)",
               "shutter_entity": "Shutter / window lock (with air conditioner)",
               "disable_close_recommendation": "Disable close recommendation",
-              "no_window": "This room has no window"
+              "no_window": "This room has no window",
+              "dehumidifier_entity": "Dehumidifier",
+              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
+              "ac_entity": "Air conditioner",
+              "heating_use_temp_source": "Also use temperature source for heating",
+              "heating_entity": "Heating",
+              "min_surplus_power_watts": "Minimum surplus power to turn on",
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
@@ -177,7 +178,14 @@
               "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
               "disable_close_recommendation": "No \"please close\" recommendation is ever made for this room (temperature/humidity/CO2/winter max duration/summer case have no effect) - useful when the window contact doesn't reliably reflect the actual state (e.g. a sliding door) or an air conditioner handles cooling independently of the window. Frost/heat protection are unaffected and still close immediately. Open recommendations are unaffected too.",
-              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting."
+              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting.",
+              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
+              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field below is ignored.",
+              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
           },
           "parameters": {
@@ -222,26 +230,6 @@
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Currently global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature reaches the threshold again, or while the window is open. Currently global: {global_heating_standby_temp}"
-            }
-          },
-          "devices": {
-            "name": "Devices (optional)",
-            "description": "Dehumidifier, air conditioner and/or heating that are controlled automatically.",
-            "data": {
-              "dehumidifier_entity": "Dehumidifier",
-              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
-              "ac_entity": "Air conditioner",
-              "heating_entity": "Heating",
-              "min_surplus_power_watts": "Minimum surplus power to turn on",
-              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
-            },
-            "data_description": {
-              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
-              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
-              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
-              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open.",
-              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
           }
         },
