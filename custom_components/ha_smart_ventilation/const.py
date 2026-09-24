@@ -122,6 +122,14 @@ CONF_HEATING_USE_TEMP_SOURCE = "heating_use_temp_source"
 CONF_HEATING_THRESHOLD_TEMP = "heating_threshold_temp"
 CONF_HEATING_COMFORT_TEMP = "heating_comfort_temp"
 CONF_HEATING_STANDBY_TEMP = "heating_standby_temp"
+# Optionale Liste von person-/device_tracker-Entitäten (Mehrfachauswahl,
+# analog zu CONF_SONOS_ENTITY) - ist mindestens eine konfiguriert, pausiert
+# die Heizung (Standby), solange ALLE davon bestätigt "not_home" melden;
+# meldet mindestens eine "home", oder ist der Zustand einer von ihnen
+# gerade unbekannt/nicht verfügbar, läuft die Heizung normal weiter
+# (permissiv - ein GPS-Aussetzer soll nicht fälschlich die Heizung
+# abschalten). Ohne konfigurierte Entität keine Auswirkung (wie bisher).
+CONF_HEATING_PRESENCE_ENTITIES = "heating_presence_entities"
 CONF_SHUTTER_ENTITY = "shutter_entity"
 CONF_POWER_ENTITY = "power_entity"
 CONF_MIN_SURPLUS_POWER = "min_surplus_power_watts"

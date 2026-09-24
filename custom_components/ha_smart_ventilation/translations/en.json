@@ -16,21 +16,23 @@
         },
         "sections": {
           "notify": {
-            "name": "Notification methods",
+            "name": "Notifications & Presence",
             "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "tts_volume": "Playback volume for voice announcements",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
-              "persistent_enabled": "Persistent notification (web interface)"
+              "persistent_enabled": "Persistent notification (web interface)",
+              "heating_presence_entities": "Presence for heating (people)"
             },
             "data_description": {
               "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
               "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_persistent_enabled}",
               "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
-              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}"
+              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
             }
           },
           "sensors": {
@@ -133,21 +135,23 @@
         },
         "sections": {
           "notify": {
-            "name": "Notification methods",
+            "name": "Notifications & Presence",
             "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "tts_volume": "Playback volume for voice announcements",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
-              "persistent_enabled": "Persistent notification (web interface)"
+              "persistent_enabled": "Persistent notification (web interface)",
+              "heating_presence_entities": "Presence for heating (people)"
             },
             "data_description": {
               "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
               "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_persistent_enabled}",
               "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
-              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}"
+              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
             }
           },
           "sensors": {

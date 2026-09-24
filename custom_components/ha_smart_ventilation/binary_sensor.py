@@ -34,6 +34,7 @@ from .const import (
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_ENTITY,
+    CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_TEMP_SOURCE,
@@ -647,6 +648,25 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return False
         return state.state == "on"
 
+    def _is_heating_presence_away(self) -> bool:
+        """True nur, wenn für die Heizung mindestens eine Anwesenheits-
+        Entität konfiguriert ist UND ALLE davon bestätigt "not_home" melden.
+
+        Meldet mindestens eine "home", oder ist der Zustand einer von ihnen
+        gerade unbekannt/nicht verfügbar, wird permissiv False zurückgegeben
+        (kein Grund, die Heizung deswegen zu pausieren) - ein einzelner
+        GPS-Aussetzer eines Trackers soll nicht fälschlich die Heizung
+        abschalten. Ohne konfigurierte Entität immer False (keine
+        Auswirkung, wie bisher)."""
+        entities = self._config.get(CONF_HEATING_PRESENCE_ENTITIES) or []
+        if not entities:
+            return False
+        for entity_id in entities:
+            state = self.hass.states.get(entity_id)
+            if state is None or state.state != "not_home":
+                return False
+        return True
+
     def _is_device_on(self, entity_id: str) -> bool:
         """Liest den tatsächlichen Live-Zustand einer Geräte-Entität
         (Luftentfeuchter/Klimaanlage) für die Dashboard-Anzeige - unabhängig
@@ -917,15 +937,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen
         # ist (_is_window_confirmed_open(), dasselbe Muster wie bei der
         # Luftentfeuchter-Pausierung) - gegen ein offenes Fenster zu heizen
-        # verschwendet nur Energie.
+        # verschwendet nur Energie. Ebenso pausiert (Standby), solange
+        # niemand zuhause ist (_is_heating_presence_away()) - nur relevant,
+        # wenn mindestens eine Anwesenheits-Entität konfiguriert ist.
         window_confirmed_open = self._is_window_confirmed_open()
+        heating_presence_away = self._is_heating_presence_away()
         want_heating_comfort = (
             indoor_temp is not None
             and indoor_temp < heating_threshold
             and not window_confirmed_open
+            and not heating_presence_away
         )
-        want_heating_standby = window_confirmed_open or (
-            indoor_temp is not None and indoor_temp >= heating_threshold + margin
+        want_heating_standby = (
+            window_confirmed_open
+            or heating_presence_away
+            or (indoor_temp is not None and indoor_temp >= heating_threshold + margin)
         )
 
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
@@ -967,6 +993,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._get_heating_entity_id():
             if window_confirmed_open:
                 self._heating_reason = "pausiert: Fenster offen"
+            elif heating_presence_away:
+                self._heating_reason = "pausiert: niemand zuhause"
             elif want_heating_standby:
                 self._heating_reason = "Innentemperatur über Schwelle, Standby"
             elif want_heating_comfort:

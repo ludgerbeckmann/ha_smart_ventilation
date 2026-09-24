@@ -76,41 +76,6 @@ Entität für Dashboards/Automationen).
    eingeklappt):
    - **Raumname** (ganz oben, ggf. bereits durch den HA-Bereich
      vorbelegt – lässt sich hier weiterhin frei ändern)
-   - **Abschnitt "Benachrichtigungsmethoden"**:
-     - **Lautsprecher** (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl):
-       Sprachausgabe ist automatisch aktiv, sobald hier mindestens ein
-       Lautsprecher ausgewählt ist – kein eigener Ja/Nein-Schalter mehr,
-       auch keine globale Einstellung dafür. Die TTS-Entität selbst kommt
-       ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
-       auswählbar
-     - **Wiedergabelautstärke für Sprachausgabe** (optional): überschreibt
-       für diesen Raum die in "Smart Ventilation Optionen" hinterlegte
-       Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext
-       zeigt den aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 40 %")
-     - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
-       eine Liste von **App-Benachrichtigungszielen** (leer = globale Ziele
-       verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht, die
-       Auswahl ist auf Entitäten der Home Assistant Companion App
-       eingeschränkt - andere notify-Entitäten unterstützen das für das
-       "Clean Notification"-Muster benötigte `data`-Feld mit `tag` häufig
-       nicht) und optional eine **Anwesenheits-Entität** (`person` oder
-       `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
-       genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
-       zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
-       ergänzen
-     - **Persistente Benachrichtigung (Weboberfläche)** (Ja/Nein/leer) –
-       keine weiteren Felder nötig. Erstellt eine dauerhafte Benachrichtigung
-       im Home-Assistant-Benachrichtigungsbereich (Glocken-Symbol), solange
-       die Empfehlung aktiv ist, und löst sich automatisch wieder auf,
-       sobald sie sich erledigt hat
-     - Es gibt keine Pflicht mehr, hier etwas auszufüllen - lässt du alles
-       leer, gilt komplett die globale Einstellung. Fehlt am Ende sowohl
-       raum- als auch global eine gültige Ziel-Entität für eine aktivierte
-       Methode, erscheint nur ein Log-Hinweis, das Formular blockiert nicht
-     - Bei "Home Assistant Companion App", den App-Benachrichtigungszielen
-       und "Persistente Benachrichtigung" zeigt der Hinweistext jetzt
-       ebenfalls den aktuell wirksamen globalen Wert an (z. B.
-       "Aktuell global: Ja" bzw. die Liste der globalen Ziel-Entitäten)
    - **Abschnitt "Sensoren & Geräte"** (Mess-Entitäten UND optional
      automatisch gesteuerte Geräte in einem gemeinsamen Abschnitt - beide
      Themen überschneiden sich: eine `climate`-Entität kann sowohl
@@ -174,8 +139,9 @@ Entität für Dashboards/Automationen).
        `input_number` wie "keine Heizung konfiguriert" behandelt, kein
        Formularfehler). Bei aktiviertem Schalter wird das Feld "Heizung"
        direkt darunter ignoriert (Home-Assistant-Formulare können Felder
-       nicht abhängig von einer Checkbox ausblenden, siehe
-       "Benachrichtigungsmethoden" oben)
+       nicht abhängig von einer Checkbox ausblenden, siehe "Home Assistant
+       Companion App" im Abschnitt "Benachrichtigungen & Anwesenheit"
+       weiter unten)
      - **Heizung** (optional): eine `climate`-Entität - anders als
        Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
        Umschalten zwischen einem Comfort- und einem Standby-Sollwert (siehe
@@ -189,6 +155,53 @@ Entität für Dashboards/Automationen).
        hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
        Hinweistext den aktuell wirksamen globalen Wert an. Gilt nur für
        Luftentfeuchter/Klimaanlage, nicht für die Heizung
+   - **Abschnitt "Benachrichtigungen & Anwesenheit"** (früher
+     "Benachrichtigungsmethoden" - umbenannt, da hier jetzt auch die
+     Anwesenheits-Entitäten für die Heizungs-Pausierung stehen):
+     - **Lautsprecher** (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl):
+       Sprachausgabe ist automatisch aktiv, sobald hier mindestens ein
+       Lautsprecher ausgewählt ist – kein eigener Ja/Nein-Schalter mehr,
+       auch keine globale Einstellung dafür. Die TTS-Entität selbst kommt
+       ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
+       auswählbar
+     - **Wiedergabelautstärke für Sprachausgabe** (optional): überschreibt
+       für diesen Raum die in "Smart Ventilation Optionen" hinterlegte
+       Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext
+       zeigt den aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 40 %")
+     - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
+       eine Liste von **App-Benachrichtigungszielen** (leer = globale Ziele
+       verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht, die
+       Auswahl ist auf Entitäten der Home Assistant Companion App
+       eingeschränkt - andere notify-Entitäten unterstützen das für das
+       "Clean Notification"-Muster benötigte `data`-Feld mit `tag` häufig
+       nicht) und optional eine **Anwesenheits-Entität** (`person` oder
+       `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
+       genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
+       zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
+       ergänzen
+     - **Persistente Benachrichtigung (Weboberfläche)** (Ja/Nein/leer) –
+       keine weiteren Felder nötig. Erstellt eine dauerhafte Benachrichtigung
+       im Home-Assistant-Benachrichtigungsbereich (Glocken-Symbol), solange
+       die Empfehlung aktiv ist, und löst sich automatisch wieder auf,
+       sobald sie sich erledigt hat
+     - Es gibt keine Pflicht mehr, hier etwas auszufüllen - lässt du alles
+       leer, gilt komplett die globale Einstellung. Fehlt am Ende sowohl
+       raum- als auch global eine gültige Ziel-Entität für eine aktivierte
+       Methode, erscheint nur ein Log-Hinweis, das Formular blockiert nicht
+     - Bei "Home Assistant Companion App", den App-Benachrichtigungszielen
+       und "Persistente Benachrichtigung" zeigt der Hinweistext jetzt
+       ebenfalls den aktuell wirksamen globalen Wert an (z. B.
+       "Aktuell global: Ja" bzw. die Liste der globalen Ziel-Entitäten)
+     - **Anwesenheit für Heizung (Personen)** (optional): eine oder mehrere
+       `person`- oder `device_tracker`-Entitäten (Mehrfachauswahl) - ist
+       mindestens eine hinterlegt, pausiert die Heizung (Standby), solange
+       ALLE davon bestätigt "nicht zuhause" melden. Meldet mindestens eine
+       "zuhause", oder ist der Zustand einer von ihnen unbekannt/nicht
+       verfügbar, heizt der Raum normal weiter (permissiv - ein einzelner
+       GPS-Aussetzer soll die Heizung nicht fälschlich abschalten). Ohne
+       hinterlegte Entität keine Auswirkung. Unabhängig von den oben
+       konfigurierten Anwesenheits-Entitäten der App-Benachrichtigungsziele
+       - dort geht es um "wen benachrichtigen", hier um "wann heizen"
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
@@ -245,7 +258,7 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   für die Sprachausgabe festlegt
 - **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
   die Lautsprecher **vor** der Ansage gesetzt werden - pro Raum im
-  Abschnitt "Benachrichtigungsmethoden" überschreibbar
+  Abschnitt "Benachrichtigungen & Anwesenheit" überschreibbar
 - **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
 - **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
@@ -261,7 +274,7 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 
 Sprachausgabe hat hier keine Einstellung mehr – Lautsprecherauswahl und
 Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
-"Benachrichtigungsmethoden" im Raum-Formular).
+"Benachrichtigungen & Anwesenheit" im Raum-Formular).
 
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
@@ -347,8 +360,8 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 > Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
 > der Eingabe ein-/ausblenden. Das Ziel-Feld für die App-Benachrichtigung im
-> Abschnitt "Benachrichtigungsmethoden" ist deshalb immer sichtbar, wird
-> aber nur ausgewertet, wenn die Checkbox aktiviert ist.
+> Abschnitt "Benachrichtigungen & Anwesenheit" ist deshalb immer sichtbar,
+> wird aber nur ausgewertet, wenn die Checkbox aktiviert ist.
 >
 > Änderungen an den globalen Einstellungen wirken sich auf alle Räume ohne
 > eigenen Override aus - allerdings nicht sofort, sondern spätestens beim
@@ -630,7 +643,14 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   Innentemperatur-Quelle gewählte Entität selbst bereits eine `climate`-
   Entität, kann sie über die Checkbox "Temperaturquelle auch fürs Heizen
   verwenden" direkt als Heizungs-Gerät wiederverwendet werden, statt sie
-  zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen.
+  zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen. Zusätzlich
+  pausiert die Heizung (Standby), sobald im Abschnitt "Benachrichtigungen &
+  Anwesenheit" mindestens eine Anwesenheits-Entität für die Heizung
+  hinterlegt ist UND ALLE davon bestätigt "nicht zuhause" melden - meldet
+  mindestens eine "zuhause", oder ist der Zustand einer von ihnen gerade
+  unbekannt/nicht verfügbar, heizt der Raum normal weiter (permissiv, ein
+  einzelner GPS-Aussetzer soll die Heizung nicht fälschlich abschalten).
+  Ohne konfigurierte Entität entfällt diese Bedingung komplett.
 - **Leistungssensor (optional)**: Ist eine "Mindest-Einspeiseleistung"
   konfiguriert, wird ein Gerät (Luftentfeuchter/Klimaanlage, nicht die
   Heizung) nur eingeschaltet, wenn der Sensor mindestens diesen Wert meldet

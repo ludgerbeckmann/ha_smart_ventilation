@@ -16,21 +16,23 @@
         },
         "sections": {
           "notify": {
-            "name": "Benachrichtigungsmethoden",
+            "name": "Benachrichtigungen & Anwesenheit",
             "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
-              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
+              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)",
+              "heating_presence_entities": "Anwesenheit für Heizung (Personen)"
             },
             "data_description": {
               "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
               "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
-              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}"
+              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung."
             }
           },
           "sensors": {
@@ -133,21 +135,23 @@
         },
         "sections": {
           "notify": {
-            "name": "Benachrichtigungsmethoden",
+            "name": "Benachrichtigungen & Anwesenheit",
             "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
-              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
+              "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)",
+              "heating_presence_entities": "Anwesenheit für Heizung (Personen)"
             },
             "data_description": {
               "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
               "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
-              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}"
+              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung."
             }
           },
           "sensors": {
