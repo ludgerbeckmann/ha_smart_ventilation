@@ -165,6 +165,9 @@ Entität für Dashboards/Automationen).
        und Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
      - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
        Abschnitt "Sensoren" aktiviert ist)
+     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**
+       und **Heizung Standby-Sollwert** (nur relevant, wenn im Abschnitt
+       "Geräte" eine Heizung hinterlegt ist) - siehe dort
    - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
      Formulars)**:
      - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
@@ -175,11 +178,18 @@ Entität für Dashboards/Automationen).
        dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
        Lüftungs- oder Geräte-Steuerung selbst
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität
+     - **Heizung** (optional): eine `climate`-Entität - anders als
+       Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
+       Umschalten zwischen einem Comfort- und einem Standby-Sollwert (siehe
+       "Heizungs-Schwelle"/"Comfort-Sollwert"/"Standby-Sollwert" im
+       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
+       "Geräte-Steuerung" weiter unten
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
        optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort
        hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
-       Hinweistext den aktuell wirksamen globalen Wert an
+       Hinweistext den aktuell wirksamen globalen Wert an. Gilt nur für
+       Luftentfeuchter/Klimaanlage, nicht für die Heizung
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
@@ -242,9 +252,11 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  CO2-Schwellen zum Öffnen/Schließen sowie der Anstiegs-Schwelle für die
+  CO2-Schwellen zum Öffnen/Schließen, der Anstiegs-Schwelle für die
   Duscherkennung (die Aktivierung selbst ist reine Raumeinstellung, siehe
-  oben)
+  oben) sowie der Heizungs-Schwelle und dem Comfort-/Standby-Sollwert (die
+  Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
+  Raumeinstellung, siehe Abschnitt "Geräte" im Raum-Formular)
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
@@ -557,10 +569,10 @@ Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
 Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
 nutzt die berechnete absolute Feuchte.
 
-## Geräte-Steuerung (Luftentfeuchter/Klimaanlage)
+## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung)
 
-Optional kann pro Raum ein Luftentfeuchter und/oder eine Klimaanlage
-hinterlegt werden, die automatisch gestartet und gestoppt werden:
+Optional kann pro Raum ein Luftentfeuchter, eine Klimaanlage und/oder eine
+Heizung hinterlegt werden, die automatisch gesteuert werden:
 
 - **Luftentfeuchter**: an bei Luftfeuchtigkeit ≥ "Schwelle zum Öffnen", aus
   bei ≤ "Schwelle zum Schließen" - grundsätzlich unabhängig vom
@@ -584,10 +596,28 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
   die Innentemperatur die "Schwelle zum Schließen" erreicht **oder** Lüften
   wieder ausreicht. Ergänzt damit gezielt die Fensterlogik, statt sie zu
   duplizieren: Wenn Lüften reicht, läuft keine Klimaanlage.
+- **Heizung**: anders als Luftentfeuchter/Klimaanlage kein einfaches
+  Ein/Aus, sondern ein Umschalten zwischen zwei festen Sollwerten (Comfort/
+  Standby, über `climate.set_temperature`) - wie für Heizungen typisch.
+  Fällt die Innentemperatur unter die "Heizungs-Schwelle", wird der
+  **Comfort-Sollwert** gesetzt; erreicht sie die Schwelle plus
+  Toleranz-Marge wieder (Hysterese, verhindert Flackern nahe der Schwelle),
+  wird auf den **Standby-Sollwert** zurückgeschaltet. Dazwischen bleibt der
+  zuletzt gesetzte Sollwert unverändert. Ist gerade kein Innentemperatur-
+  Messwert verfügbar, wird bewusst **nichts** geändert (kein sicherheits-,
+  nur komfortrelevanter Fall). Zusätzlich pausiert die Heizung (Standby),
+  solange der Fensterkontakt-Sensor das Fenster als **bestätigt offen**
+  meldet - gegen ein offenes Fenster zu heizen verschwendet nur Energie.
+  Die Heizung setzt voraus, dass die gewählte `climate`-Entität bereits im
+  gewünschten Heiz-Betriebsmodus steht (z. B. "Heizen"/"Auto") - diese
+  Integration ändert nur den Sollwert, nicht den Betriebsmodus selbst.
+  Unberührt vom Leistungssensor unten - die Heizung startet unabhängig von
+  einer eventuell konfigurierten Mindest-Einspeiseleistung.
 - **Leistungssensor (optional)**: Ist eine "Mindest-Einspeiseleistung"
-  konfiguriert, wird ein Gerät nur eingeschaltet, wenn der Sensor mindestens
-  diesen Wert meldet (z. B. um nur bei PV-Überschuss zu starten). Ohne
-  Leistungssensor entfällt diese Bedingung komplett.
+  konfiguriert, wird ein Gerät (Luftentfeuchter/Klimaanlage, nicht die
+  Heizung) nur eingeschaltet, wenn der Sensor mindestens diesen Wert meldet
+  (z. B. um nur bei PV-Überschuss zu starten). Ohne Leistungssensor
+  entfällt diese Bedingung komplett.
 - **Verzögertes Abschalten bei Einspeisung**: Ist die Einspeiseleistung
   ununterbrochen seit mindestens der eingestellten "Verzögerung bis
   Abschalten" zu niedrig, wird ein bereits laufendes Gerät deswegen
@@ -627,6 +657,11 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert und seine Entität vorhanden ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
+| `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true`, sofern der aktuell am Gerät eingestellte Sollwert (live gelesen) näher am Comfort- als am Standby-Sollwert liegt - erkennt daher auch, wenn der Sollwert manuell oder von einer anderen Automation geändert wurde |
+| `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen), `null` falls (noch) nicht ablesbar |
+| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "pausiert: Fenster offen") |
+| `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
+| `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `schliessempfehlung_deaktiviert` | nur vorhanden (mit Wert `true`), falls "Schließempfehlung deaktivieren" für diesen Raum aktiviert ist. Dient der Dashboard-Karte, damit sie die reinen Komfort-Schließgründe (Temperatur/Feuchtigkeit/CO2/Winter-Höchstdauer) live genauso unterdrückt wie die Integration selbst - Frost-/Hitzeschutz bleiben davon unberührt |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
@@ -645,7 +680,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 20** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 21** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -658,7 +693,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 20 %}
+  {% set card_version = 21 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
@@ -759,6 +794,17 @@ content: >
   {% endif %}
   {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
   {% set device_rows = device_rows ~ '\n| ' ~ ac_name ~ ' | ' ~ ac_laufzeit ~ ' | ' ~ ac_grund ~ ' |' %}
+  {% endif %}
+  {% if a.heizung_an is defined %}
+  {% set heiz_name = ('🔴' if a.heizung_an else '⚫') ~ '&nbsp;Heizung' %}
+  {% set heiz_laufzeit = '–' %}
+  {% if a.heizung_an and a.heizung_seit is defined %}
+  {% set heiz_minutes = ((now() - as_datetime(a.heizung_seit)).total_seconds() / 60) | int %}
+  {% set heiz_laufzeit = (heiz_minutes ~ ' Min') if heiz_minutes < 60 else ((heiz_minutes // 60) ~ 'h ' ~ (heiz_minutes % 60) ~ ' Min') %}
+  {% endif %}
+  {% set heiz_grund = a.heizung_grund if a.heizung_grund is defined else '–' %}
+  {% set heiz_grund = (heiz_grund ~ ' (' ~ (a.heizung_zieltemperatur | round(1) | string) ~ ' °C)') if (a.heizung_zieltemperatur is defined and a.heizung_zieltemperatur is not none) else heiz_grund %}
+  {% set device_rows = device_rows ~ '\n| ' ~ heiz_name ~ ' | ' ~ heiz_laufzeit ~ ' | ' ~ heiz_grund ~ ' |' %}
   {% endif %}
   {% if a.duschen_erkannt is defined %}
   {% set dusche_name = ('🟢' if a.duschen_erkannt else '⚫') ~ '&nbsp;Dusche' %}
@@ -964,22 +1010,25 @@ bereits gelösten Schließen-Grund oder ganz ohne Auslöser - siehe
 "Hervorhebung des ausschlaggebenden Werts" oben) →
 **Werte-Tabelle** (mit Spaltenüberschrift "Messwert", inkl.
 CO2-Zeile falls ein CO2-Sensor hinterlegt ist) → **Geräte-Tabelle**
-(Gerät/Laufzeit/Grund - Zeilen für Luftentfeuchter, Klimaanlage und
-Dusche, jeweils nur falls konfiguriert bzw. für den Raum aktiviert; das
+(Gerät/Laufzeit/Grund - Zeilen für Luftentfeuchter, Klimaanlage, Heizung
+und Dusche, jeweils nur falls konfiguriert bzw. für den Raum aktiviert; das
 Status-Icon steht direkt vor dem Gerätenamen in der ersten Spalte; ist
 ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt, zeigt dessen
 Zeile in der "Gerät"-Spalte per Zeilenumbruch (`<br>`) zusätzlich
 "Wassertank" mit eigenem Icon (🔴 voll/Fehler, 🟢 ok) direkt unter dem
 Gerätenamen; "Laufzeit" zeigt, seit wann das jeweilige Gerät ununter-
 brochen läuft bzw. die Duscherkennung anschlägt (`Xh YMin`/`XMin`,
-live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`dusche_seit`
-berechnet), sonst "–"; "Grund" zeigt bei Luftentfeuchter/Klimaanlage
-eine rein informative, live bei jeder Neubewertung berechnete
-Kurzbeschreibung, warum das Gerät gerade an/aus ist bzw. pausiert, ohne
-selbst Einfluss auf die Steuerung zu haben - siehe `binary_sensor.py`;
-bei Dusche entsprechend, ob und warum die Duscherkennung aktuell
-anschlägt) → **Benachrichtigungen** (ein-/ausklappbare Tabelle,
-standardmäßig eingeklappt, jetzt als letzter Abschnitt pro Raum).
+live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`heizung_seit`/
+`dusche_seit` berechnet), sonst "–"; "Grund" zeigt bei Luftentfeuchter/
+Klimaanlage/Heizung eine rein informative, live bei jeder Neubewertung
+berechnete Kurzbeschreibung, warum das Gerät gerade an/aus (bzw. bei der
+Heizung: Comfort/Standby) ist bzw. pausiert, ohne selbst Einfluss auf die
+Steuerung zu haben - siehe `binary_sensor.py`; bei der Heizung ergänzt um
+den aktuellen Sollwert in Klammern (z. B. "Innentemperatur unter Schwelle,
+Comfort (21.0 °C)"); bei Dusche entsprechend, ob und warum die
+Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
+(ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
+Abschnitt pro Raum).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt

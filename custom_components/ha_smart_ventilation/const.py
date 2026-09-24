@@ -98,6 +98,20 @@ CONF_DEHUMIDIFIER_ENTITY = "dehumidifier_entity"
 # Karte), keine Auswirkung auf die Lüftungs-/Geräte-Logik selbst.
 CONF_DEHUMIDIFIER_TANK_FULL_ENTITY = "dehumidifier_tank_full_entity"
 CONF_AC_ENTITY = "ac_entity"
+# Heizung: bewusst nur "climate"-Entitäten (siehe HEATING_DOMAINS) - anders
+# als Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern zwei feste
+# Sollwerte (Comfort/Standby, siehe CONF_HEATING_COMFORT_TEMP/
+# CONF_HEATING_STANDBY_TEMP), wie für Heizungen typisch. Braucht dafür
+# climate.set_temperature, das nur climate-Entitäten unterstützen.
+CONF_HEATING_ENTITY = "heating_entity"
+# Unterhalb dieser Innentemperatur wird auf den Comfort-Sollwert geschaltet;
+# ab Erreichen von CONF_HEATING_THRESHOLD_TEMP + CONF_TEMP_MARGIN (dieselbe
+# Toleranz-Marge wie bei den anderen Temperaturvergleichen) wieder auf den
+# Standby-Sollwert - dazwischen bleibt der zuletzt gesetzte Sollwert
+# unverändert (Hysterese, verhindert Flackern nahe der Schwelle).
+CONF_HEATING_THRESHOLD_TEMP = "heating_threshold_temp"
+CONF_HEATING_COMFORT_TEMP = "heating_comfort_temp"
+CONF_HEATING_STANDBY_TEMP = "heating_standby_temp"
 CONF_SHUTTER_ENTITY = "shutter_entity"
 CONF_POWER_ENTITY = "power_entity"
 CONF_MIN_SURPLUS_POWER = "min_surplus_power_watts"
@@ -175,6 +189,11 @@ DEFAULT_REMINDER_INTERVAL = 0
 DEHUMIDIFIER_DOMAINS = ["switch", "humidifier"]
 AC_DOMAINS = ["climate", "switch"]
 
+# Nur "climate" - Comfort/Standby-Sollwerte (climate.set_temperature)
+# funktionieren nur mit echten climate-Entitäten, anders als das einfache
+# Ein/Aus von Luftentfeuchter/Klimaanlage.
+HEATING_DOMAINS = ["climate"]
+
 # Fenstersperre/Rollladen: entweder eine "cover"-Entität (auf/zu) oder eine
 # "switch"-Entität (1 = herunterfahren+sperren, 0 = hochfahren+entsperren).
 SHUTTER_DOMAINS = ["cover", "switch"]
@@ -192,6 +211,12 @@ DEFAULT_MIN_SURPLUS_POWER = 0.0
 # geringer Einspeisung abgeschaltet wird. Verhindert Abschalten bei kurzen
 # Einspeise-Schwankungen (z. B. vorbeiziehende Wolke).
 DEFAULT_POWER_GRACE_PERIOD = 15
+
+# Typische Wohnraum-Heizungswerte: Standby knapp unter, Comfort knapp über
+# der Schwelle - siehe CONF_HEATING_THRESHOLD_TEMP in const.py oben.
+DEFAULT_HEATING_THRESHOLD_TEMP = 20.0
+DEFAULT_HEATING_COMFORT_TEMP = 21.0
+DEFAULT_HEATING_STANDBY_TEMP = 17.0
 
 # Priorität bei Konflikt zwischen Winter-Höchstdauer und noch bestehendem
 # Feuchtigkeits-Lüftungsbedarf. True (Standard) = Luftfeuchtigkeit hat

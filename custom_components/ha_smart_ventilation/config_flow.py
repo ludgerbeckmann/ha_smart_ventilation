@@ -23,6 +23,10 @@ from .const import (
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEATING_COMFORT_TEMP,
+    CONF_HEATING_ENTITY,
+    CONF_HEATING_STANDBY_TEMP,
+    CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
@@ -74,6 +78,9 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HEATING_COMFORT_TEMP,
+    DEFAULT_HEATING_STANDBY_TEMP,
+    DEFAULT_HEATING_THRESHOLD_TEMP,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
@@ -107,6 +114,7 @@ from .const import (
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     GLOBAL_SETTINGS_UNIQUE_ID,
+    HEATING_DOMAINS,
     PRESENCE_DOMAINS,
     SHUTTER_DOMAINS,
     TEMP_SOURCE_DOMAINS,
@@ -139,6 +147,7 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_AC_ENTITY,
+    CONF_HEATING_ENTITY,
 )
 
 # Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
@@ -171,9 +180,12 @@ _THRESHOLD_FIELDS = {
     CONF_POWER_GRACE_PERIOD: (DEFAULT_POWER_GRACE_PERIOD, 0, 120, 5, "min"),
     CONF_TTS_VOLUME: (DEFAULT_TTS_VOLUME, 0, 100, 5, "%"),
     CONF_SHOWER_RISE_THRESHOLD: (DEFAULT_SHOWER_RISE_THRESHOLD, 0.2, 10, 0.1, "%/min"),
+    CONF_HEATING_THRESHOLD_TEMP: (DEFAULT_HEATING_THRESHOLD_TEMP, 10, 25, 0.5, "°C"),
+    CONF_HEATING_COMFORT_TEMP: (DEFAULT_HEATING_COMFORT_TEMP, 10, 28, 0.5, "°C"),
+    CONF_HEATING_STANDBY_TEMP: (DEFAULT_HEATING_STANDBY_TEMP, 5, 25, 0.5, "°C"),
 }
 
-# Die dreizehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
+# Die sechzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
 # power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
 # hierher.
@@ -192,6 +204,9 @@ _CORE_PARAMETER_KEYS = (
     CONF_MAX_OPEN_DURATION_WINTER,
     CONF_REMINDER_INTERVAL,
     CONF_SHOWER_RISE_THRESHOLD,
+    CONF_HEATING_THRESHOLD_TEMP,
+    CONF_HEATING_COMFORT_TEMP,
+    CONF_HEATING_STANDBY_TEMP,
 )
 
 
@@ -533,6 +548,15 @@ def _build_room_schema(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
     tts_volume_marker, tts_volume_sel = _override_selector(CONF_TTS_VOLUME, defaults)
+    heating_threshold_marker, heating_threshold_sel = _override_selector(
+        CONF_HEATING_THRESHOLD_TEMP, defaults
+    )
+    heating_comfort_marker, heating_comfort_sel = _override_selector(
+        CONF_HEATING_COMFORT_TEMP, defaults
+    )
+    heating_standby_marker, heating_standby_sel = _override_selector(
+        CONF_HEATING_STANDBY_TEMP, defaults
+    )
 
     # App-Push und persistente Benachrichtigung sind überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
@@ -723,6 +747,9 @@ def _build_room_schema(
                 priority_marker: priority_sel,
                 reminder_marker: reminder_sel,
                 shower_threshold_marker: shower_threshold_sel,
+                heating_threshold_marker: heating_threshold_sel,
+                heating_comfort_marker: heating_comfort_sel,
+                heating_standby_marker: heating_standby_sel,
             }
         ),
         {"collapsed": True},
@@ -733,6 +760,9 @@ def _build_room_schema(
     )
     ac_include = _area_include_entities(
         area_entities, AC_DOMAINS, defaults.get(CONF_AC_ENTITY)
+    )
+    heating_include = _area_include_entities(
+        area_entities, HEATING_DOMAINS, defaults.get(CONF_HEATING_ENTITY)
     )
 
     # Ans Ende verschoben und standardmäßig eingeklappt, da optional und nur
@@ -766,6 +796,18 @@ def _build_room_schema(
                     selector.EntitySelectorConfig(
                         domain=AC_DOMAINS,
                         **({"include_entities": ac_include} if ac_include else {}),
+                    )
+                ),
+                _entity_marker(
+                    CONF_HEATING_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=HEATING_DOMAINS,
+                        **(
+                            {"include_entities": heating_include}
+                            if heating_include
+                            else {}
+                        ),
                     )
                 ),
                 power_marker: power_sel,

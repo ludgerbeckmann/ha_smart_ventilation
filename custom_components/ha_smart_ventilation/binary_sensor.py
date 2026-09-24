@@ -32,6 +32,10 @@ from .const import (
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEATING_COMFORT_TEMP,
+    CONF_HEATING_ENTITY,
+    CONF_HEATING_STANDBY_TEMP,
+    CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
     CONF_HUMIDITY_ENTITY,
@@ -81,6 +85,9 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HEATING_COMFORT_TEMP,
+    DEFAULT_HEATING_STANDBY_TEMP,
+    DEFAULT_HEATING_THRESHOLD_TEMP,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
@@ -196,12 +203,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # None = noch nicht initial synchronisiert.
         self._dehumidifier_state: bool | None = None
         self._ac_state: bool | None = None
+        # True = zuletzt Comfort-Sollwert gesetzt, False = Standby, None =
+        # noch nicht initial synchronisiert - siehe _update_heating().
+        self._heating_state: bool | None = None
 
         # Rein informativer Ein-/Ausschalt-Grund für die Dashboard-Karte
         # (neue Geräte-Tabelle, siehe README) - live bei jeder Neubewertung
         # in _evaluate() gesetzt, keine Steuerungswirkung.
         self._dehumidifier_reason = ""
         self._ac_reason = ""
+        self._heating_reason = ""
 
         # Seit wann die Einspeiseleistung ununterbrochen zu niedrig ist,
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
@@ -218,13 +229,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._humidity_samples: deque[tuple] = deque()
         self._showering = False
 
-        # Seit wann Luftentfeuchter/Klimaanlage/Dusche ununterbrochen aktiv
-        # sind (Dashboard-Karte, Spalte "Laufzeit") - Luftentfeuchter/
-        # Klimaanlage werden live in extra_state_attributes gepflegt (dort
-        # wird ohnehin schon _is_device_on() für die Anzeige gelesen, siehe
-        # Lektion 19), Dusche in _evaluate() neben self._showering.
+        # Seit wann Luftentfeuchter/Klimaanlage/Heizung/Dusche ununterbrochen
+        # aktiv sind (Dashboard-Karte, Spalte "Laufzeit") - Luftentfeuchter/
+        # Klimaanlage/Heizung werden live in extra_state_attributes gepflegt
+        # (dort wird ohnehin schon der Live-Zustand für die Anzeige gelesen,
+        # siehe Lektion 19), Dusche in _evaluate() neben self._showering.
         self._dehumidifier_on_since = None
         self._ac_on_since = None
+        self._heating_on_since = None
         self._shower_on_since = None
 
     def attach_shower_sensor(
@@ -391,6 +403,36 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._ac_on_since = None
             attrs["klimaanlage_an"] = ac_on
             attrs["klimaanlage_grund"] = self._ac_reason
+        if self._config.get(CONF_HEATING_ENTITY) and not self._device_entity_missing(
+            self._config[CONF_HEATING_ENTITY]
+        ):
+            # "an" bedeutet hier nicht (wie bei Luftentfeuchter/Klimaanlage)
+            # ein einfaches Ein/Aus, sondern ob der aktuell am Gerät
+            # eingestellte Sollwert näher am Comfort- als am
+            # Standby-Sollwert liegt - live vom Gerät gelesen (Lektion 19/33:
+            # eine andere Automation oder der Nutzer selbst könnte den
+            # Sollwert direkt am Thermostat geändert haben, ohne dass diese
+            # Integration davon weiß).
+            comfort_temp = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
+            standby_temp = self._effective(CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP)
+            current_target = self._get_heating_target_temperature(
+                self._config[CONF_HEATING_ENTITY]
+            )
+            heating_comfort_active = current_target is not None and abs(
+                current_target - comfort_temp
+            ) < abs(current_target - standby_temp)
+            if heating_comfort_active:
+                if self._heating_on_since is None:
+                    self._heating_on_since = dt_util.utcnow()
+                attrs["heizung_seit"] = self._heating_on_since.isoformat()
+            else:
+                self._heating_on_since = None
+            attrs["heizung_an"] = heating_comfort_active
+            attrs["heizung_zieltemperatur"] = current_target
+            attrs["heizung_grund"] = self._heating_reason
+            attrs["schwelle_heizung"] = self._effective(
+                CONF_HEATING_THRESHOLD_TEMP, DEFAULT_HEATING_THRESHOLD_TEMP
+            )
         return attrs
 
     async def async_added_to_hass(self) -> None:
@@ -424,6 +466,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._dehumidifier_state = bool(attrs["luftentfeuchter_an"])
             if "klimaanlage_an" in attrs:
                 self._ac_state = bool(attrs["klimaanlage_an"])
+            if "heizung_an" in attrs:
+                self._heating_state = bool(attrs["heizung_an"])
             # Laufzeit-Zeitstempel wiederherstellen (sonst zeigt die
             # Dashboard-Karte nach jedem Neustart fälschlich "0 Min", obwohl
             # das Gerät schon länger läuft) - werden beim nächsten Lesen von
@@ -435,6 +479,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 )
             if "klimaanlage_seit" in attrs:
                 self._ac_on_since = dt_util.parse_datetime(attrs["klimaanlage_seit"])
+            if "heizung_seit" in attrs:
+                self._heating_on_since = dt_util.parse_datetime(attrs["heizung_seit"])
             if "dusche_seit" in attrs:
                 self._shower_on_since = dt_util.parse_datetime(attrs["dusche_seit"])
 
@@ -623,6 +669,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return state.state != "off"
         return state.state == "on"
 
+    def _get_heating_target_temperature(self, entity_id: str) -> float | None:
+        """Liest den aktuell am Heizungs-Gerät eingestellten Sollwert
+        (Attribut "temperature") live aus - dient sowohl der Dashboard-
+        Anzeige als auch der Bestimmung, ob das Gerät gerade näher am
+        Comfort- oder am Standby-Sollwert steht (siehe extra_state_attributes)."""
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return None
+        try:
+            return float(state.attributes.get("temperature"))
+        except (TypeError, ValueError):
+            return None
+
     def _device_entity_missing(self, entity_id: str) -> bool:
         """True, wenn die Entität komplett aus dem Zustandsautomaten
         verschwunden ist - z. B. weil ihr Integrationseintrag deaktiviert
@@ -689,6 +748,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             CONF_FROST_DEBOUNCE_MINUTES, DEFAULT_FROST_DEBOUNCE_MINUTES
         )
         heat_temp = self._effective(CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP)
+        heating_threshold = self._effective(
+            CONF_HEATING_THRESHOLD_TEMP, DEFAULT_HEATING_THRESHOLD_TEMP
+        )
         winter_threshold = self._effective(
             CONF_WINTER_OUTDOOR_THRESHOLD, DEFAULT_WINTER_OUTDOOR_THRESHOLD
         )
@@ -826,6 +888,30 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and not outdoor_drier_enough
             and not (power_entity_configured and self._check_power_ok())
         )
+        # --- Heizung: zwei feste Sollwerte (Comfort/Standby) statt einfachem
+        # Ein/Aus, wie für Heizungen üblich - siehe CONF_HEATING_COMFORT_TEMP/
+        # CONF_HEATING_STANDBY_TEMP in const.py. Comfort unterhalb der
+        # Schwelle, Standby erst ab Schwelle + Toleranz-Marge (Hysterese,
+        # dieselbe margin wie bei den anderen Temperaturvergleichen) - dazwischen
+        # bleibt der zuletzt gesetzte Sollwert unverändert. Ist indoor_temp
+        # gerade nicht verfügbar, wird bewusst NICHTS geändert (weder Comfort
+        # noch Standby) - anders als beim Frostschutz ist ein falsches Timing
+        # hier nicht sicherheitsrelevant, nur unkomfortabel, ein Umschalten
+        # ohne verlässlichen Messwert also nicht gerechtfertigt.
+        # Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen
+        # ist (_is_window_confirmed_open(), dasselbe Muster wie bei der
+        # Luftentfeuchter-Pausierung) - gegen ein offenes Fenster zu heizen
+        # verschwendet nur Energie.
+        window_confirmed_open = self._is_window_confirmed_open()
+        want_heating_comfort = (
+            indoor_temp is not None
+            and indoor_temp < heating_threshold
+            and not window_confirmed_open
+        )
+        want_heating_standby = window_confirmed_open or (
+            indoor_temp is not None and indoor_temp >= heating_threshold + margin
+        )
+
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
         # spiegeln dieselbe Priorität wie want_on/want_off in
@@ -862,6 +948,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._ac_reason = "im Sollbereich, hält letzten Zustand"
             if self._effective(CONF_POWER_ENTITY, None) and not self._check_power_ok():
                 self._ac_reason += " (Einspeiseleistung zu gering)"
+        if self._config.get(CONF_HEATING_ENTITY):
+            if window_confirmed_open:
+                self._heating_reason = "pausiert: Fenster offen"
+            elif want_heating_standby:
+                self._heating_reason = "Innentemperatur über Schwelle, Standby"
+            elif want_heating_comfort:
+                self._heating_reason = "Innentemperatur unter Schwelle, Comfort"
+            else:
+                self._heating_reason = "im Sollbereich, hält letzten Zustand"
         # --- Schließen: Außenluft ist inzwischen (wieder) absolut feuchter
         # als die Innenluft - das Pendant zu outdoor_warmer_again weiter
         # unten, nur für Luftfeuchtigkeit statt Temperatur. outdoor_drier_enough
@@ -967,6 +1062,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 humidity_needs_close=humidity_needs_close,
                 outdoor_cooler_enough=outdoor_cooler_enough,
                 dehumidifier_pause_open_window=dehumidifier_pause_open_window,
+                want_heating_comfort=want_heating_comfort,
+                want_heating_standby=want_heating_standby,
             )
             return
 
@@ -1194,6 +1291,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 humidity_needs_close=humidity_needs_close,
                 outdoor_cooler_enough=outdoor_cooler_enough,
                 dehumidifier_pause_open_window=dehumidifier_pause_open_window,
+                want_heating_comfort=want_heating_comfort,
+                want_heating_standby=want_heating_standby,
             )
             return
 
@@ -1204,6 +1303,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             humidity_needs_close=humidity_needs_close,
             outdoor_cooler_enough=outdoor_cooler_enough,
             dehumidifier_pause_open_window=dehumidifier_pause_open_window,
+            want_heating_comfort=want_heating_comfort,
+            want_heating_standby=want_heating_standby,
         )
 
         # Immer schreiben (nicht nur bei Zustandswechsel), damit die
@@ -1308,8 +1409,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         humidity_needs_close: bool,
         outdoor_cooler_enough: bool,
         dehumidifier_pause_open_window: bool,
+        want_heating_comfort: bool,
+        want_heating_standby: bool,
     ) -> None:
-        """Steuert optionalen Luftentfeuchter und optionale Klimaanlage.
+        """Steuert optionalen Luftentfeuchter, optionale Klimaanlage und
+        optionale Heizung.
 
         - Luftentfeuchter: an bei hoher Luftfeuchtigkeit, aus bei niedriger -
           unabhängig vom Fenster-Status, außer das Fenster ist offen UND die
@@ -1321,9 +1425,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
           duplizieren. Aus, sobald die Zieltemperatur erreicht ist oder Lüften
           wieder ausreicht. Ist ein Rollladen hinterlegt, fährt dieser beim
           Einschalten herunter und beim Ausschalten wieder hoch.
-        - Ein konfigurierter Leistungssensor blockiert das Einschalten. Ist ein
-          Gerät bereits an, wird es erst nach Ablauf der Abschalt-Verzögerung
-          wegen dauerhaft zu geringer Einspeisung wieder ausgeschaltet.
+        - Heizung: kein Ein/Aus, sondern Umschalten zwischen einem Comfort-
+          und einem Standby-Sollwert (siehe _update_heating()) - pausiert
+          (Standby) zusätzlich bei bestätigt offenem Fenster.
+        - Ein konfigurierter Leistungssensor blockiert das Einschalten von
+          Luftentfeuchter/Klimaanlage. Ist ein Gerät bereits an, wird es erst
+          nach Ablauf der Abschalt-Verzögerung wegen dauerhaft zu geringer
+          Einspeisung wieder ausgeschaltet. Die Heizung ist davon unberührt.
         """
         await self._update_single_device(
             entity_key=CONF_DEHUMIDIFIER_ENTITY,
@@ -1339,6 +1447,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             want_on=temp_needs_open and not outdoor_cooler_enough,
             want_off=temp_needs_close or outdoor_cooler_enough,
             shutter_key=CONF_SHUTTER_ENTITY,
+        )
+        await self._update_heating(
+            want_comfort=want_heating_comfort,
+            want_standby=want_heating_standby,
         )
 
     async def _update_single_device(
@@ -1405,6 +1517,57 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self.async_write_ha_state()
             # sonst: noch nicht genug Einspeiseleistung - beim nächsten
             # Tick (spätestens alle 5 Minuten) wird erneut geprüft.
+
+    async def _update_heating(self, *, want_comfort: bool, want_standby: bool) -> None:
+        """Steuert eine optionale Heizung über zwei feste Sollwerte (Comfort/
+        Standby, siehe const.py) statt eines einfachen Ein/Aus wie bei
+        Luftentfeuchter/Klimaanlage - für Heizungen ist das die übliche
+        Betriebsart. want_standby hat Vorrang vor want_comfort (analog zu
+        want_off vs. want_on in _update_single_device())."""
+        entity_id = self._config.get(CONF_HEATING_ENTITY)
+        if not entity_id:
+            return
+        if self._device_entity_missing(entity_id):
+            self._heating_state = None
+            return
+
+        current = self._heating_state
+        if want_standby and current is not False:
+            standby_temp = self._effective(
+                CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP
+            )
+            await self._set_heating_temperature(entity_id, standby_temp)
+            self._heating_state = False
+        elif want_comfort and not want_standby and current is not True:
+            comfort_temp = self._effective(
+                CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP
+            )
+            await self._set_heating_temperature(entity_id, comfort_temp)
+            self._heating_state = True
+
+    async def _set_heating_temperature(self, entity_id: str, temperature: float) -> None:
+        """Setzt den Sollwert einer Heizungs-climate-Entität.
+
+        blocking=True (anders als _set_device_state()/_set_shutter(), die
+        bewusst blocking=False verwenden) - climate.set_temperature validiert
+        den übergebenen Wert gegen das Schema der Ziel-Entität (u. a.
+        min_temp/max_temp/target_temp_step), ein Validierungsfehler passiert
+        bei blocking=False in einem unbeobachteten Hintergrund-Task und würde
+        vom try/except hier nicht abgefangen (siehe CLAUDE.md, Lektion 35)."""
+        try:
+            await self.hass.services.async_call(
+                "climate",
+                "set_temperature",
+                {"entity_id": entity_id, "temperature": temperature},
+                blocking=True,
+            )
+        except HomeAssistantError:
+            _LOGGER.warning(
+                "Konnte Sollwert für Heizung %s nicht auf %s setzen (Raum %s)",
+                entity_id,
+                temperature,
+                self._config[CONF_ROOM_NAME],
+            )
 
     async def _set_shutter(self, shutter_entity: str | None, *, close: bool) -> None:
         """Fährt eine optionale Fenstersperre/Rollladen herunter/hoch (an die
