@@ -1666,6 +1666,75 @@ Aufgabe lag nicht im Erfinden neuer Konzepte, sondern im sorgfältigen
 Übertragen bestehender auf einen strukturell neuen Anwendungsfall
 (Sollwert-Steuerung statt Ein/Aus).
 
+**41. Nutzer-Frage "muss ich die Heizung erst konfigurieren?" führte zur
+Erkenntnis, dass zwei unabhängige Formularfelder dieselbe Entität doppelt
+verlangten - Fix: Wiederverwendungs-Schalter PLUS Zusammenlegung der
+beiden betroffenen Abschnitte (0.57.0).** Nachdem Lektion 40 die Heizung
+eingeführt hatte, meldete der Nutzer, in der Geräte-Tabelle fehle die
+Heizungs-Zeile - Antwort: `CONF_HEATING_ENTITY` ist ein separates Feld,
+noch nicht konfiguriert. Der Nutzer wandte ein, es sei doch für jeden Raum
+bereits eine `climate`-Entität als Innentemperatur-Quelle hinterlegt -
+sollte die nicht automatisch nutzbar sein? Antwort: Nein, absichtlich
+nicht - die Temperaturquelle wird nur passiv gelesen, die Heizung dagegen
+aktiv gesteuert (`climate.set_temperature`); eine automatische
+Wiederverwendung wäre eine stille Rechteausweitung auf eine Entität, die
+der Nutzer nur zum Ablesen ausgewählt hatte (dasselbe Prinzip gilt schon
+lange bei der Klimaanlage, `CONF_AC_ENTITY`). Der Nutzer fand das
+nachvollziehbar, aber trotzdem unpraktisch: dieselbe Entität an zwei
+Stellen im Formular auswählen zu müssen sei unsinnig, und schlug zwei
+Änderungen zugleich vor: (a) die Abschnitte "Sensoren" und "Geräte" im
+Raum-Formular zusammenlegen, UND (b) einen Schalter einführen, der die
+Temperaturquelle direkt fürs Heizen wiederverwendet. Eine Rückfrage
+(AskUserQuestion) klärte den Umfang, da beide Vorschläge unterschiedlich
+riskant sind (ein reiner Schalter ist eine kleine, lokale Ergänzung; das
+Zusammenlegen zweier Abschnitte berührt die gesamte Formular-Struktur
+inkl. `strings.json`/`translations/*.json` und README) - der Nutzer
+wollte ausdrücklich **beides**, den Wiederverwendungs-Schalter aber
+bewusst nur für die Heizung, nicht für die Klimaanlage.
+
+Technisch zwei getrennte Änderungen: (1) `SECTION_DEVICES` komplett
+entfernt, seine Felder (Luftentfeuchter, Tankstatus-Sensor, Klimaanlage,
+Heizung, Leistungsschwelle/-verzögerung) wandern in denselben
+`vol.Schema`-Dict wie die bisherigen `SECTION_SENSORS`-Felder - technisch
+nur ein Zusammenführen zweier Dicts vor dem `section()`-Aufruf, da Home-
+Assistant-Formular-Sections rein UI-seitige Gruppierungen sind und beim
+Speichern ohnehin zu einem flachen Dict zusammengeführt werden
+(`_flatten_step_data`) - bereits gespeicherte Config-Entry-Daten sind
+davon unberührt, keine Migration nötig. (2) Neue Option
+`CONF_HEATING_USE_TEMP_SOURCE` (Checkbox, Standard aus) - aktiviert,
+liefert ein neuer Helper `_get_heating_entity_id()` in `binary_sensor.py`
+die bereits als `CONF_TEMP_SOURCE_ENTITY` gewählte Entität als
+Heizungs-Ziel zurück, aber NUR, wenn diese tatsächlich aus der
+`climate`-Domain kommt (`HEATING_DOMAINS`) - eine `sensor`-/`number`-/
+`input_number`-Temperaturquelle liefert stattdessen `None` (wie "keine
+Heizung konfiguriert" behandelt, bewusst permissiv statt ein
+Formularfehler, da eine harte Validierung eine neue Fehlertext-
+Infrastruktur gebraucht hätte, für einen Fall, der sich ohnehin von
+selbst als "wirkungslos" zeigt). Alle bisherigen direkten Lesezugriffe
+auf `CONF_HEATING_ENTITY` in `binary_sensor.py` (Attribut-Property,
+Grund-Text-Block, `_update_heating()`) wurden durch Aufrufe dieses
+Helpers ersetzt - `CONF_HEATING_ENTITY` selbst bleibt bei aktivem
+Schalter im Formular sichtbar (Home-Assistant-Formulare können Felder
+nicht abhängig von einer Checkbox ausblenden, siehe Muster bei
+"Benachrichtigungsmethoden"), wird aber nicht mehr gelesen - deshalb im
+Formular-Hinweistext ausdrücklich als "wird ignoriert, falls ... aktiviert
+ist" markiert, damit ein Nutzer nicht denkt, eine zusätzliche eigene
+Heizungs-Entität hätte weiterhin Wirkung.
+
+Lektion: Eine als "Sicherheitsprinzip" erkannte Trennung (hier: passives
+Lesen vs. aktives Steuern derselben Entitätsrolle) ist eine korrekte
+Erklärung für das AKTUELLE Verhalten, aber keine automatische
+Rechtfertigung dafür, dem Nutzer die doppelte Auswahl zuzumuten, wenn sich
+beides mit einer expliziten Opt-in-Option (statt einer stillen Annahme)
+vereinen lässt - das Sicherheitsprinzip (nie eine nur zum Lesen gewählte
+Entität automatisch steuern) bleibt dabei vollständig gewahrt, da der
+Nutzer die Wiederverwendung selbst UND bewusst aktivieren muss. Zusätzlich:
+Bei einer AskUserQuestion mit mehreren Teilfragen kann der Nutzer
+durchaus "alles" auf die Umfangsfrage antworten, aber bei einer der
+Teilfragen (hier: soll der Mechanismus auch für die Klimaanlage gelten)
+trotzdem selektiv einschränken - Antworten aus einer Mehrfachauswahl-
+Rückfrage einzeln und nicht pauschal interpretieren.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

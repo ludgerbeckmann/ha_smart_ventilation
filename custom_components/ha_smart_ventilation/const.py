@@ -104,6 +104,16 @@ CONF_AC_ENTITY = "ac_entity"
 # CONF_HEATING_STANDBY_TEMP), wie für Heizungen typisch. Braucht dafür
 # climate.set_temperature, das nur climate-Entitäten unterstützen.
 CONF_HEATING_ENTITY = "heating_entity"
+# Standard False. True = die bereits als Innentemperatur-Quelle (CONF_
+# TEMP_SOURCE_ENTITY) gewählte Entität wird zusätzlich als Heizungs-Gerät
+# verwendet, statt eine zweite, eigene Entität in CONF_HEATING_ENTITY
+# auszuwählen - erspart die doppelte Auswahl derselben climate-Entität für
+# Räume, in denen dieselbe Entität sowohl die Innentemperatur liefert als
+# auch geheizt werden soll. Nur wirksam, wenn die Temperaturquelle
+# tatsächlich eine climate-Entität ist (siehe HEATING_DOMAINS) - sonst wie
+# "keine Heizung konfiguriert" behandelt (permissiv, kein Formularfehler).
+# CONF_HEATING_ENTITY selbst bleibt bei aktivem Schalter wirkungslos.
+CONF_HEATING_USE_TEMP_SOURCE = "heating_use_temp_source"
 # Unterhalb dieser Innentemperatur wird auf den Comfort-Sollwert geschaltet;
 # ab Erreichen von CONF_HEATING_THRESHOLD_TEMP + CONF_TEMP_MARGIN (dieselbe
 # Toleranz-Marge wie bei den anderen Temperaturvergleichen) wieder auf den

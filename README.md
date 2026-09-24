@@ -72,9 +72,8 @@ Entität für Dashboards/Automationen).
    Liste unverändert unbeschränkt (kein Sensor "verschwindet" dadurch).
    Bleibt dieser Schritt leer, funktioniert alles wie bisher – Raumname
    frei eintippen, alle Entitäten wählbar
-3. **Hauptformular** ausfüllen (alle Abschnitte sind aktuell **testweise**
-   standardmäßig eingeklappt, auch "Benachrichtigungsmethoden" und
-   "Sensoren" - vorher waren nur "Parameter" und "Geräte" eingeklappt):
+3. **Hauptformular** ausfüllen (alle Abschnitte sind standardmäßig
+   eingeklappt):
    - **Raumname** (ganz oben, ggf. bereits durch den HA-Bereich
      vorbelegt – lässt sich hier weiterhin frei ändern)
    - **Abschnitt "Benachrichtigungsmethoden"**:
@@ -112,7 +111,10 @@ Entität für Dashboards/Automationen).
        und "Persistente Benachrichtigung" zeigt der Hinweistext jetzt
        ebenfalls den aktuell wirksamen globalen Wert an (z. B.
        "Aktuell global: Ja" bzw. die Liste der globalen Ziel-Entitäten)
-   - **Abschnitt "Sensoren"**:
+   - **Abschnitt "Sensoren & Geräte"** (Mess-Entitäten UND optional
+     automatisch gesteuerte Geräte in einem gemeinsamen Abschnitt - beide
+     Themen überschneiden sich: eine `climate`-Entität kann sowohl
+     Temperatur-Quelle als auch Heizung sein, siehe unten):
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
      - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
@@ -130,11 +132,11 @@ Entität für Dashboards/Automationen).
        Innenschwelle liegt
      - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
        werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
-       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter
-       oder Klimaanlage anhand der Sensorwerte gesteuert werden sollen (siehe
-       Abschnitt "Geräte" weiter unten). Die Geräte-Steuerung läuft davon
-       unabhängig weiter, unabhängig vom Fenster-Status. Bei "an" ist auch
-       keine Benachrichtigungsmethode mehr zwingend erforderlich
+       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter,
+       Klimaanlage oder Heizung anhand der Sensorwerte gesteuert werden sollen
+       (siehe unten). Die Geräte-Steuerung läuft davon unabhängig weiter,
+       unabhängig vom Fenster-Status. Bei "an" ist auch keine
+       Benachrichtigungsmethode mehr zwingend erforderlich
      - **Fensterkontakt** (optional; unterdrückt Benachrichtigungen, sobald
        das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
        eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
@@ -154,6 +156,39 @@ Entität für Dashboards/Automationen).
        Frost-/Hitzeschutz sind davon **unberührt** und schließen weiterhin
        sofort (Sicherheits-, keine Komfort-Bedingung) - Öffnen-Empfehlungen
        ebenfalls unberührt
+     - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
+     - **Tankstatus-Sensor (Luftentfeuchter)** (optional): eine
+       `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
+       bzw. ein Fehler vorliegt - rein informativ, wird auf der
+       Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
+       dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
+       Lüftungs- oder Geräte-Steuerung selbst
+     - **Klimaanlage**: eine `climate`- oder `switch`-Entität
+     - **Temperaturquelle auch fürs Heizen verwenden** (Checkbox, Standard:
+       aus): verwendet automatisch die oben gewählte Innentemperatur-Quelle
+       als Heizungs-Gerät, statt sie zusätzlich im Feld "Heizung" separat
+       auszuwählen - erspart die doppelte Auswahl derselben Entität für
+       Räume, in denen dieselbe `climate`-Entität sowohl die Temperatur
+       liefert als auch heizen soll. Nur wirksam, wenn die Temperaturquelle
+       tatsächlich eine `climate`-Entität ist (bei `sensor`/`number`/
+       `input_number` wie "keine Heizung konfiguriert" behandelt, kein
+       Formularfehler). Bei aktiviertem Schalter wird das Feld "Heizung"
+       direkt darunter ignoriert (Home-Assistant-Formulare können Felder
+       nicht abhängig von einer Checkbox ausblenden, siehe
+       "Benachrichtigungsmethoden" oben)
+     - **Heizung** (optional): eine `climate`-Entität - anders als
+       Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
+       Umschalten zwischen einem Comfort- und einem Standby-Sollwert (siehe
+       "Heizungs-Schwelle"/"Comfort-Sollwert"/"Standby-Sollwert" im
+       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
+       "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
+       "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
+     - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
+       optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
+       hinterlegten Werte (der Leistungssensor selbst ist nur dort
+       hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
+       Hinweistext den aktuell wirksamen globalen Wert an. Gilt nur für
+       Luftentfeuchter/Klimaanlage, nicht für die Heizung
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
@@ -164,32 +199,11 @@ Entität für Dashboards/Automationen).
        Frostschutz, Hitzeschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer
        und Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
      - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
-       Abschnitt "Sensoren" aktiviert ist)
+       Abschnitt "Sensoren & Geräte" aktiviert ist)
      - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**
        und **Heizung Standby-Sollwert** (nur relevant, wenn im Abschnitt
-       "Geräte" eine Heizung hinterlegt ist) - siehe dort
-   - **Abschnitt "Geräte" (optional, standardmäßig eingeklappt, am Ende des
-     Formulars)**:
-     - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
-     - **Tankstatus-Sensor (Luftentfeuchter)** (optional): eine
-       `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
-       bzw. ein Fehler vorliegt - rein informativ, wird auf der
-       Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
-       dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
-       Lüftungs- oder Geräte-Steuerung selbst
-     - **Klimaanlage**: eine `climate`- oder `switch`-Entität
-     - **Heizung** (optional): eine `climate`-Entität - anders als
-       Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
-       Umschalten zwischen einem Comfort- und einem Standby-Sollwert (siehe
-       "Heizungs-Schwelle"/"Comfort-Sollwert"/"Standby-Sollwert" im
-       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
-       "Geräte-Steuerung" weiter unten
-     - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
-       optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
-       hinterlegten Werte (der Leistungssensor selbst ist nur dort
-       hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
-       Hinweistext den aktuell wirksamen globalen Wert an. Gilt nur für
-       Luftentfeuchter/Klimaanlage, nicht für die Heizung
+       "Sensoren & Geräte" eine Heizung hinterlegt oder die Temperaturquelle
+       dafür wiederverwendet wird) - siehe dort
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
@@ -238,8 +252,8 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   im Raum-Formular auswählbar
 - **Mindest-Einspeiseleistung** + **Verzögerung bis Abschalten**:
   Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
-  Werte selbst bleiben pro Raum überschreibbar, siehe Geräte-Abschnitt
-  im Raum-Formular)
+  Werte selbst bleiben pro Raum überschreibbar, siehe Abschnitt
+  "Sensoren & Geräte" im Raum-Formular)
 - **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
   Standard, pro Raum überschreibbar
 - **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
@@ -256,7 +270,7 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   Duscherkennung (die Aktivierung selbst ist reine Raumeinstellung, siehe
   oben) sowie der Heizungs-Schwelle und dem Comfort-/Standby-Sollwert (die
   Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
-  Raumeinstellung, siehe Abschnitt "Geräte" im Raum-Formular)
+  Raumeinstellung, siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
@@ -483,7 +497,7 @@ gefolgt von einem sofortigen erneuten Öffnen deswegen, ergäbe so gut wie
 nie Sinn.
 
 **Duscherkennung:** Optional (Standard aus, nur im Raum-Formular unter
-"Sensoren" aktivierbar - keine globale Einstellung), gedacht für Bäder mit
+"Sensoren & Geräte" aktivierbar - keine globale Einstellung), gedacht für Bäder mit
 Dusche/Badewanne, bei denen die Luftfeuchtigkeit durch das Duschen sehr
 schnell ansteigt. Ist "Duscherkennung" für einen Raum aktiviert, wird
 laufend der Anstieg der bereits konfigurierten Luftfeuchtigkeit über die
@@ -523,7 +537,7 @@ Regen und Windgeschwindigkeit.
 
 ## Fensterkontakt und Benachrichtigungen
 
-Ist im Abschnitt "Sensoren" ein Fensterkontakt hinterlegt, wird sein
+Ist im Abschnitt "Sensoren & Geräte" ein Fensterkontakt hinterlegt, wird sein
 Zustand vor jeder Benachrichtigung geprüft:
 
 - **Öffnen-Empfehlung**: Wird nur verschickt, wenn der Fensterkontakt
@@ -612,7 +626,11 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   gewünschten Heiz-Betriebsmodus steht (z. B. "Heizen"/"Auto") - diese
   Integration ändert nur den Sollwert, nicht den Betriebsmodus selbst.
   Unberührt vom Leistungssensor unten - die Heizung startet unabhängig von
-  einer eventuell konfigurierten Mindest-Einspeiseleistung.
+  einer eventuell konfigurierten Mindest-Einspeiseleistung. Ist die als
+  Innentemperatur-Quelle gewählte Entität selbst bereits eine `climate`-
+  Entität, kann sie über die Checkbox "Temperaturquelle auch fürs Heizen
+  verwenden" direkt als Heizungs-Gerät wiederverwendet werden, statt sie
+  zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen.
 - **Leistungssensor (optional)**: Ist eine "Mindest-Einspeiseleistung"
   konfiguriert, wird ein Gerät (Luftentfeuchter/Klimaanlage, nicht die
   Heizung) nur eingeschaltet, wenn der Sensor mindestens diesen Wert meldet

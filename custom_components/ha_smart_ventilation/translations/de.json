@@ -34,8 +34,8 @@
             }
           },
           "sensors": {
-            "name": "Sensoren",
-            "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
+            "name": "Sensoren & Geräte",
+            "description": "Welche Entitäten liefern die Messwerte für diesen Raum, und welche Geräte (Luftentfeuchter, Klimaanlage, Heizung) werden automatisch gesteuert?",
             "data": {
               "temperature_source_entity": "Innentemperatur",
               "temperature_attribute": "Temperatur-Attribut",
@@ -45,7 +45,14 @@
               "window_entity": "Fensterkontakt (optional)",
               "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "disable_close_recommendation": "Schließempfehlung deaktivieren",
-              "no_window": "Dieser Raum hat kein Fenster"
+              "no_window": "Dieser Raum hat kein Fenster",
+              "dehumidifier_entity": "Luftentfeuchter",
+              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
+              "ac_entity": "Klimaanlage",
+              "heating_use_temp_source": "Temperaturquelle auch fürs Heizen verwenden",
+              "heating_entity": "Heizung",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
@@ -54,7 +61,14 @@
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
-              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
+              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
+              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "heating_use_temp_source": "Verwendet automatisch die oben gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" unten ignoriert.",
+              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (Abschnitt \"Parameter\") um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
+              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
           },
           "parameters": {
@@ -99,26 +113,6 @@
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Aktuell global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, sobald die Innentemperatur die Schwelle wieder erreicht hat oder das Fenster offen ist. Aktuell global: {global_heating_standby_temp}"
-            }
-          },
-          "devices": {
-            "name": "Geräte (optional)",
-            "description": "Luftentfeuchter, Klimaanlage und/oder Heizung, die automatisch gesteuert werden.",
-            "data": {
-              "dehumidifier_entity": "Luftentfeuchter",
-              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
-              "ac_entity": "Klimaanlage",
-              "heating_entity": "Heizung",
-              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
-            },
-            "data_description": {
-              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
-              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
-              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (Abschnitt \"Parameter\") um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist.",
-              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
           }
         }
@@ -157,8 +151,8 @@
             }
           },
           "sensors": {
-            "name": "Sensoren",
-            "description": "Welche Entitäten liefern die Messwerte für diesen Raum?",
+            "name": "Sensoren & Geräte",
+            "description": "Welche Entitäten liefern die Messwerte für diesen Raum, und welche Geräte (Luftentfeuchter, Klimaanlage, Heizung) werden automatisch gesteuert?",
             "data": {
               "temperature_source_entity": "Innentemperatur",
               "temperature_attribute": "Temperatur-Attribut",
@@ -168,7 +162,14 @@
               "window_entity": "Fensterkontakt (optional)",
               "shutter_entity": "Fenstersperre / Rollladen (bei Klimaanlage)",
               "disable_close_recommendation": "Schließempfehlung deaktivieren",
-              "no_window": "Dieser Raum hat kein Fenster"
+              "no_window": "Dieser Raum hat kein Fenster",
+              "dehumidifier_entity": "Luftentfeuchter",
+              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
+              "ac_entity": "Klimaanlage",
+              "heating_use_temp_source": "Temperaturquelle auch fürs Heizen verwenden",
+              "heating_entity": "Heizung",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
@@ -177,7 +178,14 @@
               "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
               "shutter_entity": "Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
               "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
-              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter."
+              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
+              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "heating_use_temp_source": "Verwendet automatisch die oben gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" unten ignoriert.",
+              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (Abschnitt \"Parameter\") um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
+              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
           },
           "parameters": {
@@ -222,26 +230,6 @@
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Aktuell global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, sobald die Innentemperatur die Schwelle wieder erreicht hat oder das Fenster offen ist. Aktuell global: {global_heating_standby_temp}"
-            }
-          },
-          "devices": {
-            "name": "Geräte (optional)",
-            "description": "Luftentfeuchter, Klimaanlage und/oder Heizung, die automatisch gesteuert werden.",
-            "data": {
-              "dehumidifier_entity": "Luftentfeuchter",
-              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
-              "ac_entity": "Klimaanlage",
-              "heating_entity": "Heizung",
-              "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
-            },
-            "data_description": {
-              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
-              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
-              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (Abschnitt \"Parameter\") um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist.",
-              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
             }
           }
         },
