@@ -20,15 +20,17 @@
             "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
-              "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
-              "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum"
+              "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
+              "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
+              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
+              "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
+              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}"
             }
           },
           "sensors": {
@@ -89,7 +91,7 @@
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
-              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang.",
+              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}"
             }
           },
@@ -133,15 +135,17 @@
             "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
             },
             "data_description": {
-              "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
-              "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden",
-              "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum"
+              "mobile_targets": "Leer = globale Ziele aus \"Smart Ventilation Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
+              "persistent_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
+              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Ventilation Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
+              "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
+              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}"
             }
           },
           "sensors": {
@@ -202,7 +206,7 @@
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
-              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang.",
+              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}"
             }
           },
