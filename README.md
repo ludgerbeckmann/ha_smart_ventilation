@@ -84,8 +84,11 @@ Entität für Dashboards/Automationen).
        auswählbar
      - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
        eine Liste von **App-Benachrichtigungszielen** (leer = globale Ziele
-       verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht) und
-       optional eine **Anwesenheits-Entität** (`person` oder
+       verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht, die
+       Auswahl ist auf Entitäten der Home Assistant Companion App
+       eingeschränkt - andere notify-Entitäten unterstützen das für das
+       "Clean Notification"-Muster benötigte `data`-Feld mit `tag` häufig
+       nicht) und optional eine **Anwesenheits-Entität** (`person` oder
        `device_tracker`, individuell pro Ziel) – ist sie gesetzt, erhält
        genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
        zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
@@ -1156,11 +1159,13 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   normalisiert haben - dafür ist kein vollständiger Zustandswechsel der
   Empfehlung nötig, es reicht, dass der konfigurierte Fensterkontakt den
   gewünschten Zustand erreicht. Das erfordert eine notify-Entität, die ein
-  `data`-Feld mit `tag` unterstützt (zuverlässig nur bei echten
-  Companion-App-Entitäten der Fall) - andere notify-Entitäten (z. B. für
-  E-Mail oder andere Messenger) lehnen `data` ggf. per Schema komplett ab;
-  in dem Fall wird nur eine Warnung geloggt ("Konnte Push-Benachrichtigung
-  an ... nicht senden"), statt die Neubewertung fehlschlagen zu lassen.
+  `data`-Feld mit `tag` unterstützt - deshalb ist die Auswahl beim
+  App-Benachrichtigungsziel auf Companion-App-Entitäten eingeschränkt
+  (siehe oben). Wird trotzdem eine andere notify-Entität konfiguriert
+  (z. B. nachträglich über die Home-Assistant-eigene YAML-Konfiguration)
+  und lehnt diese `data` per Schema ab, wird nur eine Warnung geloggt
+  ("Konnte Push-Benachrichtigung an ... nicht senden"), statt die
+  Neubewertung fehlschlagen zu lassen.
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
   sie informiert nur. Falls du motorisierte Fenster hast, kannst du den
   `binary_sensor` als Trigger in einer eigenen Automation verwenden, um
