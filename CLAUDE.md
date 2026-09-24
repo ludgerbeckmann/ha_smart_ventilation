@@ -1403,6 +1403,46 @@ er tatsächlich in die Schema-Validierung eingreift (dann gilt die
 Lektion-26-Vorsicht: den bereits gespeicherten Wert immer mit
 einschließen).
 
+**37. Die Ansage-Lautstärke wurde vor `tts.speak` gesetzt, aber nie wieder
+zurückgesetzt - bewusst dokumentiert, aber ein Nutzer bemerkte es
+trotzdem als Problem (0.54.0).** Nutzerfrage: "kann es sein dass die
+Lautstärke bei Ausgabe über Lautsprecher nicht wieder zurückgesetzt wird
+auf den ursprünglichen Wert?" - Antwort: ja, exakt so, und zwar seit
+jeher bewusst so dokumentiert (`_play_tts()`-Docstring und README:
+"danach nicht automatisch zurückgesetzt - die Lautsprecher bleiben auf
+dieser Lautstärke stehen"). Strukturell verwandt mit Lektion 20 (ein
+dokumentiertes Verhalten ist kein Beleg dafür, dass es nicht trotzdem
+als Bug empfunden wird) - hier aber ohne vorherige Fehlinterpretation
+einer Rückfrage, sondern eine direkte, zutreffende Vermutung des
+Nutzers. Fix: `_get_current_volumes()` liest vor dem Setzen der
+Ansage-Lautstärke den aktuellen `volume_level` jedes Lautsprechers aus
+dem Zustandsautomaten (Lautsprecher ohne numerischen Wert, z. B. aktuell
+aus, werden ausgelassen - für sie wird später auch nichts
+zurückgesetzt). Die eigentliche Schwierigkeit war nicht das Merken des
+Werts, sondern das Zurücksetzen **danach**: `tts.speak` liefert kein
+plattformübergreifend zuverlässiges "Wiedergabe beendet"-Ereignis - genau
+dieselbe Einschränkung, die den Docstring bereits davon abhält, das
+Pausieren/Fortsetzen (siehe README, "Pausieren vs. Überlagern")
+automatisch zu synchronisieren. Für die Lautstärke wurde hier trotzdem
+eine pragmatische Lösung gewählt, statt es wie beim Pausieren ganz
+offenzulassen: `_restore_tts_volume()` schätzt die Sprechdauer aus der
+Nachrichtenlänge (rund 150 Wörter/Minute plus Pufferzeit für TTS-
+Generierung/Netzwerk) und wartet entsprechend lange, bevor sie
+zurücksetzt - als eigener, über `hass.async_create_task()` losgelöster
+Hintergrund-Task, damit `_notify()`/`_evaluate()` nicht auf die
+geschätzte Ansagedauer warten. Bewusst als Heuristik akzeptiert (keine
+exakte Synchronisation nötig, ein paar Sekunden Abweichung bei sehr
+langen Ansagen oder einem langsamen TTS-Dienst sind unkritisch) - anders
+als z. B. bei Frostschutz (Lektion 2/11/12), wo Fehleinschätzungen
+sicherheitsrelevant wären, geht es hier nur um Nutzerkomfort. Lektion:
+Nicht jede "plattformübergreifend nicht zuverlässig lösbar"-Einschränkung
+(hier: kein Wiedergabe-Ende-Ereignis) bedeutet automatisch "also gar
+nicht lösbar" - wo für einen strukturell ähnlichen Fall (Pausieren)
+bereits bewusst auf eine Lösung verzichtet wurde, kann für einen
+anderen Fall (Lautstärke) trotzdem eine hinreichend gute Heuristik
+(Zeitschätzung) angemessen sein, wenn die Konsequenz eines leicht
+falschen Timings gering ist.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
