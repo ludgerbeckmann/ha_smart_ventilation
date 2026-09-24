@@ -1155,7 +1155,12 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   geöffnet/geschlossen hat, bevor sich die zugrunde liegenden Werte
   normalisiert haben - dafür ist kein vollständiger Zustandswechsel der
   Empfehlung nötig, es reicht, dass der konfigurierte Fensterkontakt den
-  gewünschten Zustand erreicht.
+  gewünschten Zustand erreicht. Das erfordert eine notify-Entität, die ein
+  `data`-Feld mit `tag` unterstützt (zuverlässig nur bei echten
+  Companion-App-Entitäten der Fall) - andere notify-Entitäten (z. B. für
+  E-Mail oder andere Messenger) lehnen `data` ggf. per Schema komplett ab;
+  in dem Fall wird nur eine Warnung geloggt ("Konnte Push-Benachrichtigung
+  an ... nicht senden"), statt die Neubewertung fehlschlagen zu lassen.
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
   sie informiert nur. Falls du motorisierte Fenster hast, kannst du den
   `binary_sensor` als Trigger in einer eigenen Automation verwenden, um

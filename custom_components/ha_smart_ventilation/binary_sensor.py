@@ -1757,16 +1757,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                         continue
                     presence_entity = target.get(CONF_PRESENCE_ENTITY)
                     if self._is_present(presence_entity):
-                        await self.hass.services.async_call(
-                            "notify",
-                            "send_message",
-                            {
-                                "entity_id": entity_id,
-                                "title": "Lüften",
-                                "message": message,
-                                "data": {"tag": self._notification_id()},
-                            },
-                            blocking=False,
+                        await self._send_mobile_push(
+                            entity_id, message, title="Lüften"
                         )
                     else:
                         _LOGGER.debug(
@@ -1813,27 +1805,55 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         clear_notification)."""
         return f"smart_ventilation_{self._entry.entry_id}"
 
+    async def _send_mobile_push(
+        self, entity_id: str, message: str, *, title: str | None = None
+    ) -> None:
+        """Verschickt eine App-Push-Nachricht an eine einzelne notify-
+        Entität, inkl. `tag` im `data`-Feld für das "clean notification"-
+        Muster (siehe _notify()/_clear_mobile_notification(), Lektion 18).
+
+        Bewusst `blocking=True`, obwohl der Rest dieser Integration
+        Geräte-Steuerbefehle üblicherweise mit `blocking=False` abfeuert:
+        Nicht jede notify-Entität unterstützt ein `data`-Feld (nur echte
+        Companion-App-Entitäten tun das zuverlässig) - lehnt die
+        Ziel-Entität es per Schema ab, muss der Fehler synchron in diesem
+        `await` ankommen, um ihn hier abzufangen. Mit `blocking=False`
+        passiert die Schema-Validierung dagegen in einem intern erzeugten,
+        von uns nicht beobachteten Task - ein solcher Fehler landet dann
+        unabhängig von jedem try/except als "Task exception was never
+        retrieved" im Log, wiederholt bei jeder Neubewertung (siehe
+        Lektion 35)."""
+        data = {
+            "entity_id": entity_id,
+            "message": message,
+            "data": {"tag": self._notification_id()},
+        }
+        if title is not None:
+            data["title"] = title
+        try:
+            await self.hass.services.async_call(
+                "notify", "send_message", data, blocking=True
+            )
+        except HomeAssistantError:
+            _LOGGER.warning(
+                "Konnte Push-Benachrichtigung an %s nicht senden (Raum %s) "
+                "- unterstützt diese notify-Entität ein `data`-Feld mit "
+                "`tag` (z. B. eine Companion-App-Entität)?",
+                entity_id,
+                self._config[CONF_ROOM_NAME],
+            )
+
     async def _clear_mobile_notification(self) -> None:
         """Löst eine zuvor gesendete Push-Benachrichtigung auf allen
         konfigurierten Zielgeräten auf ("clean notification") - unabhängig
         von der aktuellen Anwesenheit, da ein clear_notification an ein
         Gerät ohne passende (oder bereits aufgelöste) Benachrichtigung
         wirkungslos, aber unschädlich ist."""
-        tag = self._notification_id()
         for target in self._get_mobile_targets():
             entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
             if not entity_id:
                 continue
-            await self.hass.services.async_call(
-                "notify",
-                "send_message",
-                {
-                    "entity_id": entity_id,
-                    "message": "clear_notification",
-                    "data": {"tag": tag},
-                },
-                blocking=False,
-            )
+            await self._send_mobile_push(entity_id, "clear_notification")
         self._mobile_notification_active = False
 
     async def _clear_persistent_notification(self) -> None:
