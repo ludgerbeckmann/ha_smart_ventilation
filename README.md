@@ -557,7 +557,11 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
   unverändert weiter, da das Lüften die Entfeuchtung zusätzlich
   unterstützt. Ohne konfigurierten Fensterkontakt-Sensor oder ohne
   Außen-Luftfeuchtigkeitssensor entfällt diese Ausnahme komplett (wie
-  bisher rein nach den Innen-Schwellen).
+  bisher rein nach den Innen-Schwellen). Ist ein Leistungssensor
+  konfiguriert (siehe unten) UND meldet dieser gerade genug
+  Einspeiseleistung, entfällt die Pausierung ebenfalls - überschüssige,
+  sonst ungenutzte Leistung zu verbrauchen ist kein Verlust, selbst wenn
+  der Luftentfeuchter dabei nur gegen nachströmende feuchte Luft ankämpft.
 - **Klimaanlage**: an, wenn Innentemperatur ≥ "Schwelle zum Öffnen" **und**
   Lüften nicht helfen würde (draußen nicht ausreichend kühler). Aus, sobald
   die Innentemperatur die "Schwelle zum Schließen" erreicht **oder** Lüften

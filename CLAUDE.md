@@ -1284,6 +1284,38 @@ brauchen, die die erste Prüfung bewusst verwischt hat, und verdient
 dann eine eigene, zusätzliche Prüfung statt einer Anpassung der
 bestehenden.
 
+**34. Das Energiespar-Argument hinter `dehumidifier_pause_open_window`
+(Lektion 24) gilt nicht mehr, sobald ohnehin überschüssige
+Einspeiseleistung verfügbar ist (0.53.0).** Auf Nutzerwunsch: Der
+Luftentfeuchter soll bei zu hoher Luftfeuchtigkeit auch bei offenem
+Fenster starten, sofern genug Einspeiseleistung vorhanden ist. Die
+bestehende Pausierung (Lektion 24) begründet sich rein energetisch -
+gegen ständig nachströmende, nicht trockenere Außenluft anzuarbeiten
+verschwendet sonst unnötig Strom. Ist aber ohnehin PV-Überschuss
+vorhanden, der andernfalls ungenutzt bliebe (bzw. eingespeist würde),
+entfällt genau dieses Argument - der Luftentfeuchter zu betreiben
+kostet dann effektiv nichts zusätzlich. Fix: `dehumidifier_pause_open_window`
+prüft jetzt zusätzlich `not (power_entity_configured and
+self._check_power_ok())` - identischer Leistungs-Check wie beim
+eigentlichen Einschalten in `_update_single_device()`. Wichtig dabei:
+Die Ausnahme greift nur, wenn tatsächlich ein Leistungssensor
+konfiguriert ist (`power_entity_configured`) - ohne Sensor bleibt die
+Pausierung unverändert bestehen, da `_check_power_ok()` ohne
+konfigurierten Sensor selbst immer `True` liefert (siehe seine eigene
+Dokumentation, "ohne Leistungssensor immer erfüllt") - ein naives
+`not self._check_power_ok()` ohne diese zusätzliche Prüfung hätte die
+gesamte Lektion-24-Pausierung für alle Nutzer OHNE Leistungssensor
+versehentlich abgeschaltet, obwohl die neue Ausnahme explizit nur für
+den Fall "es ist tatsächlich Überschuss da" gedacht war, nicht für "es
+gibt keine Information darüber". Lektion: Bei einer Bedingung, die eine
+bestehende Sicherheits- oder Sparsamkeits-Maßnahme unter einer neuen
+Voraussetzung aufhebt, immer explizit prüfen, ob diese Voraussetzung
+selbst einen "harmlosen Standardwert" hat, der bei fehlender Konfiguration
+greift (hier: `_check_power_ok() == True` ohne Sensor) - sonst wird aus
+einer eng gemeinten Ausnahme ("nur wenn wir wirklich wissen, dass
+Überschuss da ist") versehentlich eine viel zu breite ("immer, außer
+wir wissen, dass es NICHT reicht").
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

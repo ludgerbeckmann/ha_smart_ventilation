@@ -809,8 +809,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # - bei fehlenden Werten. Ist das Fenster geschlossen, hat diese
         # Bedingung keine Wirkung - der Luftentfeuchter läuft dann weiterhin
         # rein nach den Innen-Luftfeuchtigkeits-Schwellen.
+        #
+        # Ausnahme: Ist genug Einspeiseleistung vorhanden (derselbe Check wie
+        # beim eigentlichen Einschalten, siehe _check_power_ok()), entfällt
+        # das Energiespar-Argument dieser Pausierung - überschüssige, sonst
+        # ungenutzte Leistung zu verbrauchen ist kein Verlust, auch wenn der
+        # Luftentfeuchter dabei "nur" gegen nachströmende feuchte Luft
+        # ankämpft. Nur relevant, wenn überhaupt ein Leistungssensor
+        # konfiguriert ist - ohne Sensor bleibt die Pausierung unverändert
+        # wirksam (nicht permissiv, siehe _check_power_ok()s eigener
+        # Rückgabewert `True` ohne konfigurierten Sensor).
+        power_entity_configured = bool(self._effective(CONF_POWER_ENTITY, None))
         dehumidifier_pause_open_window = (
-            self._is_window_confirmed_open() and not outdoor_drier_enough
+            self._is_window_confirmed_open()
+            and not outdoor_drier_enough
+            and not (power_entity_configured and self._check_power_ok())
         )
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
