@@ -27,16 +27,22 @@ GitHub: `ludgerbeckmann/ha_smart_ventilation` (Domain `ha_smart_ventilation`).
   1. `card_version` in der Jinja-Vorlage hochzählen und den "Aktuelle
      Karten-Version: N"-Hinweis im README direkt darüber mitziehen (siehe
      "Versionierung & Release" unten).
-  2. Den **vollständigen, aktuellen** YAML-Code (inkl. `content:`-Block)
-     zusätzlich zum README-Diff **direkt im Chat als Markdown-Code-Block
-     posten** - nicht nur als angehängte Datei (`SendUserFile`), nicht nur
-     per Verweis auf die README. Gilt für JEDE Änderung an der Karte,
-     auch kleine/kosmetische - unabhängig davon, ob dafür ein
-     `manifest.json`-Versionsbump nötig ist. Grund: ein rein per Datei-
-     Anhang verschicktes YAML hatte beim Nutzer zu Unsicherheit geführt,
-     ob wirklich der neueste Stand eingefügt wurde - das Einfügen in eine
-     Chat-Nachricht macht das Kopieren ohne Dateizugriff möglich und den
-     aktuellen Stand unmittelbar sichtbar.
+  2. Ausschließlich den **Inhalt des `content:`-Abschnitts** (die
+     Jinja-Zeilen selbst, ohne die umgebenden `type: markdown`/`title:`/
+     `content: >`-YAML-Hüllzeilen) zusätzlich zum README-Diff **direkt als
+     Text in der Chat-Antwort posten**, in einem Markdown-Code-Block -
+     nicht nur als angehängte Datei (`SendUserFile`), nicht nur per
+     Verweis auf die README, und **nicht über die Ausgabe eines Bash-/
+     Tool-Aufrufs** (z. B. `cat`) - Tool-Ergebnisse werden dem Nutzer
+     nicht angezeigt, nur die eigene Textausgabe der Antwort selbst. Gilt
+     für JEDE Änderung an der Karte, auch kleine/kosmetische - unabhängig
+     davon, ob dafür ein `manifest.json`-Versionsbump nötig ist. Grund: ein
+     rein per Datei-Anhang verschicktes YAML hatte beim Nutzer zu
+     Unsicherheit geführt, ob wirklich der neueste Stand eingefügt wurde;
+     eine über einen Tool-Aufruf ausgegebene Datei kam beim Nutzer
+     überhaupt nicht an; der komplette YAML-Rahmen (`type:`/`title:`) ist
+     für den Nutzer irrelevant, da er nur den `content:`-Teil in seine
+     bereits bestehende Karte einfügt.
   3. Vor dem Posten immer lokal in der Jinja-Sandbox testen (siehe
      Lektion 7) - `StrictUndefined` nicht vergessen.
 
