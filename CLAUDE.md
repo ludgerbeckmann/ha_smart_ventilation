@@ -20,6 +20,26 @@ Web-Benachrichtigung).
 Aktuelle Version: siehe `custom_components/ha_smart_ventilation/manifest.json`.
 GitHub: `ludgerbeckmann/ha_smart_ventilation` (Domain `ha_smart_ventilation`).
 
+## Feste Arbeitsanweisungen (immer befolgen, ohne erneute Aufforderung)
+
+- **Dashboard-Karte, bei jeder inhaltlichen Änderung (seit 0.50.0, vom
+  Nutzer wiederholt bestätigt):**
+  1. `card_version` in der Jinja-Vorlage hochzählen und den "Aktuelle
+     Karten-Version: N"-Hinweis im README direkt darüber mitziehen (siehe
+     "Versionierung & Release" unten).
+  2. Den **vollständigen, aktuellen** YAML-Code (inkl. `content:`-Block)
+     zusätzlich zum README-Diff **direkt im Chat als Markdown-Code-Block
+     posten** - nicht nur als angehängte Datei (`SendUserFile`), nicht nur
+     per Verweis auf die README. Gilt für JEDE Änderung an der Karte,
+     auch kleine/kosmetische - unabhängig davon, ob dafür ein
+     `manifest.json`-Versionsbump nötig ist. Grund: ein rein per Datei-
+     Anhang verschicktes YAML hatte beim Nutzer zu Unsicherheit geführt,
+     ob wirklich der neueste Stand eingefügt wurde - das Einfügen in eine
+     Chat-Nachricht macht das Kopieren ohne Dateizugriff möglich und den
+     aktuellen Stand unmittelbar sichtbar.
+  3. Vor dem Posten immer lokal in der Jinja-Sandbox testen (siehe
+     Lektion 7) - `StrictUndefined` nicht vergessen.
+
 ## Dateistruktur (Kurzreferenz)
 
 ```
@@ -1671,10 +1691,6 @@ Aufgabe lag nicht im Erfinden neuer Konzepte, sondern im sorgfältigen
   dem Nutzer als Selbstdiagnose (Übersichts-Tabelle zeigt "Karte: N" im
   Dashboard), ob seine eingefügte Karte noch dem aktuellen Stand
   entspricht, da die Karte (anders als der Code) nie automatisch
-  aktualisiert wird.
-- **Nutzer-Vorgabe (0.50.0+):** Bei jeder Änderung an der Dashboard-Karte
-  zusätzlich zum README-Diff immer den vollständigen, aktuellen YAML-Code
-  direkt im Chat posten (als Code-Block, nicht nur als angehängte Datei) -
-  damit er ohne Dateizugriff/Download direkt kopiert werden kann. Grund:
-  ein per `SendUserFile` verschicktes YAML allein hatte beim Nutzer zu
-  Unsicherheit geführt, ob wirklich der neueste Stand eingefügt wurde.
+  aktualisiert wird. Das Posten des vollständigen YAML-Codes im Chat bei
+  jeder Änderung ist eine feste Arbeitsanweisung - siehe ganz oben in
+  dieser Datei ("Feste Arbeitsanweisungen").
