@@ -12,9 +12,10 @@ wichtig wurden.
 Home-Assistant Custom Integration `ha_smart_ventilation` ("Smart
 Ventilation"): pro Raum ein `binary_sensor.lueften_empfohlen_<raum>`, der
 anhand von Innen-/Außentemperatur und -luftfeuchtigkeit empfiehlt, ob
-gelüftet werden sollte. Zusätzlich optionale Steuerung von Luftentfeuchter
-und Klimaanlage, sowie drei Benachrichtigungswege (Sprachausgabe/TTS, App
-Push, persistente Web-Benachrichtigung).
+gelüftet werden sollte. Zusätzlich optionale Steuerung von Luftentfeuchter,
+Klimaanlage und Heizung (Comfort-/Standby-Sollwerte), sowie drei
+Benachrichtigungswege (Sprachausgabe/TTS, App Push, persistente
+Web-Benachrichtigung).
 
 Aktuelle Version: siehe `custom_components/ha_smart_ventilation/manifest.json`.
 GitHub: `ludgerbeckmann/ha_smart_ventilation` (Domain `ha_smart_ventilation`).
@@ -1549,6 +1550,95 @@ die eigentliche Lektion aus 32 (dass "Aktion nötig, aber nicht über das
 Fenster" bei Geräte-Rückkopplung eine eigene Betrachtung verdienen
 könnte) bleibt als Erfahrungswert dieser Session erhalten, auch wenn die
 daraus abgeleitete Karten-Sonderregel selbst nicht von Dauer war.
+
+**40. Eine Heizungs-Erweiterung sollte laut Nutzer-Vorgabe "wie empfohlen"
+(minimal, analog zur Klimaanlage) umgesetzt werden, aber trotzdem mit
+typischen HVAC-Parametern statt reinem Ein/Aus (0.56.0).** Ausgangsfrage
+des Nutzers: eine Erweiterung der Integration ums Heizen, im Zusammenhang
+damit auch eine Umbenennung zu "Smart Climate" - dazu vorab die Antwort,
+dass Umbenennen (Domain-Wechsel) riskant/breaking ist (keine In-Place-
+Migration in Home Assistant) und empfohlen wurde, das von der reinen
+Heizungs-Funktion zu entkoppeln und zunächst nur Letztere unter dem
+bestehenden Namen umzusetzen - vom Nutzer bestätigt. Für den Umfang der
+Heizungs-Funktion selbst wurde dabei auch eine externe Referenz
+herangezogen (ein vom Nutzer verlinktes, sehr umfangreiches Blueprint für
+Heizungssteuerung) - dessen Funktionsumfang (native Thermostat-Kalibrierung
+je Hersteller, PID-Ventilsteuerung, Geofencing/Proximity, Party-Modus,
+Verkalkungsschutz, mehrere parallele Scheduler) wurde bewusst als zu breit
+für die minimalistische Philosophie dieses Projekts eingeschätzt und nur
+ein kleiner Teil (Gerät analog zur Klimaanlage, Fenster-Pausierung,
+Wiederverwendung der Frostschutz-Logik-Muster, Comfort/Standby-Sollwerte)
+zur Übernahme vorgeschlagen - der Nutzer bestätigte per Rückfrage die
+kleinste der drei angebotenen Optionen ("Minimal: Heizung an/aus wie
+Klimaanlage"), ergänzte aber explizit: "Es sollte aber typisch für das
+Heizen HVAC Parameter wie Standby, Comfort, etc. geben" - die "minimale"
+Umsetzung sollte also kein reines Ein/Aus sein, sondern von Anfang an zwei
+feste Sollwerte kennen, wie bei Heizungen üblich.
+
+Technische Entscheidung, die daraus folgte: `_update_heating()` nutzt
+bewusst NICHT die bestehende `_update_single_device()`/`_set_device_state()`-
+Abstraktion (turn_on/turn_off), die für Luftentfeuchter/Klimaanlage
+gemeinsam verwendet wird - eine Heizung braucht `climate.set_temperature`
+mit einem konkreten Zielwert, kein einfaches Ein/Aus. Comfort/Standby als
+zwei feste, konfigurierbare Sollwerte (`CONF_HEATING_COMFORT_TEMP`/
+`CONF_HEATING_STANDBY_TEMP`) statt eines einzelnen "Heizung an"-Sollwerts
+plus separatem Ein/Aus - bewusst EIN neuer Schwellenwert
+(`CONF_HEATING_THRESHOLD_TEMP`), nicht die Wiederverwendung von
+`CONF_TEMP_THRESHOLD_CLOSE`, da die Heizungs-Schwelle typischerweise
+deutlich unterhalb der Lüftungs-Schließen-Schwelle liegt und ein eigener,
+unabhängiger Wert sein soll. `climate.set_temperature` wurde
+`climate.set_preset_mode` vorgezogen, obwohl "Comfort"/"Standby" nach
+Preset-Namen klingt - Preset-Modi sind zwischen climate-Integrationen
+unterschiedlicher Hersteller nicht standardisiert (anders als
+`temperature`, das praktisch jede climate-Entität mit `SUPPORT_TARGET_TEMPERATURE`
+unterstützt), ein fester Sollwert ist daher die portablere Wahl. Bewusst
+auf `climate.set_hvac_mode` verzichtet - die Heizung setzt voraus, dass
+die Entität bereits im gewünschten Heiz-Betriebsmodus steht; das Ändern
+des Betriebsmodus selbst hätte den Eingriff über reine Sollwert-Steuerung
+hinaus erweitert (siehe README).
+
+Zwei bereits etablierte Muster wurden bewusst wiederverwendet statt neu zu
+erfinden: (1) Fenster-Pausierung über das bestehende
+`_is_window_confirmed_open()` (aus Lektion 24, dort für die
+Luftentfeuchter-Pausierung eingeführt) - gegen ein offenes Fenster zu
+heizen verschwendet genauso Energie wie das dort behandelte Gegenstück.
+(2) Live-Lese-Prinzip aus Lektion 19/33: das Attribut `heizung_an` liest
+NICHT den internen `_heating_state`-Tracker (der dient wie bei
+Luftentfeuchter/Klimaanlage nur der Idempotenz beim eigenen Schalten),
+sondern vergleicht den aktuell am Gerät eingestellten Sollwert (`state.
+attributes.temperature`, live von der climate-Entität gelesen) gegen
+Comfort-/Standby-Sollwert - erkennt so auch eine Sollwert-Änderung durch
+eine andere Automation oder den Nutzer direkt am Thermostat. Anders als
+bei Luftentfeuchter/Klimaanlage (dort liefert der reine `state.state`-
+Vergleich "an"/"aus" bereits das Live-Signal) gibt es für die Heizung kein
+so einfaches Äquivalent - der `hvac_mode` einer climate-Entität sagt nichts
+über Comfort/Standby aus, da diese Integration ihn nie ändert. Bewusst
+KEINE Debounce/Hysterese-Zeitverzögerung wie beim Frostschutz (Lektion 12)
+eingeführt - stattdessen eine reine Werte-Hysterese (Comfort unterhalb der
+Schwelle, Standby erst ab Schwelle + Toleranz-Marge, dazwischen bleibt der
+zuletzt gesetzte Sollwert unverändert), da hier kein Sicherheitsrisiko
+durch einen einzelnen Ausreißer-Messwert vorliegt, sondern nur Komfort -
+fehlt der Innentemperatur-Messwert, wird bewusst gar nichts geändert
+(weder Comfort noch Standby), da ein falsches Timing hier anders als beim
+Frostschutz nicht sicherheitsrelevant ist.
+
+Die Dashboard-Karte bekam eine neue Geräte-Tabellen-Zeile "Heizung"
+(`card_version` 20 → 21) nach demselben Muster wie Luftentfeuchter/
+Klimaanlage, ergänzt um den aktuellen Sollwert in Klammern in der
+"Grund"-Spalte (da "an"/"aus" hier weniger aussagekräftig ist als bei
+einem echten Ein/Aus-Gerät). Lektion: Eine vom Nutzer als "minimal"
+bezeichnete Umsetzung ist nicht automatisch die technisch einfachste
+(reines Ein/Aus) - der Nutzer hat hier explizit nachgesteuert, dass
+"minimal im Funktionsumfang" (kein Geofencing, keine Kalibrierung, kein
+Party-Modus) nicht "minimal in der Bedienlogik" (kein simples Ein/Aus)
+bedeuten sollte, weil Comfort/Standby-Sollwerte für eine Heizung als
+Grundausstattung gelten, nicht als Zusatzfeature. Gleichzeitig ließen sich
+für die eigentliche Umsetzung fast ausschließlich bereits etablierte
+Muster (Fenster-Pausierung, Live-Lese-Prinzip, Raum-Override/global/
+Standard-Auflösung über `_effective()`) wiederverwenden - der Umfang der
+Aufgabe lag nicht im Erfinden neuer Konzepte, sondern im sorgfältigen
+Übertragen bestehender auf einen strukturell neuen Anwendungsfall
+(Sollwert-Steuerung statt Ein/Aus).
 
 ## Versionierung & Release
 
