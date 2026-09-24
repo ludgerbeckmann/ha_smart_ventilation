@@ -356,7 +356,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["letzte_benachrichtigung"] = self._last_notified_at.isoformat()
         if self._last_reason is not None:
             attrs["letzter_grund"] = self._last_reason
-        if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
+        if self._config.get(
+            CONF_DEHUMIDIFIER_ENTITY
+        ) and not self._device_entity_missing(self._config[CONF_DEHUMIDIFIER_ENTITY]):
             dehumidifier_on = self._is_device_on(self._config[CONF_DEHUMIDIFIER_ENTITY])
             if dehumidifier_on:
                 if self._dehumidifier_on_since is None:
@@ -376,7 +378,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["luftentfeuchter_tank_fehler"] = (
                 tank_full_state is not None and tank_full_state.state == "on"
             )
-        if self._config.get(CONF_AC_ENTITY):
+        if self._config.get(CONF_AC_ENTITY) and not self._device_entity_missing(
+            self._config[CONF_AC_ENTITY]
+        ):
             ac_on = self._is_device_on(self._config[CONF_AC_ENTITY])
             if ac_on:
                 if self._ac_on_since is None:
@@ -618,6 +622,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return state.state != "off"
         return state.state == "on"
 
+    def _device_entity_missing(self, entity_id: str) -> bool:
+        """True, wenn die Entität komplett aus dem Zustandsautomaten
+        verschwunden ist - z. B. weil ihr Integrationseintrag deaktiviert
+        wurde. Anders als eine bloß vorübergehende "unavailable"/"unknown"-
+        Meldung (Gerät kurz offline, Entität aber weiterhin registriert,
+        siehe _is_device_on()) gibt es hier gar keine Entität mehr, die
+        gesteuert werden könnte - das Gerät soll dann für die aktuelle
+        Neubewertung komplett unberücksichtigt bleiben, nicht nur als "aus"
+        angezeigt werden.
+        """
+        return self.hass.states.get(entity_id) is None
+
     def _get_float_state(self, entity_id: str | None) -> float | None:
         if not entity_id:
             return None
@@ -793,8 +809,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # - bei fehlenden Werten. Ist das Fenster geschlossen, hat diese
         # Bedingung keine Wirkung - der Luftentfeuchter läuft dann weiterhin
         # rein nach den Innen-Luftfeuchtigkeits-Schwellen.
+        #
+        # Ausnahme: Ist genug Einspeiseleistung vorhanden (derselbe Check wie
+        # beim eigentlichen Einschalten, siehe _check_power_ok()), entfällt
+        # das Energiespar-Argument dieser Pausierung - überschüssige, sonst
+        # ungenutzte Leistung zu verbrauchen ist kein Verlust, auch wenn der
+        # Luftentfeuchter dabei "nur" gegen nachströmende feuchte Luft
+        # ankämpft. Nur relevant, wenn überhaupt ein Leistungssensor
+        # konfiguriert ist - ohne Sensor bleibt die Pausierung unverändert
+        # wirksam (nicht permissiv, siehe _check_power_ok()s eigener
+        # Rückgabewert `True` ohne konfigurierten Sensor).
+        power_entity_configured = bool(self._effective(CONF_POWER_ENTITY, None))
         dehumidifier_pause_open_window = (
-            self._is_window_confirmed_open() and not outdoor_drier_enough
+            self._is_window_confirmed_open()
+            and not outdoor_drier_enough
+            and not (power_entity_configured and self._check_power_ok())
         )
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
@@ -1323,6 +1352,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     ) -> None:
         entity_id = self._config.get(entity_key)
         if not entity_id:
+            return
+        if self._device_entity_missing(entity_id):
+            # Integrationseintrag deaktiviert oder Entität sonst komplett
+            # entfernt - kein Steuerversuch gegen eine nicht existierende
+            # Entität, und der interne Soll-Zustand-Tracker wird
+            # zurückgesetzt, damit bei Rückkehr der Entität eine sauber
+            # neue Synchronisierung stattfindet, statt auf einem
+            # veralteten Zustand aufzusetzen.
+            setattr(self, state_attr, None)
+            setattr(self, low_power_attr, None)
             return
 
         current = getattr(self, state_attr)

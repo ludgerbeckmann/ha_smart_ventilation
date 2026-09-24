@@ -1230,6 +1230,92 @@ Berechnung hat, überträgt sich nicht automatisch - bei jeder neuen
 greifen muss, der dieselbe Grundfrage (hier: Auslöser ist ein
 Schließen-Grund) unabhängig behandelt.
 
+**33. `_is_device_on()` (Lektion 19) behandelte eine komplett aus dem
+Zustandsautomaten verschwundene Geräte-Entität identisch zu einer bloß
+vorübergehend nicht verfügbaren - beides ergab "aus", nicht "gar nicht
+berücksichtigen" (0.52.1).** Nutzerwunsch: Wird der Integrationseintrag
+der Klimaanlage deaktiviert (Entität dadurch komplett aus
+`hass.states` entfernt, nicht nur `unavailable` gemeldet), soll die
+Klimaanlage für diesen Raum vollständig unberücksichtigt bleiben - kein
+Steuerversuch, keine Geräte-Tabellen-Zeile im Dashboard. Bisher lieferte
+`self.hass.states.get(entity_id) is None` (Integrationseintrag
+deaktiviert) und `state.state in ("unknown", "unavailable")` (Entität
+registriert, Gerät nur kurz offline) in `_is_device_on()` beide `False`
+zurück - für die reine "an"-Anzeige richtig (Lektion 19), aber
+`extra_state_attributes` exponierte trotzdem weiterhin
+`luftentfeuchter_an`/`klimaanlage_an` (nur als `False`) sowie den
+zugehörigen `_grund`-Text, wodurch die Dashboard-Karte weiterhin eine
+(inhaltlich müßige) Geräte-Zeile zeigte - und `_update_single_device()`
+versuchte weiterhin, `turn_on`/`turn_off` gegen eine nicht mehr
+existierende Entität aufzurufen (dank vorhandenem
+`try/except HomeAssistantError` zwar folgenlos, aber unnötig). Fix:
+neue Methode `_device_entity_missing(entity_id)` (`hass.states.get(...)
+is None`) - bewusst als eigene, von `_is_device_on()` unabhängige
+Prüfung, da beide Fälle unterschiedliche Antworten auf unterschiedliche
+Fragen liefern müssen ("ist das Gerät an?" bleibt bei jeder
+Nichtverfügbarkeit `False`; "soll das Gerät überhaupt berücksichtigt
+werden?" nur bei tatsächlichem Verschwinden `False`). Eingesetzt an
+zwei Stellen: (1) `extra_state_attributes` - die
+Luftentfeuchter-/Klimaanlage-Blöcke werden komplett übersprungen (keine
+Attribute gesetzt), sobald die jeweilige Entität fehlt, wodurch die
+Geräte-Tabellen-Zeile automatisch verschwindet (sie hängt an
+`a.luftentfeuchter_an is defined` bzw. `a.klimaanlage_an is defined`
+im Karten-Template) - kein Karten-Update nötig, da die Karte diese
+Bedingung strukturell schon immer korrekt abgefragt hat, nur die
+Python-Seite lieferte bisher immer einen Wert. (2)
+`_update_single_device()` - früher Rücksprung ohne Steuerversuch,
+zusätzlich wird der interne Soll-Zustand-Tracker (`_dehumidifier_state`/
+`_ac_state`) auf `None` zurückgesetzt, damit bei Rückkehr der Entität
+(Integrationseintrag wieder aktiviert) keine veraltete Annahme über den
+zuletzt kommandierten Zustand übernommen wird, sondern eine echte
+Neusynchronisierung stattfindet. Bewusst symmetrisch für Luftentfeuchter
+UND Klimaanlage umgesetzt, obwohl nur die Klimaanlage konkret gemeldet
+wurde - beide teilen sich exakt denselben Code (`_is_device_on()`,
+`_update_single_device()`), eine Asymmetrie zwischen ihnen wäre eine
+willkürliche Lücke gewesen (vgl. Lektion 18/43: ein Fix für einen
+strukturell identischen zweiten Kanal sofort mitziehen, nicht erst auf
+explizite Nachfrage). Lektion: "Nicht verfügbar" und "Entität existiert
+nicht mehr" sind zwei unterschiedliche Tatsachen, auch wenn eine
+einzelne Prüfung (hier: `_is_device_on()`) für IHREN Zweck (reine
+An/Aus-Anzeige) beide korrekt gleich behandeln durfte - ein zweiter,
+strukturell andersartiger Verwendungszweck (hier: "soll überhaupt
+etwas angezeigt/gesteuert werden") kann dieselbe Unterscheidung
+brauchen, die die erste Prüfung bewusst verwischt hat, und verdient
+dann eine eigene, zusätzliche Prüfung statt einer Anpassung der
+bestehenden.
+
+**34. Das Energiespar-Argument hinter `dehumidifier_pause_open_window`
+(Lektion 24) gilt nicht mehr, sobald ohnehin überschüssige
+Einspeiseleistung verfügbar ist (0.53.0).** Auf Nutzerwunsch: Der
+Luftentfeuchter soll bei zu hoher Luftfeuchtigkeit auch bei offenem
+Fenster starten, sofern genug Einspeiseleistung vorhanden ist. Die
+bestehende Pausierung (Lektion 24) begründet sich rein energetisch -
+gegen ständig nachströmende, nicht trockenere Außenluft anzuarbeiten
+verschwendet sonst unnötig Strom. Ist aber ohnehin PV-Überschuss
+vorhanden, der andernfalls ungenutzt bliebe (bzw. eingespeist würde),
+entfällt genau dieses Argument - der Luftentfeuchter zu betreiben
+kostet dann effektiv nichts zusätzlich. Fix: `dehumidifier_pause_open_window`
+prüft jetzt zusätzlich `not (power_entity_configured and
+self._check_power_ok())` - identischer Leistungs-Check wie beim
+eigentlichen Einschalten in `_update_single_device()`. Wichtig dabei:
+Die Ausnahme greift nur, wenn tatsächlich ein Leistungssensor
+konfiguriert ist (`power_entity_configured`) - ohne Sensor bleibt die
+Pausierung unverändert bestehen, da `_check_power_ok()` ohne
+konfigurierten Sensor selbst immer `True` liefert (siehe seine eigene
+Dokumentation, "ohne Leistungssensor immer erfüllt") - ein naives
+`not self._check_power_ok()` ohne diese zusätzliche Prüfung hätte die
+gesamte Lektion-24-Pausierung für alle Nutzer OHNE Leistungssensor
+versehentlich abgeschaltet, obwohl die neue Ausnahme explizit nur für
+den Fall "es ist tatsächlich Überschuss da" gedacht war, nicht für "es
+gibt keine Information darüber". Lektion: Bei einer Bedingung, die eine
+bestehende Sicherheits- oder Sparsamkeits-Maßnahme unter einer neuen
+Voraussetzung aufhebt, immer explizit prüfen, ob diese Voraussetzung
+selbst einen "harmlosen Standardwert" hat, der bei fehlender Konfiguration
+greift (hier: `_check_power_ok() == True` ohne Sensor) - sonst wird aus
+einer eng gemeinten Ausnahme ("nur wenn wir wirklich wissen, dass
+Überschuss da ist") versehentlich eine viel zu breite ("immer, außer
+wir wissen, dass es NICHT reicht").
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

@@ -557,7 +557,11 @@ hinterlegt werden, die automatisch gestartet und gestoppt werden:
   unverändert weiter, da das Lüften die Entfeuchtung zusätzlich
   unterstützt. Ohne konfigurierten Fensterkontakt-Sensor oder ohne
   Außen-Luftfeuchtigkeitssensor entfällt diese Ausnahme komplett (wie
-  bisher rein nach den Innen-Schwellen).
+  bisher rein nach den Innen-Schwellen). Ist ein Leistungssensor
+  konfiguriert (siehe unten) UND meldet dieser gerade genug
+  Einspeiseleistung, entfällt die Pausierung ebenfalls - überschüssige,
+  sonst ungenutzte Leistung zu verbrauchen ist kein Verlust, selbst wenn
+  der Luftentfeuchter dabei nur gegen nachströmende feuchte Luft ankämpft.
 - **Klimaanlage**: an, wenn Innentemperatur ≥ "Schwelle zum Öffnen" **und**
   Lüften nicht helfen würde (draußen nicht ausreichend kühler). Aus, sobald
   die Innentemperatur die "Schwelle zum Schließen" erreicht **oder** Lüften
@@ -602,8 +606,8 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`, `outdoor_wetter`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
-| `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat) |
-| `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
+| `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind UND ihre Entität aktuell im Zustandsautomaten existiert (nicht z. B. wegen deaktiviertem Integrationseintrag komplett entfernt) - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat). Ist die Entität komplett verschwunden, wird das Gerät auch nicht mehr gesteuert - anders als eine bloß vorübergehende "nicht verfügbar"-Meldung (Gerät kurz offline), die weiterhin wie "aus" behandelt wird |
+| `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert und seine Entität vorhanden ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
