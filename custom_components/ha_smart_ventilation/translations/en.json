@@ -20,15 +20,17 @@
             "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "tts_volume": "Playback volume for voice announcements",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
-              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
-              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "sonos_entity": "Empty = no voice announcement for this room"
+              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
+              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_persistent_enabled}",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_mobile_enabled}",
+              "sonos_entity": "Empty = no voice announcement for this room",
+              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}"
             }
           },
           "sensors": {
@@ -89,7 +91,7 @@
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}"
             }
           },
@@ -133,15 +135,17 @@
             "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "tts_volume": "Playback volume for voice announcements",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
             },
             "data_description": {
-              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
-              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\"",
-              "sonos_entity": "Empty = no voice announcement for this room"
+              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
+              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_persistent_enabled}",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_mobile_enabled}",
+              "sonos_entity": "Empty = no voice announcement for this room",
+              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}"
             }
           },
           "sensors": {
@@ -202,7 +206,7 @@
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless.",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}"
             }
           },

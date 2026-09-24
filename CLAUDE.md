@@ -1443,6 +1443,83 @@ anderen Fall (Lautstärke) trotzdem eine hinreichend gute Heuristik
 (Zeitschätzung) angemessen sein, wenn die Konsequenz eines leicht
 falschen Timings gering ist.
 
+**38. `_room_override_placeholders()` (Lektion 14) deckte nur die
+Zahlen-Overrides aus `_THRESHOLD_FIELDS` ab - die Tri-State-Bool-
+Overrides (`_tri_state_bool_selector()`) und der Listen-Override
+`mobile_targets` hatten nie einen "Aktuell global: X"-Hinweis bekommen,
+und die Sprachausgabe-Lautstärke war überhaupt nicht raum-überschreibbar
+(0.55.0).** Nutzer-Nachfrage direkt im Anschluss an Lektion 37 (drei
+Punkte in einer Nachricht): (a) "im Bereich Benachrichtigungsmethoden
+fehlt die Info was der aktuelle Standardwert ist, wenn ein Feld leer
+gelassen wird - ist das auch woanders noch der Fall?", (b) "die
+Lautstärke für Sprachausgabe kann noch nicht je Raum geändert werden",
+(c) "bitte testweise alle Abschnitte standardmäßig eingeklappt
+darstellen".
+
+Zu (a): `_room_override_placeholders()` iterierte seit Lektion 14 nur
+über `_THRESHOLD_FIELDS` (reine Zahlenwerte mit Einheit) - `mobile_enabled`/
+`persistent_enabled` (`_tri_state_bool_selector()`) und `mobile_targets`
+(eine Liste von Notify-Zielen) wurden dabei nie berücksichtigt, obwohl
+ihre `data_description`-Texte im Formular exakt dasselbe "Leer = globale
+Einstellung verwenden"-Muster verwenden wie die Zahlenfelder - nur ohne
+den Zusatz, WAS diese globale Einstellung aktuell ist. Bei der gezielten
+Suche nach weiteren Stellen mit derselben Lücke ("ist das auch woanders
+noch der Fall?") fand sich eine dritte, strukturell identische Stelle im
+Abschnitt "Parameter": `humidity_priority_over_duration` (ebenfalls
+`_tri_state_bool_selector()`) hatte denselben Text-Baustein ohne
+Ist-Wert-Angabe. Fix: `_room_override_placeholders()` erweitert um einen
+zweiten Durchlauf für die drei Tri-State-Bool-Felder (`CONF_MOBILE_ENABLED`,
+`CONF_PERSISTENT_ENABLED`, `CONF_HUMIDITY_PRIORITY_OVER_DURATION` - liefert
+"Ja"/"Nein" als Text) sowie eine eigene Behandlung für `CONF_MOBILE_TARGETS`
+(Liste der global hinterlegten `notify.*`-Entity-IDs, kommagetrennt, sonst
+"keine"). Alle sechs betroffenen `data_description`-Texte in
+`strings.json`/`translations/{de,en}.json` (je zweimal: Config- und
+Options-Flow-Schritt "room") um "Aktuell global: ｛global_x｝" ergänzt -
+mit echten, unescapten Platzhaltern wie bei den Zahlenfeldern (Lektion 14
+gilt unverändert: Fullwidth-Klammern/Lektion 8 nur für Text OHNE echte
+Platzhalterbefüllung, hier wird aber echt befüllt).
+
+Zu (b): Der Codepfad unterstützte einen Raum-Override für
+`CONF_TTS_VOLUME` bereits vollständig, ohne dass es hier eine eigene
+Änderung dafür brauchte - `_play_tts()` liest die Lautstärke schon
+immer über `self._effective(CONF_TTS_VOLUME, DEFAULT_TTS_VOLUME)`
+(Raum-Override → global → Standardwert), und `CONF_TTS_VOLUME` steckte
+schon lange in `_THRESHOLD_FIELDS` (dadurch bekam es schon vorher
+automatisch einen `global_tts_volume`-Platzhalter, obwohl das Feld
+selbst im Raum-Formular gar nicht existierte). Es fehlte ausschließlich
+die UI: `_build_room_schema()` erzeugte nie einen `_override_selector()`
+für dieses Feld. Exakt dasselbe Muster wie die bereits in CLAUDE.md
+("Offene/mögliche nächste Schritte") vermerkte Lücke bei den
+Benachrichtigungstexten ("Codepfad würde einen Raum-Override bereits
+unterstützen, dafür fehlt nur die UI") - hier aber jetzt behoben statt nur
+vermerkt. Fix: neues Feld im Abschnitt "Benachrichtigungsmethoden" (direkt
+nach der Lautsprecher-Auswahl, da inhaltlich zusammengehörig), per
+`_override_selector(CONF_TTS_VOLUME, defaults)` - dieselbe Handvoll
+Zeilen wie bei jedem anderen der zwölf bestehenden Overrides, keine
+Backend-Änderung nötig.
+
+Zu (c): `section(..., {"collapsed": bool})` wird an sieben Stellen für
+sechs verschiedene Abschnitte gesetzt (Raum: Benachrichtigungsmethoden/
+Sensoren waren `False`, Parameter/Geräte bereits `True`; global:
+Sensoren/Parameter waren `False`, Benachrichtigungstexte bereits `True`) -
+auf Nutzerwunsch alle auf `True` gesetzt, ausdrücklich "testweise" (siehe
+Wortlaut), also potenziell wieder rückgängig zu machen, falls sich das in
+der echten Oberfläche nicht bewährt - keine strukturelle Änderung, rein
+kosmetisch am Formular.
+
+`manifest.json` 0.54.0 → 0.55.0 (Minor wegen des neuen Raum-Overrides für
+die Sprachausgabe-Lautstärke - alle drei Punkte kamen gebündelt in einer
+Nachricht, daher ein einzelner Bump für alle drei zusammen). Lektion: Wird
+eine wiederkehrende Formular-Lücke (hier: fehlender "Aktuell global"-
+Hinweis) für einen Feldtyp gefixt (Zahlenfelder, Lektion 14), aber ein
+zweiter, strukturell ähnlicher Feldtyp (Tri-State-Bool, Listen) folgt
+demselben "Leer = global"-Textmuster, ohne dass die ursprüngliche
+Fix-Funktion ihn mit abdeckt - eine gezielte Nutzer-Nachfrage ("ist das
+auch woanders noch der Fall?") ist der zuverlässigste Weg, solche Lücken
+zu finden, weil sie nicht am Feldnamen, sondern am **Muster** der
+Formularstruktur (hier: `_tri_state_bool_selector()`/Objekt-Listen vs.
+`_override_selector()`) hängen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

@@ -276,11 +276,12 @@ def _global_config(hass) -> dict:
 
 def _room_override_placeholders(hass) -> dict[str, str]:
     """description_placeholders fürs Raum-Formular: für jedes per
-    _override_selector() überschreibbare Feld der aktuell wirksame globale
-    Wert (globale Einstellung, sonst deren Standardwert) als Text - zeigt
-    im Formular per data_description an, worauf sich ein leer gelassenes
-    Feld gerade bezieht, ohne das Feld selbst vorzubelegen (das würde beim
-    Speichern einen Override einfrieren, siehe _override_selector)."""
+    _override_selector() bzw. _tri_state_bool_selector() überschreibbare
+    Feld der aktuell wirksame globale Wert (globale Einstellung, sonst
+    deren Standardwert) als Text - zeigt im Formular per data_description
+    an, worauf sich ein leer gelassenes Feld gerade bezieht, ohne das Feld
+    selbst vorzubelegen (das würde beim Speichern einen Override
+    einfrieren, siehe _override_selector)."""
     global_data = _global_config(hass)
     placeholders = {}
     for key, (default_value, _min, _max, _step, unit) in _THRESHOLD_FIELDS.items():
@@ -288,6 +289,22 @@ def _room_override_placeholders(hass) -> dict[str, str]:
         if value in (None, ""):
             value = default_value
         placeholders[f"global_{key}"] = f"{value} {unit}".strip()
+    for key, default_value in (
+        (CONF_MOBILE_ENABLED, False),
+        (CONF_PERSISTENT_ENABLED, False),
+        (CONF_HUMIDITY_PRIORITY_OVER_DURATION, DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION),
+    ):
+        value = global_data.get(key)
+        if value is None:
+            value = default_value
+        placeholders[f"global_{key}"] = "Ja" if value else "Nein"
+    targets = global_data.get(CONF_MOBILE_TARGETS) or []
+    target_entities = [
+        t.get(CONF_MOBILE_NOTIFY_ENTITY) for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+    ]
+    placeholders[f"global_{CONF_MOBILE_TARGETS}"] = (
+        ", ".join(target_entities) if target_entities else "keine"
+    )
     return placeholders
 
 
@@ -515,6 +532,7 @@ def _build_room_schema(
     shower_threshold_marker, shower_threshold_sel = _override_selector(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
+    tts_volume_marker, tts_volume_sel = _override_selector(CONF_TTS_VOLUME, defaults)
 
     # App-Push und persistente Benachrichtigung sind überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
@@ -549,6 +567,7 @@ def _build_room_schema(
                         **({"include_entities": sonos_include} if sonos_include else {}),
                     )
                 ),
+                tts_volume_marker: tts_volume_sel,
                 mobile_marker: mobile_sel,
                 vol.Optional(
                     CONF_MOBILE_TARGETS, default=defaults.get(CONF_MOBILE_TARGETS) or []
@@ -582,7 +601,7 @@ def _build_room_schema(
                 persistent_marker: persistent_sel,
             }
         ),
-        {"collapsed": False},
+        {"collapsed": True},
     )
 
     temp_source_include = _area_include_entities(
@@ -683,7 +702,7 @@ def _build_room_schema(
                 ): selector.BooleanSelector(),
             }
         ),
-        {"collapsed": False},
+        {"collapsed": True},
     )
 
     fields[vol.Required(SECTION_PARAMETERS)] = section(
@@ -877,10 +896,10 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ): selector.BooleanSelector(),
                     }
                 ),
-                {"collapsed": False},
+                {"collapsed": True},
             ),
             vol.Required(SECTION_PARAMETERS): section(
-                vol.Schema(parameter_fields), {"collapsed": False}
+                vol.Schema(parameter_fields), {"collapsed": True}
             ),
             vol.Required(SECTION_MESSAGES): section(
                 vol.Schema(

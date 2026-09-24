@@ -72,7 +72,9 @@ Entität für Dashboards/Automationen).
    Liste unverändert unbeschränkt (kein Sensor "verschwindet" dadurch).
    Bleibt dieser Schritt leer, funktioniert alles wie bisher – Raumname
    frei eintippen, alle Entitäten wählbar
-3. **Hauptformular** ausfüllen:
+3. **Hauptformular** ausfüllen (alle Abschnitte sind aktuell **testweise**
+   standardmäßig eingeklappt, auch "Benachrichtigungsmethoden" und
+   "Sensoren" - vorher waren nur "Parameter" und "Geräte" eingeklappt):
    - **Raumname** (ganz oben, ggf. bereits durch den HA-Bereich
      vorbelegt – lässt sich hier weiterhin frei ändern)
    - **Abschnitt "Benachrichtigungsmethoden"**:
@@ -82,6 +84,10 @@ Entität für Dashboards/Automationen).
        auch keine globale Einstellung dafür. Die TTS-Entität selbst kommt
        ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
        auswählbar
+     - **Wiedergabelautstärke für Sprachausgabe** (optional): überschreibt
+       für diesen Raum die in "Smart Ventilation Optionen" hinterlegte
+       Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext
+       zeigt den aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 40 %")
      - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
        eine Liste von **App-Benachrichtigungszielen** (leer = globale Ziele
        verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht, die
@@ -102,6 +108,10 @@ Entität für Dashboards/Automationen).
        leer, gilt komplett die globale Einstellung. Fehlt am Ende sowohl
        raum- als auch global eine gültige Ziel-Entität für eine aktivierte
        Methode, erscheint nur ein Log-Hinweis, das Formular blockiert nicht
+     - Bei "Home Assistant Companion App", den App-Benachrichtigungszielen
+       und "Persistente Benachrichtigung" zeigt der Hinweistext jetzt
+       ebenfalls den aktuell wirksamen globalen Wert an (z. B.
+       "Aktuell global: Ja" bzw. die Liste der globalen Ziel-Entitäten)
    - **Abschnitt "Sensoren"**:
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität
@@ -193,7 +203,8 @@ Benachrichtigungsmethoden bleiben davon unberührt. Einzelne Felder lassen
 sich weiterhin wie gewohnt zurücksetzen, indem man nur sie leert und
 speichert (siehe unten) - die Checkbox ist für den Fall gedacht, dass
 gleich mehrere oder alle Werte auf einmal zurückgesetzt werden sollen.
-Danach folgen drei Abschnitte:
+Danach folgen drei Abschnitte (aktuell **testweise** alle standardmäßig
+eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 
 **Abschnitt "Sensoren"**:
 - **Außentemperatur**: wird für **alle** Räume verwendet – kann seit
@@ -209,7 +220,8 @@ Danach folgen drei Abschnitte:
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
   für die Sprachausgabe festlegt
 - **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
-  die Lautsprecher **vor** der Ansage gesetzt werden
+  die Lautsprecher **vor** der Ansage gesetzt werden - pro Raum im
+  Abschnitt "Benachrichtigungsmethoden" überschreibbar
 - **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
 - **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
@@ -447,8 +459,10 @@ dieser Konflikt aufgelöst wird:
 
 In den globalen Einstellungen ("Smart Ventilation Optionen") als fester
 Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
-(leer = globalen Wert verwenden). Frost- und Hitzeschutz haben davon
-unabhängig immer Vorrang, unabhängig von dieser Einstellung.
+(leer = globalen Wert verwenden; der Hinweistext zeigt dabei auch hier den
+aktuell wirksamen globalen Wert an, z. B. "Aktuell global: Ja"). Frost- und
+Hitzeschutz haben davon unabhängig immer Vorrang, unabhängig von dieser
+Einstellung.
 
 Die reine Temperatur-Schließbedingung berücksichtigt einen noch
 bestehenden Feuchtigkeits- oder CO2-Lüftungsbedarf dagegen immer (nicht
