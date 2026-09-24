@@ -25,6 +25,7 @@ from .const import (
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_ENTITY,
+    CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_TEMP_SOURCE,
@@ -154,6 +155,7 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_AC_ENTITY,
     CONF_HEATING_ENTITY,
+    CONF_HEATING_PRESENCE_ENTITIES,
 )
 
 # Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
@@ -484,23 +486,29 @@ def _build_room_schema(
     area_entities: set[str] | None = None,
     show_area_selector: bool = False,
 ) -> vol.Schema:
-    """Formular für einen Raum: Raumname, danach drei Abschnitte
-    ('Benachrichtigungsmethoden', 'Sensoren & Geräte', 'Parameter' - alle
-    standardmäßig eingeklappt). 'Sensoren & Geräte' fasst die Mess-Entitäten
-    UND die optional automatisch gesteuerten Geräte (Luftentfeuchter/
-    Klimaanlage/Heizung) in einem Abschnitt zusammen - beide Themen
-    überschneiden sich (z. B. eine climate-Entität kann sowohl Temperatur-
-    Quelle als auch Heizungs-Gerät sein, siehe CONF_HEATING_USE_TEMP_SOURCE),
-    getrennte Abschnitte hätten sonst eine Entität ggf. an zwei Stellen
-    zur Auswahl gezwungen.
+    """Formular für einen Raum: Raumname, danach drei Abschnitte in dieser
+    Reihenfolge - 'Sensoren & Geräte', 'Benachrichtigungen & Anwesenheit',
+    'Parameter' (alle standardmäßig eingeklappt). 'Sensoren & Geräte' fasst
+    die Mess-Entitäten UND die optional automatisch gesteuerten Geräte
+    (Luftentfeuchter/Klimaanlage/Heizung) in einem Abschnitt zusammen -
+    beide Themen überschneiden sich (z. B. eine climate-Entität kann sowohl
+    Temperatur-Quelle als auch Heizungs-Gerät sein, siehe
+    CONF_HEATING_USE_TEMP_SOURCE), getrennte Abschnitte hätten sonst eine
+    Entität ggf. an zwei Stellen zur Auswahl gezwungen. Bewusst VOR
+    'Benachrichtigungen & Anwesenheit' platziert (nicht mehr wie früher als
+    erster Abschnitt), da diese für die Heizungs-Anwesenheitsprüfung auf
+    Konzepte aus 'Sensoren & Geräte' aufbaut.
 
-    Im Abschnitt "Benachrichtigungsmethoden" aktiviert eine Checkbox die
-    App-Benachrichtigung; das zugehörige Feld steht direkt darunter im
-    selben Abschnitt (Home-Assistant-Formulare können Felder nicht
-    abhängig von einer Checkbox ein-/ausblenden - es ist daher immer
-    sichtbar, wird aber nur ausgewertet, wenn die Checkbox aktiviert ist).
-    Sprachausgabe hat keine eigene Checkbox - sie ist aktiv, sobald
-    mindestens ein Lautsprecher ausgewählt ist.
+    Im Abschnitt "Benachrichtigungen & Anwesenheit" (früher
+    "Benachrichtigungsmethoden" - umbenannt, da jetzt auch die
+    Anwesenheits-Entitäten für die Heizungs-Pausierung hier stehen, siehe
+    CONF_HEATING_PRESENCE_ENTITIES) aktiviert eine Checkbox die App-
+    Benachrichtigung; das zugehörige Feld steht direkt darunter im selben
+    Abschnitt (Home-Assistant-Formulare können Felder nicht abhängig von
+    einer Checkbox ein-/ausblenden - es ist daher immer sichtbar, wird aber
+    nur ausgewertet, wenn die Checkbox aktiviert ist). Sprachausgabe hat
+    keine eigene Checkbox - sie ist aktiv, sobald mindestens ein
+    Lautsprecher ausgewählt ist.
 
     Die Felder in 'Parameter' sowie Leistungsschwelle/-verzögerung im
     Geräte-Abschnitt sind echt optional: leer gelassen wird der Wert aus
@@ -586,59 +594,6 @@ def _build_room_schema(
     if show_area_selector:
         fields[area_marker] = area_sel
     fields[vol.Required(CONF_ROOM_NAME, default=defaults.get(CONF_ROOM_NAME, ""))] = str
-
-    sonos_include = _area_include_entities(
-        area_entities, "media_player", defaults.get(CONF_SONOS_ENTITY)
-    )
-
-    fields[vol.Required(SECTION_NOTIFY)] = section(
-        vol.Schema(
-            {
-                _entity_marker(
-                    CONF_SONOS_ENTITY, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain="media_player",
-                        multiple=True,
-                        **({"include_entities": sonos_include} if sonos_include else {}),
-                    )
-                ),
-                tts_volume_marker: tts_volume_sel,
-                mobile_marker: mobile_sel,
-                vol.Optional(
-                    CONF_MOBILE_TARGETS, default=defaults.get(CONF_MOBILE_TARGETS) or []
-                ): selector.ObjectSelector(
-                    selector.ObjectSelectorConfig(
-                        multiple=True,
-                        label_field=CONF_MOBILE_NOTIFY_ENTITY,
-                        description_field=CONF_PRESENCE_ENTITY,
-                        fields={
-                            CONF_MOBILE_NOTIFY_ENTITY: {
-                                "label": "Notify-Entität",
-                                "required": True,
-                                "selector": selector.EntitySelector(
-                                    selector.EntitySelectorConfig(
-                                        domain="notify", integration="mobile_app"
-                                    )
-                                ),
-                            },
-                            CONF_PRESENCE_ENTITY: {
-                                "label": "Anwesenheits-Entität (optional)",
-                                "required": False,
-                                "selector": selector.EntitySelector(
-                                    selector.EntitySelectorConfig(
-                                        domain=PRESENCE_DOMAINS
-                                    )
-                                ),
-                            },
-                        },
-                    )
-                ),
-                persistent_marker: persistent_sel,
-            }
-        ),
-        {"collapsed": True},
-    )
 
     temp_source_include = _area_include_entities(
         area_entities, TEMP_SOURCE_DOMAINS, defaults.get(CONF_TEMP_SOURCE_ENTITY)
@@ -797,6 +752,75 @@ def _build_room_schema(
                 ),
                 power_marker: power_sel,
                 grace_marker: grace_sel,
+            }
+        ),
+        {"collapsed": True},
+    )
+
+    sonos_include = _area_include_entities(
+        area_entities, "media_player", defaults.get(CONF_SONOS_ENTITY)
+    )
+
+    # "Benachrichtigungen & Anwesenheit" - bewusst NACH "Sensoren & Geräte"
+    # platziert (siehe Docstring oben): die Anwesenheits-Entitäten für die
+    # Heizungs-Pausierung gehören inhaltlich zu den Benachrichtigungsmethoden
+    # (beide drehen sich um Personen/Geräte-Tracker), nicht zu den
+    # Mess-/Steuer-Entitäten oben. CONF_HEATING_PRESENCE_ENTITIES bewusst
+    # OHNE Bereichs-Filterung (wie CONF_PRESENCE_ENTITY im Objekt-Selector
+    # unten) - eine Person/ihr Tracking-Gerät ist ortsungebunden und so gut
+    # wie nie einem HA-Bereich zugeordnet (siehe Lektion 9).
+    fields[vol.Required(SECTION_NOTIFY)] = section(
+        vol.Schema(
+            {
+                _entity_marker(
+                    CONF_SONOS_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="media_player",
+                        multiple=True,
+                        **({"include_entities": sonos_include} if sonos_include else {}),
+                    )
+                ),
+                tts_volume_marker: tts_volume_sel,
+                mobile_marker: mobile_sel,
+                vol.Optional(
+                    CONF_MOBILE_TARGETS, default=defaults.get(CONF_MOBILE_TARGETS) or []
+                ): selector.ObjectSelector(
+                    selector.ObjectSelectorConfig(
+                        multiple=True,
+                        label_field=CONF_MOBILE_NOTIFY_ENTITY,
+                        description_field=CONF_PRESENCE_ENTITY,
+                        fields={
+                            CONF_MOBILE_NOTIFY_ENTITY: {
+                                "label": "Notify-Entität",
+                                "required": True,
+                                "selector": selector.EntitySelector(
+                                    selector.EntitySelectorConfig(
+                                        domain="notify", integration="mobile_app"
+                                    )
+                                ),
+                            },
+                            CONF_PRESENCE_ENTITY: {
+                                "label": "Anwesenheits-Entität (optional)",
+                                "required": False,
+                                "selector": selector.EntitySelector(
+                                    selector.EntitySelectorConfig(
+                                        domain=PRESENCE_DOMAINS
+                                    )
+                                ),
+                            },
+                        },
+                    )
+                ),
+                persistent_marker: persistent_sel,
+                _entity_marker(
+                    CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=PRESENCE_DOMAINS,
+                        multiple=True,
+                    )
+                ),
             }
         ),
         {"collapsed": True},

@@ -1735,6 +1735,62 @@ Teilfragen (hier: soll der Mechanismus auch für die Klimaanlage gelten)
 trotzdem selektiv einschränken - Antworten aus einer Mehrfachauswahl-
 Rückfrage einzeln und nicht pauschal interpretieren.
 
+**42. Anwesenheitsprüfung für die Heizung - bewusst NICHT dieselbe
+`CONF_PRESENCE_ENTITY` wiederverwendet, die es für App-Benachrichtigungs-
+ziele schon gibt, sondern ein eigenes, unabhängiges Feld (0.58.0).**
+Nutzerwunsch: Die Heizung soll pro Raum auch danach gehen, ob überhaupt
+jemand zuhause ist - vorgeschlagen wurde dafür, den Abschnitt
+"Benachrichtigungsmethoden" umzubenennen und ein Personenfeld dort
+einzubauen, sowie den Abschnitt "Sensoren & Geräte" davor zu verschieben.
+Zwei Rückfragen klärten den Umfang vorab: Mehrfachauswahl (mehrere
+Personen, "irgendjemand zuhause" reicht zum Heizen) statt nur einer
+Entität, und ein permissiver Fallback bei unbekanntem/nicht verfügbarem
+Anwesenheits-Zustand (weiterheizen, nicht pausieren) - beide vom Nutzer
+mit der jeweils empfohlenen Option bestätigt.
+
+Technische Entscheidung: Es gibt in diesem Projekt bereits eine
+`CONF_PRESENCE_ENTITY` - aber die gehört zu einem einzelnen Eintrag in
+`CONF_MOBILE_TARGETS` (App-Benachrichtigungsziele) und beantwortet eine
+andere Frage ("soll GENAU DIESES Push-Ziel benachrichtigt werden") als
+die neue Anforderung ("soll überhaupt geheizt werden"). Eine
+Wiederverwendung hätte zwei konzeptionell unabhängige Entscheidungen
+(wen benachrichtigen? wann heizen?) künstlich verkoppelt - ändert man an
+einer Stelle die Personen-Auswahl, wäre unklar/überraschend, dass sich
+dadurch auch die andere Bedingung mitändert. Neue, eigene Konstante
+`CONF_HEATING_PRESENCE_ENTITIES` (Liste, Mehrfachauswahl wie
+`CONF_SONOS_ENTITY`) - bewusst OHNE Bereichs-Filterung (Lektion 9: eine
+Person/ihr Tracking-Gerät ist ortsungebunden). Neuer Helper
+`_is_heating_presence_away()` liefert `True` nur, wenn mindestens eine
+Entität konfiguriert ist UND ALLE davon exakt `state == "not_home"`
+melden - ein fehlender/unbekannter Zustand einer einzelnen Entität
+reicht, um `False` (weiterheizen) zurückzugeben, exakt wie vom Nutzer
+gewählt. Eingebunden in `want_heating_comfort`/`want_heating_standby`
+genau wie die bereits bestehende Fenster-Pausierung
+(`window_confirmed_open`) - beide sind gleichrangige "Pausier"-Gründe,
+mit derselben Priorität in der Grund-Text-Ausgabe (`_heating_reason`).
+Kein neues Dashboard-Attribut nötig - der Pausier-Grund erscheint bereits
+über das bestehende `heizung_grund`-Attribut (Dashboard-Karte unverändert,
+kein `card_version`-Bump).
+
+Zur UI-Umstrukturierung: Der Abschnitt "Benachrichtigungsmethoden" wurde
+zu "Benachrichtigungen & Anwesenheit" umbenannt (die neue
+Anwesenheits-Liste passt inhaltlich dorthin, nicht zu "Sensoren &
+Geräte") und - wie vom Nutzer gewünscht - hinter "Sensoren & Geräte"
+verschoben (Reihenfolge jetzt: Sensoren & Geräte → Benachrichtigungen &
+Anwesenheit → Parameter). Technisch nur eine Frage der Position im
+Python-`fields`-Dict (Home-Assistant-Formulare rendern Abschnitte in der
+Dict-Einfügereihenfolge) - die JSON-`sections`-Struktur in
+`strings.json`/`translations/*.json` selbst ist unabhängig von dieser
+Reihenfolge (dort zählt nur der Section-Key, nicht die Position im
+JSON-Dokument), musste also nur inhaltlich (Name, neues Feld), nicht
+strukturell angepasst werden. Lektion: Ein bereits vorhandenes Feld mit
+ähnlichem Namen und Domain (`CONF_PRESENCE_ENTITY`) ist kein Grund, es
+für eine neue, semantisch andere Fragestellung wiederzuverwenden, auch
+wenn beide dieselbe Entitätsart (`person`/`device_tracker`) betreffen -
+entscheidend ist, ob die zugrunde liegende Entscheidung dieselbe ist
+("wen benachrichtigen" vs. "wann heizen" sind zwei verschiedene
+Entscheidungen, auch wenn beide auf Anwesenheit basieren).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
