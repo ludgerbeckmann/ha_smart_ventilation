@@ -1316,6 +1316,53 @@ einer eng gemeinten Ausnahme ("nur wenn wir wirklich wissen, dass
 Überschuss da ist") versehentlich eine viel zu breite ("immer, außer
 wir wissen, dass es NICHT reicht").
 
+**35. `hass.services.async_call(..., blocking=False)` lässt einen
+Schema-Validierungsfehler NICHT im aufrufenden `try/except` landen - der
+Fehler passiert in einem intern erzeugten, unbeobachteten Task und wird
+erst beim Garbage Collector als "Task exception was never retrieved"
+sichtbar (0.53.1).** Nutzer-Meldung: Log zeigt 2432 Vorkommnisse
+derselben Fehlermeldung seit einem bestimmten Zeitpunkt, Traceback über
+`_notify()` → `hass.services.async_call("notify", "send_message", ...)`
+→ `probatio.error.MultipleInvalid: not a valid option at 'data'`
+(Schema-Validierung lehnt das `data`-Feld komplett ab). Ursache: Die als
+"App-Benachrichtigungsziel" konfigurierte notify-Entität ist offenbar
+keine echte Companion-App-Entität (z. B. eine E-Mail- oder
+Messenger-notify-Entität), die kein `data`-Feld unterstützt - diese
+Integration übergibt dort aber immer `data: {"tag": ...}` fürs "clean
+notification"-Muster (Lektion 18). Der eigentliche Konfigurationsfehler
+beim Nutzer ist damit klar, aber das viel dringendere technische Problem
+war der Umgang damit: Der Aufruf lief mit `blocking=False` (wie überall
+sonst in dieser Integration für Geräte-Steuerbefehle üblich, siehe
+`_set_device_state()`/`_set_shutter()`) - dabei validiert Home Assistant
+das `service_data`-Schema nicht synchron im aufrufenden `await`, sondern
+innerhalb eines intern erzeugten, von uns nicht referenzierten
+`asyncio.Task`. Ein `try/except HomeAssistantError` um den `await` herum
+(wie es `_set_device_state()`/`_set_shutter()` bereits für den Fall
+"Service/Entity existiert nicht" korrekt einsetzen - DAS passiert
+nämlich synchron, noch vor dem Erzeugen des Tasks) fängt einen
+SCHEMA-Validierungsfehler deshalb nicht ab - er entkommt komplett am
+eigenen Fehlerbehandlungscode vorbei und taucht erst an, wenn Python den
+verwaisten Task aufräumt, mit generischer "Task exception was never
+retrieved"-Meldung statt einer hilfreichen, raum-/entitätsbezogenen
+Warnung - und das bei JEDER Neubewertung erneut, nicht nur einmalig.
+Fix: neue Methode `_send_mobile_push()` bündelt beide bisherigen
+`notify.send_message`-Aufrufstellen (`_notify()` fürs eigentliche
+Senden, `_clear_mobile_notification()` fürs Auflösen - identisches
+Muster, siehe Lektion 18/43) und ruft mit `blocking=True` auf, wodurch
+ein Validierungsfehler jetzt synchron im `await` ankommt und vom
+`except HomeAssistantError` abgefangen wird - stattdessen eine einzelne,
+klare `_LOGGER.warning()` pro betroffenem Ziel ("unterstützt diese
+notify-Entität ein `data`-Feld mit `tag`?"), die dem Nutzer sofort sagt,
+was zu tun ist (richtige Companion-App-Entität auswählen), statt
+2432 kryptische Tracebacks. Lektion: `blocking=False` plus
+`try/except` ist kein allgemein sicheres Muster, um Fehler bei
+`hass.services.async_call()` abzufangen - es fängt nur Fehler, die VOR
+dem Erzeugen des Hintergrund-Tasks auftreten (Service-/Entity-Existenz),
+nicht aber Fehler AUS der eigentlichen Service-Ausführung (Schema-
+Validierung, Handler-Exceptions) - dafür ist zwingend `blocking=True`
+nötig, mit dem entsprechenden (meist vernachlässigbaren) Laufzeit-
+Overhead, das tatsächliche Warten auf den Abschluss des Service-Aufrufs.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
