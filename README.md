@@ -104,6 +104,24 @@ Entität für Dashboards/Automationen).
        Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
        "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
+     - **Presets steuern/anzeigen** (Ja/Nein/leer, Standard auch global: Ja)
+       + vier Preset-Namen-Felder (Komfort/Standby/Eco (Nacht)/Gebäudeschutz):
+       Manche climate-Integrationen (z. B. KNX) bilden diese Zustände nativ
+       als `preset_mode` ab statt nur als Zahlen-Sollwert. Aktiviert (und nur
+       wenn die gewählte Heizungs-Entität preset_mode tatsächlich
+       unterstützt), wird darüber gesteuert **und** angezeigt statt über den
+       Zahlen-Sollwert - die vier Namensfelder bieten dafür ein Dropdown mit
+       den von der Entität tatsächlich gemeldeten Presets (frei editierbar,
+       automatisch vorbelegt, falls ein passender Name erkannt wird). Leer
+       gelassen (einzeln pro Zustand möglich) greift für genau diesen
+       Zustand weiterhin der entsprechende Zahlen-Sollwert - Gebäudeschutz
+       nutzt dafür ersatzweise den Standby-Sollwert, da es dafür keinen
+       eigenen gibt. Gebäudeschutz wird ausschließlich gesetzt, solange das
+       Fenster bestätigt offen ist (ersetzt dafür Standby); bei Abwesenheit
+       oder aktivem Sommerbetrieb bleibt es bei Standby. Ohne
+       Preset-Unterstützung der Entität bleibt es automatisch bei der
+       reinen Sollwert-Steuerung, ganz ohne dass hier etwas eingestellt
+       werden müsste. Details siehe "Geräte-Steuerung" weiter unten
      - Optional: Innen-Luftfeuchtigkeit
      - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
        einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
@@ -323,6 +341,12 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
   getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
   überschreibbar wie jeder andere Parameter
+- **Presets steuern/anzeigen** (Standard Ja) + vier Preset-Namen-Felder
+  (Komfort/Standby/Eco (Nacht)/Gebäudeschutz) als raumweiter Standard -
+  hier reine Freitextfelder ohne Dropdown (kein konkretes Gerät zum
+  Auslesen auf globaler Ebene), pro Raum überschreibbar und dort mit
+  Dropdown-Vorschlag der tatsächlich von der jeweiligen Entität gemeldeten
+  Presets (siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
 - **Sommermodus-Schwelle (Vorhersage)** - ab dieser Vorhersage-Temperatur
   (+/- Toleranz-Marge) wird der oben hinterlegte Sommer-/Winterbetrieb-
   Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch
@@ -693,11 +717,33 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   wieder ausreicht. Ergänzt damit gezielt die Fensterlogik, statt sie zu
   duplizieren: Wenn Lüften reicht, läuft keine Klimaanlage.
 - **Heizung**: anders als Luftentfeuchter/Klimaanlage kein einfaches
-  Ein/Aus, sondern ein Umschalten zwischen drei festen Sollwerten (Comfort/
+  Ein/Aus, sondern ein Umschalten zwischen festen Sollwerten (Comfort/
   Standby/Nacht, über `climate.set_temperature`) - wie für Heizungen
   typisch. Pausen (Fenster offen, niemand zuhause, Sommerbetrieb aktiv - alle
   drei siehe unten) haben dabei immer höchste Priorität und schalten sofort
-  auf **Standby**, unabhängig von allem anderen unten.
+  auf **Standby** bzw. **Gebäudeschutz** (siehe unten), unabhängig von allem
+  anderen weiter unten.
+
+  **Presets statt Sollwert** (optional, Option "Presets steuern/anzeigen",
+  Standard auch global Ja): Manche climate-Integrationen (z. B. KNX) bilden
+  Comfort/Standby/Nacht/Gebäudeschutz nativ als `preset_mode`
+  (`climate.set_preset_mode`) ab statt nur als Zahlen-Sollwert - portabler
+  wäre eigentlich der reine Zahlen-Sollwert (Preset-Namen sind zwischen
+  Herstellern nicht standardisiert), aber wo eine Entität das native
+  Preset-Konzept anbietet, ist die direkte Steuerung darüber die
+  naheliegendere Wahl. Aktiv nur, wenn die gewählte Heizungs-Entität
+  `preset_mode` tatsächlich unterstützt (automatisch geprüft, keine
+  Einstellung nötig) UND für den jeweiligen Zustand ein Preset-Name
+  hinterlegt ist (vier Felder im Raum-Formular, Dropdown mit den von der
+  Entität tatsächlich gemeldeten Presets) - fehlt der Name für einen
+  einzelnen Zustand, greift für genau diesen weiterhin der entsprechende
+  Zahlen-Sollwert. **Gebäudeschutz** ersetzt dabei Standby ausschließlich
+  beim Pausier-Grund "Fenster offen" (nicht bei Abwesenheit/Sommerbetrieb) -
+  es gibt dafür keinen eigenen Zahlen-Sollwert, ohne hinterlegten
+  Preset-Namen wird ersatzweise der Standby-Sollwert verwendet. Bei aktiver
+  Preset-Steuerung liest auch die Anzeige (`heizung_modus`,
+  Dashboard-Karte) direkt den live vom Gerät gemeldeten `preset_mode`
+  zurück, statt den Sollwert näherungsweise zu erraten.
 
   Ist **"Heizungs-Zeitplan aktivieren"** (Abschnitt "Parameter")
   **deaktiviert** (Standard), gilt außerhalb dieser Pausen weiterhin die
@@ -824,9 +870,9 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert und seine Entität vorhanden ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
-| `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true`, sofern der aktuell am Gerät eingestellte Sollwert (live gelesen) näher am Comfort- als an Standby/Nacht liegt - erkennt daher auch, wenn der Sollwert manuell oder von einer anderen Automation geändert wurde |
-| `heizung_modus` | wie `heizung_an`, aber alle drei Stufen: `"comfort"`/`"standby"`/`"night"` (bzw. `null`, falls der Sollwert noch nicht ablesbar ist) |
-| `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen), `null` falls (noch) nicht ablesbar |
+| `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true` genau bei Comfort - erkennt daher auch, wenn der Sollwert/Preset manuell oder von einer anderen Automation geändert wurde |
+| `heizung_modus` | wie `heizung_an`, aber alle vier Stufen: `"comfort"`/`"standby"`/`"night"`/`"building_protection"` (bzw. `null`, falls sich der aktuelle Zustand nicht ablesen/zuordnen lässt). Bei aktiver Preset-Steuerung direkt aus dem live gemeldeten `preset_mode` zurückgemappt, sonst aus der Näherung zum aktuellen Zahlen-Sollwert (kennt dabei kein `"building_protection"`, da es dafür keinen eigenen Sollwert gibt) |
+| `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen, unabhängig von Preset- oder Sollwert-Steuerung), `null` falls (noch) nicht ablesbar |
 | `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist. Ohne Wirkung, solange der Heizungs-Zeitplan aktiviert ist |
@@ -849,7 +895,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 22** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 23** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -862,7 +908,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 22 %}
+  {% set card_version = 23 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
@@ -969,6 +1015,8 @@ content: >
   {% endif %}
   {% if a.heizung_an is defined %}
   {% set heiz_name = ('🔴' if a.heizung_an else '⚫') ~ '&nbsp;Heizung' %}
+  {% set heiz_modus_label = ('Komfort' if a.heizung_modus == 'comfort' else ('Eco (Nacht)' if a.heizung_modus == 'night' else ('Gebäudeschutz' if a.heizung_modus == 'building_protection' else ('Standby' if a.heizung_modus == 'standby' else '')))) if a.heizung_modus is defined else '' %}
+  {% set heiz_name = (heiz_name ~ '<br><small>' ~ heiz_modus_label ~ '</small>') if heiz_modus_label else heiz_name %}
   {% set heiz_laufzeit = '–' %}
   {% if a.heizung_an and a.heizung_seit is defined %}
   {% set heiz_minutes = ((now() - as_datetime(a.heizung_seit)).total_seconds() / 60) | int %}
