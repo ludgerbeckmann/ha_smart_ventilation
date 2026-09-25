@@ -895,7 +895,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 24** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 25** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -908,7 +908,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 24 %}
+  {% set card_version = 25 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
@@ -1016,7 +1016,7 @@ content: >
   {% if a.heizung_an is defined %}
   {% set heiz_name = ('🔴' if a.heizung_an else '⚫') ~ '&nbsp;Heizung' %}
   {% set heiz_modus_label = ('🔴&nbsp;Komfort' if a.heizung_modus == 'comfort' else ('🟡&nbsp;Eco (Nacht)' if a.heizung_modus == 'night' else ('🔵&nbsp;Gebäudeschutz' if a.heizung_modus == 'building_protection' else ('🟠&nbsp;Standby' if a.heizung_modus == 'standby' else '')))) if a.heizung_modus is defined else '' %}
-  {% set heiz_name = (heiz_name ~ '<br><small>' ~ heiz_modus_label ~ '</small>') if heiz_modus_label else heiz_name %}
+  {% set heiz_name = (heiz_name ~ '<br>' ~ heiz_modus_label) if heiz_modus_label else heiz_name %}
   {% set heiz_laufzeit = '–' %}
   {% if a.heizung_an and a.heizung_seit is defined %}
   {% set heiz_minutes = ((now() - as_datetime(a.heizung_seit)).total_seconds() / 60) | int %}
