@@ -1,4 +1,4 @@
-"""Smart Ventilation - Home Assistant Integration."""
+"""Smart Climate - Home Assistant Integration."""
 from __future__ import annotations
 
 import logging
@@ -13,8 +13,11 @@ from .const import (
     CONF_MOBILE_ENABLED,
     CONF_NOTIFY_METHOD,
     CONF_PERSISTENT_ENABLED,
+    CONF_ROOM_NAME,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    GLOBAL_ROOM_NAME,
+    LEGACY_GLOBAL_ROOM_NAME,
     NOTIFY_METHOD_MOBILE,
     NOTIFY_METHOD_PERSISTENT,
     VERSION_KEY,
@@ -32,7 +35,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 def _create_global_settings_entry(hass: HomeAssistant) -> None:
     """Stößt das (interne, formularlose) Anlegen des Eintrags "Smart
-    Ventilation Options" an, falls noch keiner existiert. Läuft als
+    Climate Optionen" an, falls noch keiner existiert. Läuft als
     Hintergrund-Task, damit der Aufrufer (async_setup/async_remove_entry)
     nicht blockiert."""
     already_exists = any(
@@ -91,10 +94,37 @@ def _migrate_legacy_notify_method(hass: HomeAssistant, entry: ConfigEntry) -> No
     hass.config_entries.async_update_entry(entry, data=new_data)
 
 
+def _migrate_global_entry_title(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Migriert den Titel/CONF_ROOM_NAME-Wert des automatisch angelegten
+    globalen Eintrags von der historischen Bezeichnung "- Smart Ventilation
+    Optionen -" auf die seit dem Anzeigenamen-Rename (0.59.0, siehe
+    CLAUDE.md Lektion 43) aktuelle "- Smart Climate Optionen -".
+
+    Nur der Anzeigename ändert sich - GLOBAL_SETTINGS_UNIQUE_ID (und damit
+    die entry_id) bleibt unverändert, weshalb hier eine einfache
+    async_update_entry() reicht statt eine echte Migration mit neuem
+    Eintrag zu benötigen. Ohne diesen Fix würde eine bereits bestehende
+    Installation den alten Titel dauerhaft behalten, da async_create_entry
+    den Titel nur beim allerersten Anlegen setzt (siehe Lektion 10:
+    ein Rename trifft nie automatisch bereits gespeicherte Einträge).
+    """
+    if not entry.data.get(CONF_IS_GLOBAL):
+        return
+    if entry.data.get(CONF_ROOM_NAME) != LEGACY_GLOBAL_ROOM_NAME:
+        return
+
+    new_data = dict(entry.data)
+    new_data[CONF_ROOM_NAME] = GLOBAL_ROOM_NAME
+    _LOGGER.debug("Migriere globalen Eintragstitel auf %s", GLOBAL_ROOM_NAME)
+    hass.config_entries.async_update_entry(
+        entry, title=GLOBAL_ROOM_NAME, data=new_data
+    )
+
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Läuft einmal beim (ersten) Setup der Integration in dieser
     Home-Assistant-Sitzung. Stellt sicher, dass der Eintrag "Smart
-    Ventilation Options" existiert - z. B. nach einem Neustart, falls er
+    Climate Optionen" existiert - z. B. nach einem Neustart, falls er
     aus irgendeinem Grund fehlt."""
     hass.data.setdefault(DOMAIN, {})
     # Für die Dashboard-Karte (Versionsanzeige) - liest die tatsächlich
@@ -110,6 +140,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Richtet einen Raum oder die allgemeinen Einstellungen ein."""
     _migrate_legacy_notify_method(hass, entry)
+    _migrate_global_entry_title(hass, entry)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data

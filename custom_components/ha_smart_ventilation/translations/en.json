@@ -2,15 +2,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "Smart Ventilation – Add room",
+        "title": "Smart Climate – Add room",
         "description": "Optional: select the HA area that corresponds to this room. This pre-fills the room name in the next step and restricts the sensor/device selection lists to the entities assigned to that area. Leave empty to choose from all entities as before.",
         "data": {
           "area_id": "HA area (optional)"
         }
       },
       "room": {
-        "title": "Smart Ventilation – Add room",
-        "description": "Set up monitoring for one room. If an HA area was selected in the previous step, the room name is already pre-filled from it and the sensor/device selection lists below are already restricted to the entities assigned to that area (domains without a matching entity in the area remain unrestricted). Repeat this flow for additional rooms (Settings → Devices & Services → Add integration). Cross-room defaults live under the automatically created \"Smart Ventilation Options\" entry (Configure).",
+        "title": "Smart Climate – Add room",
+        "description": "Set up monitoring for one room. If an HA area was selected in the previous step, the room name is already pre-filled from it and the sensor/device selection lists below are already restricted to the entities assigned to that area (domains without a matching entity in the area remain unrestricted). Repeat this flow for additional rooms (Settings → Devices & Services → Add integration). Cross-room defaults live under the automatically created \"Smart Climate Options\" entry (Configure).",
         "data": {
           "room_name": "Room name"
         },
@@ -27,9 +27,9 @@
               "heating_presence_entities": "Presence for heating (people)"
             },
             "data_description": {
-              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
-              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_persistent_enabled}",
-              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_mobile_enabled}",
+              "mobile_targets": "Empty = use the global targets from \"Smart Climate Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
+              "persistent_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
               "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
@@ -75,7 +75,7 @@
           },
           "parameters": {
             "name": "Parameters",
-            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Ventilation Options → Configure).",
+            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
               "temp_threshold_open": "Temperature threshold to open",
               "temp_threshold_close": "Temperature threshold to close",
@@ -127,7 +127,7 @@
   "options": {
     "step": {
       "room": {
-        "title": "Smart Ventilation – Edit room",
+        "title": "Smart Climate – Edit room",
         "description": "Adjust the existing settings for this room.",
         "data": {
           "area_id": "HA area (optional)",
@@ -146,9 +146,9 @@
               "heating_presence_entities": "Presence for heating (people)"
             },
             "data_description": {
-              "mobile_targets": "Empty = use the global targets from \"Smart Ventilation Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
-              "persistent_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_persistent_enabled}",
-              "mobile_enabled": "Empty = use the global setting from \"Smart Ventilation Options\". Currently global: {global_mobile_enabled}",
+              "mobile_targets": "Empty = use the global targets from \"Smart Climate Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
+              "persistent_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
               "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
@@ -194,7 +194,7 @@
           },
           "parameters": {
             "name": "Parameters",
-            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Ventilation Options → Configure).",
+            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
               "temp_threshold_open": "Temperature threshold to open",
               "temp_threshold_close": "Temperature threshold to close",
@@ -242,7 +242,7 @@
         }
       },
       "global": {
-        "title": "Edit Smart Ventilation Options",
+        "title": "Edit Smart Climate Options",
         "description": "These values act as the default for every room that doesn't override the respective field itself.",
         "data": {
           "reset_to_defaults": "Reset to defaults"
