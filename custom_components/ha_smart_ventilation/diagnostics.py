@@ -1,7 +1,7 @@
-"""Diagnostics-Unterstützung für Smart Ventilation.
+"""Diagnostics-Unterstützung für Smart Climate.
 
 Über "Diagnose herunterladen" im Drei-Punkte-Menü eines Eintrags
-(Einstellungen → Geräte & Dienste → Smart Ventilation) als JSON-Datei
+(Einstellungen → Geräte & Dienste → Smart Climate) als JSON-Datei
 abrufbar. Liefert die Konfiguration dieses Eintrags (personenbezogene
 Anwesenheits-/Notify-Ziele bereinigt) sowie - bei einem Raum - zusätzlich
 den aktuellen Entitäts-Zustand samt aller Attribute und eine
@@ -44,7 +44,7 @@ def _snapshot(hass: HomeAssistant, entity_id: str | None) -> dict[str, Any] | No
     """Momentaufnahme (Zustand + Attribute) einer referenzierten Entität -
     None, falls keine hinterlegt ist. Zeigt bei einem "unavailable"/
     "unknown"-Sensor auch dessen Attribute, statt nur den davon
-    abgeleiteten, bereits von Smart Ventilation verarbeiteten Wert."""
+    abgeleiteten, bereits von Smart Climate verarbeiteten Wert."""
     if not entity_id:
         return None
     state = hass.states.get(entity_id)

@@ -1,4 +1,4 @@
-# Smart Ventilation für Home Assistant
+# Smart Climate für Home Assistant
 
 [![Validate](https://github.com/ludgerbeckmann/ha_smart_ventilation/actions/workflows/validate.yml/badge.svg)](https://github.com/ludgerbeckmann/ha_smart_ventilation/actions/workflows/validate.yml)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
@@ -42,7 +42,7 @@ Entität für Dashboards/Automationen).
 1. HACS → Menü (⋮) → *Benutzerdefinierte Repositories*
 2. Repository-URL eintragen (nachdem du dieses Verzeichnis z. B. auf GitHub
    hochgeladen hast), Kategorie **Integration** wählen
-3. "Smart Ventilation" installieren
+3. "Smart Climate" installieren
 4. Home Assistant neu starten
 
 ### Manuell
@@ -57,7 +57,7 @@ Entität für Dashboards/Automationen).
 ### Raum hinzufügen
 
 1. **Einstellungen → Geräte & Dienste → Integration hinzufügen**
-2. Nach "Smart Ventilation" suchen – es öffnet sich zunächst ein kurzer
+2. Nach "Smart Climate" suchen – es öffnet sich zunächst ein kurzer
    erster Schritt zur (optionalen) Auswahl eines **HA-Bereichs**: Wird
    hier ein Bereich gewählt, wird im folgenden Hauptformular der Raumname
    automatisch mit der Bezeichnung dieses Bereichs vorbelegt, und alle
@@ -150,7 +150,7 @@ Entität für Dashboards/Automationen).
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
        "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
-       optionale Raum-Overrides der in "- Smart Ventilation Optionen -"
+       optionale Raum-Overrides der in "- Smart Climate Optionen -"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort
        hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
        Hinweistext den aktuell wirksamen globalen Wert an. Gilt nur für
@@ -162,10 +162,10 @@ Entität für Dashboards/Automationen).
        Sprachausgabe ist automatisch aktiv, sobald hier mindestens ein
        Lautsprecher ausgewählt ist – kein eigener Ja/Nein-Schalter mehr,
        auch keine globale Einstellung dafür. Die TTS-Entität selbst kommt
-       ausschließlich aus "Smart Ventilation Optionen" und ist hier nicht
+       ausschließlich aus "Smart Climate Optionen" und ist hier nicht
        auswählbar
      - **Wiedergabelautstärke für Sprachausgabe** (optional): überschreibt
-       für diesen Raum die in "Smart Ventilation Optionen" hinterlegte
+       für diesen Raum die in "Smart Climate Optionen" hinterlegte
        Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext
        zeigt den aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 40 %")
      - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
@@ -220,15 +220,15 @@ Entität für Dashboards/Automationen).
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
-### Allgemeine Einstellungen ("- Smart Ventilation Optionen -")
+### Allgemeine Einstellungen ("- Smart Climate Optionen -")
 
 Direkt beim ersten Start der Integration wird **automatisch**, ganz ohne
-Zutun, ein zusätzlicher Eintrag namens **"- Smart Ventilation Optionen -"**
+Zutun, ein zusätzlicher Eintrag namens **"- Smart Climate Optionen -"**
 angelegt – er taucht unter **Einstellungen → Geräte & Dienste** neben
 deinen Räumen auf. Dieser Eintrag erzeugt keine eigene Entität und keinen
 eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 
-**Bearbeiten:** Beim Eintrag "- Smart Ventilation Optionen -" auf
+**Bearbeiten:** Beim Eintrag "- Smart Climate Optionen -" auf
 **Konfigurieren** (Zahnrad-Symbol) klicken. Ganz oben im Formular steht die
 Checkbox **"Auf Standardwerte zurücksetzen"**: aktiviert und gespeichert,
 setzt sie sämtliche Schwellenwerte im Abschnitt "Parameter" sowie
@@ -326,30 +326,30 @@ dieser Standardwert.
 
 > Home Assistant erlaubt es grundsätzlich, jeden Integrations-Eintrag über
 > die Oberfläche zu löschen – das lässt sich nicht unterbinden. Löschst du
-> "- Smart Ventilation Optionen -" trotzdem, wird er **automatisch sofort wieder
+> "- Smart Climate Optionen -" trotzdem, wird er **automatisch sofort wieder
 > neu angelegt** (mit den Standardwerten) – er soll ja immer vorhanden
 > sein. Willst du ihn stattdessen dauerhaft loswerden, müsstest du die
 > gesamte Integration deinstallieren oder den Eintrag manuell deaktivieren
 > statt zu löschen.
 
 **Zur Sortierung in der Integrationsliste:** Es gibt keinen zuverlässigen
-Trick, um "- Smart Ventilation Optionen -" in der Liste an eine bestimmte
+Trick, um "- Smart Climate Optionen -" in der Liste an eine bestimmte
 Stelle zu bringen. Ein früherer Versuch mit einer führenden Ziffer im
 Namen hat sich als wirkungslos erwiesen – die Reihenfolge mehrerer
 Einträge einer Integration richtet sich in Home Assistant offenbar nicht
 zuverlässig nach dem Namen (mehrfach von Nutzern als "wirkt zufällig"
 gemeldet), sondern vermutlich eher nach der Reihenfolge, in der die
-Einträge angelegt wurden. Da "- Smart Ventilation Optionen -" meist erst nach
+Einträge angelegt wurden. Da "- Smart Climate Optionen -" meist erst nach
 bereits bestehenden Räumen automatisch erzeugt wird, taucht er entsprechend
 oft weiter unten auf. Eine nachträgliche Änderung ist darüber nicht
 zuverlässig erreichbar.
 
 ## Bestehenden Eintrag bearbeiten
 
-Ein bereits eingerichteter Raum – oder "- Smart Ventilation Optionen -" – lässt
+Ein bereits eingerichteter Raum – oder "- Smart Climate Optionen -" – lässt
 sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
-1. **Einstellungen → Geräte & Dienste → Smart Ventilation** (bzw. der von
+1. **Einstellungen → Geräte & Dienste → Smart Climate** (bzw. der von
    dir vergebene Name)
 2. Beim gewünschten Eintrag auf **Konfigurieren** klicken
 3. Es öffnet sich das passende Formular, mit den aktuell gespeicherten
@@ -496,7 +496,7 @@ dieser Konflikt aufgelöst wird:
   hoher Luftfeuchtigkeit oder hohem CO2-Wert (Wärmeverlust-Begrenzung vor
   Schimmelvermeidung/Gesundheit)
 
-In den globalen Einstellungen ("Smart Ventilation Optionen") als fester
+In den globalen Einstellungen ("Smart Climate Optionen") als fester
 Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
 (leer = globalen Wert verwenden; der Hinweistext zeigt dabei auch hier den
 aktuell wirksamen globalen Wert an, z. B. "Aktuell global: Ja"). Frost- und
@@ -681,7 +681,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 |---|---|
 | `raum` | Raumname |
 | `innentemperatur` | aktueller Messwert |
-| `aussentemperatur` | aktueller Messwert (aus "Smart Ventilation Optionen") |
+| `aussentemperatur` | aktueller Messwert (aus "Smart Climate Optionen") |
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `schwelle_frostschutz` / `schwelle_hitzeschutz` | aktuell wirksame Frostschutz-/Hitzeschutz-Grenze - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient hauptsächlich der Dashboard-Karte, um Frost-/Hitzeschutz live gegen die aktuelle Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
@@ -1147,7 +1147,7 @@ Zwei Bordmittel helfen bei der Fehlersuche, ohne dass Werte oder
 Log-Zeilen von Hand abgeschrieben werden müssen:
 
 - **Diagnose herunterladen**: Bei jedem Eintrag (ein Raum oder
-  "- Smart Ventilation Optionen -") lässt sich über das Drei-Punkte-Menü
+  "- Smart Climate Optionen -") lässt sich über das Drei-Punkte-Menü
   (⋮) → **Diagnose herunterladen** eine JSON-Datei erzeugen. Sie enthält
   die Konfiguration dieses Eintrags (personenbezogene Anwesenheits-/
   Notify-Ziel-Entitäten sind darin automatisch geschwärzt), bei einem
@@ -1203,7 +1203,7 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   Temperatur/Luftfeuchtigkeit etc.) werden bei jeder Neubewertung aktuell
   gehalten - auch wenn sich der Empfehlungsstatus selbst dabei nicht
   ändert. **Ausnahme:** Die Außentemperatur kommt
-  ausschließlich aus "- Smart Ventilation Optionen -" und wird beim Start jedes
+  ausschließlich aus "- Smart Climate Optionen -" und wird beim Start jedes
   Raums direkt mitverfolgt – ändert sich aber die dort hinterlegte
   Sensor-**Auswahl** selbst (nicht nur ihr Messwert), wirkt sich das erst
   beim nächsten 5-Minuten-Tick des Raums aus. Dasselbe gilt für den

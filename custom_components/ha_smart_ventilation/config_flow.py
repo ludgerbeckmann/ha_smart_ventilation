@@ -1,4 +1,4 @@
-"""Config- und Options-Flow für Smart Ventilation."""
+"""Config- und Options-Flow für Smart Climate."""
 from __future__ import annotations
 
 import voluptuous as vol
@@ -115,6 +115,7 @@ from .const import (
     DEHUMIDIFIER_DOMAINS,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    GLOBAL_ROOM_NAME,
     GLOBAL_SETTINGS_UNIQUE_ID,
     HEATING_DOMAINS,
     PRESENCE_DOMAINS,
@@ -580,7 +581,7 @@ def _build_room_schema(
 
     # App-Push und persistente Benachrichtigung sind überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
-    # "Smart Ventilation Optionen" (siehe _tri_state_bool_selector).
+    # "Smart Climate Optionen" (siehe _tri_state_bool_selector).
     # Sprachausgabe hat keinen eigenen Schalter mehr - sie ist aktiv, sobald
     # unten mindestens ein Lautsprecher ausgewählt ist.
     mobile_marker, mobile_sel = _tri_state_bool_selector(
@@ -1092,7 +1093,7 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
 def _validate_room_submission(defaults: dict) -> str | None:
     """Bereinigt die Benachrichtigungs-Zieleinträge. Gibt keinen Fehler mehr
     zurück, da jede der drei Methoden jetzt leer gelassen werden kann (=
-    globale Einstellung aus "Smart Ventilation Optionen" gilt) - fehlende
+    globale Einstellung aus "Smart Climate Optionen" gilt) - fehlende
     Ziel-Entitäten führen zur Laufzeit nur zu einem Log-Hinweis, nicht zu
     einem blockierenden Formularfehler. Innentemperatur wird bereits vom
     Formular selbst als Pflichtfeld erzwungen."""
@@ -1175,13 +1176,13 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> config_entries.FlowResult:
         """Wird ausschließlich intern von __init__.py (async_setup) beim
         allerersten Start automatisch ausgelöst, um den Eintrag "Smart
-        Ventilation Options" anzulegen - keine Benutzerinteraktion, keine
+        Climate Optionen" anzulegen - keine Benutzerinteraktion, keine
         eigene Formularanzeige."""
         await self.async_set_unique_id(GLOBAL_SETTINGS_UNIQUE_ID)
         self._abort_if_unique_id_configured()
 
         data = _apply_threshold_defaults(
-            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: "- Smart Ventilation Optionen -"}
+            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: GLOBAL_ROOM_NAME}
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 

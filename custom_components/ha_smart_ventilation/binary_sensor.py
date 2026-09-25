@@ -1212,7 +1212,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Ein einziger strukturierter Debug-Log-Eintrag pro Neubewertung mit
         # allen Zwischenergebnissen - aktivierbar ganz ohne eigenes Feature
         # über Home Assistants Standardmechanismus (Einstellungen → Geräte &
-        # Dienste → Smart Ventilation → Zahnrad am jeweiligen Raum →
+        # Dienste → Smart Climate → Zahnrad am jeweiligen Raum →
         # Debug-Protokollierung aktivieren, oder global über `logger:` in
         # der configuration.yaml für
         # custom_components.ha_smart_ventilation). Gedacht, um Flacker-

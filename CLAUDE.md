@@ -9,8 +9,10 @@ wichtig wurden.
 
 ## Projektüberblick
 
-Home-Assistant Custom Integration `ha_smart_ventilation` ("Smart
-Ventilation"): pro Raum ein `binary_sensor.lueften_empfohlen_<raum>`, der
+Home-Assistant Custom Integration `ha_smart_ventilation` (Anzeigename seit
+0.59.0 "Smart Climate", technischer Domain-Name unverändert
+`ha_smart_ventilation`, siehe Lektion 43): pro Raum ein
+`binary_sensor.lueften_empfohlen_<raum>`, der
 anhand von Innen-/Außentemperatur und -luftfeuchtigkeit empfiehlt, ob
 gelüftet werden sollte. Zusätzlich optionale Steuerung von Luftentfeuchter,
 Klimaanlage und Heizung (Comfort-/Standby-Sollwerte), sowie drei
@@ -70,7 +72,7 @@ Praktisch jeder konfigurierbare Wert (Schwellenwerte, Sensoren,
 Benachrichtigungsmethoden) folgt demselben Muster:
 
 1. Raum-Override, falls im Raum explizit gesetzt
-2. sonst globale Einstellung aus dem Eintrag "Smart Ventilation Optionen"
+2. sonst globale Einstellung aus dem Eintrag "Smart Climate Optionen"
    (`CONF_IS_GLOBAL: True`, feste `unique_id` über `GLOBAL_SETTINGS_UNIQUE_ID`)
 3. sonst fest einprogrammierter `DEFAULT_*`-Wert
 
@@ -1790,6 +1792,73 @@ wenn beide dieselbe Entitätsart (`person`/`device_tracker`) betreffen -
 entscheidend ist, ob die zugrunde liegende Entscheidung dieselbe ist
 ("wen benachrichtigen" vs. "wann heizen" sind zwei verschiedene
 Entscheidungen, auch wenn beide auf Anwesenheit basieren).
+
+**43. Anzeigenamen-Rename zu "Smart Climate" - bewusst NUR der Anzeigename,
+nicht die technische Domain, mit eigener Migration für den Titel des
+automatisch angelegten globalen Eintrags (0.59.0).** Nutzerwunsch (Teil
+eines größeren, gebündelten Feature-Requests, siehe Lektion 44/45): "Der
+Anzeigename der Integration soll überall Smart Climate lauten." Direkt vor
+dieser Umsetzung stand bereits Lektion 40 (0.56.0), die von einem
+vollständigen Domain-Wechsel zu "Smart Climate" explizit abgeraten hatte -
+ein Domain-Rename (`ha_smart_ventilation` → `ha_smart_climate`) ist in Home
+Assistant kein In-Place-Vorgang, sondern würde für jeden Nutzer alle
+Entity-IDs/unique_ids ändern (Breaking Change, Dashboards/Automationen mit
+den alten `binary_sensor.lueften_empfohlen_*`-IDs würden brechen) und einen
+Neuinstall statt eines einfachen Updates erfordern. Per Rückfrage
+(AskUserQuestion) bestätigte der Nutzer explizit die empfohlene, risikoarme
+Auslegung: "Nur Anzeigename" - der `domain`-Wert in `manifest.json` sowie
+alle Entity-IDs/unique_ids bleiben unverändert, geändert wird ausschließlich
+sichtbarer Text (`manifest.json`/`hacs.json` `"name"`-Feld,
+`strings.json`/`translations/*.json` Titel und `data_description`-Texte,
+README.md, sowie der über `_apply_threshold_defaults()` beim automatischen
+Anlegen gesetzte `CONF_ROOM_NAME`-Wert "- Smart Ventilation Optionen -" des
+globalen Eintrags, jetzt "- Smart Climate Optionen -" über die neue
+Konstante `GLOBAL_ROOM_NAME` in `const.py`).
+
+Wichtige Ergänzung, die über eine reine Text-Suche-und-Ersetzen-Aktion
+hinausging: Der Titel des globalen Eintrags wird - wie bei jedem
+Config-Entry - nur EINMALIG bei `async_create_entry()` aus `CONF_ROOM_NAME`
+gesetzt (siehe `async_step_import()` in `config_flow.py`); eine bereits
+bestehende Installation hätte den alten Titel "- Smart Ventilation
+Optionen -" dauerhaft behalten, exakt dieselbe Klasse Bug wie in Lektion 10
+("ein Architektur-Refactor macht bereits gespeicherte Config-Entry-Daten
+nicht automatisch mit"). Fix: neue Funktion
+`_migrate_global_entry_title()` in `__init__.py`, 1:1 nach dem Muster von
+`_migrate_legacy_notify_method()` - läuft bei jedem `async_setup_entry()`,
+prüft ob `entry.data[CONF_ROOM_NAME]` noch exakt der alten,
+`LEGACY_GLOBAL_ROOM_NAME`-Konstante entspricht, und ruft in diesem Fall
+`hass.config_entries.async_update_entry(entry, title=GLOBAL_ROOM_NAME,
+data=new_data)` auf - sowohl `data` (wirkt sich auf zukünftige, aus
+`entry.data` gelesene Werte aus) als auch das separate `title`-Feld
+(bestimmt die in der Oberfläche unter "Geräte & Dienste" angezeigte
+Bezeichnung - ändert sich NICHT automatisch mit, wenn nur `data` aktualisiert
+wird, da Home Assistant beide als unabhängige Felder eines Config-Entry
+führt) müssen dafür explizit gesetzt werden. Nach der ersten Migration
+wirkungslos (der Titel entspricht danach nicht mehr
+`LEGACY_GLOBAL_ROOM_NAME`). GLOBAL_SETTINGS_UNIQUE_ID (und damit die
+entry_id selbst) bleibt davon unberührt - es handelt sich um denselben
+Eintrag, nur mit neuem Anzeigenamen, nicht um einen Neuanlegen-Vorgang.
+
+Bewusst NICHT verändert: Python-interne Bezeichner wie Klassennamen
+(`SmartVentilationBinarySensor`, `SmartVentilationShowerBinarySensor`) -
+diese sind nirgends für den Nutzer sichtbar und tragen kein Risiko, anders
+als der DOMAIN-Wert oder Entity-IDs; ein Rename hätte hier nur unnötigen
+Diff-Umfang ohne jeden Nutzen erzeugt. Ebenso unverändert: alle
+GitHub-Repo-/Dokumentations-URLs (`ludgerbeckmann/ha_smart_ventilation`) -
+der Repo-Name selbst ist nicht Teil dieses Requests und eine
+GitHub-Repo-Umbenennung ein separater, deutlich risikoreicherer Vorgang
+(zwar behält GitHub alte URLs als Redirect, aber lokale Clones/CI-Badges/
+HACS-Referenzen auf den Repo-Pfad wären betroffen). Lektion: "Nur der
+Anzeigename" ist eine präzise, technisch umsetzbare Grenze, die sich
+scharf von einem echten Domain-Rename abgrenzen lässt (Lektion 40 hatte
+diese Grenze schon vorgezeichnet, hier wurde sie erstmals tatsächlich
+gezogen) - innerhalb dieser Grenze bleibt aber trotzdem eine echte
+Migration nötig, sobald irgendein Anzeigetext (hier: der Eintragstitel)
+einmalig beim Anlegen aus einem zum Rename-Zeitpunkt bereits fest
+gespeicherten Wert berechnet wurde, statt bei jedem Lesen live neu
+gebildet zu werden - genau die in Lektion 10 etablierte Unterscheidung
+zwischen "wird beim nächsten Speichern schon aktuell" (falsch) und
+"braucht eine explizite Migration" (richtig).
 
 ## Versionierung & Release
 

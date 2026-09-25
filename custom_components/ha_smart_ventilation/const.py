@@ -1,4 +1,4 @@
-"""Konstanten für die Smart Ventilation Integration."""
+"""Konstanten für die Smart Climate Integration."""
 
 DOMAIN = "ha_smart_ventilation"
 
@@ -15,6 +15,15 @@ GLOBAL_ENTRY_ID_KEY = "_global_entry_id"
 # Versionsnummer (aus manifest.json) für die Dashboard-Karte hinterlegt
 # wird (siehe __init__.py:async_setup / binary_sensor.py:extra_state_attributes).
 VERSION_KEY = "_integration_version"
+
+# Name des automatisch angelegten globalen Eintrags (CONF_ROOM_NAME-Wert,
+# gleichzeitig der angezeigte Entry-Titel). Seit dem Anzeigenamen-Rename auf
+# "Smart Climate" (0.59.0) - siehe __init__.py:_migrate_global_entry_title()
+# für die Migration bereits bestehender Installationen und CLAUDE.md
+# Lektion 43. LEGACY_GLOBAL_ROOM_NAME wird ausschließlich von dieser
+# Migration benötigt.
+GLOBAL_ROOM_NAME = "- Smart Climate Optionen -"
+LEGACY_GLOBAL_ROOM_NAME = "- Smart Ventilation Optionen -"
 
 CONF_ROOM_NAME = "room_name"
 # Optional: die HA-Bereich-ID (area_registry), aus der beim Anlegen der
@@ -38,7 +47,7 @@ CONF_HUMIDITY_ENTITY = "humidity_entity"
 # jeder sinnvollen Innenschwelle - Lüften hilft bei CO2 immer.
 CONF_CO2_ENTITY = "co2_entity"
 CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
-# Nur in den globalen Einstellungen ("Smart Ventilation Options") verfügbar,
+# Nur in den globalen Einstellungen ("Smart Climate Optionen") verfügbar,
 # nicht pro Raum überschreibbar - wie CONF_OUTDOOR_TEMP_ENTITY.
 CONF_OUTDOOR_HUMIDITY_ENTITY = "outdoor_humidity_entity"
 CONF_WINDOW_ENTITY = "window_entity"
@@ -264,7 +273,7 @@ DEFAULT_SHOWER_RISE_THRESHOLD = 1.5
 SHOWER_RISE_LOOKBACK_MINUTES = 10
 
 # Konfigurierbare Benachrichtigungstexte (nur in den globalen Einstellungen
-# "Smart Ventilation Optionen" - {raum} wird durch den jeweiligen Raumnamen
+# "Smart Climate Optionen" - {raum} wird durch den jeweiligen Raumnamen
 # ersetzt). Über _effective() aufgelöst wie die anderen Werte - technisch
 # wäre damit sogar ein zukünftiger Raum-Override ohne weitere Codeänderung
 # möglich, aktuell aber bewusst nur global im Formular angeboten.
