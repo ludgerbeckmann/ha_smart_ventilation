@@ -2116,6 +2116,72 @@ sobald die Rückfrage-Antwort ("die Logik muss erhalten bleiben") dieses
 Muster erkennbar machte, ergab sich der Rest der Umsetzung praktisch von
 selbst, ohne weitere Rückfrage nötig zu haben.
 
+**47. `_update_heating()`s Idempotenz-Prüfung verglich nur gegen den
+eigenen "zuletzt kommandiert"-Tracker, nicht gegen den tatsächlichen
+Live-Sollwert am Gerät - bei einer instabilen Funkverbindung blieb ein
+nie angekommener Befehl dadurch unbemerkt für immer unwiederholt
+(0.61.2).** Nutzer-Beobachtung (Dashboard-Screenshot, Badezimmer): Die
+Geräte-Tabelle zeigte trotz aktivem globalem Sommerbetrieb-Schalter
+weiterhin 🔴 "Heizung an", mit Grund-Text "pausiert: Sommermodus aktiv
+(21.0 °C)" - der in Klammern angezeigte, live gelesene Sollwert
+entsprach exakt dem Comfort-Wert, nicht dem bei Sommerbetrieb
+eigentlich gewünschten Standby-Wert (17.0 °C). Der Nutzer lieferte dazu
+selbst den entscheidenden Kontext: Das Heizungs-Stellventil in diesem
+Raum ist über eine gerade instabile Funkverbindung angebunden.
+
+Ursache: `heizung_an`/`heizung_modus`/`heizung_zieltemperatur` sind wie
+bei Luftentfeuchter/Klimaanlage (Lektion 19/33) korrekt als Live-Read
+vom Gerät umgesetzt - das ist nicht das Problem. Das eigentliche Problem
+lag in `_update_heating()` selbst: Ein `climate.set_temperature`-Befehl
+wurde nur gesendet, wenn sich `target_mode` gegenüber dem rein internen
+`self._heating_state`-Tracker geändert hatte - unabhängig davon, ob das
+Gerät den zuletzt gesendeten Befehl tatsächlich übernommen hatte.
+`_set_heating_temperature()` läuft zwar bewusst mit `blocking=True`
+(Lektion 35, um Schema-Validierungsfehler synchron abzufangen) - das
+bestätigt aber nur, dass Home Assistants eigene Service-Verarbeitung
+fehlerfrei durchlief, nicht, dass ein per Zigbee/Funk angebundenes Gerät
+den Befehl auch physisch empfangen und umgesetzt hat. Kam der Befehl bei
+instabiler Verbindung nie an, dachte die Integration trotzdem "erledigt"
+(`self._heating_state` wurde bereits auf den neuen Modus gesetzt) und
+wiederholte den Befehl bei keiner der folgenden Neubewertungen erneut -
+das Gerät blieb dauerhaft auf dem alten Sollwert stehen, ohne dass ein
+weiterer Versuch unternommen wurde.
+
+Strukturell identisches Muster wie bei Lektion 46 (dort: der neue
+globale Sommerbetrieb-Schalter verglich bewusst gegen den Live-Zustand
+statt einen internen Tracker, gerade weil er auch manuell bedienbar
+bleiben sollte) - hier ging es zwar nicht um manuelle Bedienung, aber um
+denselben grundsätzlichen Fehler: ein rein intern gepflegter "das habe
+ich doch schon erledigt"-Zustand ist kein Beleg dafür, dass die reale
+Welt (das Gerät) diesen Zustand auch tatsächlich erreicht hat. Fix:
+`_update_heating()` liest zusätzlich zum Tracker-Vergleich den aktuellen
+Live-Sollwert (`_get_heating_target_temperature()`) und vergleicht ihn
+(mit kleiner Toleranz von 0.05 °C gegen Rundungsdifferenzen) mit dem
+gewünschten Wert - weicht er ab, wird der Befehl erneut geschickt, auch
+wenn `target_mode` sich gegenüber `self._heating_state` nicht geändert
+hat. Ist der Live-Sollwert gerade nicht lesbar (Entität kurz nicht
+verfügbar), bleibt es bewusst beim reinen Tracker-Vergleich - sonst
+würde bei jeder kurzen Nichtverfügbarkeit unnötig ein Befehl gegen eine
+gerade nicht antwortende Entität wiederholt. Betrifft nur die Heizung -
+`_update_single_device()` (Luftentfeuchter/Klimaanlage) hat denselben
+rein-internen Tracker-Vergleich, wurde hier aber nicht mit angefasst, da
+kein konkreter Fall dafür gemeldet wurde; sollte sich ein analoges
+Symptom dort zeigen, gilt dieselbe Lektion.
+
+Lektion: Ein Service-Aufruf mit `blocking=True`, der fehlerfrei
+durchläuft, beweist nur, dass Home Assistant den Aufruf verarbeitet hat
+- bei jeder Anbindung über ein unzuverlässiges Transportmedium (Funk,
+Zigbee, WLAN-Geräte mit eigener Firmware) ist das keine Garantie, dass
+das Zielgerät den Befehl auch tatsächlich übernommen hat. Eine
+Idempotenz-Prüfung, die nur den eigenen zuletzt gesendeten Befehl
+verfolgt (statt den tatsächlichen, live abfragbaren Zielzustand zu
+vergleichen), kann einen einmal verschluckten Befehl für immer
+unbemerkt lassen, statt ihn bei der nächsten Gelegenheit zu wiederholen
+- wann immer ein Gerät live abfragbar ist (hier: `temperature`-Attribut
+der climate-Entität), sollte genau dieser Wert die Grundlage für "muss
+ich nochmal senden?" sein, nicht nur die eigene Erinnerung an den
+letzten Sendeversuch.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
