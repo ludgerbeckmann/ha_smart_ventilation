@@ -24,6 +24,27 @@ GitHub: `ludgerbeckmann/ha_smart_ventilation` (Domain `ha_smart_ventilation`).
 
 ## Feste Arbeitsanweisungen (immer befolgen, ohne erneute Aufforderung)
 
+- **Vor jeder inhaltlichen Umsetzung (Code-Änderung, neue/geänderte
+  Config-Flow-Felder, neue Entitäten, Doku-Änderungen mit Verhaltens-
+  Auswirkung) zuerst eine kurze Zusammenfassung der geplanten Umsetzung im
+  Chat posten und auf Bestätigung/Korrektur durch den Nutzer warten, bevor
+  mit Branch/Commit/PR begonnen wird** (seit 0.60.0, vom Nutzer
+  ausdrücklich gewünscht: "es macht mehr Sinn, dass du zukünftig zuerst
+  bei Änderungen diese Zusammenfassung ausgibst, bevor es umgesetzt wird,
+  um nochmal sicherzustellen, dass alles wie erwartet umgesetzt wird").
+  Die Zusammenfassung nennt knapp: welche Dateien/Bereiche betroffen sind,
+  welche neuen Optionen/Entitäten/Konstanten entstehen, wie sich das
+  Verhalten ändert, und - bei Unklarheiten im Auftrag - welche Annahmen
+  getroffen wurden. Kein vollständiger Implementierungsplan mit Codezeilen
+  nötig, aber genug, damit der Nutzer Scope und Ansatz vorab erkennen und
+  bei Bedarf korrigieren kann, BEVOR Code geschrieben wird - nicht erst im
+  fertigen Diff/PR. Gilt für jede inhaltliche Änderung, nicht nur
+  besonders große oder mehrdeutige; eine bereits laufende `AskUserQuestion`-
+  Rückfrage zur Scope-Klärung ersetzt diese Zusammenfassung nicht
+  automatisch, da sie meist nur einzelne Unklarheiten klärt, nicht den
+  gesamten geplanten Umsetzungsumfang. Rein exploratorische Fragen ("was
+  hältst du von X", siehe bereits bestehende allgemeine Regel dazu)
+  bleiben davon unberührt - dort wird ohnehin nicht ungefragt umgesetzt.
 - **Dashboard-Karte, bei jeder inhaltlichen Änderung (seit 0.50.0, vom
   Nutzer wiederholt bestätigt):**
   1. `card_version` in der Jinja-Vorlage hochzählen und den "Aktuelle
