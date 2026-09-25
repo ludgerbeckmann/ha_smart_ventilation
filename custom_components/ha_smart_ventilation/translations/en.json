@@ -104,8 +104,7 @@
               "heating_night_start_weekday": "Night start (weekday)",
               "heating_night_end_weekday": "Night end (weekday)",
               "heating_night_start_weekend": "Night start (weekend)",
-              "heating_night_end_weekend": "Night end (weekend)",
-              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
+              "heating_night_end_weekend": "Night end (weekend)"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
@@ -135,8 +134,7 @@
               "heating_night_start_weekday": "Empty = use the value from the global settings. If the comfort/night windows overlap, the night window takes priority. Currently global: {global_heating_night_start_weekday}",
               "heating_night_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekday}",
               "heating_night_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}",
-              "summer_mode_threshold_temp": "Empty = use the value from the global settings. Once the forecast temperature reaches this value (+/- tolerance margin), the summer mode switch turns on automatically, and off again below it - only effective if a forecast source is configured (Settings → Devices & Services → Smart Climate Options → Configure). Currently global: {global_summer_mode_threshold_temp}"
+              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}"
             }
           }
         }
@@ -245,8 +243,7 @@
               "heating_night_start_weekday": "Night start (weekday)",
               "heating_night_end_weekday": "Night end (weekday)",
               "heating_night_start_weekend": "Night start (weekend)",
-              "heating_night_end_weekend": "Night end (weekend)",
-              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
+              "heating_night_end_weekend": "Night end (weekend)"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
@@ -276,8 +273,7 @@
               "heating_night_start_weekday": "Empty = use the value from the global settings. If the comfort/night windows overlap, the night window takes priority. Currently global: {global_heating_night_start_weekday}",
               "heating_night_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekday}",
               "heating_night_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}",
-              "summer_mode_threshold_temp": "Empty = use the value from the global settings. Once the forecast temperature reaches this value (+/- tolerance margin), the summer mode switch turns on automatically, and off again below it - only effective if a forecast source is configured (Settings → Devices & Services → Smart Climate Options → Configure). Currently global: {global_summer_mode_threshold_temp}"
+              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}"
             }
           }
         },
@@ -309,6 +305,7 @@
               "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
               "summer_mode_forecast_entity": "Summer mode forecast source (optional)",
               "summer_mode_forecast_attribute": "Forecast attribute (optional)",
+              "summer_mode_switch_entity": "Summer/winter mode switch (optional)",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
@@ -316,8 +313,9 @@
             "data_description": {
               "outdoor_temp_entity": "Used for all rooms - can no longer be overridden per room",
               "outdoor_humidity_entity": "Used for all rooms, cannot be overridden per room. Without this sensor, ventilating on high indoor humidity is still recommended regardless of outdoor conditions. With it set, humidity-based ventilation is only recommended if it's actually drier outside than inside",
-              "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically switches the summer mode switch of every room with heating configured. Without this entity, the switch remains purely manual.",
+              "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically controls the summer/winter mode switch selected below. Without this entity, the switch remains purely manual.",
               "summer_mode_forecast_attribute": "Name of an attribute on the entity above to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
+              "summer_mode_switch_entity": "An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (\"Parameters\" section) again. Without a configured entity, summer/winter mode has no effect.",
               "tts_entity": "Used when a room doesn't set its own TTS entity",
               "tts_volume": "Volume the speakers are set to before the announcement (not automatically restored afterwards)",
               "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
@@ -380,7 +378,7 @@
               "heating_schedule_enabled": "Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled (default): the plain threshold logic above still applies",
               "heating_comfort_start_weekday": "Only effective while the heating schedule is enabled",
               "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority",
-              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer mode switch turns on automatically, and off again below it - only effective if a forecast source is configured above in the \"Sensors\" section"
+              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above in the \"Sensors\" section"
             }
           },
           "messages": {

@@ -226,11 +226,6 @@ Entität für Dashboards/Automationen).
        Standby. Deaktiviert (Standard) gilt weiterhin die reine
        Schwellenwert-Logik oben. Details siehe "Geräte-Steuerung" weiter
        unten
-     - **Sommermodus-Schwelle (Vorhersage)**: ab dieser Vorhersage-Temperatur
-       (+/- Toleranz-Marge) schaltet der automatische Sommermodus-Schalter
-       jedes Raums mit konfigurierter Heizung ein, darunter wieder aus - nur
-       wirksam, wenn in "- Smart Climate Optionen -" eine Vorhersagequelle
-       hinterlegt ist. Details siehe "Geräte-Steuerung" weiter unten
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
@@ -289,13 +284,20 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   oder `weather`-Entität mit einer Temperatur-Vorhersage - z. B. ein eigener
   Template-Sensor, der die Tagesvorhersage als Attribut bereitstellt (kein
   direkter `weather.get_forecasts`-Service-Aufruf durch diese Integration
-  nötig, siehe "Geräte-Steuerung" unten). Schaltet automatisch den
-  Sommermodus-Schalter jedes Raums mit konfigurierter Heizung. Ohne diese
-  Entität bleibt der Schalter rein manuell bedienbar
+  nötig, siehe "Geräte-Steuerung" unten). Steuert damit automatisch den
+  unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität
+  bleibt der Schalter rein manuell bedienbar
 - **Vorhersage-Attribut** (optional): Name eines Attributs der obigen
   Entität, aus dem der Vorhersagewert gelesen wird (z. B. `temperature`).
   Leer = state der Entität direkt als Zahl lesen (z. B. bei einem
   Template-Sensor, dessen state selbst schon der Vorhersagewert ist)
+- **Sommer-/Winterbetrieb-Schalter** (optional, nur global): eine bereits
+  **vorhandene** `switch`-Entität - wird **nicht** von dieser Integration
+  angelegt, sondern nur aktiv gesteuert (analog zu Luftentfeuchter/
+  Klimaanlage/Heizung, siehe "Geräte-Steuerung" unten). **An** = Sommerbetrieb
+  (Heizung aller Räume pausiert), **Aus** = Winterbetrieb (Heizung läuft
+  normal). Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine
+  Wirkung, selbst wenn eine Vorhersagequelle hinterlegt ist
 
 Sprachausgabe hat hier keine Einstellung mehr – Lautsprecherauswahl und
 Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
@@ -313,8 +315,14 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
   getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
   überschreibbar wie jeder andere Parameter
-- **Sommermodus-Schwelle (Vorhersage)** als raumweiter Standard - siehe
-  oben ("Sommermodus-Vorhersagequelle")
+- **Sommermodus-Schwelle (Vorhersage)** - ab dieser Vorhersage-Temperatur
+  (+/- Toleranz-Marge) wird der oben hinterlegte Sommer-/Winterbetrieb-
+  Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch
+  wieder ausgeschaltet (Winterbetrieb). Nur global verfügbar, **kein**
+  Raum-Override - andernfalls könnten unterschiedliche Räume
+  unterschiedliche Entscheidungen für denselben gemeinsamen Schalter
+  treffen. Nur wirksam, wenn oben sowohl eine Vorhersagequelle als auch der
+  zu steuernde Schalter konfiguriert sind
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
@@ -627,7 +635,7 @@ Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
 Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
 nutzt die berechnete absolute Feuchte.
 
-## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung/Sommermodus)
+## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung/Sommer-/Winterbetrieb)
 
 Optional kann pro Raum ein Luftentfeuchter, eine Klimaanlage und/oder eine
 Heizung hinterlegt werden, die automatisch gesteuert werden:
@@ -657,7 +665,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
 - **Heizung**: anders als Luftentfeuchter/Klimaanlage kein einfaches
   Ein/Aus, sondern ein Umschalten zwischen drei festen Sollwerten (Comfort/
   Standby/Nacht, über `climate.set_temperature`) - wie für Heizungen
-  typisch. Pausen (Fenster offen, niemand zuhause, Sommermodus aktiv - alle
+  typisch. Pausen (Fenster offen, niemand zuhause, Sommerbetrieb aktiv - alle
   drei siehe unten) haben dabei immer höchste Priorität und schalten sofort
   auf **Standby**, unabhängig von allem anderen unten.
 
@@ -703,23 +711,37 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
     heizt der Raum normal weiter (permissiv, ein einzelner GPS-Aussetzer
     soll die Heizung nicht fälschlich abschalten). Ohne konfigurierte
     Entität entfällt diese Bedingung komplett.
-  - Solange der **Sommermodus-Schalter** dieses Raums (siehe unten) **an**
-    ist.
-- **Sommermodus** (nur für Räume mit konfigurierter Heizung): eine eigene,
-  auch manuell bedienbare `switch`-Entität "‹Raum› Sommermodus" - an =
-  pausiert die Heizung dieses Raums (siehe oben). Wird **automatisch**
-  ein-/ausgeschaltet, sobald in "- Smart Climate Optionen -" eine
-  **Sommermodus-Vorhersagequelle** hinterlegt ist: Erreicht die
-  Vorhersage-Temperatur die (raum-überschreibbare) "Sommermodus-Schwelle"
-  plus Toleranz-Marge, schaltet der Schalter ein; fällt sie unter die
-  Schwelle minus Toleranz-Marge, wieder aus - dazwischen sowie ohne
-  verfügbare Vorhersage bleibt der zuletzt gesetzte (automatische ODER
-  manuelle) Zustand unverändert bestehen. Ein manueller Schaltvorgang wird
-  dadurch nicht sofort wieder überschrieben, sondern bleibt bestehen, bis
-  die Vorhersage die jeweilige Grenze eindeutig über-/unterschreitet. Ohne
-  konfigurierte Vorhersagequelle bleibt der Schalter rein manuell bedienbar
-  (keine automatische Schaltung, aber weiterhin nutzbar, um die Heizung
-  z. B. für die Sommerpause manuell zu pausieren).
+  - Solange der globale **Sommer-/Winterbetrieb-Schalter** (siehe unten)
+    **an** ist (Sommerbetrieb) - pausiert dann die Heizung **aller** Räume.
+- **Sommer-/Winterbetrieb**: **kein** eigenes, von dieser Integration
+  angelegtes Gerät, sondern eine bereits **vorhandene** `switch`-Entität,
+  die in "- Smart Climate Optionen -" hinterlegt und von dieser Integration
+  **aktiv gesteuert** wird - genau wie Luftentfeuchter/Klimaanlage/Heizung
+  jeweils eine bereits vorhandene Entität steuern, statt eine eigene
+  anzulegen. **An** = Sommerbetrieb, pausiert die Heizung **aller** Räume
+  (siehe oben). **Aus** = Winterbetrieb, Heizung läuft normal. Nur global
+  verfügbar (kein Raum-Override), da mehrere Räume mit unterschiedlichen
+  Schwellen sonst gegensätzlich auf denselben gemeinsamen Schalter schreiben
+  könnten.
+
+  Wird **automatisch** ein-/ausgeschaltet, sobald in "- Smart Climate
+  Optionen -" sowohl eine **Sommermodus-Vorhersagequelle** als auch der zu
+  steuernde Schalter hinterlegt sind: Erreicht die Vorhersage-Temperatur die
+  "Sommermodus-Schwelle" plus Toleranz-Marge, wird der Schalter
+  eingeschaltet; fällt sie unter die Schwelle minus Toleranz-Marge, wieder
+  ausgeschaltet - dazwischen sowie ohne verfügbare Vorhersage bleibt der
+  aktuelle (automatisch ODER manuell gesetzte) Live-Zustand des Schalters
+  unverändert. Ein manueller Schaltvorgang wird dadurch nicht sofort wieder
+  überschrieben, sondern bleibt bestehen, bis die Vorhersage die jeweilige
+  Grenze eindeutig über-/unterschreitet - der Schalter bleibt also jederzeit
+  auch manuell bedienbar. Ohne konfigurierte Vorhersagequelle **oder** ohne
+  konfigurierten Schalter unterbleibt jede automatische Schaltung. Da jeder
+  Raum unabhängig voneinander dieselbe Entscheidung anhand derselben
+  globalen Vorhersage-/Schwellenwerte trifft und ggf. denselben Schalter
+  ansteuert, sind redundante, aber harmlose Schreibversuche mehrerer Räume
+  im selben Bewertungslauf möglich - nur der erste tatsächlich abweichende
+  Schreibversuch ändert etwas, alle weiteren sehen bereits den neuen
+  Live-Zustand und tun nichts.
 
   Diese Integration ruft dafür **keinen eigenen `weather.get_forecasts`-
   Service** auf (das wäre der erste nicht-simple State-Read dieser
@@ -730,9 +752,9 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   `weather`-Vorhersage-Entitäten für ein Beispiel-Template).
 - **Leistungssensor (optional)**: Ist eine "Mindest-Einspeiseleistung"
   konfiguriert, wird ein Gerät (Luftentfeuchter/Klimaanlage, nicht die
-  Heizung, nicht der Sommermodus-Schalter) nur eingeschaltet, wenn der
-  Sensor mindestens diesen Wert meldet (z. B. um nur bei PV-Überschuss zu
-  starten). Ohne Leistungssensor entfällt diese Bedingung komplett.
+  Heizung, nicht der Sommer-/Winterbetrieb-Schalter) nur eingeschaltet, wenn
+  der Sensor mindestens diesen Wert meldet (z. B. um nur bei PV-Überschuss
+  zu starten). Ohne Leistungssensor entfällt diese Bedingung komplett.
 - **Verzögertes Abschalten bei Einspeisung**: Ist die Einspeiseleistung
   ununterbrochen seit mindestens der eingestellten "Verzögerung bis
   Abschalten" zu niedrig, wird ein bereits laufendes Gerät deswegen
@@ -778,7 +800,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommermodus aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist. Ohne Wirkung, solange der Heizungs-Zeitplan aktiviert ist |
-| `sommermodus_an` | nur vorhanden, falls für den Raum eine Heizung konfiguriert ist UND die zugehörige Sommermodus-switch-Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen (siehe eigene Entität "‹Raum› Sommermodus") |
+| `sommermodus_an` | nur vorhanden, falls in "- Smart Climate Optionen -" ein Sommer-/Winterbetrieb-Schalter hinterlegt ist UND diese Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen. Identisch für jeden Raum, da es sich um eine hausweite, nicht raumspezifische Einstellung handelt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `schliessempfehlung_deaktiviert` | nur vorhanden (mit Wert `true`), falls "Schließempfehlung deaktivieren" für diesen Raum aktiviert ist. Dient der Dashboard-Karte, damit sie die reinen Komfort-Schließgründe (Temperatur/Feuchtigkeit/CO2/Winter-Höchstdauer) live genauso unterdrückt wie die Integration selbst - Frost-/Hitzeschutz bleiben davon unberührt |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
@@ -797,7 +819,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 21** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 22** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -810,10 +832,10 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 21 %}
+  {% set card_version = 22 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
-  {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none) %}
+  {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -855,6 +877,9 @@ content: >
   {% endif %}
   {% if ns.version is none and a.integration_version is defined %}
   {% set ns.version = a.integration_version %}
+  {% endif %}
+  {% if ns.summer_mode is none and a.sommermodus_an is defined %}
+  {% set ns.summer_mode = a.sommermodus_an %}
   {% endif %}
   {% if match_icon == '🟢 ' %}
   {% set ns.green = ns.green + 1 %}
@@ -966,10 +991,13 @@ content: >
   {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
   {% set ns.rooms = ns.rooms ~ sep_before ~ entry.block %}
   {% endfor %}
+  {% set summer_header = ' Sommer/Winter |' if ns.summer_mode is not none else '' %}
+  {% set summer_sep = ':---:|' if ns.summer_mode is not none else '' %}
+  {% set summer_cell = (' ☀️ Sommer |' if ns.summer_mode else ' ❄️ Winter |') if ns.summer_mode is not none else '' %}
   {% set version_header = (' Integration |' if ns.version is not none else '') ~ ' Karte |' %}
   {% set version_sep = (':---:|' if ns.version is not none else '') ~ ':---:|' %}
   {% set version_cell = (' ' ~ ns.version ~ ' |' if ns.version is not none else '') ~ ' ' ~ card_version ~ ' |' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ version_header ~ '\n|:---:|:---:|:---:|' ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ version_cell %}
+  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ summer_header ~ version_header ~ '\n|:---:|:---:|:---:|' ~ summer_sep ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ summer_cell ~ version_cell %}
   {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
 ```
 

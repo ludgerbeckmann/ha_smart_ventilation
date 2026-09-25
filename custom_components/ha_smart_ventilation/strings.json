@@ -104,8 +104,7 @@
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
               "heating_night_end_weekday": "Nacht-Ende (Werktag)",
               "heating_night_start_weekend": "Nacht-Start (Wochenende)",
-              "heating_night_end_weekend": "Nacht-Ende (Wochenende)",
-              "summer_mode_threshold_temp": "Sommermodus-Schwelle (Vorhersage)"
+              "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
             },
             "data_description": {
               "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
@@ -135,8 +134,7 @@
               "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang. Aktuell global: {global_heating_night_start_weekday}",
               "heating_night_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekday}",
               "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}",
-              "summer_mode_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) schaltet der Sommermodus-Schalter automatisch ein, darunter automatisch wieder aus - nur wirksam, wenn eine Vorhersage-Quelle konfiguriert ist (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren). Aktuell global: {global_summer_mode_threshold_temp}"
+              "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}"
             }
           }
         }
@@ -245,8 +243,7 @@
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
               "heating_night_end_weekday": "Nacht-Ende (Werktag)",
               "heating_night_start_weekend": "Nacht-Start (Wochenende)",
-              "heating_night_end_weekend": "Nacht-Ende (Wochenende)",
-              "summer_mode_threshold_temp": "Sommermodus-Schwelle (Vorhersage)"
+              "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
             },
             "data_description": {
               "temp_threshold_open": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
@@ -276,8 +273,7 @@
               "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang. Aktuell global: {global_heating_night_start_weekday}",
               "heating_night_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekday}",
               "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}",
-              "summer_mode_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) schaltet der Sommermodus-Schalter automatisch ein, darunter automatisch wieder aus - nur wirksam, wenn eine Vorhersage-Quelle konfiguriert ist (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren). Aktuell global: {global_summer_mode_threshold_temp}"
+              "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}"
             }
           }
         },
@@ -309,6 +305,7 @@
               "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
               "summer_mode_forecast_entity": "Sommermodus-Vorhersagequelle (optional)",
               "summer_mode_forecast_attribute": "Vorhersage-Attribut (optional)",
+              "summer_mode_switch_entity": "Sommer-/Winterbetrieb-Schalter (optional)",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)"
@@ -316,8 +313,9 @@
             "data_description": {
               "outdoor_temp_entity": "Wird für alle Räume verwendet - kann nicht mehr pro Raum überschrieben werden",
               "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen",
-              "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - schaltet den Sommermodus-Schalter jedes Raums mit konfigurierter Heizung automatisch. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
+              "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
               "summer_mode_forecast_attribute": "Name eines Attributs der obigen Entität, aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
+              "summer_mode_switch_entity": "Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Abschnitt \"Parameter\") wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
               "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
               "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
               "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
@@ -380,7 +378,7 @@
               "heating_schedule_enabled": "Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert (Standard) gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben)",
               "heating_comfort_start_weekday": "Nur wirksam bei aktiviertem Heizungs-Zeitplan",
               "heating_night_start_weekday": "Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang",
-              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) schaltet der Sommermodus-Schalter automatisch ein, darunter automatisch wieder aus - nur wirksam, wenn oben im Abschnitt \"Sensoren\" eine Vorhersage-Quelle konfiguriert ist"
+              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben im Abschnitt \"Sensoren\" sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind"
             }
           },
           "messages": {

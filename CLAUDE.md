@@ -2045,6 +2045,77 @@ die bereits etablierte, einfachste Zugriffsart (State-Read) unverändert
 wiederzuverwenden, statt die ursprünglich befürchtete Komplexität
 vorsorglich doch selbst zu bauen.
 
+**46. Lektion 45s Sommermodus-Switch (pro Raum, von dieser Integration
+selbst angelegt) wurde direkt im Anschluss durch zwei Nutzer-Korrekturen
+auf eine grundlegend andere Architektur umgestellt - ein global gültiger,
+bereits vorhandener Schalter, den diese Integration aktiv steuert
+(0.61.0).** Nutzerfrage direkt nach Lektion 45: "Wo ist der Schalter für
+die Umschaltung zwischen Sommer und Winter? Dieser soll ausschließlich in
+den globalen Einstellungen definiert werden können." - bereits diese erste
+Präzisierung widersprach der gerade erst umgesetzten Pro-Raum-Architektur
+(je eine eigene switch-Entität "‹Raum› Sommermodus" pro Raum mit
+konfigurierter Heizung). Ich begann daraufhin zunächst, eine neue, global
+verortete, aber weiterhin von dieser Integration selbst erzeugte
+Automatik-Entität zu bauen (Stufe 1) - der Nutzer korrigierte das sofort:
+"Es geht darum, einen vorhandenen Switch in den globalen
+Konfigurationseinstellungen zu hinterlegen, nicht selber einen Sensor
+bereitzustellen, über den das von extern gesteuert werden kann." Ich
+interpretierte das daraufhin als "rein passiv lesen" (Stufe 2, analog zu
+`CONF_OUTDOOR_TEMP_ENTITY`) und fragte per Rückfrage, ob die bereits
+gebaute Vorhersage-Automatik-Logik dafür entfernt werden solle - auch das
+traf nicht zu: "Dieser Schalter soll von der Integration kontrolliert
+werden. Somit muss die Logik auch erhalten bleiben." Erst diese dritte
+Präzisierung ergab die tatsächlich gemeinte, konsistente Architektur
+(Stufe 3): ein global konfigurierbarer `CONF_SUMMER_MODE_SWITCH_ENTITY`
+(EntitySelector, domain `switch`) referenziert eine **bereits vorhandene**
+Entität, die diese Integration **aktiv steuert** - exakt dasselbe Muster
+wie `CONF_DEHUMIDIFIER_ENTITY`/`CONF_AC_ENTITY`/`CONF_HEATING_ENTITY`
+(Entitäten, die gesteuert, nicht selbst angelegt werden), nur eben global
+statt pro Raum. Die bereits gebaute Vorhersage+Schwelle+Hysterese-Logik aus
+Lektion 45 blieb dabei vollständig erhalten (nur ihr Ziel wechselte von
+"eigene Entität schreiben" zu "fremde Entität per Service-Aufruf
+steuern") - `switch.py` (die selbst angelegte Entität) wurde komplett
+gelöscht, `_update_summer_mode()` ruft stattdessen `switch.turn_on`/
+`switch.turn_off` idempotent gegen die konfigurierte Fremd-Entität auf
+(identisches "nur schreiben, wenn Ziel vom aktuellen Live-Zustand
+abweicht"-Muster wie bei Luftentfeuchter/Klimaanlage/Heizung).
+
+Eine bei der Umstellung auf global-only neu entstehende Gefahr, die bei
+Lektion 45s Pro-Raum-Variante gar nicht existierte: Läuft die
+Schwellenwert-/Marge-Prüfung weiterhin über das normale
+`self._effective()` (Raum-Override → global → Standard), könnten
+verschiedene Räume mit unterschiedlichen Overrides für denselben
+gemeinsamen, jetzt raumübergreifenden Schalter unterschiedliche
+Entscheidungen berechnen und sich gegenseitig überschreiben. Fix:
+`CONF_SUMMER_MODE_THRESHOLD_TEMP`/`CONF_TEMP_MARGIN` werden für diese
+Entscheidung bewusst NICHT über `_effective()`, sondern direkt über
+`self._global_config().get(...)` gelesen - erzwingt für alle Räume
+denselben Wert. Der zuvor existierende Raum-Override für die
+Sommermodus-Schwelle (Formularfeld im Abschnitt "Parameter" des
+Raum-Formulars) wurde konsequenterweise wieder entfernt. Da nun mehrere
+Räume unabhängig voneinander denselben Schreibversuch gegen dieselbe
+externe Entität auslösen können (jeder Raum wertet bei jeder eigenen
+Neubewertung dieselbe globale Entscheidung erneut aus), ist ein
+redundanter, aber dank Idempotenz-Prüfung harmloser Mehrfach-Schreibversuch
+im selben Bewertungslauf explizit als unproblematisch dokumentiert, statt
+z. B. künstlich nur "den ersten Raum" dafür zuständig zu machen.
+
+Lektion: Eine Nutzer-Korrektur direkt im Anschluss an eine gerade erst
+umgesetzte Funktion ist kein Zeichen für "knapp daneben", sondern kann
+bedeuten, dass die zugrunde liegende Anforderung fundamental anders gemeint
+war, als die erste Umsetzung sie verstanden hat - hier waren sogar zwei
+aufeinanderfolgende Korrekturen nötig (erst "kein eigener Sensor", dann
+"aber die Logik muss erhalten bleiben"), weil die erste Korrektur allein
+noch zwei unterschiedliche Auflösungen zuließ (rein passiv lesen vs. aktiv
+steuern) und meine eigene Zwischenannahme (passiv) genau die falsche traf.
+Der zuverlässigste Weg, die tatsächlich gemeinte Architektur zu finden, war
+hier nicht das Raten einer dritten eigenen Variante, sondern der Abgleich
+mit einem bereits im Code etablierten, strukturell identischen Muster
+(Luftentfeuchter/Klimaanlage/Heizung: vorhandene Entität aktiv steuern) -
+sobald die Rückfrage-Antwort ("die Logik muss erhalten bleiben") dieses
+Muster erkennbar machte, ergab sich der Rest der Umsetzung praktisch von
+selbst, ohne weitere Rückfrage nötig zu haben.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
