@@ -797,7 +797,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true`, sofern der aktuell am Gerät eingestellte Sollwert (live gelesen) näher am Comfort- als an Standby/Nacht liegt - erkennt daher auch, wenn der Sollwert manuell oder von einer anderen Automation geändert wurde |
 | `heizung_modus` | wie `heizung_an`, aber alle drei Stufen: `"comfort"`/`"standby"`/`"night"` (bzw. `null`, falls der Sollwert noch nicht ablesbar ist) |
 | `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen), `null` falls (noch) nicht ablesbar |
-| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommermodus aktiv") |
+| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist. Ohne Wirkung, solange der Heizungs-Zeitplan aktiviert ist |
 | `sommermodus_an` | nur vorhanden, falls in "- Smart Climate Optionen -" ein Sommer-/Winterbetrieb-Schalter hinterlegt ist UND diese Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen. Identisch für jeden Raum, da es sich um eine hausweite, nicht raumspezifische Einstellung handelt |
@@ -1168,7 +1168,7 @@ live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`heizung_seit`/
 Klimaanlage/Heizung eine rein informative, live bei jeder Neubewertung
 berechnete Kurzbeschreibung, warum das Gerät gerade an/aus (bzw. bei der
 Heizung: Comfort/Standby/Nacht bzw. "Zeitfenster: …" bei aktiviertem
-Heizungs-Zeitplan) ist bzw. pausiert (u. a. auch "pausiert: Sommermodus
+Heizungs-Zeitplan) ist bzw. pausiert (u. a. auch "pausiert: Sommerbetrieb
 aktiv"), ohne selbst Einfluss auf die Steuerung zu haben - siehe
 `binary_sensor.py`; bei der Heizung ergänzt um den aktuellen Sollwert in
 Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (21.0 °C)" oder
