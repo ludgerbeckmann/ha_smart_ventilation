@@ -24,6 +24,7 @@
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)",
+              "reminder_interval_minutes": "Reminder interval",
               "heating_presence_entities": "Presence for heating (people)"
             },
             "data_description": {
@@ -32,6 +33,7 @@
               "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "reminder_interval_minutes": "Empty = use the value from the global settings. Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
             }
           },
@@ -41,6 +43,8 @@
             "data": {
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
+              "heating_use_temp_source": "Also use temperature source for heating",
+              "heating_entity": "Heating",
               "humidity_entity": "Indoor humidity (optional)",
               "shower_detection_enabled": "Shower detection",
               "co2_entity": "CO2 (optional)",
@@ -51,14 +55,14 @@
               "dehumidifier_entity": "Dehumidifier",
               "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
               "ac_entity": "Air conditioner",
-              "heating_use_temp_source": "Also use temperature source for heating",
-              "heating_entity": "Heating",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
               "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
               "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
+              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
               "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected above). The rise threshold for this lives in the \"Parameters\" section",
               "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
@@ -67,8 +71,6 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
               "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
-              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field below is ignored.",
-              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
               "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
               "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
@@ -89,7 +91,6 @@
               "heat_protection_temp": "Heat protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "reminder_interval_minutes": "Reminder interval",
               "humidity_priority_over_duration": "Priority for winter max duration",
               "shower_rise_threshold": "Shower detection rise threshold",
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
@@ -119,7 +120,6 @@
               "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}",
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
@@ -163,6 +163,7 @@
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)",
+              "reminder_interval_minutes": "Reminder interval",
               "heating_presence_entities": "Presence for heating (people)"
             },
             "data_description": {
@@ -171,6 +172,7 @@
               "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "reminder_interval_minutes": "Empty = use the value from the global settings. Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
             }
           },
@@ -180,6 +182,8 @@
             "data": {
               "temperature_source_entity": "Indoor temperature",
               "temperature_attribute": "Temperature attribute",
+              "heating_use_temp_source": "Also use temperature source for heating",
+              "heating_entity": "Heating",
               "humidity_entity": "Indoor humidity (optional)",
               "shower_detection_enabled": "Shower detection",
               "co2_entity": "CO2 (optional)",
@@ -190,14 +194,14 @@
               "dehumidifier_entity": "Dehumidifier",
               "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
               "ac_entity": "Air conditioner",
-              "heating_use_temp_source": "Also use temperature source for heating",
-              "heating_entity": "Heating",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
               "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
               "temperature_attribute": "Only relevant if a climate entity was selected above",
+              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
+              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
               "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected above). The rise threshold for this lives in the \"Parameters\" section",
               "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
               "shutter_entity": "Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
@@ -206,8 +210,6 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
               "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
-              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field below is ignored.",
-              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
               "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
               "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
             }
@@ -228,7 +230,6 @@
               "heat_protection_temp": "Heat protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "reminder_interval_minutes": "Reminder interval",
               "humidity_priority_over_duration": "Priority for winter max duration",
               "shower_rise_threshold": "Shower detection rise threshold",
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
@@ -258,7 +259,6 @@
               "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}",
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
@@ -288,7 +288,7 @@
           "reset_to_defaults": "Reset to defaults"
         },
         "data_description": {
-          "reset_to_defaults": "When saved, resets all thresholds in the \"Parameters\" section and all notification message texts in the \"Notification texts\" section to their built-in defaults - regardless of what is currently entered in those fields. Selected entities (sensors, TTS, power sensor, notification targets) as well as the voice playback mode and notification methods are unaffected."
+          "reset_to_defaults": "When saved, resets all thresholds in the \"Parameters\" section, the reminder interval and all notification message texts in the \"Notifications\" section to their built-in defaults - regardless of what is currently entered in those fields. Selected entities (sensors, TTS, power sensor, notification targets) as well as the voice playback mode and notification methods are unaffected."
         },
         "sections": {
           "sensors": {
@@ -342,7 +342,6 @@
               "heat_protection_temp": "Heat protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "reminder_interval_minutes": "Reminder interval",
               "humidity_priority_over_duration": "Humidity/CO2 take priority over winter max duration",
               "shower_rise_threshold": "Shower detection rise threshold",
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
@@ -368,7 +367,6 @@
               "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
               "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
               "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors\" section",
               "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
@@ -382,9 +380,10 @@
             }
           },
           "messages": {
-            "name": "Notification texts",
-            "description": "The texts sent for the respective recommendations. Three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit).",
+            "name": "Notifications",
+            "description": "The reminder interval and the texts sent for the respective recommendations. For the texts, three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit).",
             "data": {
+              "reminder_interval_minutes": "Reminder interval",
               "msg_open_humidity": "Open due to humidity",
               "msg_open_co2": "Open due to CO2",
               "msg_open_temp": "Open due to temperature",
@@ -399,6 +398,7 @@
               "msg_reminder": "Reminder"
             },
             "data_description": {
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled.",
               "msg_open_humidity": "｛raum｝ = room name. ｛wert｝ = current humidity, ｛schwelle｝ = humidity threshold to open (each incl. %).",
               "msg_open_co2": "｛raum｝ = room name. ｛wert｝ = current CO2 value, ｛schwelle｝ = CO2 threshold to open (each incl. ppm).",
               "msg_open_temp": "｛raum｝ = room name. ｛wert｝ = current indoor temperature, ｛schwelle｝ = temperature threshold to open (each incl. °C).",

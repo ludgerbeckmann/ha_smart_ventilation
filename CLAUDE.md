@@ -2182,6 +2182,94 @@ der climate-Entität), sollte genau dieser Wert die Grundlage für "muss
 ich nochmal senden?" sein, nicht nur die eigene Erinnerung an den
 letzten Sendeversuch.
 
+**48. Formular-Umbau auf Nutzer-Nachfrage: Erinnerungsintervall gehört
+inhaltlich zu den Benachrichtigungen, nicht zu den Schwellenwerten - und
+der globale Abschnitt hieß dafür bereits zu eng (0.62.0).** Drei
+Wünsche in einer Nachricht: (1) "Die Option Erinnerungsintervall in den
+Abschnitt Benachrichtigungen… verschieben", (2) eine Frage, ob für
+climate-Entitäten auch ein anderes Attribut als `current_temperature`
+üblich ist, (3) "Den Schalter und das Auswahlfeld für die Heizung bitte
+hoch verschieben unterhalb der Temperaturauswahldialoge". Bei (1) fehlte
+zunächst die Zielsektion für die globalen Einstellungen - dort gibt es
+keinen Abschnitt "Benachrichtigungen", nur "Sensoren"/"Parameter"/
+"Benachrichtigungstexte" (SECTION_MESSAGES). Rückfrage klärte das: "Bennen
+in den globalen Einstellungen den Abschnitt Benachrichtigungstexte in
+Benachrichtigungen um und verschieben die Option dorthin" - passt inhaltlich
+gut, da `msg_reminder` (der bei diesem Intervall verschickte Text) ohnehin
+schon in diesem Abschnitt steht; das Erinnerungsintervall bekommt damit
+seinen dazugehörigen Text als direkten Nachbarn, statt isoliert bei den
+übrigen Lüftungs-Schwellenwerten zu stehen.
+
+Technisch zwei getrennte, unabhängige Verschiebungen: Für den Raum wandert
+`CONF_REMINDER_INTERVAL` von `SECTION_PARAMETERS` zu `SECTION_NOTIFY`
+(direkt nach `persistent_marker`, vor den Heizungs-Anwesenheits-Entitäten) -
+reine Positionsänderung im `fields`-Dict, der Marker selbst
+(`_override_selector`) bleibt unverändert. Für die globalen Einstellungen
+war es aufwändiger, weil `CONF_REMINDER_INTERVAL` dort bisher Teil der
+gemeinsam mit einer Schleife erzeugten `_CORE_PARAMETER_KEYS`-Liste war
+(18 Einträge, alle über `_threshold_selector()` in einem Durchlauf
+erzeugt) - der Schlüssel wurde aus dieser Liste entfernt und bekam
+stattdessen einen eigenen `_threshold_selector()`-Aufruf (analog zu
+`volume_marker`/`power_marker`/`grace_marker`, die aus demselben Grund
+schon lange einzeln erzeugt werden), damit er gezielt in
+`SECTION_MESSAGES` statt in den generisch über `parameter_fields`
+befüllten `SECTION_PARAMETERS` eingefügt werden konnte. Die
+"Auf Standardwerte zurücksetzen"-Checkbox funktioniert dabei unverändert
+weiter, ohne eigene Anpassung: Sie iteriert weiterhin über
+`_THRESHOLD_FIELDS` (eine von `_CORE_PARAMETER_KEYS` unabhängige, für die
+Reset-Logik zuständige Registry, die `CONF_REMINDER_INTERVAL` immer noch
+enthält) - der Reset wirkt also unabhängig davon, in welchem Formular-
+Abschnitt ein Feld gerade angezeigt wird.
+
+Zu (2): `current_temperature` ist kein zufällig gewählter Default,
+sondern ein von Home Assistants `ClimateEntity`-Basisklasse fest
+vorgegebenes Attribut, das praktisch jede climate-Integration identisch
+implementiert - anders als z. B. Gerätenamen oder Attribut-Einheiten gibt
+es hier keine herstellerspezifische Varianz zu erwarten. Die frei
+editierbare Auswahlliste (`custom_value=True`) ist entsprechend eher ein
+Sicherheitsnetz für den seltenen Sonderfall als ein häufig benötigtes
+Feature. Direkt im Anschluss schlug der Nutzer vor, das Auswahlfeld
+"Temperatur-Attribut" wegen genau dieser Standardisierung komplett zu
+entfernen ("da nicht benötigt") - davon wurde abgeraten: Ein bereits
+gespeicherter, vom Standard abweichender Wert (z. B. für eine nicht ganz
+standardkonforme Custom-Integration) würde beim Entfernen des Felds
+stillschweigend ignoriert und stattdessen wieder der hart codierte
+Standard verwendet - dieselbe Gefahrenklasse wie in Lektion 26 (eine
+Auswahlmöglichkeit einzuschränken darf nie einen bereits gespeicherten,
+funktionierenden Wert unerreichbar machen). Stattdessen vorgeschlagen und
+noch offen: nur den vermutlich falschen dritten Vorschlagswert
+`target_temperature` (kein offizielles HA-Climate-Attribut, der Sollwert
+heißt dort `temperature`) aus der Liste zu entfernen - das schränkt keine
+bereits funktionierende Konfiguration ein, sondern entfernt nur eine
+vermutlich irreführende Option, die noch nie sinnvoll genutzt worden sein
+kann.
+
+Zu (3): Reine Positionsänderung innerhalb von `SECTION_SENSORS` im
+Raum-Formular - `CONF_HEATING_USE_TEMP_SOURCE` (Checkbox) und
+`CONF_HEATING_ENTITY` (EntitySelector) wandern von ihrer bisherigen
+Position (nach der Klimaanlage, vor Leistungsschwelle/-verzögerung) direkt
+hinter `CONF_TEMP_ATTRIBUTE` - passt inhaltlich besser, da beide Felder
+sich unmittelbar auf die direkt darüber gewählte Innentemperatur-Quelle
+beziehen (siehe `CONF_HEATING_USE_TEMP_SOURCE`s Funktionsweise). Keine
+Auswirkung auf `strings.json`/`translations/*.json` (dieselben Labels,
+nur andere Position im Python-`fields`-Dict) oder auf `heating_include`
+(unverändert einmalig vorher berechnet, nur an der neuen Stelle
+referenziert).
+
+Lektion: Bei einer Bitte, ein Feld "in den Abschnitt X verschieben" nie
+automatisch annehmen, dass der Zielabschnitt in JEDEM betroffenen
+Formular (hier: Raum UND global) bereits unter demselben Namen und mit
+derselben Funktion existiert - eine kurze Rückfrage deckte hier auf, dass
+der globale Abschnitt “Benachrichtigungen” schlicht noch nicht existierte
+(er hieß enger “Benachrichtigungstexte”) und selbst erst durch Umbenennung
+und Erweiterung geschaffen werden musste. Außerdem, anknüpfend an
+Lektion 26: Ein Vorschlag, ein ganzes Auswahlfeld zu entfernen, weil der
+Standardwert "eigentlich immer passt", übersieht leicht, dass "eigentlich
+immer" nicht "garantiert immer" bedeutet - die vorsichtigere Änderung
+(nur eine einzelne, vermutlich falsche Option aus der Vorschlagsliste
+entfernen) erreicht das gewünschte Aufräumen, ohne einen bereits
+funktionierenden Sonderfall zu riskieren.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

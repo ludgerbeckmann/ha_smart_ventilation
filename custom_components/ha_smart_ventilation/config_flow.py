@@ -240,7 +240,9 @@ _TIME_FIELDS = {
 # Die achtzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
 # power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
-# hierher.
+# hierher. CONF_REMINDER_INTERVAL bewusst NICHT hier - steht wie beim Raum
+# im Benachrichtigungs-Abschnitt (dort direkt neben dem zugehörigen
+# Erinnerungstext msg_reminder), nicht bei den übrigen Schwellenwerten.
 _CORE_PARAMETER_KEYS = (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TEMP_THRESHOLD_CLOSE,
@@ -254,7 +256,6 @@ _CORE_PARAMETER_KEYS = (
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
-    CONF_REMINDER_INTERVAL,
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_COMFORT_TEMP,
@@ -754,6 +755,22 @@ def _build_room_schema(
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
+                vol.Optional(
+                    CONF_HEATING_USE_TEMP_SOURCE,
+                    default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
+                ): selector.BooleanSelector(),
+                _entity_marker(
+                    CONF_HEATING_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=HEATING_DOMAINS,
+                        **(
+                            {"include_entities": heating_include}
+                            if heating_include
+                            else {}
+                        ),
+                    )
+                ),
                 _entity_marker(
                     CONF_HUMIDITY_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -831,22 +848,6 @@ def _build_room_schema(
                         **({"include_entities": ac_include} if ac_include else {}),
                     )
                 ),
-                vol.Optional(
-                    CONF_HEATING_USE_TEMP_SOURCE,
-                    default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
-                ): selector.BooleanSelector(),
-                _entity_marker(
-                    CONF_HEATING_ENTITY, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=HEATING_DOMAINS,
-                        **(
-                            {"include_entities": heating_include}
-                            if heating_include
-                            else {}
-                        ),
-                    )
-                ),
                 power_marker: power_sel,
                 grace_marker: grace_sel,
             }
@@ -910,6 +911,7 @@ def _build_room_schema(
                     )
                 ),
                 persistent_marker: persistent_sel,
+                reminder_marker: reminder_sel,
                 _entity_marker(
                     CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False
                 ): selector.EntitySelector(
@@ -939,7 +941,6 @@ def _build_room_schema(
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
                 priority_marker: priority_sel,
-                reminder_marker: reminder_sel,
                 shower_threshold_marker: shower_threshold_sel,
                 heating_threshold_marker: heating_threshold_sel,
                 heating_comfort_marker: heating_comfort_sel,
@@ -962,12 +963,19 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     """Formular zum nachträglichen Bearbeiten der allgemeinen Einstellungen
     (Options-Flow): Sensoren/TTS-Wiedergabe/Leistungssensor in einem
     Abschnitt, die Schwellenwertparameter in einem eigenen - analog zum
-    "Parameter"-Abschnitt bei den Raum-Einstellungen. Der Name/Titel dieses
-    Eintrags ist hier bewusst nicht änderbar (nicht notwendig)."""
+    "Parameter"-Abschnitt bei den Raum-Einstellungen. Der Abschnitt
+    SECTION_MESSAGES heißt im Formular "Benachrichtigungen" (nicht mehr nur
+    "Benachrichtigungstexte") und enthält seit CONF_REMINDER_INTERVAL neben
+    den reinen Textvorlagen auch die zugehörige Zahlen-Einstellung - direkt
+    neben dem Erinnerungstext msg_reminder, den sie auslöst (analog zum
+    Raum-Abschnitt "Benachrichtigungen & Anwesenheit", siehe
+    _build_room_schema). Der Name/Titel dieses Eintrags ist hier bewusst
+    nicht änderbar (nicht notwendig)."""
     defaults = defaults or {}
     volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
+    reminder_marker, reminder_sel = _threshold_selector(CONF_REMINDER_INTERVAL, defaults)
 
     parameter_fields = {}
     for key in _CORE_PARAMETER_KEYS:
@@ -1108,6 +1116,7 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             vol.Required(SECTION_MESSAGES): section(
                 vol.Schema(
                     {
+                        reminder_marker: reminder_sel,
                         vol.Required(
                             CONF_MSG_OPEN_HUMIDITY,
                             default=defaults.get(

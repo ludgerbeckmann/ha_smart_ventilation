@@ -87,6 +87,27 @@ Entität für Dashboards/Automationen).
        Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
        `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
        Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
+     - **Temperaturquelle auch fürs Heizen verwenden** (Checkbox, Standard:
+       aus): verwendet automatisch die oben gewählte Innentemperatur-Quelle
+       als Heizungs-Gerät, statt sie zusätzlich im Feld "Heizung" separat
+       auszuwählen - erspart die doppelte Auswahl derselben Entität für
+       Räume, in denen dieselbe `climate`-Entität sowohl die Temperatur
+       liefert als auch heizen soll. Nur wirksam, wenn die Temperaturquelle
+       tatsächlich eine `climate`-Entität ist (bei `sensor`/`number`/
+       `input_number` wie "keine Heizung konfiguriert" behandelt, kein
+       Formularfehler). Bei aktiviertem Schalter wird das Feld "Heizung"
+       direkt darunter ignoriert (Home-Assistant-Formulare können Felder
+       nicht abhängig von einer Checkbox ausblenden, siehe "Home Assistant
+       Companion App" im Abschnitt "Benachrichtigungen & Anwesenheit"
+       weiter unten)
+     - **Heizung** (optional): eine `climate`-Entität - anders als
+       Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
+       Umschalten zwischen einem Comfort-, einem Standby- und einem
+       Nacht-Sollwert (siehe "Heizungs-Schwelle"/"Comfort-Sollwert"/
+       "Standby-Sollwert"/"Nacht-Sollwert"/"Heizungs-Zeitplan aktivieren" im
+       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
+       "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
+       "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
      - Optional: Innen-Luftfeuchtigkeit
      - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
        einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
@@ -129,27 +150,6 @@ Entität für Dashboards/Automationen).
        dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
        Lüftungs- oder Geräte-Steuerung selbst
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität
-     - **Temperaturquelle auch fürs Heizen verwenden** (Checkbox, Standard:
-       aus): verwendet automatisch die oben gewählte Innentemperatur-Quelle
-       als Heizungs-Gerät, statt sie zusätzlich im Feld "Heizung" separat
-       auszuwählen - erspart die doppelte Auswahl derselben Entität für
-       Räume, in denen dieselbe `climate`-Entität sowohl die Temperatur
-       liefert als auch heizen soll. Nur wirksam, wenn die Temperaturquelle
-       tatsächlich eine `climate`-Entität ist (bei `sensor`/`number`/
-       `input_number` wie "keine Heizung konfiguriert" behandelt, kein
-       Formularfehler). Bei aktiviertem Schalter wird das Feld "Heizung"
-       direkt darunter ignoriert (Home-Assistant-Formulare können Felder
-       nicht abhängig von einer Checkbox ausblenden, siehe "Home Assistant
-       Companion App" im Abschnitt "Benachrichtigungen & Anwesenheit"
-       weiter unten)
-     - **Heizung** (optional): eine `climate`-Entität - anders als
-       Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
-       Umschalten zwischen einem Comfort-, einem Standby- und einem
-       Nacht-Sollwert (siehe "Heizungs-Schwelle"/"Comfort-Sollwert"/
-       "Standby-Sollwert"/"Nacht-Sollwert"/"Heizungs-Zeitplan aktivieren" im
-       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
-       "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
-       "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
      - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
        optionale Raum-Overrides der in "- Smart Climate Optionen -"
        hinterlegten Werte (der Leistungssensor selbst ist nur dort
@@ -193,6 +193,11 @@ Entität für Dashboards/Automationen).
        und "Persistente Benachrichtigung" zeigt der Hinweistext jetzt
        ebenfalls den aktuell wirksamen globalen Wert an (z. B.
        "Aktuell global: Ja" bzw. die Liste der globalen Ziel-Entitäten)
+     - **Erinnerungsintervall** (optional): überschreibt für diesen Raum das
+       in "- Smart Climate Optionen -" hinterlegte Intervall - leer gelassen
+       gilt der dort hinterlegte Wert (Hinweistext zeigt den aktuell
+       wirksamen globalen Wert an). 0 = keine wiederkehrende Erinnerung,
+       falls die Empfehlung ignoriert wird
      - **Anwesenheit für Heizung (Personen)** (optional): eine oder mehrere
        `person`- oder `device_tracker`-Entitäten (Mehrfachauswahl) - ist
        mindestens eine hinterlegt, pausiert die Heizung (Standby), solange
@@ -210,8 +215,10 @@ Entität für Dashboards/Automationen).
      wirksamen globalen Wert an, z. B. "Aktuell global: 23.0 °C"):
      - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
        und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Debounce-Zeit
-       Frostschutz, Hitzeschutz-Grenze, Winter-Schwelle, Winter-Höchstdauer
-       und Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+       Frostschutz, Hitzeschutz-Grenze, Winter-Schwelle und
+       Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+       (das Erinnerungsintervall steht jetzt im Abschnitt "Benachrichtigungen
+       & Anwesenheit", siehe oben)
      - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
        Abschnitt "Sensoren & Geräte" aktiviert ist)
      - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
@@ -240,10 +247,11 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 **Bearbeiten:** Beim Eintrag "- Smart Climate Optionen -" auf
 **Konfigurieren** (Zahnrad-Symbol) klicken. Ganz oben im Formular steht die
 Checkbox **"Auf Standardwerte zurücksetzen"**: aktiviert und gespeichert,
-setzt sie sämtliche Schwellenwerte im Abschnitt "Parameter" sowie
-sämtliche Benachrichtigungstexte im Abschnitt "Benachrichtigungstexte" auf
-die einprogrammierten Standardwerte zurück - unabhängig davon, was gerade
-in diesen Feldern eingetragen ist. Ausgewählte Entitäten (Sensoren, TTS,
+setzt sie sämtliche Schwellenwerte im Abschnitt "Parameter", das
+Erinnerungsintervall und sämtliche Benachrichtigungstexte im Abschnitt
+"Benachrichtigungen" auf die einprogrammierten Standardwerte zurück -
+unabhängig davon, was gerade in diesen Feldern eingetragen ist. Ausgewählte
+Entitäten (Sensoren, TTS,
 Leistungssensor, App-Benachrichtigungsziele), der Sprachausgabe-Modus und die
 Benachrichtigungsmethoden bleiben davon unberührt. Einzelne Felder lassen
 sich weiterhin wie gewohnt zurücksetzen, indem man nur sie leert und
@@ -324,9 +332,14 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   treffen. Nur wirksam, wenn oben sowohl eine Vorhersagequelle als auch der
   zu steuernde Schalter konfiguriert sind
 
-**Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
-Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
-Textfeld für:
+**Abschnitt "Benachrichtigungen"** (früher "Benachrichtigungstexte" -
+umbenannt, da hier jetzt auch das Erinnerungsintervall steht, direkt neben
+dem zugehörigen Erinnerungstext; standardmäßig eingeklappt):
+- **Erinnerungsintervall** als raumweiter Standard - pro Raum im Abschnitt
+  "Benachrichtigungen & Anwesenheit" überschreibbar (siehe oben)
+
+Außerdem ist hier der Wortlaut jeder einzelnen Benachrichtigung frei
+anpassbar - je ein Textfeld für:
 - Öffnen wegen Temperatur / wegen Luftfeuchtigkeit / wegen CO2
 - Schließen wegen Temperatur (allgemein) / Luftfeuchtigkeit / CO2 /
   Frostschutz / Hitzeschutz / Winter-Höchstdauer / weil draußen wärmer
