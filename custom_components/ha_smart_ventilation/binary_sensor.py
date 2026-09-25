@@ -11,6 +11,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
+from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
@@ -44,9 +45,14 @@ from .const import (
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_HEATING_PRESET_BUILDING_PROTECTION,
+    CONF_HEATING_PRESET_COMFORT,
+    CONF_HEATING_PRESET_NIGHT,
+    CONF_HEATING_PRESET_STANDBY,
     CONF_HEATING_SCHEDULE_ENABLED,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
+    CONF_HEATING_USE_PRESET_MODE,
     CONF_HEATING_USE_TEMP_SOURCE,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -113,6 +119,7 @@ from .const import (
     DEFAULT_HEATING_NIGHT_TEMP,
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
+    DEFAULT_HEATING_USE_PRESET_MODE,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
@@ -229,8 +236,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # None = noch nicht initial synchronisiert.
         self._dehumidifier_state: bool | None = None
         self._ac_state: bool | None = None
-        # "comfort"/"standby"/"night" = zuletzt gesetzter Sollwert, None =
-        # noch nicht initial synchronisiert - siehe _update_heating().
+        # "comfort"/"standby"/"night"/"building_protection" = zuletzt
+        # gesetzter Sollwert bzw. Preset, None = noch nicht initial
+        # synchronisiert - siehe _update_heating().
         self._heating_state: str | None = None
 
         # Rein informativer Ein-/Ausschalt-Grund für die Dashboard-Karte
@@ -432,27 +440,39 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         heating_entity = self._get_heating_entity_id()
         if heating_entity and not self._device_entity_missing(heating_entity):
             # "heizung_modus" ist nicht wie bei Luftentfeuchter/Klimaanlage
-            # ein einfaches Ein/Aus, sondern welchem der drei Sollwerte
-            # (Comfort/Standby/Nacht) der aktuell am Gerät eingestellte
-            # Sollwert am nächsten liegt - live vom Gerät gelesen (Lektion
-            # 19/33: eine andere Automation oder der Nutzer selbst könnte
-            # den Sollwert direkt am Thermostat geändert haben, ohne dass
-            # diese Integration davon weiß). "heizung_an" bleibt als
-            # einfaches Ein/Aus für die Geräte-Tabelle erhalten (an =
-            # Comfort, aus = Standby ODER Nacht - beides "zurückgefahren").
-            comfort_temp = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
-            standby_temp = self._effective(CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP)
-            night_temp = self._effective(CONF_HEATING_NIGHT_TEMP, DEFAULT_HEATING_NIGHT_TEMP)
-            current_target = self._get_heating_target_temperature(heating_entity)
-            if current_target is None:
-                heating_mode_active = None
+            # ein einfaches Ein/Aus, sondern eine von vier Stufen (Comfort/
+            # Standby/Nacht/Gebäudeschutz). Bei aktiver Preset-Steuerung
+            # (siehe CONF_HEATING_USE_PRESET_MODE) wird dafür direkt der
+            # live vom Gerät gemeldete preset_mode zurück auf unsere vier
+            # Bezeichner gemappt - genauer als eine Temperatur-Näherung,
+            # da z. B. ein vom Nutzer direkt am Thermostat gewählter,
+            # unbekannter Preset ehrlich als "kein bekannter Modus" (None)
+            # erkannt wird statt geraten zu werden. Ohne (wirksame)
+            # Preset-Steuerung bleibt es bei der ursprünglichen Näherung
+            # "welchem der drei Sollwerte (Comfort/Standby/Nacht) der
+            # aktuell eingestellte Sollwert am nächsten liegt" (Lektion
+            # 19/33/40) - Gebäudeschutz kennt dabei keinen eigenen
+            # Zahlen-Sollwert, kommt in dieser Näherung also nie vor.
+            # "heizung_an" bleibt als einfaches Ein/Aus für die
+            # Geräte-Tabelle erhalten (an = Comfort, aus = jede andere
+            # Stufe - alle "zurückgefahren").
+            if self._heating_preset_mode_effective(heating_entity):
+                heating_mode_active = self._get_heating_mode_from_live_preset(heating_entity)
+                current_target = self._get_heating_target_temperature(heating_entity)
             else:
-                heating_mode_active = min(
-                    ("comfort", comfort_temp),
-                    ("standby", standby_temp),
-                    ("night", night_temp),
-                    key=lambda pair: abs(current_target - pair[1]),
-                )[0]
+                comfort_temp = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
+                standby_temp = self._effective(CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP)
+                night_temp = self._effective(CONF_HEATING_NIGHT_TEMP, DEFAULT_HEATING_NIGHT_TEMP)
+                current_target = self._get_heating_target_temperature(heating_entity)
+                if current_target is None:
+                    heating_mode_active = None
+                else:
+                    heating_mode_active = min(
+                        ("comfort", comfort_temp),
+                        ("standby", standby_temp),
+                        ("night", night_temp),
+                        key=lambda pair: abs(current_target - pair[1]),
+                    )[0]
             if heating_mode_active == "comfort":
                 if self._heating_on_since is None:
                     self._heating_on_since = dt_util.utcnow()
@@ -506,6 +526,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "comfort",
                 "standby",
                 "night",
+                "building_protection",
             ):
                 self._heating_state = attrs["heizung_modus"]
             # Laufzeit-Zeitstempel wiederherstellen (sonst zeigt die
@@ -867,6 +888,69 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         except (TypeError, ValueError):
             return None
 
+    def _heating_supports_preset_mode(self, entity_id: str) -> bool:
+        """True, wenn die Heizungs-Entität preset_mode überhaupt
+        unterstützt (ClimateEntityFeature.PRESET_MODE) - Grundlage für die
+        Opt-out-Absicherung von CONF_HEATING_USE_PRESET_MODE (Standard
+        Ja): Entitäten ohne diese Unterstützung bleiben automatisch bei
+        der reinen Sollwert-Steuerung, ganz ohne dass der Nutzer etwas
+        einstellen müsste."""
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return False
+        supported_features = state.attributes.get("supported_features", 0)
+        return bool(supported_features & ClimateEntityFeature.PRESET_MODE)
+
+    def _heating_preset_mode_effective(self, entity_id: str) -> bool:
+        """True, wenn für diesen Raum tatsächlich über preset_mode statt
+        über einen Zahlen-Sollwert gesteuert/angezeigt werden soll - nur,
+        wenn CONF_HEATING_USE_PRESET_MODE (Standard Ja) nicht explizit auf
+        "Nein" gesetzt UND die Entität preset_mode tatsächlich
+        unterstützt."""
+        if not self._effective(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE):
+            return False
+        return self._heating_supports_preset_mode(entity_id)
+
+    def _get_heating_preset_name(self, mode: str) -> str:
+        """Liefert den für `mode` ("comfort"/"standby"/"night"/
+        "building_protection") konfigurierten preset_mode-Namen der
+        Heizungs-Entität - leer, falls für diesen Modus (noch) kein
+        Preset-Name hinterlegt ist (siehe CONF_HEATING_PRESET_*-Konstanten
+        in const.py); _update_heating() fällt in diesem Fall für genau
+        diesen Modus auf die Sollwert-Steuerung zurück."""
+        key = {
+            "comfort": CONF_HEATING_PRESET_COMFORT,
+            "standby": CONF_HEATING_PRESET_STANDBY,
+            "night": CONF_HEATING_PRESET_NIGHT,
+            "building_protection": CONF_HEATING_PRESET_BUILDING_PROTECTION,
+        }[mode]
+        return self._effective(key, "") or ""
+
+    def _get_heating_live_preset_mode(self, entity_id: str) -> str | None:
+        """Liest den aktuell am Heizungs-Gerät eingestellten preset_mode
+        live aus - dient der Idempotenz-Prüfung in _update_heating(),
+        analog zu _get_heating_target_temperature() für die reine
+        Sollwert-Steuerung."""
+        state = self.hass.states.get(entity_id)
+        if state is None:
+            return None
+        return state.attributes.get("preset_mode")
+
+    def _get_heating_mode_from_live_preset(self, entity_id: str) -> str | None:
+        """Ordnet den live vom Gerät gemeldeten preset_mode einem unserer
+        vier Bezeichner zu (Umkehrung von _get_heating_preset_name()) -
+        liefert None, wenn das Gerät gerade einen anderen, uns nicht
+        bekannten Preset meldet (z. B. vom Nutzer direkt am Thermostat
+        gewählt) oder preset_mode (noch) nicht lesbar ist - bewusst kein
+        Rateversuch wie bei der Temperatur-Näherung."""
+        current_preset = self._get_heating_live_preset_mode(entity_id)
+        if not current_preset:
+            return None
+        for mode in ("comfort", "standby", "night", "building_protection"):
+            if self._get_heating_preset_name(mode) == current_preset:
+                return mode
+        return None
+
     def _device_entity_missing(self, entity_id: str) -> bool:
         """True, wenn die Entität komplett aus dem Zustandsautomaten
         verschwunden ist - z. B. weil ihr Integrationseintrag deaktiviert
@@ -1143,7 +1227,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         window_confirmed_open = self._is_window_confirmed_open()
         heating_presence_away = self._is_heating_presence_away()
         heating_schedule_enabled = self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)
-        if window_confirmed_open or heating_presence_away or heating_summer_mode_active:
+        # "Gebäudeschutz" (Preset, kein eigener Zahlen-Sollwert) ersetzt
+        # Standby bewusst NUR beim Pausier-Grund "Fenster offen" - bei
+        # Abwesenheit oder aktivem Sommerbetrieb bleibt es bei Standby
+        # (Nutzerentscheidung).
+        if window_confirmed_open:
+            heating_target_mode = "building_protection"
+        elif heating_presence_away or heating_summer_mode_active:
             heating_target_mode = "standby"
         elif heating_schedule_enabled:
             heating_target_mode = self._get_scheduled_heating_mode()
@@ -1778,29 +1868,38 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # Tick (spätestens alle 5 Minuten) wird erneut geprüft.
 
     async def _update_heating(self, *, target_mode: str | None) -> None:
-        """Steuert eine optionale Heizung über drei feste Sollwerte (Comfort/
-        Standby/Nacht, siehe const.py) statt eines einfachen Ein/Aus wie bei
-        Luftentfeuchter/Klimaanlage - für Heizungen ist das die übliche
-        Betriebsart. target_mode wurde in _evaluate() bereits final
-        entschieden (Priorität Fenster/Anwesenheit/Sommermodus vor
+        """Steuert eine optionale Heizung über vier feste Stufen (Comfort/
+        Standby/Nacht/Gebäudeschutz, siehe const.py) statt eines einfachen
+        Ein/Aus wie bei Luftentfeuchter/Klimaanlage - für Heizungen ist das
+        die übliche Betriebsart. target_mode wurde in _evaluate() bereits
+        final entschieden (Priorität Fenster/Anwesenheit/Sommermodus vor
         Zeitplan vor Schwellenwert-Hysterese) - None bedeutet "unverändert
         lassen" (Totzone der Schwellenwert-Hysterese oder fehlender
         Innentemperatur-Messwert, siehe _evaluate()).
 
+        Ist Preset-Steuerung wirksam (siehe _heating_preset_mode_effective())
+        UND für target_mode ein Preset-Name konfiguriert, wird
+        climate.set_preset_mode gerufen - sonst (kein Preset-Name für genau
+        diesen Modus hinterlegt, z. B. Gebäudeschutz, oder Preset-Steuerung
+        insgesamt nicht wirksam) wie bisher über climate.set_temperature
+        (Gebäudeschutz nutzt dafür ersatzweise den Standby-Sollwert, da es
+        dafür keinen eigenen Zahlen-Sollwert gibt).
+
         self._heating_state merkt sich zwar weiterhin den zuletzt
         kommandierten Modus (vermeidet unnötige Wiederholungen bei
         unverändertem target_mode), reicht als alleinige Idempotenz-Prüfung
-        aber nicht: climate.set_temperature läuft mit blocking=True, das
-        bestätigt nur, dass Home Assistant den Service-Aufruf erfolgreich
-        verarbeitet hat - bei einer instabilen Funk-/Zigbee-Anbindung kann
-        das Gerät den Befehl trotzdem nie tatsächlich übernehmen, ohne dass
-        das hier als Fehler ankommt. Deshalb zusätzlich der live vom Gerät
-        gelesene Sollwert gegen den gewünschten Wert geprüft - weicht er ab,
-        wird der Befehl erneut geschickt, auch wenn sich target_mode
+        aber nicht: sowohl climate.set_temperature als auch
+        climate.set_preset_mode laufen mit blocking=True, das bestätigt nur,
+        dass Home Assistant den Service-Aufruf erfolgreich verarbeitet hat -
+        bei einer instabilen Funk-/Zigbee-Anbindung kann das Gerät den
+        Befehl trotzdem nie tatsächlich übernehmen, ohne dass das hier als
+        Fehler ankommt. Deshalb zusätzlich der live vom Gerät gelesene
+        Sollwert/preset_mode gegen den gewünschten Wert geprüft - weicht er
+        ab, wird der Befehl erneut geschickt, auch wenn sich target_mode
         gegenüber self._heating_state nicht geändert hat. Ist der aktuelle
-        Sollwert gerade nicht lesbar (Entität kurz nicht verfügbar), bleibt
-        es beim reinen Tracker-Vergleich, um kein Kommando gegen eine
-        gerade nicht antwortende Entität zu wiederholen."""
+        Wert gerade nicht lesbar (Entität kurz nicht verfügbar), bleibt es
+        beim reinen Tracker-Vergleich, um kein Kommando gegen eine gerade
+        nicht antwortende Entität zu wiederholen."""
         entity_id = self._get_heating_entity_id()
         if not entity_id:
             return
@@ -1810,16 +1909,31 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if target_mode is None:
             return
 
+        if self._heating_preset_mode_effective(entity_id):
+            preset_name = self._get_heating_preset_name(target_mode)
+            if preset_name:
+                current_preset = self._get_heating_live_preset_mode(entity_id)
+                already_confirmed = current_preset is None or current_preset == preset_name
+                if target_mode == self._heating_state and already_confirmed:
+                    return
+                await self._set_heating_preset_mode(entity_id, preset_name)
+                self._heating_state = target_mode
+                return
+            # Kein Preset-Name für diesen einzelnen Modus hinterlegt - fällt
+            # NUR für diesen Aufruf auf die Sollwert-Steuerung unten zurück.
+
         temperature = self._effective(
             {
                 "comfort": CONF_HEATING_COMFORT_TEMP,
                 "standby": CONF_HEATING_STANDBY_TEMP,
                 "night": CONF_HEATING_NIGHT_TEMP,
+                "building_protection": CONF_HEATING_STANDBY_TEMP,
             }[target_mode],
             {
                 "comfort": DEFAULT_HEATING_COMFORT_TEMP,
                 "standby": DEFAULT_HEATING_STANDBY_TEMP,
                 "night": DEFAULT_HEATING_NIGHT_TEMP,
+                "building_protection": DEFAULT_HEATING_STANDBY_TEMP,
             }[target_mode],
         )
         current_target = self._get_heating_target_temperature(entity_id)
@@ -1877,7 +1991,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         den übergebenen Wert gegen das Schema der Ziel-Entität (u. a.
         min_temp/max_temp/target_temp_step), ein Validierungsfehler passiert
         bei blocking=False in einem unbeobachteten Hintergrund-Task und würde
-        vom try/except hier nicht abgefangen (siehe CLAUDE.md, Lektion 35)."""
+        vom try/except hier nicht abgefangen (siehe CLAUDE.md, Lektion 35).
+
+        Bewusst `except Exception` statt nur `except HomeAssistantError`
+        (Nachtrag zu Lektion 35, 0.64.x): Ein Schema-Validierungsfehler von
+        hass.services.async_call() ist KEINE HomeAssistantError-Unterklasse
+        (beobachtet als `probatio.error.MultipleInvalid: not a valid option
+        at 'data'`, unverändert durchgereicht aus homeassistant/core.py) -
+        `except HomeAssistantError` allein ließ genau diesen Fehler trotz
+        blocking=True weiterhin bis zum unbeobachteten Task durchreichen.
+        Der try-Block enthält ausschließlich diesen einen Service-Aufruf,
+        ein bewusst breiter Except-Typ maskiert hier keine anderen Fehler."""
         try:
             await self.hass.services.async_call(
                 "climate",
@@ -1885,11 +2009,36 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 {"entity_id": entity_id, "temperature": temperature},
                 blocking=True,
             )
-        except HomeAssistantError:
+        except Exception:  # noqa: BLE001 - siehe Docstring oben
             _LOGGER.warning(
                 "Konnte Sollwert für Heizung %s nicht auf %s setzen (Raum %s)",
                 entity_id,
                 temperature,
+                self._config[CONF_ROOM_NAME],
+            )
+
+    async def _set_heating_preset_mode(self, entity_id: str, preset_mode: str) -> None:
+        """Setzt den preset_mode einer Heizungs-climate-Entität - analog zu
+        _set_heating_temperature() (blocking=True, siehe Lektion 35: ein
+        Schema-Validierungsfehler, z. B. ein preset_mode, den die Entität
+        aktuell nicht in ihrer preset_modes-Liste führt, muss synchron
+        ankommen, um ihn hier abzufangen statt als "Task exception was
+        never retrieved" im Log zu landen).
+
+        `except Exception` statt nur `except HomeAssistantError` - siehe
+        Docstring von _set_heating_temperature() (Nachtrag zu Lektion 35)."""
+        try:
+            await self.hass.services.async_call(
+                "climate",
+                "set_preset_mode",
+                {"entity_id": entity_id, "preset_mode": preset_mode},
+                blocking=True,
+            )
+        except Exception:  # noqa: BLE001 - siehe Docstring oben
+            _LOGGER.warning(
+                "Konnte Preset für Heizung %s nicht auf %s setzen (Raum %s)",
+                entity_id,
+                preset_mode,
                 self._config[CONF_ROOM_NAME],
             )
 
@@ -2368,7 +2517,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         von uns nicht beobachteten Task - ein solcher Fehler landet dann
         unabhängig von jedem try/except als "Task exception was never
         retrieved" im Log, wiederholt bei jeder Neubewertung (siehe
-        Lektion 35)."""
+        Lektion 35).
+
+        Nachtrag zu Lektion 35 (0.64.x): `except Exception` statt nur
+        `except HomeAssistantError` - genau dieser Schema-Validierungsfehler
+        (`probatio.error.MultipleInvalid: not a valid option at 'data'`,
+        unverändert aus homeassistant/core.py durchgereicht) ist KEINE
+        HomeAssistantError-Unterklasse. `except HomeAssistantError` allein
+        ließ ihn trotz `blocking=True` weiterhin bis zum unbeobachteten Task
+        durchreichen - Lektion 35s eigentliches Ziel (den Fehler HIER
+        abzufangen, nicht nur synchron zu machen) wurde dadurch verfehlt,
+        ohne dass das bis zu einem tatsächlichen Log-Beleg auffiel. Der
+        try-Block enthält ausschließlich diesen einen Service-Aufruf, ein
+        bewusst breiter Except-Typ maskiert hier keine anderen Fehler."""
         data = {
             "entity_id": entity_id,
             "message": message,
@@ -2380,7 +2541,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             await self.hass.services.async_call(
                 "notify", "send_message", data, blocking=True
             )
-        except HomeAssistantError:
+        except Exception:  # noqa: BLE001 - siehe Docstring oben
             _LOGGER.warning(
                 "Konnte Push-Benachrichtigung an %s nicht senden (Raum %s) "
                 "- unterstützt diese notify-Entität ein `data`-Feld mit "

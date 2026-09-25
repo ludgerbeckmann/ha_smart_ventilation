@@ -205,6 +205,37 @@ CONF_HEATING_NIGHT_START_WEEKDAY = "heating_night_start_weekday"
 CONF_HEATING_NIGHT_END_WEEKDAY = "heating_night_end_weekday"
 CONF_HEATING_NIGHT_START_WEEKEND = "heating_night_start_weekend"
 CONF_HEATING_NIGHT_END_WEEKEND = "heating_night_end_weekend"
+# Presets/Betriebsarten statt Sollwert-Steuerung (0.64.0) - manche
+# climate-Integrationen (z. B. KNX) bilden Comfort/Standby/Nacht/
+# Gebäudeschutz nativ als preset_mode ab, nicht nur als Zahlen-Sollwert.
+# Standard True (Opt-out, nicht Opt-in): automatisch wirksam, sobald die
+# konfigurierte Heizungs-Entität preset_mode tatsächlich unterstützt
+# (siehe binary_sensor.py:_heating_supports_preset_mode()) - Installationen
+# ohne Preset-Unterstützung verhalten sich dadurch unverändert wie bisher,
+# ganz ohne dass der Nutzer etwas einstellen müsste. Explizit auf "Nein"
+# gesetzt, bleibt es bei der reinen Sollwert-Steuerung, selbst wenn die
+# Entität Presets unterstützen würde.
+CONF_HEATING_USE_PRESET_MODE = "heating_use_preset_mode"
+# Die vier tatsächlichen preset_mode-Namen der Heizungs-Entität, wie sie
+# als Auswahlliste (state.attributes["preset_modes"]) vom jeweiligen Gerät
+# gemeldet werden - diese Namen sind zwischen Herstellern/Integrationen
+# NICHT standardisiert (anders als der reine Zahlen-Sollwert, siehe
+# Lektion 40), deshalb frei konfigurierbar statt hart codiert. Leer = für
+# diesen Modus wird (weiterhin) der entsprechende Zahlen-Sollwert gesetzt,
+# nicht climate.set_preset_mode aufgerufen - erlaubt eine teilweise
+# Konfiguration (z. B. nur Gebäudeschutz als Preset, der Rest über
+# Sollwerte). "Nacht" wird dem Nutzer als "Eco (Nacht)" angezeigt, da
+# dieser Modus auf vielen Geräten "Eco" genannt wird, aber - wie der Name
+# hier weiterhin sagt - über Nacht aktiviert wird.
+CONF_HEATING_PRESET_COMFORT = "heating_preset_comfort"
+CONF_HEATING_PRESET_STANDBY = "heating_preset_standby"
+CONF_HEATING_PRESET_NIGHT = "heating_preset_night"
+# Vierter Zustand, der bei der reinen Sollwert-Steuerung nicht existiert
+# (kein eigener Zahlen-Sollwert dafür) - ersetzt Standby ausschließlich,
+# solange das Fenster bestätigt offen ist (nicht bei Abwesenheit/
+# Sommerbetrieb, die bleiben Standby). Ohne konfigurierten Preset-Namen
+# fällt _update_heating() für diesen Fall auf den Standby-Sollwert zurück.
+CONF_HEATING_PRESET_BUILDING_PROTECTION = "heating_preset_building_protection"
 # Vorhersage-Temperatur, ab der (+/- CONF_TEMP_MARGIN Hysterese) die
 # Sommer-/Winterbetrieb-Automatik den unter CONF_SUMMER_MODE_SWITCH_ENTITY
 # gewählten Schalter ein-/ausschaltet. Bewusst NUR global auswertbar, KEIN
@@ -328,6 +359,9 @@ DEFAULT_HEATING_STANDBY_TEMP = 17.0
 
 # Tiefste der drei Heizungsstufen - siehe CONF_HEATING_NIGHT_TEMP oben.
 DEFAULT_HEATING_NIGHT_TEMP = 16.0
+
+# Opt-out (nicht Opt-in) - siehe CONF_HEATING_USE_PRESET_MODE oben.
+DEFAULT_HEATING_USE_PRESET_MODE = True
 
 # Standard-Zeitfenster für den optionalen Heizungs-Zeitplan (siehe
 # CONF_HEATING_SCHEDULE_ENABLED oben) - Comfort tagsüber, Nacht-Absenkung

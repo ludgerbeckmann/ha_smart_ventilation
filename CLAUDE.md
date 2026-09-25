@@ -2329,6 +2329,109 @@ beim Verarbeiten des `user_input` unbemerkt verworfen. Ein gezielter
 Stellen zuverlässiger auf als das Nachvollziehen des Kontrollflusses aus
 dem Kopf.
 
+**50. Heizungs-Presets (KNX & Co.) statt Sollwert - bewusst als Opt-out
+(Standard an), nicht Opt-in, mit Laufzeit-Fähigkeitsprüfung als
+Sicherheitsnetz (0.64.0).** Nutzerwunsch: "Da dies über KNX so gehandhabt
+wird, bitte definitiv diese Presets anzeigen und auch steuern und nicht
+direkt die Temperatur." - direkte Folge einer vorherigen Frage, warum ein
+Home-Assistant-seitiges "Gebäudeschutz"-Preset in dieser Integration nicht
+auftaucht (Antwort: `preset_mode` wird bewusst nie gelesen/gesetzt, siehe
+Lektion 40 - Preset-Namen sind herstellerabhängig, ein reiner Zahlen-
+Sollwert ist portabler). Drei Rückfragen klärten den Umfang: (1) Opt-in
+oder Opt-out - der Nutzer wählte explizit **Opt-out** (Standard Ja, mit
+Möglichkeit zum Abschalten), nicht das von mir empfohlene Opt-in (Standard
+Nein). Das barg ein Rückwärtskompatibilitäts-Risiko, das im ursprünglichen
+Vorschlag nicht vorgesehen war: Ein globaler Standard "Ja" hätte für JEDE
+bestehende Installation ohne Preset-Unterstützung am Gerät sofort einen
+`climate.set_preset_mode`-Aufruf gegen eine Entität ausgelöst, die das
+gar nicht kann. Fix dafür: `_heating_preset_mode_effective()` prüft vor
+jeder Verwendung zusätzlich zur Einstellung selbst, ob die konkrete
+Heizungs-Entität `preset_mode` überhaupt unterstützt
+(`ClimateEntityFeature.PRESET_MODE` in `supported_features`) - nur dann
+greift der Opt-out-Standard tatsächlich; ohne Unterstützung bleibt es
+automatisch bei der bisherigen Sollwert-Steuerung, ganz ohne dass eine
+bestehende Installation etwas einstellen müsste. (2) Die Zuordnung der
+vier Preset-Namen (Komfort/Standby/Nacht/Gebäudeschutz) zu den
+herstellerabhängigen `preset_mode`-Strings - Kombination aus beidem: vier
+Dropdown-Felder mit den tatsächlich von der gewählten Heizungs-Entität
+gemeldeten `preset_modes`, automatisch vorbelegt per Schlüsselwort-Suche
+(z. B. "eco"/"night"/"nacht" für die Nacht-Stufe), aber frei editierbar
+(`custom_value=True`) für den Fall einer falschen Vermutung oder einer
+gerade nicht erreichbaren Entität. (3) "Gebäudeschutz" (ein bei Home
+Assistant/KNX gebräuchlicher vierter Zustand ohne eigenen Zahlen-Sollwert
+in dieser Integration) sollte NICHT wie zunächst vorgeschlagen alle drei
+bestehenden Pausier-Gründe (Fenster offen/Abwesenheit/Sommerbetrieb)
+ersetzen, sondern ausschließlich "Fenster offen" - Abwesenheit und
+Sommerbetrieb bleiben bewusst Standby. Ohne hinterlegten Preset-Namen für
+einen einzelnen Zustand (z. B. Gebäudeschutz gar nicht konfiguriert) fällt
+`_update_heating()` für GENAU diesen Aufruf auf die Sollwert-Steuerung
+zurück (Gebäudeschutz nutzt dafür ersatzweise den Standby-Sollwert, da es
+keinen eigenen gibt) - eine teilweise Konfiguration (z. B. nur
+Gebäudeschutz als Preset, der Rest über Sollwerte) bleibt dadurch möglich.
+
+Bei aktiver Preset-Steuerung wird auch die Anzeige (`heizung_modus`)
+umgestellt: statt der bisherigen Näherung "welchem der drei Sollwerte
+liegt der aktuelle Zahlen-Sollwert am nächsten" (Lektion 19/33/40) wird
+direkt der live vom Gerät gemeldete `preset_mode` zurück auf einen unserer
+vier Bezeichner gemappt - liefert ehrlich `None`, wenn das Gerät gerade
+einen uns unbekannten Preset meldet, statt geraten zu werden. Lektion: Bei
+einer expliziten Nutzer-Entscheidung gegen die empfohlene, rückwärts-
+kompatiblere Variante (hier: Opt-out statt Opt-in) muss das Sicherheitsnetz
+dafür an einer TIEFEREN Stelle eingebaut werden (hier: eine zur Laufzeit
+geprüfte Geräte-Fähigkeit, nicht nur eine Konfigurationsoption) - die
+Rückwärtskompatibilität für Installationen, die das neue Verhalten gar
+nicht wollen/können, darf nicht allein von der (hier bewusst permissiv
+gewählten) Standardeinstellung abhängen.
+
+**Nachtrag (0.64.x):** Direkt im Anschluss meldete der Nutzer eine
+scheinbar unabhängige Beobachtung (Heizung in einem Raum bleibt trotz
+aktivem Sommerbetrieb auf Comfort-Sollwert stehen) und lieferte dazu ein
+Home-Assistant-Log. Die Analyse deckte einen unabhängigen, aber
+strukturell verwandten Bug auf - siehe Lektion 35, Nachtrag.
+
+**35 (Nachtrag), 0.64.x: `except HomeAssistantError` fängt einen Schema-
+Validierungsfehler von `hass.services.async_call()` NICHT ab - Lektion
+35s eigentliches Ziel wurde dadurch trotz des `blocking=True`-Fixes
+verfehlt, ohne dass das bis zu einem echten Log-Beleg auffiel.** Im vom
+Nutzer hochgeladenen Log fand sich weiterhin exakt die in Lektion 35
+beschriebene Fehlermeldung (`probatio.error.MultipleInvalid: not a valid
+option at 'data'`) als **"Task exception was never retrieved"** - also
+genau das Symptom, das der Lektion-35-Fix (blocking=True statt
+blocking=False) beheben sollte. Ursache: Der Schema-Validierungsfehler
+wird von `homeassistant/core.py` unverändert durchgereicht, ohne in eine
+`HomeAssistantError`-Unterklasse gewrappt zu werden - er ist schlicht kein
+`HomeAssistantError`. `except HomeAssistantError:` lief also seit Lektion
+35 immer schon ins Leere für GENAU den Fehlerfall, den dieser Fix eigentlich
+sollte abfangen können (Service-/Entity-Existenzfehler, die synchron VOR
+der Schema-Validierung geprüft werden, fängt er weiterhin korrekt ab -
+deshalb fiel das nicht früher auf). `blocking=True` war weiterhin richtig
+und nötig (bringt den Fehler synchron in den `await`, verhindert den
+unbeobachteten Task) - nur der Except-Typ war falsch. Fix: an allen drei
+betroffenen Stellen (`_send_mobile_push()`, `_set_heating_temperature()`,
+`_set_heating_preset_mode()` - alle drei mit `blocking=True` und jeweils
+GENAU einem Service-Aufruf im try-Block) `except HomeAssistantError:` zu
+`except Exception:` verbreitert. Bewusst nicht auf einen Import der
+tatsächlichen Exception-Klasse (`probatio.error.MultipleInvalid`)
+gesetzt - das wäre ein Zugriff auf eine interne Implementierungsdetail
+von Home Assistants Service-Aufruf-Schicht, kein für Custom-Integrationen
+vorgesehener, stabiler Import. Ein derart breiter Except-Typ ist hier
+vertretbar, weil der try-Block ausschließlich den einen Service-Aufruf
+enthält - er kann keine andere, eigene Fehlerursache verschleiern. Die
+übrigen, mit `blocking=False` laufenden Service-Aufrufe (Luftentfeuchter/
+Klimaanlage/Sommermodus-Schalter/Fenstersperre/TTS-Pause) sind von
+diesem konkreten Fix bewusst unberührt geblieben - dort passiert eine
+Schema-Validierung ohnehin in einem unbeobachteten Hintergrund-Task, egal
+welcher Except-Typ verwendet wird (unveränderter, akzeptierter
+Lektion-35-Rest-Risiko). Lektion: Ein Fix, der einen Fehler erfolgreich
+"synchron macht" (hier: `blocking=True`), ist nur die halbe Miete, wenn
+der dafür verwendete Except-Typ nie gegen die tatsächliche Exception-Klasse
+verifiziert wurde - eine als erledigt dokumentierte Lektion kann ihr
+eigentliches Ziel verfehlt haben, ohne dass Tests (hier: `py_compile`,
+Import-Checks) das aufdecken können, weil der Code syntaktisch korrekt
+bleibt und nur zur Laufzeit, mit dem echten Fehlerfall, sichtbar wird -
+ein vom Nutzer bereitgestelltes Home-Assistant-Log war hier das einzige
+Mittel, das zuverlässig aufzudecken.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

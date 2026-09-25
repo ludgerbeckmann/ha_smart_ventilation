@@ -35,9 +35,14 @@ from .const import (
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_HEATING_PRESET_BUILDING_PROTECTION,
+    CONF_HEATING_PRESET_COMFORT,
+    CONF_HEATING_PRESET_NIGHT,
+    CONF_HEATING_PRESET_STANDBY,
     CONF_HEATING_SCHEDULE_ENABLED,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
+    CONF_HEATING_USE_PRESET_MODE,
     CONF_HEATING_USE_TEMP_SOURCE,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -106,6 +111,7 @@ from .const import (
     DEFAULT_HEATING_NIGHT_TEMP,
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
+    DEFAULT_HEATING_USE_PRESET_MODE,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
@@ -371,6 +377,63 @@ def _time_override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker
     return marker, selector.TimeSelector()
 
 
+# Schlüsselwörter zum automatischen Vorschlagen eines preset_mode-Namens
+# aus der von der Heizungs-Entität tatsächlich gemeldeten preset_modes-
+# Liste (siehe _heating_preset_selector()) - rein case-insensitive
+# Teilstring-Suche, kein Anspruch auf Vollständigkeit für jeden Hersteller.
+# "Nacht" wird dem Nutzer als "Eco (Nacht)" angezeigt (viele Geräte nennen
+# diese Stufe "Eco"), daher auch hier zuerst nach "eco" gesucht.
+_HEATING_PRESET_GUESS_KEYWORDS = {
+    CONF_HEATING_PRESET_COMFORT: ("comfort", "komfort", "home"),
+    CONF_HEATING_PRESET_STANDBY: ("standby",),
+    CONF_HEATING_PRESET_NIGHT: ("eco", "night", "nacht", "economy", "sleep"),
+    CONF_HEATING_PRESET_BUILDING_PROTECTION: (
+        "building",
+        "protection",
+        "frost",
+        "gebäude",
+    ),
+}
+
+
+def _heating_preset_selector(
+    key: str, defaults: dict | None, available_presets: list[str]
+) -> tuple[vol.Marker, object]:
+    """Für RAUM-Einstellungen: echt optional (leer = dieser Modus wird
+    weiterhin über den Zahlen-Sollwert statt climate.set_preset_mode
+    gesteuert, siehe binary_sensor.py:_update_heating()). Bietet die
+    tatsächlich von der aktuell gewählten Heizungs-Entität gemeldeten
+    preset_modes als Dropdown an (zusätzlich frei editierbar über
+    custom_value, falls die Entität gerade nicht erreichbar ist oder ein
+    abweichender Wert nötig ist) und schlägt bei noch keinem gespeicherten
+    Wert per Schlüsselwort-Suche einen passenden Vorschlag vor.
+
+    Nutzt bewusst KEIN default= (Lektion 28), analog zu
+    _time_override_selector()."""
+    defaults = defaults or {}
+    current = defaults.get(key)
+    if current in (None, ""):
+        for keyword in _HEATING_PRESET_GUESS_KEYWORDS[key]:
+            match = next(
+                (p for p in available_presets if keyword in p.lower()), None
+            )
+            if match:
+                current = match
+                break
+    kwargs = {}
+    if current not in (None, ""):
+        kwargs["description"] = {"suggested_value": current}
+    marker = vol.Optional(key, **kwargs)
+    field_selector = selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=available_presets,
+            custom_value=True,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+    return marker, field_selector
+
+
 def _global_config(hass) -> dict:
     """Liefert die Daten der globalen Einstellungen (falls vorhanden) - via
     hass.data, genau wie binary_sensor.py:_global_config()/diagnostics.py
@@ -405,11 +468,20 @@ def _room_override_placeholders(hass) -> dict[str, str]:
         (CONF_PERSISTENT_ENABLED, False),
         (CONF_HUMIDITY_PRIORITY_OVER_DURATION, DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION),
         (CONF_HEATING_SCHEDULE_ENABLED, False),
+        (CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
     ):
         value = global_data.get(key)
         if value is None:
             value = default_value
         placeholders[f"global_{key}"] = "Ja" if value else "Nein"
+    for key in (
+        CONF_HEATING_PRESET_COMFORT,
+        CONF_HEATING_PRESET_STANDBY,
+        CONF_HEATING_PRESET_NIGHT,
+        CONF_HEATING_PRESET_BUILDING_PROTECTION,
+    ):
+        value = global_data.get(key)
+        placeholders[f"global_{key}"] = value if value else "keiner"
     targets = global_data.get(CONF_MOBILE_TARGETS) or []
     target_entities = [
         t.get(CONF_MOBILE_NOTIFY_ENTITY) for t in targets if t.get(CONF_MOBILE_NOTIFY_ENTITY)
@@ -584,6 +656,7 @@ def _build_room_schema(
     defaults: dict | None = None,
     area_entities: set[str] | None = None,
     show_area_selector: bool = False,
+    hass=None,
 ) -> vol.Schema:
     """Formular für einen Raum: Raumname, danach drei Abschnitte in dieser
     Reihenfolge - 'Sensoren & Geräte', 'Benachrichtigungen & Anwesenheit',
@@ -735,6 +808,49 @@ def _build_room_schema(
         area_entities, HEATING_DOMAINS, defaults.get(CONF_HEATING_ENTITY)
     )
 
+    # Für die vier Preset-Auswahlfelder unten: die tatsächlich konfigurierte
+    # Heizungs-Entität live auflösen (analog zu binary_sensor.py:
+    # _get_heating_entity_id() - hier ohne Entitäts-Instanz, daher separat
+    # nachgebildet) und deren gemeldete preset_modes als Dropdown-Optionen
+    # lesen. Ohne hass (sollte in der Praxis nicht vorkommen) oder ohne
+    # (noch) gewählte/erreichbare Heizungs-Entität bleibt die Liste leer -
+    # die Felder bleiben dann frei editierbar (custom_value), nur ohne
+    # Dropdown-Vorschläge.
+    if defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False):
+        _heating_entity_for_presets = defaults.get(CONF_TEMP_SOURCE_ENTITY)
+        if _heating_entity_for_presets and _heating_entity_for_presets.split(".")[0] != "climate":
+            _heating_entity_for_presets = None
+    else:
+        _heating_entity_for_presets = defaults.get(CONF_HEATING_ENTITY)
+    available_heating_presets: list[str] = []
+    if hass is not None and _heating_entity_for_presets:
+        heating_state = hass.states.get(_heating_entity_for_presets)
+        if heating_state is not None:
+            available_heating_presets = list(
+                heating_state.attributes.get("preset_modes") or []
+            )
+    heating_use_preset_marker, heating_use_preset_sel = _tri_state_bool_selector(
+        CONF_HEATING_USE_PRESET_MODE,
+        defaults,
+        yes_label="Ja – Presets steuern/anzeigen, sofern vom Gerät unterstützt",
+        no_label="Nein – ausschließlich über Zahlen-Sollwert",
+    )
+    heating_preset_comfort_marker, heating_preset_comfort_sel = _heating_preset_selector(
+        CONF_HEATING_PRESET_COMFORT, defaults, available_heating_presets
+    )
+    heating_preset_standby_marker, heating_preset_standby_sel = _heating_preset_selector(
+        CONF_HEATING_PRESET_STANDBY, defaults, available_heating_presets
+    )
+    heating_preset_night_marker, heating_preset_night_sel = _heating_preset_selector(
+        CONF_HEATING_PRESET_NIGHT, defaults, available_heating_presets
+    )
+    (
+        heating_preset_building_protection_marker,
+        heating_preset_building_protection_sel,
+    ) = _heating_preset_selector(
+        CONF_HEATING_PRESET_BUILDING_PROTECTION, defaults, available_heating_presets
+    )
+
     # "Sensoren & Geräte" - ein gemeinsamer Abschnitt für Mess-Entitäten UND
     # optional automatisch gesteuerte Geräte (siehe Docstring oben): eine
     # climate-Entität kann beide Rollen gleichzeitig ausfüllen (Temperatur-
@@ -772,6 +888,11 @@ def _build_room_schema(
                         ),
                     )
                 ),
+                heating_use_preset_marker: heating_use_preset_sel,
+                heating_preset_comfort_marker: heating_preset_comfort_sel,
+                heating_preset_standby_marker: heating_preset_standby_sel,
+                heating_preset_night_marker: heating_preset_night_sel,
+                heating_preset_building_protection_marker: heating_preset_building_protection_sel,
                 _entity_marker(
                     CONF_HUMIDITY_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1046,6 +1167,25 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             default=defaults.get(CONF_HEATING_SCHEDULE_ENABLED, False),
         )
     ] = selector.BooleanSelector()
+    parameter_fields[
+        vol.Required(
+            CONF_HEATING_USE_PRESET_MODE,
+            default=defaults.get(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
+        )
+    ] = selector.BooleanSelector()
+    # Reine Freitextfelder als raumweiter Standard - anders als im
+    # Raum-Formular (siehe _heating_preset_selector()) gibt es hier keine
+    # konkrete Entität, deren preset_modes sich zur Vorbelegung auslesen
+    # ließen (jeder Raum kann eine andere Heizungs-Entität haben).
+    for key in (
+        CONF_HEATING_PRESET_COMFORT,
+        CONF_HEATING_PRESET_STANDBY,
+        CONF_HEATING_PRESET_NIGHT,
+        CONF_HEATING_PRESET_BUILDING_PROTECTION,
+    ):
+        parameter_fields[_entity_marker(key, defaults, required=False)] = (
+            selector.TextSelector()
+        )
 
     return vol.Schema(
         {
@@ -1345,7 +1485,9 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="room",
-            data_schema=_build_room_schema(defaults, area_entities=area_entities),
+            data_schema=_build_room_schema(
+                defaults, area_entities=area_entities, hass=self.hass
+            ),
             errors=errors,
             description_placeholders=_room_override_placeholders(self.hass),
         )
@@ -1441,7 +1583,7 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="room",
             data_schema=_build_room_schema(
-                defaults, area_entities=area_entities, show_area_selector=True
+                defaults, area_entities=area_entities, show_area_selector=True, hass=self.hass
             ),
             errors=errors,
             description_placeholders=_room_override_placeholders(self.hass),
