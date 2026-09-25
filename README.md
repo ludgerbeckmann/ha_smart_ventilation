@@ -81,12 +81,8 @@ Entität für Dashboards/Automationen).
      Themen überschneiden sich: eine `climate`-Entität kann sowohl
      Temperatur-Quelle als auch Heizung sein, siehe unten):
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
-       `input_number`-Entität
-     - **Temperatur-Attribut**: immer sichtbar, vorausgewählt ist
-       `current_temperature` (Auswahl aus Liste oder eigener Text möglich).
-       Wird nur ausgewertet, wenn die gewählte Entität tatsächlich eine
-       `climate`-Entität ist – bei `sensor`/`number`/`input_number` wird der
-       Wert ignoriert und stattdessen direkt der Entitätszustand verwendet.
+       `input_number`-Entität (das zugehörige "Temperatur-Attribut" steht
+       im Abschnitt "Erweitert" weiter unten)
      - **Temperaturquelle auch fürs Heizen verwenden** (Checkbox, Standard:
        aus): verwendet automatisch die oben gewählte Innentemperatur-Quelle
        als Heizungs-Gerät, statt sie zusätzlich im Feld "Heizung" separat
@@ -112,7 +108,7 @@ Entität für Dashboards/Automationen).
      - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
        einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
        unter "Logik im Detail". Die zugehörige Anstiegs-Schwelle findet
-       sich weiter unten im Abschnitt "Parameter"
+       sich im Abschnitt "Erweitert" weiter unten
      - Optional: CO2 (`sensor`-Entität mit ppm-Wert) – ohne Außenluft-
        Vergleich, da Außenluft praktisch immer weit unter jeder sinnvollen
        Innenschwelle liegt
@@ -149,13 +145,9 @@ Entität für Dashboards/Automationen).
        Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
        dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
        Lüftungs- oder Geräte-Steuerung selbst
-     - **Klimaanlage**: eine `climate`- oder `switch`-Entität
-     - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**:
-       optionale Raum-Overrides der in "- Smart Climate Optionen -"
-       hinterlegten Werte (der Leistungssensor selbst ist nur dort
-       hinterlegbar, nicht mehr pro Raum) - auch hier zeigt der
-       Hinweistext den aktuell wirksamen globalen Wert an. Gilt nur für
-       Luftentfeuchter/Klimaanlage, nicht für die Heizung
+     - **Klimaanlage**: eine `climate`- oder `switch`-Entität (die
+       zugehörige Mindest-Einspeiseleistung/Verzögerung bis Abschalten
+       steht im Abschnitt "Erweitert" weiter unten)
    - **Abschnitt "Benachrichtigungen & Anwesenheit"** (früher
      "Benachrichtigungsmethoden" - umbenannt, da hier jetzt auch die
      Anwesenheits-Entitäten für die Heizungs-Pausierung stehen):
@@ -214,13 +206,11 @@ Entität für Dashboards/Automationen).
      Hinweistext unter jedem dieser Felder zusätzlich den aktuell
      wirksamen globalen Wert an, z. B. "Aktuell global: 23.0 °C"):
      - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
-       und CO2 sowie Toleranz-Marge, Frostschutz-Grenze, Debounce-Zeit
-       Frostschutz, Hitzeschutz-Grenze, Winter-Schwelle und
-       Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
-       (das Erinnerungsintervall steht jetzt im Abschnitt "Benachrichtigungen
-       & Anwesenheit", siehe oben)
-     - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
-       Abschnitt "Sensoren & Geräte" aktiviert ist)
+       und CO2 sowie Frostschutz-Grenze, Hitzeschutz-Grenze, Winter-Schwelle
+       und Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+       (das Erinnerungsintervall steht im Abschnitt "Benachrichtigungen
+       & Anwesenheit", weitere Fein-Tuning-Werte im Abschnitt "Erweitert",
+       jeweils siehe oben/unten)
      - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
        **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
        relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
@@ -233,6 +223,23 @@ Entität für Dashboards/Automationen).
        Standby. Deaktiviert (Standard) gilt weiterhin die reine
        Schwellenwert-Logik oben. Details siehe "Geräte-Steuerung" weiter
        unten
+   - **Abschnitt "Erweitert"** (optional, standardmäßig eingeklappt – seltener
+     benötigte Fein-Tuning-Werte, ebenfalls als Raum-Override mit
+     "Aktuell global: ..."-Hinweistext):
+     - **Temperatur-Attribut**: vorausgewählt ist `current_temperature`
+       (Auswahl aus Liste oder eigener Text möglich). Wird nur ausgewertet,
+       wenn die oben im Abschnitt "Sensoren & Geräte" gewählte
+       Innentemperatur-Entität tatsächlich eine `climate`-Entität ist – bei
+       `sensor`/`number`/`input_number` wird der Wert ignoriert und
+       stattdessen direkt der Entitätszustand verwendet
+     - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
+       Winter-Höchstdauer** und **Anstiegs-Schwelle Duscherkennung**
+       (letztere nur relevant, wenn die Duscherkennung im Abschnitt
+       "Sensoren & Geräte" aktiviert ist)
+     - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**: gilt
+       nur für Luftentfeuchter/Klimaanlage, nicht für die Heizung (der
+       Leistungssensor selbst ist nur in "- Smart Climate Optionen -"
+       hinterlegbar, nicht pro Raum)
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
@@ -247,17 +254,17 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 **Bearbeiten:** Beim Eintrag "- Smart Climate Optionen -" auf
 **Konfigurieren** (Zahnrad-Symbol) klicken. Ganz oben im Formular steht die
 Checkbox **"Auf Standardwerte zurücksetzen"**: aktiviert und gespeichert,
-setzt sie sämtliche Schwellenwerte im Abschnitt "Parameter", das
-Erinnerungsintervall und sämtliche Benachrichtigungstexte im Abschnitt
-"Benachrichtigungen" auf die einprogrammierten Standardwerte zurück -
-unabhängig davon, was gerade in diesen Feldern eingetragen ist. Ausgewählte
-Entitäten (Sensoren, TTS,
+setzt sie sämtliche Schwellenwerte in den Abschnitten "Parameter" und
+"Erweitert", das Erinnerungsintervall und sämtliche Benachrichtigungstexte
+im Abschnitt "Benachrichtigungen" auf die einprogrammierten Standardwerte
+zurück - unabhängig davon, was gerade in diesen Feldern eingetragen ist.
+Ausgewählte Entitäten (Sensoren, TTS,
 Leistungssensor, App-Benachrichtigungsziele), der Sprachausgabe-Modus und die
 Benachrichtigungsmethoden bleiben davon unberührt. Einzelne Felder lassen
 sich weiterhin wie gewohnt zurücksetzen, indem man nur sie leert und
 speichert (siehe unten) - die Checkbox ist für den Fall gedacht, dass
 gleich mehrere oder alle Werte auf einmal zurückgesetzt werden sollen.
-Danach folgen drei Abschnitte (aktuell **testweise** alle standardmäßig
+Danach folgen vier Abschnitte (aktuell **testweise** alle standardmäßig
 eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 
 **Abschnitt "Sensoren"**:
@@ -279,11 +286,8 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 - **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
 - **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
-  im Raum-Formular auswählbar
-- **Mindest-Einspeiseleistung** + **Verzögerung bis Abschalten**:
-  Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
-  Werte selbst bleiben pro Raum überschreibbar, siehe Abschnitt
-  "Sensoren & Geräte" im Raum-Formular)
+  im Raum-Formular auswählbar (die zugehörige Mindest-Einspeiseleistung/
+  Verzögerung bis Abschalten steht im Abschnitt "Erweitert" weiter unten)
 - **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
   Standard, pro Raum überschreibbar
 - **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
@@ -294,11 +298,8 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   direkter `weather.get_forecasts`-Service-Aufruf durch diese Integration
   nötig, siehe "Geräte-Steuerung" unten). Steuert damit automatisch den
   unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität
-  bleibt der Schalter rein manuell bedienbar
-- **Vorhersage-Attribut** (optional): Name eines Attributs der obigen
-  Entität, aus dem der Vorhersagewert gelesen wird (z. B. `temperature`).
-  Leer = state der Entität direkt als Zahl lesen (z. B. bei einem
-  Template-Sensor, dessen state selbst schon der Vorhersagewert ist)
+  bleibt der Schalter rein manuell bedienbar (das zugehörige
+  Vorhersage-Attribut steht im Abschnitt "Erweitert" weiter unten)
 - **Sommer-/Winterbetrieb-Schalter** (optional, nur global): eine bereits
   **vorhandene** `switch`-Entität - wird **nicht** von dieser Integration
   angelegt, sondern nur aktiv gesteuert (analog zu Luftentfeuchter/
@@ -314,11 +315,10 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  CO2-Schwellen zum Öffnen/Schließen, der Anstiegs-Schwelle für die
-  Duscherkennung (die Aktivierung selbst ist reine Raumeinstellung, siehe
-  oben) sowie der Heizungs-Schwelle und dem Comfort-/Standby-/Nacht-Sollwert
-  (die Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
-  Raumeinstellung, siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
+  CO2-Schwellen zum Öffnen/Schließen sowie der Heizungs-Schwelle und dem
+  Comfort-/Standby-/Nacht-Sollwert (die Heizungs-Entität selbst ist wie
+  Luftentfeuchter/Klimaanlage reine Raumeinstellung, siehe Abschnitt
+  "Sensoren & Geräte" im Raum-Formular)
 - **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
   Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
   getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
@@ -331,6 +331,23 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   unterschiedliche Entscheidungen für denselben gemeinsamen Schalter
   treffen. Nur wirksam, wenn oben sowohl eine Vorhersagequelle als auch der
   zu steuernde Schalter konfiguriert sind
+
+**Abschnitt "Erweitert"** (seltener benötigte Fein-Tuning-Werte als
+raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
+überschreibbar):
+- **Vorhersage-Attribut** (optional): Name eines Attributs der oben
+  hinterlegten Sommermodus-Vorhersagequelle, aus dem der Vorhersagewert
+  gelesen wird (z. B. `temperature`). Leer = state der Entität direkt als
+  Zahl lesen (z. B. bei einem Template-Sensor, dessen state selbst schon
+  der Vorhersagewert ist)
+- **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
+  Winter-Höchstdauer** (hier "Luftfeuchtigkeit/CO2 haben Vorrang vor
+  Winter-Höchstdauer" genannt) und **Anstiegs-Schwelle Duscherkennung**
+  (die Aktivierung der Duscherkennung selbst ist reine Raumeinstellung)
+- **Mindest-Einspeiseleistung** + **Verzögerung bis Abschalten**:
+  Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
+  Werte selbst bleiben pro Raum überschreibbar, siehe Abschnitt
+  "Erweitert" im Raum-Formular)
 
 **Abschnitt "Benachrichtigungen"** (früher "Benachrichtigungstexte" -
 umbenannt, da hier jetzt auch das Erinnerungsintervall steht, direkt neben

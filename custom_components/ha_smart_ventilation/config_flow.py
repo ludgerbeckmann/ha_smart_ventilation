@@ -160,6 +160,11 @@ SECTION_NOTIFY = "notify"
 SECTION_SENSORS = "sensors"
 SECTION_PARAMETERS = "parameters"
 SECTION_MESSAGES = "messages"
+# Selten geänderte Fein-Tuning-Werte (Debounce/Marge/Prioritäts-Tie-Break/
+# Temperatur-Attribut/Leistungssensor-Feinjustierung) - bewusst NICHT der
+# Heizungs-Zeitplan (Umschalter/Zeitfenster/Nachttemperatur) und NICHT der
+# TTS-Wiedergabemodus, beide bleiben an ihrer bisherigen Stelle.
+SECTION_ADVANCED = "advanced"
 
 # Alle im Raum-Formular über _entity_marker(..., required=False) erzeugten
 # EntitySelector-Felder (siehe _build_room_schema). Anders als Zahlen-/
@@ -237,12 +242,17 @@ _TIME_FIELDS = {
     CONF_HEATING_NIGHT_END_WEEKEND: DEFAULT_HEATING_NIGHT_END_WEEKEND,
 }
 
-# Die achtzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
+# Die fünfzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
 # power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
 # hierher. CONF_REMINDER_INTERVAL bewusst NICHT hier - steht wie beim Raum
 # im Benachrichtigungs-Abschnitt (dort direkt neben dem zugehörigen
 # Erinnerungstext msg_reminder), nicht bei den übrigen Schwellenwerten.
+# CONF_TEMP_MARGIN/CONF_FROST_DEBOUNCE_MINUTES/CONF_SHOWER_RISE_THRESHOLD
+# ebenfalls bewusst NICHT hier - alle drei stehen wie beim Raum im neuen
+# Abschnitt "Erweitert" (siehe SECTION_ADVANCED), dafür einzeln über
+# _threshold_selector() erzeugt statt über diese generische Liste (analog
+# zu volume_marker/power_marker/grace_marker/reminder_marker).
 _CORE_PARAMETER_KEYS = (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TEMP_THRESHOLD_CLOSE,
@@ -250,13 +260,10 @@ _CORE_PARAMETER_KEYS = (
     CONF_HUMIDITY_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
     CONF_CO2_THRESHOLD_CLOSE,
-    CONF_TEMP_MARGIN,
     CONF_FROST_PROTECTION_TEMP,
-    CONF_FROST_DEBOUNCE_MINUTES,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
-    CONF_SHOWER_RISE_THRESHOLD,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_STANDBY_TEMP,
@@ -475,7 +482,13 @@ def _flatten_step_data(data: dict) -> dict:
     """Führt die verschachtelten Sections wieder zu einem flachen Dict
     zusammen. Sections sind nur eine visuelle Gruppierung im Formular -
     intern arbeiten wir weiterhin mit einem flachen dict."""
-    section_keys = (SECTION_NOTIFY, SECTION_SENSORS, SECTION_PARAMETERS, SECTION_MESSAGES)
+    section_keys = (
+        SECTION_NOTIFY,
+        SECTION_SENSORS,
+        SECTION_PARAMETERS,
+        SECTION_MESSAGES,
+        SECTION_ADVANCED,
+    )
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
         flat.update(data.get(key) or {})
@@ -744,18 +757,6 @@ def _build_room_schema(
                     )
                 ),
                 vol.Optional(
-                    CONF_TEMP_ATTRIBUTE,
-                    default=defaults.get(
-                        CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
-                    ),
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=COMMON_TEMP_ATTRIBUTES,
-                        custom_value=True,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-                vol.Optional(
                     CONF_HEATING_USE_TEMP_SOURCE,
                     default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
                 ): selector.BooleanSelector(),
@@ -848,8 +849,6 @@ def _build_room_schema(
                         **({"include_entities": ac_include} if ac_include else {}),
                     )
                 ),
-                power_marker: power_sel,
-                grace_marker: grace_sel,
             }
         ),
         {"collapsed": True},
@@ -934,14 +933,10 @@ def _build_room_schema(
                 hum_close_marker: hum_close_sel,
                 co2_open_marker: co2_open_sel,
                 co2_close_marker: co2_close_sel,
-                margin_marker: margin_sel,
                 frost_marker: frost_sel,
-                frost_debounce_marker: frost_debounce_sel,
                 heat_marker: heat_sel,
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
-                priority_marker: priority_sel,
-                shower_threshold_marker: shower_threshold_sel,
                 heating_threshold_marker: heating_threshold_sel,
                 heating_comfort_marker: heating_comfort_sel,
                 heating_standby_marker: heating_standby_sel,
@@ -951,6 +946,36 @@ def _build_room_schema(
                     marker: sel
                     for marker, sel in time_field_markers.values()
                 },
+            }
+        ),
+        {"collapsed": True},
+    )
+
+    # "Erweitert" - selten geänderte Fein-Tuning-Werte (siehe SECTION_ADVANCED
+    # oben) sowie das Temperatur-Attribut, das nur bei einer climate-Quelle
+    # überhaupt greift. Bewusst NICHT hier: Heizungs-Zeitplan (bleibt im
+    # Abschnitt "Parameter") und TTS-Wiedergabemodus (nur global, bleibt dort).
+    fields[vol.Required(SECTION_ADVANCED)] = section(
+        vol.Schema(
+            {
+                vol.Optional(
+                    CONF_TEMP_ATTRIBUTE,
+                    default=defaults.get(
+                        CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
+                    ),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=COMMON_TEMP_ATTRIBUTES,
+                        custom_value=True,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                margin_marker: margin_sel,
+                frost_debounce_marker: frost_debounce_sel,
+                priority_marker: priority_sel,
+                shower_threshold_marker: shower_threshold_sel,
+                power_marker: power_sel,
+                grace_marker: grace_sel,
             }
         ),
         {"collapsed": True},
@@ -976,6 +1001,17 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
     reminder_marker, reminder_sel = _threshold_selector(CONF_REMINDER_INTERVAL, defaults)
+    # Wie volume_marker/power_marker/grace_marker: einzeln erzeugt statt über
+    # _CORE_PARAMETER_KEYS, da diese drei im neuen Abschnitt "Erweitert"
+    # stehen (siehe SECTION_ADVANCED unten), nicht bei den übrigen
+    # Schwellenwerten im Abschnitt "Parameter".
+    frost_debounce_marker, frost_debounce_sel = _threshold_selector(
+        CONF_FROST_DEBOUNCE_MINUTES, defaults
+    )
+    margin_marker, margin_sel = _threshold_selector(CONF_TEMP_MARGIN, defaults)
+    shower_threshold_marker, shower_threshold_sel = _threshold_selector(
+        CONF_SHOWER_RISE_THRESHOLD, defaults
+    )
 
     parameter_fields = {}
     for key in _CORE_PARAMETER_KEYS:
@@ -985,7 +1021,17 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         marker, sel = _time_selector(key, defaults)
         parameter_fields[marker] = sel
 
-    parameter_fields[
+    advanced_fields = {
+        _entity_marker(
+            CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
+        ): selector.TextSelector(),
+        frost_debounce_marker: frost_debounce_sel,
+        margin_marker: margin_sel,
+        shower_threshold_marker: shower_threshold_sel,
+        power_marker: power_sel,
+        grace_marker: grace_sel,
+    }
+    advanced_fields[
         vol.Required(
             CONF_HUMIDITY_PRIORITY_OVER_DURATION,
             default=defaults.get(
@@ -1027,9 +1073,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             )
                         ),
                         _entity_marker(
-                            CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
-                        ): selector.TextSelector(),
-                        _entity_marker(
                             CONF_SUMMER_MODE_SWITCH_ENTITY, defaults, required=False
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="switch")
@@ -1065,8 +1108,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="sensor")
                         ),
-                        power_marker: power_sel,
-                        grace_marker: grace_sel,
                         vol.Required(
                             CONF_MOBILE_ENABLED,
                             default=defaults.get(CONF_MOBILE_ENABLED, False),
@@ -1220,6 +1261,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                     }
                 ),
                 {"collapsed": True},
+            ),
+            vol.Required(SECTION_ADVANCED): section(
+                vol.Schema(advanced_fields), {"collapsed": True}
             ),
         }
     )

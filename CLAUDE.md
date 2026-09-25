@@ -2270,6 +2270,65 @@ immer" nicht "garantiert immer" bedeutet - die vorsichtigere Änderung
 entfernen) erreicht das gewünschte Aufräumen, ohne einen bereits
 funktionierenden Sonderfall zu riskieren.
 
+**49. Home Assistants "Erweiterter Modus" (`show_advanced_options`) wurde
+mit Version 2026.6 komplett entfernt - ein eigener Formular-Abschnitt
+"Erweitert" musste das als projektinterne Lösung ersetzen, mit einem
+Stolperstein an einer Stelle, die mit dem eigentlichen Feld-Verschieben
+nichts zu tun hatte (0.63.0).** Auf die Frage, wo in HA der erweiterte
+Modus aktiviert wird (Nutzer fand die Option in seinem Profil nicht,
+obwohl Admin), ergab eine Websuche: Der komplette Mechanismus (Profil-
+Schalter, `show_advanced_options`, alles was er steuerte) wurde in
+Version 2026.6 entfernt - schrittweise über ein Jahr abgebaut, weil ein
+einzelner binärer Schalter zu viele unzusammenhängende Dinge bündelte.
+`FlowHandler.show_advanced_options` existiert zwar noch (liefert während
+der Übergangszeit bis 2027.6 unconditional `True`), taugt aber nicht mehr
+für neue, gezielte "nur bei Bedarf sichtbar"-Logik. Der bereits zuvor
+angedachte Plan (seltene Optionen hinter `show_advanced_options`
+verstecken) war damit hinfällig - stattdessen wurde ein neuer,
+projekteigener Formular-Abschnitt **"Erweitert"** (`SECTION_ADVANCED`)
+sowohl im Raum- als auch im globalen Formular eingeführt, in den acht
+selten geänderte Fein-Tuning-Felder verschoben wurden: Temperatur-
+Attribut, Toleranz-Marge, Frostschutz-Debounce, Priorität bei
+Winter-Höchstdauer, Dusch-Anstiegsschwelle, Leistungsschwelle/
+-verzögerung (alle sechs sowohl Raum- als auch global-seitig), zusätzlich
+global das Sommermodus-Vorhersage-Attribut. Bewusst NICHT verschoben (auf
+expliziten Nutzerwunsch, nachdem der erste Vorschlag mehr Felder
+enthielt): TTS-Wiedergabemodus und der komplette Heizungs-Zeitplan
+(Umschalter + 8 Zeitfenster + Nachttemperatur) - beide blieben in ihren
+angestammten Abschnitten.
+
+Stolperstein: `_flatten_step_data()` führt die von Home Assistant
+verschachtelt übermittelten Section-Dicts wieder zu einem flachen Dict
+zusammen, iteriert dafür aber über eine hart codierte `section_keys`-Tupel
+(bis dahin `SECTION_NOTIFY, SECTION_SENSORS, SECTION_PARAMETERS,
+SECTION_MESSAGES`). Ein neuer Abschnitt bekommt dadurch nicht automatisch
+denselben Merge - ohne `SECTION_ADVANCED` in dieses Tupel aufzunehmen,
+wären alle acht neu verschobenen Felder beim Speichern schlicht
+verschwunden (weder im `flat`-Dict noch damit im Config-Entry gelandet),
+obwohl das Formular selbst syntaktisch korrekt gewesen wäre und keinen
+Fehler geworfen hätte - ein Bug, der erst beim tatsächlichen Speichern
+aufgefallen wäre, nicht beim bloßen Anzeigen des Formulars. Gefunden durch
+gezieltes Durchsuchen nach jeder Stelle, die die bisherigen vier
+`SECTION_*`-Konstanten als vollständige Aufzählung behandelt (`grep
+"SECTION_"`), nicht nur durch das Anpassen der beiden Schema-Bau-Funktionen
+selbst. Die etablierten, section-unabhängigen Helfer
+(`_room_override_placeholders()`, `_apply_threshold_defaults()`, die
+"Auf Standardwerte zurücksetzen"-Logik) blieben dagegen unverändert
+korrekt, da sie ohnehin über `_THRESHOLD_FIELDS`/`_TIME_FIELDS` iterieren,
+nicht über eine Section-Struktur.
+
+Lektion: Ein neuer Formular-Abschnitt ist nicht nur an den zwei
+offensichtlichen Stellen zu verdrahten (die beiden `_build_*_schema()`-
+Funktionen, die ihn im UI erzeugen) - jede Stelle im Code, die die Menge
+der existierenden Abschnitte als vollständige, hart codierte Aufzählung
+behandelt (hier: eine einzelne `section_keys`-Tupel-Definition), muss den
+neuen Abschnitt ebenfalls kennen, sonst werden dort verschachtelte Werte
+beim Verarbeiten des `user_input` unbemerkt verworfen. Ein gezielter
+`grep` nach dem Namens-Präfix der bestehenden Konstanten (hier
+`SECTION_`) vor dem Abschluss einer solchen Änderung deckt solche
+Stellen zuverlässiger auf als das Nachvollziehen des Kontrollflusses aus
+dem Kopf.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
