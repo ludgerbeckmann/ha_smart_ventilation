@@ -1196,7 +1196,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             elif heating_presence_away:
                 self._heating_reason = "pausiert: niemand zuhause"
             elif heating_summer_mode_active:
-                self._heating_reason = "pausiert: Sommermodus aktiv"
+                self._heating_reason = "pausiert: Sommerbetrieb aktiv"
             elif heating_schedule_enabled:
                 self._heating_reason = {
                     "comfort": "Zeitfenster: Comfort",
