@@ -50,6 +50,23 @@ CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
 # Nur in den globalen Einstellungen ("Smart Climate Optionen") verfügbar,
 # nicht pro Raum überschreibbar - wie CONF_OUTDOOR_TEMP_ENTITY.
 CONF_OUTDOOR_HUMIDITY_ENTITY = "outdoor_humidity_entity"
+# Vorhersage-Quelle für den automatischen Sommermodus-Schalter (siehe
+# SUMMER_MODE_UNIQUE_ID_SUFFIX/switch.py) - wie CONF_OUTDOOR_TEMP_ENTITY
+# NUR global verfügbar (eine Wetter-/Vorhersage-Quelle gilt fürs ganze Haus,
+# nicht pro Raum). Bewusst KEINE eigene weather.get_forecasts-Integration -
+# stattdessen wird eine bereits vom Nutzer selbst gepflegte Entität
+# (z. B. ein Template-Sensor, der die tägliche Vorhersage als Attribut
+# bereitstellt, oder eine reine Zahlen-Entität mit der Vorhersage als
+# state) wie jeder andere Sensor über hass.states gelesen - konsistent mit
+# dem übrigen, ausschließlich lesenden Sensor-Zugriff dieser Integration,
+# ohne eigene Service-Aufruf-/Wetter-Domain-Anbindung.
+CONF_SUMMER_MODE_FORECAST_ENTITY = "summer_mode_forecast_entity"
+# Optional: Name eines Attributs der obigen Entität, aus dem der
+# Vorhersagewert gelesen wird (z. B. "temperature" bei einem
+# Template-Sensor, der mehrere Vorhersagewerte als Attribute bereitstellt).
+# Leer = state der Entität direkt als Zahl lesen (für eine reine
+# Zahlen-Vorhersage-Entität, deren state selbst der Temperaturwert ist).
+CONF_SUMMER_MODE_FORECAST_ATTRIBUTE = "summer_mode_forecast_attribute"
 CONF_WINDOW_ENTITY = "window_entity"
 # Standard False. True = für diesen Raum wird nie "bitte schließen"
 # empfohlen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall
@@ -139,6 +156,46 @@ CONF_HEATING_STANDBY_TEMP = "heating_standby_temp"
 # (permissiv - ein GPS-Aussetzer soll nicht fälschlich die Heizung
 # abschalten). Ohne konfigurierte Entität keine Auswirkung (wie bisher).
 CONF_HEATING_PRESENCE_ENTITIES = "heating_presence_entities"
+# Standard False. True = die Heizung folgt zusätzlich einem Zeitplan
+# (Comfort-/Nacht-Zeitfenster, siehe die acht CONF_HEATING_*_START_*/
+# CONF_HEATING_*_END_*-Felder unten) statt ausschließlich der reinen
+# Schwellenwert-Logik (CONF_HEATING_THRESHOLD_TEMP). Bewusst als eigener
+# Schalter mit Standard False, nicht implizit über gesetzte Zeitfelder
+# aktiv - macht die Umstellung für bestehende Installationen komplett
+# rückwärtskompatibel (ohne Aktivierung ändert sich am Verhalten aus
+# Lektion 40 nichts) und erlaubt, den Zeitplan jederzeit ohne Datenverlust
+# der Zeitfelder wieder zu deaktivieren.
+CONF_HEATING_SCHEDULE_ENABLED = "heating_schedule_enabled"
+# Dritter Sollwert (neben Comfort/Standby) für das Nacht-Zeitfenster -
+# typischerweise die tiefste der drei Stufen (tiefer als Standby), da
+# nachts i. d. R. weder Komfort- noch Grundwärme in vollem Umfang nötig
+# ist. Nur relevant, wenn CONF_HEATING_SCHEDULE_ENABLED aktiv ist.
+CONF_HEATING_NIGHT_TEMP = "heating_night_temp"
+# Zeitfenster für Comfort/Nacht, je Werktag UND Wochenende getrennt (acht
+# Felder) - Nutzeranforderung, da sich z. B. der Aufstehzeitpunkt am
+# Wochenende typischerweise verschiebt. Werte als "HH:MM:SS"-String
+# (Format von selector.TimeSelector). Außerhalb aller Zeitfenster gilt
+# Standby. Bei einander widersprechender Konfiguration (z. B. sich
+# überlappende Comfort-/Nacht-Fenster) hat das Nacht-Fenster Vorrang vor
+# Comfort, siehe binary_sensor.py:_get_scheduled_heating_mode().
+# Comfort-Fenster kann über Mitternacht hinaus NICHT sinnvoll konfiguriert
+# werden (siehe README) - anders als das Nacht-Fenster, das das per
+# Definition (Start abends, Ende morgens) fast immer tut.
+CONF_HEATING_COMFORT_START_WEEKDAY = "heating_comfort_start_weekday"
+CONF_HEATING_COMFORT_END_WEEKDAY = "heating_comfort_end_weekday"
+CONF_HEATING_COMFORT_START_WEEKEND = "heating_comfort_start_weekend"
+CONF_HEATING_COMFORT_END_WEEKEND = "heating_comfort_end_weekend"
+CONF_HEATING_NIGHT_START_WEEKDAY = "heating_night_start_weekday"
+CONF_HEATING_NIGHT_END_WEEKDAY = "heating_night_end_weekday"
+CONF_HEATING_NIGHT_START_WEEKEND = "heating_night_start_weekend"
+CONF_HEATING_NIGHT_END_WEEKEND = "heating_night_end_weekend"
+# Vorhersage-Temperatur, ab der (+/- CONF_TEMP_MARGIN Hysterese) der
+# automatische Sommermodus-Schalter (siehe CONF_SUMMER_MODE_FORECAST_ENTITY
+# oben, switch.py) ein-/ausschaltet. Raum-überschreibbar wie jeder andere
+# Schwellenwert, da unterschiedliche Räume unterschiedlich empfindlich auf
+# "ist es schon Sommer" reagieren können sollen (z. B. ein Keller-/
+# Nordraum, der auch bei wärmeren Vorhersagen noch länger heizen soll).
+CONF_SUMMER_MODE_THRESHOLD_TEMP = "summer_mode_threshold_temp"
 CONF_SHUTTER_ENTITY = "shutter_entity"
 CONF_POWER_ENTITY = "power_entity"
 CONF_MIN_SURPLUS_POWER = "min_surplus_power_watts"
@@ -221,6 +278,19 @@ AC_DOMAINS = ["climate", "switch"]
 # Ein/Aus von Luftentfeuchter/Klimaanlage.
 HEATING_DOMAINS = ["climate"]
 
+# UI-Hinweis (kein erzwungener Filter, siehe Lektion 36) für die Auswahl der
+# Sommermodus-Vorhersagequelle - sowohl eine echte weather-Entität als auch
+# ein sensor (z. B. ein Template-Sensor mit der Vorhersage als Attribut/
+# state) sind sinnvoll.
+SUMMER_MODE_FORECAST_DOMAINS = ["sensor", "weather"]
+
+# Suffix für die unique_id der pro Raum automatisch angelegten
+# Sommermodus-switch-Entität (siehe switch.py), gemeinsam von switch.py
+# (zum Anlegen) und binary_sensor.py (zum Wiederfinden über die
+# Entity-Registry, siehe _get_summer_mode_entity_id()) verwendet - eine
+# einzige Quelle der Wahrheit für diese Namenskonvention.
+SUMMER_MODE_UNIQUE_ID_SUFFIX = "sommermodus"
+
 # Fenstersperre/Rollladen: entweder eine "cover"-Entität (auf/zu) oder eine
 # "switch"-Entität (1 = herunterfahren+sperren, 0 = hochfahren+entsperren).
 SHUTTER_DOMAINS = ["cover", "switch"]
@@ -244,6 +314,30 @@ DEFAULT_POWER_GRACE_PERIOD = 15
 DEFAULT_HEATING_THRESHOLD_TEMP = 20.0
 DEFAULT_HEATING_COMFORT_TEMP = 21.0
 DEFAULT_HEATING_STANDBY_TEMP = 17.0
+
+# Tiefste der drei Heizungsstufen - siehe CONF_HEATING_NIGHT_TEMP oben.
+DEFAULT_HEATING_NIGHT_TEMP = 16.0
+
+# Standard-Zeitfenster für den optionalen Heizungs-Zeitplan (siehe
+# CONF_HEATING_SCHEDULE_ENABLED oben) - Comfort tagsüber, Nacht-Absenkung
+# ab spätem Abend, Wochenende mit üblichem späterem Aufsteh-/
+# Schlafengehzeitpunkt. Comfort- und Nacht-Fenster ergänzen sich pro
+# Wochentyp bewusst lückenlos zu 24 Stunden (kein "dazwischen" nötig -
+# Standby gilt ohnehin nur außerhalb BEIDER Fenster, siehe
+# binary_sensor.py:_get_scheduled_heating_mode()).
+DEFAULT_HEATING_COMFORT_START_WEEKDAY = "06:00:00"
+DEFAULT_HEATING_COMFORT_END_WEEKDAY = "22:00:00"
+DEFAULT_HEATING_COMFORT_START_WEEKEND = "08:00:00"
+DEFAULT_HEATING_COMFORT_END_WEEKEND = "23:00:00"
+DEFAULT_HEATING_NIGHT_START_WEEKDAY = "22:00:00"
+DEFAULT_HEATING_NIGHT_END_WEEKDAY = "06:00:00"
+DEFAULT_HEATING_NIGHT_START_WEEKEND = "23:00:00"
+DEFAULT_HEATING_NIGHT_END_WEEKEND = "08:00:00"
+
+# Übliche Heizgrenztemperatur (klassischer HVAC-Richtwert, "heating degree
+# day"-Basistemperatur) - ab einer Tages-Vorhersage von/über diesem Wert
+# bringt Heizen kaum noch Komfortgewinn. Siehe CONF_SUMMER_MODE_THRESHOLD_TEMP.
+DEFAULT_SUMMER_MODE_THRESHOLD_TEMP = 18.0
 
 # Priorität bei Konflikt zwischen Winter-Höchstdauer und noch bestehendem
 # Feuchtigkeits-Lüftungsbedarf. True (Standard) = Luftfeuchtigkeit hat

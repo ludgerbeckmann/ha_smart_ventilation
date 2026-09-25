@@ -144,8 +144,9 @@ Entität für Dashboards/Automationen).
        weiter unten)
      - **Heizung** (optional): eine `climate`-Entität - anders als
        Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
-       Umschalten zwischen einem Comfort- und einem Standby-Sollwert (siehe
-       "Heizungs-Schwelle"/"Comfort-Sollwert"/"Standby-Sollwert" im
+       Umschalten zwischen einem Comfort-, einem Standby- und einem
+       Nacht-Sollwert (siehe "Heizungs-Schwelle"/"Comfort-Sollwert"/
+       "Standby-Sollwert"/"Nacht-Sollwert"/"Heizungs-Zeitplan aktivieren" im
        Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
        "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
@@ -213,10 +214,23 @@ Entität für Dashboards/Automationen).
        und Erinnerungsintervall – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
      - Anstiegs-Schwelle für die Duscherkennung (nur relevant, wenn diese im
        Abschnitt "Sensoren & Geräte" aktiviert ist)
-     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**
-       und **Heizung Standby-Sollwert** (nur relevant, wenn im Abschnitt
-       "Sensoren & Geräte" eine Heizung hinterlegt oder die Temperaturquelle
-       dafür wiederverwendet wird) - siehe dort
+     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
+       relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
+       hinterlegt oder die Temperaturquelle dafür wiederverwendet wird) -
+       siehe dort
+     - **Heizungs-Zeitplan aktivieren** (Ja/Nein/leer) - aktiviert, erzwingt
+       ein Comfort- bzw. Nacht-Zeitfenster (je acht Zeitfelder: Start/Ende,
+       getrennt nach Werktag und Wochenende) den jeweiligen Sollwert
+       unabhängig von der Innentemperatur; außerhalb aller Zeitfenster gilt
+       Standby. Deaktiviert (Standard) gilt weiterhin die reine
+       Schwellenwert-Logik oben. Details siehe "Geräte-Steuerung" weiter
+       unten
+     - **Sommermodus-Schwelle (Vorhersage)**: ab dieser Vorhersage-Temperatur
+       (+/- Toleranz-Marge) schaltet der automatische Sommermodus-Schalter
+       jedes Raums mit konfigurierter Heizung ein, darunter wieder aus - nur
+       wirksam, wenn in "- Smart Climate Optionen -" eine Vorhersagequelle
+       hinterlegt ist. Details siehe "Geräte-Steuerung" weiter unten
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
@@ -271,6 +285,17 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   Standard, pro Raum überschreibbar
 - **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
   Standard, pro Raum überschreibbar
+- **Sommermodus-Vorhersagequelle** (optional, nur global): eine `sensor`-
+  oder `weather`-Entität mit einer Temperatur-Vorhersage - z. B. ein eigener
+  Template-Sensor, der die Tagesvorhersage als Attribut bereitstellt (kein
+  direkter `weather.get_forecasts`-Service-Aufruf durch diese Integration
+  nötig, siehe "Geräte-Steuerung" unten). Schaltet automatisch den
+  Sommermodus-Schalter jedes Raums mit konfigurierter Heizung. Ohne diese
+  Entität bleibt der Schalter rein manuell bedienbar
+- **Vorhersage-Attribut** (optional): Name eines Attributs der obigen
+  Entität, aus dem der Vorhersagewert gelesen wird (z. B. `temperature`).
+  Leer = state der Entität direkt als Zahl lesen (z. B. bei einem
+  Template-Sensor, dessen state selbst schon der Vorhersagewert ist)
 
 Sprachausgabe hat hier keine Einstellung mehr – Lautsprecherauswahl und
 Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
@@ -281,9 +306,15 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
   CO2-Schwellen zum Öffnen/Schließen, der Anstiegs-Schwelle für die
   Duscherkennung (die Aktivierung selbst ist reine Raumeinstellung, siehe
-  oben) sowie der Heizungs-Schwelle und dem Comfort-/Standby-Sollwert (die
-  Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
+  oben) sowie der Heizungs-Schwelle und dem Comfort-/Standby-/Nacht-Sollwert
+  (die Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
   Raumeinstellung, siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
+- **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
+  Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
+  getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
+  überschreibbar wie jeder andere Parameter
+- **Sommermodus-Schwelle (Vorhersage)** als raumweiter Standard - siehe
+  oben ("Sommermodus-Vorhersagequelle")
 
 **Abschnitt "Benachrichtigungstexte"** (standardmäßig eingeklappt): Der
 Wortlaut jeder einzelnen Benachrichtigung ist hier frei anpassbar - je ein
@@ -596,7 +627,7 @@ Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
 Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
 nutzt die berechnete absolute Feuchte.
 
-## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung)
+## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung/Sommermodus)
 
 Optional kann pro Raum ein Luftentfeuchter, eine Klimaanlage und/oder eine
 Heizung hinterlegt werden, die automatisch gesteuert werden:
@@ -624,17 +655,34 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   wieder ausreicht. Ergänzt damit gezielt die Fensterlogik, statt sie zu
   duplizieren: Wenn Lüften reicht, läuft keine Klimaanlage.
 - **Heizung**: anders als Luftentfeuchter/Klimaanlage kein einfaches
-  Ein/Aus, sondern ein Umschalten zwischen zwei festen Sollwerten (Comfort/
-  Standby, über `climate.set_temperature`) - wie für Heizungen typisch.
-  Fällt die Innentemperatur unter die "Heizungs-Schwelle", wird der
-  **Comfort-Sollwert** gesetzt; erreicht sie die Schwelle plus
-  Toleranz-Marge wieder (Hysterese, verhindert Flackern nahe der Schwelle),
-  wird auf den **Standby-Sollwert** zurückgeschaltet. Dazwischen bleibt der
-  zuletzt gesetzte Sollwert unverändert. Ist gerade kein Innentemperatur-
-  Messwert verfügbar, wird bewusst **nichts** geändert (kein sicherheits-,
-  nur komfortrelevanter Fall). Zusätzlich pausiert die Heizung (Standby),
-  solange der Fensterkontakt-Sensor das Fenster als **bestätigt offen**
-  meldet - gegen ein offenes Fenster zu heizen verschwendet nur Energie.
+  Ein/Aus, sondern ein Umschalten zwischen drei festen Sollwerten (Comfort/
+  Standby/Nacht, über `climate.set_temperature`) - wie für Heizungen
+  typisch. Pausen (Fenster offen, niemand zuhause, Sommermodus aktiv - alle
+  drei siehe unten) haben dabei immer höchste Priorität und schalten sofort
+  auf **Standby**, unabhängig von allem anderen unten.
+
+  Ist **"Heizungs-Zeitplan aktivieren"** (Abschnitt "Parameter")
+  **deaktiviert** (Standard), gilt außerhalb dieser Pausen weiterhin die
+  ursprüngliche reine Schwellenwert-Logik: Fällt die Innentemperatur unter
+  die "Heizungs-Schwelle", wird der **Comfort-Sollwert** gesetzt; erreicht
+  sie die Schwelle plus Toleranz-Marge wieder (Hysterese, verhindert
+  Flackern nahe der Schwelle), wird auf den **Standby-Sollwert**
+  zurückgeschaltet. Dazwischen bleibt der zuletzt gesetzte Sollwert
+  unverändert. Ist gerade kein Innentemperatur-Messwert verfügbar, wird
+  bewusst **nichts** geändert (kein sicherheits-, nur komfortrelevanter
+  Fall).
+
+  Ist der Zeitplan **aktiviert**, erzwingt stattdessen ein Zeitfenster den
+  Sollwert **unabhängig von der Innentemperatur**: Innerhalb des
+  Comfort-Zeitfensters (Start/Ende) gilt der **Comfort-Sollwert**, innerhalb
+  des Nacht-Zeitfensters der **Nacht-Sollwert**, außerhalb beider Fenster
+  der **Standby-Sollwert**. Beide Zeitfenster sind je einmal für Werktage
+  und einmal fürs Wochenende konfigurierbar (acht Zeitfelder insgesamt), da
+  sich z. B. der Aufstehzeitpunkt am Wochenende typischerweise verschiebt.
+  Überlappen sich beide Fenster versehentlich, hat das Nacht-Fenster
+  Vorrang. Die "Heizungs-Schwelle" selbst bleibt bei aktiviertem Zeitplan
+  ohne Wirkung.
+
   Die Heizung setzt voraus, dass die gewählte `climate`-Entität bereits im
   gewünschten Heiz-Betriebsmodus steht (z. B. "Heizen"/"Auto") - diese
   Integration ändert nur den Sollwert, nicht den Betriebsmodus selbst.
@@ -643,19 +691,48 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   Innentemperatur-Quelle gewählte Entität selbst bereits eine `climate`-
   Entität, kann sie über die Checkbox "Temperaturquelle auch fürs Heizen
   verwenden" direkt als Heizungs-Gerät wiederverwendet werden, statt sie
-  zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen. Zusätzlich
-  pausiert die Heizung (Standby), sobald im Abschnitt "Benachrichtigungen &
-  Anwesenheit" mindestens eine Anwesenheits-Entität für die Heizung
-  hinterlegt ist UND ALLE davon bestätigt "nicht zuhause" melden - meldet
-  mindestens eine "zuhause", oder ist der Zustand einer von ihnen gerade
-  unbekannt/nicht verfügbar, heizt der Raum normal weiter (permissiv, ein
-  einzelner GPS-Aussetzer soll die Heizung nicht fälschlich abschalten).
-  Ohne konfigurierte Entität entfällt diese Bedingung komplett.
+  zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen.
+
+  **Pausen im Detail:**
+  - Solange der Fensterkontakt-Sensor das Fenster als **bestätigt offen**
+    meldet - gegen ein offenes Fenster zu heizen verschwendet nur Energie.
+  - Sobald im Abschnitt "Benachrichtigungen & Anwesenheit" mindestens eine
+    Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon
+    bestätigt "nicht zuhause" melden - meldet mindestens eine "zuhause",
+    oder ist der Zustand einer von ihnen gerade unbekannt/nicht verfügbar,
+    heizt der Raum normal weiter (permissiv, ein einzelner GPS-Aussetzer
+    soll die Heizung nicht fälschlich abschalten). Ohne konfigurierte
+    Entität entfällt diese Bedingung komplett.
+  - Solange der **Sommermodus-Schalter** dieses Raums (siehe unten) **an**
+    ist.
+- **Sommermodus** (nur für Räume mit konfigurierter Heizung): eine eigene,
+  auch manuell bedienbare `switch`-Entität "‹Raum› Sommermodus" - an =
+  pausiert die Heizung dieses Raums (siehe oben). Wird **automatisch**
+  ein-/ausgeschaltet, sobald in "- Smart Climate Optionen -" eine
+  **Sommermodus-Vorhersagequelle** hinterlegt ist: Erreicht die
+  Vorhersage-Temperatur die (raum-überschreibbare) "Sommermodus-Schwelle"
+  plus Toleranz-Marge, schaltet der Schalter ein; fällt sie unter die
+  Schwelle minus Toleranz-Marge, wieder aus - dazwischen sowie ohne
+  verfügbare Vorhersage bleibt der zuletzt gesetzte (automatische ODER
+  manuelle) Zustand unverändert bestehen. Ein manueller Schaltvorgang wird
+  dadurch nicht sofort wieder überschrieben, sondern bleibt bestehen, bis
+  die Vorhersage die jeweilige Grenze eindeutig über-/unterschreitet. Ohne
+  konfigurierte Vorhersagequelle bleibt der Schalter rein manuell bedienbar
+  (keine automatische Schaltung, aber weiterhin nutzbar, um die Heizung
+  z. B. für die Sommerpause manuell zu pausieren).
+
+  Diese Integration ruft dafür **keinen eigenen `weather.get_forecasts`-
+  Service** auf (das wäre der erste nicht-simple State-Read dieser
+  Integration gewesen) - stattdessen wird eine vom Nutzer selbst gepflegte
+  Entität gelesen, z. B. ein Template-Sensor, der die Tagesvorhersage per
+  eigener `time_pattern`-Automation regelmäßig aus `weather.get_forecasts`
+  in ein Attribut schreibt (siehe Home-Assistant-Dokumentation zu
+  `weather`-Vorhersage-Entitäten für ein Beispiel-Template).
 - **Leistungssensor (optional)**: Ist eine "Mindest-Einspeiseleistung"
   konfiguriert, wird ein Gerät (Luftentfeuchter/Klimaanlage, nicht die
-  Heizung) nur eingeschaltet, wenn der Sensor mindestens diesen Wert meldet
-  (z. B. um nur bei PV-Überschuss zu starten). Ohne Leistungssensor
-  entfällt diese Bedingung komplett.
+  Heizung, nicht der Sommermodus-Schalter) nur eingeschaltet, wenn der
+  Sensor mindestens diesen Wert meldet (z. B. um nur bei PV-Überschuss zu
+  starten). Ohne Leistungssensor entfällt diese Bedingung komplett.
 - **Verzögertes Abschalten bei Einspeisung**: Ist die Einspeiseleistung
   ununterbrochen seit mindestens der eingestellten "Verzögerung bis
   Abschalten" zu niedrig, wird ein bereits laufendes Gerät deswegen
@@ -695,11 +772,13 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert und seine Entität vorhanden ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
-| `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true`, sofern der aktuell am Gerät eingestellte Sollwert (live gelesen) näher am Comfort- als am Standby-Sollwert liegt - erkennt daher auch, wenn der Sollwert manuell oder von einer anderen Automation geändert wurde |
+| `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true`, sofern der aktuell am Gerät eingestellte Sollwert (live gelesen) näher am Comfort- als an Standby/Nacht liegt - erkennt daher auch, wenn der Sollwert manuell oder von einer anderen Automation geändert wurde |
+| `heizung_modus` | wie `heizung_an`, aber alle drei Stufen: `"comfort"`/`"standby"`/`"night"` (bzw. `null`, falls der Sollwert noch nicht ablesbar ist) |
 | `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen), `null` falls (noch) nicht ablesbar |
-| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "pausiert: Fenster offen") |
+| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommermodus aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
-| `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist |
+| `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist. Ohne Wirkung, solange der Heizungs-Zeitplan aktiviert ist |
+| `sommermodus_an` | nur vorhanden, falls für den Raum eine Heizung konfiguriert ist UND die zugehörige Sommermodus-switch-Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen (siehe eigene Entität "‹Raum› Sommermodus") |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `schliessempfehlung_deaktiviert` | nur vorhanden (mit Wert `true`), falls "Schließempfehlung deaktivieren" für diesen Raum aktiviert ist. Dient der Dashboard-Karte, damit sie die reinen Komfort-Schließgründe (Temperatur/Feuchtigkeit/CO2/Winter-Höchstdauer) live genauso unterdrückt wie die Integration selbst - Frost-/Hitzeschutz bleiben davon unberührt |
 | `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
@@ -1060,10 +1139,12 @@ live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`heizung_seit`/
 `dusche_seit` berechnet), sonst "–"; "Grund" zeigt bei Luftentfeuchter/
 Klimaanlage/Heizung eine rein informative, live bei jeder Neubewertung
 berechnete Kurzbeschreibung, warum das Gerät gerade an/aus (bzw. bei der
-Heizung: Comfort/Standby) ist bzw. pausiert, ohne selbst Einfluss auf die
-Steuerung zu haben - siehe `binary_sensor.py`; bei der Heizung ergänzt um
-den aktuellen Sollwert in Klammern (z. B. "Innentemperatur unter Schwelle,
-Comfort (21.0 °C)"); bei Dusche entsprechend, ob und warum die
+Heizung: Comfort/Standby/Nacht bzw. "Zeitfenster: …" bei aktiviertem
+Heizungs-Zeitplan) ist bzw. pausiert (u. a. auch "pausiert: Sommermodus
+aktiv"), ohne selbst Einfluss auf die Steuerung zu haben - siehe
+`binary_sensor.py`; bei der Heizung ergänzt um den aktuellen Sollwert in
+Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (21.0 °C)" oder
+"Zeitfenster: Nacht (16.0 °C)"); bei Dusche entsprechend, ob und warum die
 Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
 Abschnitt pro Raum).

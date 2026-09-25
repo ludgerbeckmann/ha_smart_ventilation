@@ -23,9 +23,19 @@ from .const import (
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEATING_COMFORT_END_WEEKDAY,
+    CONF_HEATING_COMFORT_END_WEEKEND,
+    CONF_HEATING_COMFORT_START_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_ENTITY,
+    CONF_HEATING_NIGHT_END_WEEKDAY,
+    CONF_HEATING_NIGHT_END_WEEKEND,
+    CONF_HEATING_NIGHT_START_WEEKDAY,
+    CONF_HEATING_NIGHT_START_WEEKEND,
+    CONF_HEATING_NIGHT_TEMP,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_HEATING_SCHEDULE_ENABLED,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_TEMP_SOURCE,
@@ -65,6 +75,9 @@ from .const import (
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENTITY,
+    CONF_SUMMER_MODE_FORECAST_ATTRIBUTE,
+    CONF_SUMMER_MODE_FORECAST_ENTITY,
+    CONF_SUMMER_MODE_THRESHOLD_TEMP,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
     CONF_TEMP_SOURCE_ENTITY,
@@ -80,7 +93,16 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HEATING_COMFORT_END_WEEKDAY,
+    DEFAULT_HEATING_COMFORT_END_WEEKEND,
+    DEFAULT_HEATING_COMFORT_START_WEEKDAY,
+    DEFAULT_HEATING_COMFORT_START_WEEKEND,
     DEFAULT_HEATING_COMFORT_TEMP,
+    DEFAULT_HEATING_NIGHT_END_WEEKDAY,
+    DEFAULT_HEATING_NIGHT_END_WEEKEND,
+    DEFAULT_HEATING_NIGHT_START_WEEKDAY,
+    DEFAULT_HEATING_NIGHT_START_WEEKEND,
+    DEFAULT_HEATING_NIGHT_TEMP,
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
     DEFAULT_HEAT_PROTECTION_TEMP,
@@ -105,6 +127,7 @@ from .const import (
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
     DEFAULT_SHOWER_RISE_THRESHOLD,
+    DEFAULT_SUMMER_MODE_THRESHOLD_TEMP,
     DEFAULT_TEMP_ATTRIBUTE,
     DEFAULT_TEMP_MARGIN,
     DEFAULT_TEMP_THRESHOLD_CLOSE,
@@ -120,6 +143,7 @@ from .const import (
     HEATING_DOMAINS,
     PRESENCE_DOMAINS,
     SHUTTER_DOMAINS,
+    SUMMER_MODE_FORECAST_DOMAINS,
     TEMP_SOURCE_DOMAINS,
     TTS_PLAYBACK_MODE_OVERLAY,
     TTS_PLAYBACK_MODE_PAUSE,
@@ -192,9 +216,27 @@ _THRESHOLD_FIELDS = {
     CONF_HEATING_THRESHOLD_TEMP: (DEFAULT_HEATING_THRESHOLD_TEMP, 10, 25, 0.5, "°C"),
     CONF_HEATING_COMFORT_TEMP: (DEFAULT_HEATING_COMFORT_TEMP, 10, 28, 0.5, "°C"),
     CONF_HEATING_STANDBY_TEMP: (DEFAULT_HEATING_STANDBY_TEMP, 5, 25, 0.5, "°C"),
+    CONF_HEATING_NIGHT_TEMP: (DEFAULT_HEATING_NIGHT_TEMP, 5, 25, 0.5, "°C"),
+    CONF_SUMMER_MODE_THRESHOLD_TEMP: (DEFAULT_SUMMER_MODE_THRESHOLD_TEMP, 5, 30, 0.5, "°C"),
 }
 
-# Die sechzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
+# Zeitfelder für den optionalen Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_
+# ENABLED) - Werte als "HH:MM:SS"-String (selector.TimeSelector()-Format).
+# Analoges Muster zu _THRESHOLD_FIELDS/_threshold_selector/_override_
+# selector (siehe _time_selector/_time_override_selector unten), nur ohne
+# min/max/step/unit, die ein TimeSelector nicht braucht.
+_TIME_FIELDS = {
+    CONF_HEATING_COMFORT_START_WEEKDAY: DEFAULT_HEATING_COMFORT_START_WEEKDAY,
+    CONF_HEATING_COMFORT_END_WEEKDAY: DEFAULT_HEATING_COMFORT_END_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND: DEFAULT_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_COMFORT_END_WEEKEND: DEFAULT_HEATING_COMFORT_END_WEEKEND,
+    CONF_HEATING_NIGHT_START_WEEKDAY: DEFAULT_HEATING_NIGHT_START_WEEKDAY,
+    CONF_HEATING_NIGHT_END_WEEKDAY: DEFAULT_HEATING_NIGHT_END_WEEKDAY,
+    CONF_HEATING_NIGHT_START_WEEKEND: DEFAULT_HEATING_NIGHT_START_WEEKEND,
+    CONF_HEATING_NIGHT_END_WEEKEND: DEFAULT_HEATING_NIGHT_END_WEEKEND,
+}
+
+# Die achtzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
 # power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
 # hierher.
@@ -216,6 +258,8 @@ _CORE_PARAMETER_KEYS = (
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_STANDBY_TEMP,
+    CONF_HEATING_NIGHT_TEMP,
+    CONF_SUMMER_MODE_THRESHOLD_TEMP,
 )
 
 
@@ -287,6 +331,37 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
     return marker, field_selector
 
 
+def _time_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
+    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
+    globalen Einstellungen, analog zu _threshold_selector()."""
+    defaults = defaults or {}
+    current = defaults.get(key) or _TIME_FIELDS[key]
+    marker = vol.Optional(key, description={"suggested_value": current})
+    return marker, selector.TimeSelector()
+
+
+def _time_override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
+    """Für RAUM-Einstellungen: echt optional, kein erzwungener Standardwert -
+    analog zu _override_selector(). Leer = die globale Einstellung (bzw.
+    deren Standardwert) gilt.
+
+    Nutzt bewusst KEIN default= (Lektion 28) - der einfache
+    {**current, **defaults}-Merge in async_step_room geht davon aus, dass
+    ein geleertes TimeSelector-Feld (wie Zahlen-/Text-Felder, nicht wie
+    EntitySelector - siehe ROOM_OPTIONAL_ENTITY_KEYS) als leerer Wert
+    übermittelt wird, nicht als fehlender Schlüssel. Sollte sich das als
+    falsch herausstellen (bislang nicht mit einer echten Home-Assistant-
+    Instanz verifiziert), braucht es dieselbe Sonderbehandlung wie
+    ROOM_OPTIONAL_ENTITY_KEYS."""
+    defaults = defaults or {}
+    current = defaults.get(key)
+    kwargs = {}
+    if current:
+        kwargs["description"] = {"suggested_value": current}
+    marker = vol.Optional(key, **kwargs)
+    return marker, selector.TimeSelector()
+
+
 def _global_config(hass) -> dict:
     """Liefert die Daten der globalen Einstellungen (falls vorhanden) - via
     hass.data, genau wie binary_sensor.py:_global_config()/diagnostics.py
@@ -313,10 +388,14 @@ def _room_override_placeholders(hass) -> dict[str, str]:
         if value in (None, ""):
             value = default_value
         placeholders[f"global_{key}"] = f"{value} {unit}".strip()
+    for key, default_value in _TIME_FIELDS.items():
+        value = global_data.get(key) or default_value
+        placeholders[f"global_{key}"] = value[:5]
     for key, default_value in (
         (CONF_MOBILE_ENABLED, False),
         (CONF_PERSISTENT_ENABLED, False),
         (CONF_HUMIDITY_PRIORITY_OVER_DURATION, DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION),
+        (CONF_HEATING_SCHEDULE_ENABLED, False),
     ):
         value = global_data.get(key)
         if value is None:
@@ -381,6 +460,9 @@ def _apply_threshold_defaults(data: dict) -> dict:
     for key, (default_value, *_rest) in _THRESHOLD_FIELDS.items():
         if data.get(key) in (None, ""):
             data[key] = default_value
+    for key, default_value in _TIME_FIELDS.items():
+        if data.get(key) in (None, ""):
+            data[key] = default_value
     for key, default_value in _MESSAGE_FIELD_DEFAULTS.items():
         if data.get(key) in (None, ""):
             data[key] = default_value
@@ -402,6 +484,7 @@ def _flatten_step_data(data: dict) -> dict:
         CONF_HUMIDITY_PRIORITY_OVER_DURATION,
         CONF_MOBILE_ENABLED,
         CONF_PERSISTENT_ENABLED,
+        CONF_HEATING_SCHEDULE_ENABLED,
     ):
         value = flat.get(tri_state_key)
         if value in ("true", "false"):
@@ -514,7 +597,7 @@ def _build_room_schema(
     Die Felder in 'Parameter' sowie Leistungsschwelle/-verzögerung im
     Geräte-Abschnitt sind echt optional: leer gelassen wird der Wert aus
     den allgemeinen Einstellungen übernommen (siehe Eintrag "Smart
-    Ventilation Options").
+    Climate Optionen").
 
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
@@ -578,6 +661,21 @@ def _build_room_schema(
     heating_standby_marker, heating_standby_sel = _override_selector(
         CONF_HEATING_STANDBY_TEMP, defaults
     )
+    heating_night_marker, heating_night_sel = _override_selector(
+        CONF_HEATING_NIGHT_TEMP, defaults
+    )
+    summer_threshold_marker, summer_threshold_sel = _override_selector(
+        CONF_SUMMER_MODE_THRESHOLD_TEMP, defaults
+    )
+    heating_schedule_marker, heating_schedule_sel = _tri_state_bool_selector(
+        CONF_HEATING_SCHEDULE_ENABLED,
+        defaults,
+        yes_label="Ja – Zeitfenster erzwingen den Sollwert",
+        no_label="Nein – reine Schwellenwert-Logik",
+    )
+    time_field_markers = {
+        key: _time_override_selector(key, defaults) for key in _TIME_FIELDS
+    }
 
     # App-Push und persistente Benachrichtigung sind überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
@@ -848,6 +946,13 @@ def _build_room_schema(
                 heating_threshold_marker: heating_threshold_sel,
                 heating_comfort_marker: heating_comfort_sel,
                 heating_standby_marker: heating_standby_sel,
+                heating_night_marker: heating_night_sel,
+                summer_threshold_marker: summer_threshold_sel,
+                heating_schedule_marker: heating_schedule_sel,
+                **{
+                    marker: sel
+                    for marker, sel in time_field_markers.values()
+                },
             }
         ),
         {"collapsed": True},
@@ -871,6 +976,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     for key in _CORE_PARAMETER_KEYS:
         marker, sel = _threshold_selector(key, defaults)
         parameter_fields[marker] = sel
+    for key in _TIME_FIELDS:
+        marker, sel = _time_selector(key, defaults)
+        parameter_fields[marker] = sel
 
     parameter_fields[
         vol.Required(
@@ -879,6 +987,12 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                 CONF_HUMIDITY_PRIORITY_OVER_DURATION,
                 DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
             ),
+        )
+    ] = selector.BooleanSelector()
+    parameter_fields[
+        vol.Required(
+            CONF_HEATING_SCHEDULE_ENABLED,
+            default=defaults.get(CONF_HEATING_SCHEDULE_ENABLED, False),
         )
     ] = selector.BooleanSelector()
 
@@ -900,6 +1014,16 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="sensor")
                         ),
+                        _entity_marker(
+                            CONF_SUMMER_MODE_FORECAST_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(
+                                domain=SUMMER_MODE_FORECAST_DOMAINS
+                            )
+                        ),
+                        _entity_marker(
+                            CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
+                        ): selector.TextSelector(),
                         _entity_marker(
                             CONF_TTS_ENTITY, defaults, required=False
                         ): selector.EntitySelector(
@@ -1107,7 +1231,7 @@ def _validate_room_submission(defaults: dict) -> str | None:
 
 class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config Flow für Räume. Die allgemeinen Einstellungen ('Smart
-    Ventilation Options') werden NICHT über diesen nutzergesteuerten Flow
+    Climate Optionen') werden NICHT über diesen nutzergesteuerten Flow
     angelegt, sondern automatisch beim allerersten Start von Home Assistant
     (siehe __init__.py: async_setup) über async_step_import."""
 

@@ -25,7 +25,7 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[str] = ["binary_sensor"]
+PLATFORMS: list[str] = ["binary_sensor", "switch"]
 
 # Diese Integration lässt sich ausschließlich über den Config-Flow (UI)
 # einrichten, nicht über configuration.yaml - hassfest verlangt trotzdem
