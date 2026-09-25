@@ -1785,14 +1785,29 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         entschieden (Priorität Fenster/Anwesenheit/Sommermodus vor
         Zeitplan vor Schwellenwert-Hysterese) - None bedeutet "unverändert
         lassen" (Totzone der Schwellenwert-Hysterese oder fehlender
-        Innentemperatur-Messwert, siehe _evaluate())."""
+        Innentemperatur-Messwert, siehe _evaluate()).
+
+        self._heating_state merkt sich zwar weiterhin den zuletzt
+        kommandierten Modus (vermeidet unnötige Wiederholungen bei
+        unverändertem target_mode), reicht als alleinige Idempotenz-Prüfung
+        aber nicht: climate.set_temperature läuft mit blocking=True, das
+        bestätigt nur, dass Home Assistant den Service-Aufruf erfolgreich
+        verarbeitet hat - bei einer instabilen Funk-/Zigbee-Anbindung kann
+        das Gerät den Befehl trotzdem nie tatsächlich übernehmen, ohne dass
+        das hier als Fehler ankommt. Deshalb zusätzlich der live vom Gerät
+        gelesene Sollwert gegen den gewünschten Wert geprüft - weicht er ab,
+        wird der Befehl erneut geschickt, auch wenn sich target_mode
+        gegenüber self._heating_state nicht geändert hat. Ist der aktuelle
+        Sollwert gerade nicht lesbar (Entität kurz nicht verfügbar), bleibt
+        es beim reinen Tracker-Vergleich, um kein Kommando gegen eine
+        gerade nicht antwortende Entität zu wiederholen."""
         entity_id = self._get_heating_entity_id()
         if not entity_id:
             return
         if self._device_entity_missing(entity_id):
             self._heating_state = None
             return
-        if target_mode is None or target_mode == self._heating_state:
+        if target_mode is None:
             return
 
         temperature = self._effective(
@@ -1807,6 +1822,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "night": DEFAULT_HEATING_NIGHT_TEMP,
             }[target_mode],
         )
+        current_target = self._get_heating_target_temperature(entity_id)
+        already_confirmed = current_target is None or abs(current_target - temperature) < 0.05
+        if target_mode == self._heating_state and already_confirmed:
+            return
+
         await self._set_heating_temperature(entity_id, temperature)
         self._heating_state = target_mode
 
