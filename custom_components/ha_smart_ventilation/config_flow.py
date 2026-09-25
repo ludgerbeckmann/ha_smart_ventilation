@@ -77,6 +77,7 @@ from .const import (
     CONF_SONOS_ENTITY,
     CONF_SUMMER_MODE_FORECAST_ATTRIBUTE,
     CONF_SUMMER_MODE_FORECAST_ENTITY,
+    CONF_SUMMER_MODE_SWITCH_ENTITY,
     CONF_SUMMER_MODE_THRESHOLD_TEMP,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
@@ -664,9 +665,6 @@ def _build_room_schema(
     heating_night_marker, heating_night_sel = _override_selector(
         CONF_HEATING_NIGHT_TEMP, defaults
     )
-    summer_threshold_marker, summer_threshold_sel = _override_selector(
-        CONF_SUMMER_MODE_THRESHOLD_TEMP, defaults
-    )
     heating_schedule_marker, heating_schedule_sel = _tri_state_bool_selector(
         CONF_HEATING_SCHEDULE_ENABLED,
         defaults,
@@ -947,7 +945,6 @@ def _build_room_schema(
                 heating_comfort_marker: heating_comfort_sel,
                 heating_standby_marker: heating_standby_sel,
                 heating_night_marker: heating_night_sel,
-                summer_threshold_marker: summer_threshold_sel,
                 heating_schedule_marker: heating_schedule_sel,
                 **{
                     marker: sel
@@ -1024,6 +1021,11 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         _entity_marker(
                             CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
                         ): selector.TextSelector(),
+                        _entity_marker(
+                            CONF_SUMMER_MODE_SWITCH_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="switch")
+                        ),
                         _entity_marker(
                             CONF_TTS_ENTITY, defaults, required=False
                         ): selector.EntitySelector(

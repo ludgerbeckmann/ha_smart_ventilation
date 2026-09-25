@@ -50,8 +50,8 @@ CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
 # Nur in den globalen Einstellungen ("Smart Climate Optionen") verfügbar,
 # nicht pro Raum überschreibbar - wie CONF_OUTDOOR_TEMP_ENTITY.
 CONF_OUTDOOR_HUMIDITY_ENTITY = "outdoor_humidity_entity"
-# Vorhersage-Quelle für den automatischen Sommermodus-Schalter (siehe
-# SUMMER_MODE_UNIQUE_ID_SUFFIX/switch.py) - wie CONF_OUTDOOR_TEMP_ENTITY
+# Vorhersage-Quelle für die Sommer-/Winterbetrieb-Automatik (siehe
+# CONF_SUMMER_MODE_SWITCH_ENTITY unten) - wie CONF_OUTDOOR_TEMP_ENTITY
 # NUR global verfügbar (eine Wetter-/Vorhersage-Quelle gilt fürs ganze Haus,
 # nicht pro Raum). Bewusst KEINE eigene weather.get_forecasts-Integration -
 # stattdessen wird eine bereits vom Nutzer selbst gepflegte Entität
@@ -67,6 +67,22 @@ CONF_SUMMER_MODE_FORECAST_ENTITY = "summer_mode_forecast_entity"
 # Leer = state der Entität direkt als Zahl lesen (für eine reine
 # Zahlen-Vorhersage-Entität, deren state selbst der Temperaturwert ist).
 CONF_SUMMER_MODE_FORECAST_ATTRIBUTE = "summer_mode_forecast_attribute"
+# Eine bereits VORHANDENE switch-Entität (kein von dieser Integration
+# erzeugter eigener Schalter, siehe CLAUDE.md Lektion 46/47) - analog zu
+# CONF_DEHUMIDIFIER_ENTITY/CONF_AC_ENTITY/CONF_HEATING_ENTITY (Entitäten,
+# die aktiv GESTEUERT werden, nicht selbst von dieser Integration angelegt
+# werden), nur eben global statt pro Raum, da Sommer-/Winterbetrieb eine
+# hausweite, nicht raumspezifische Entscheidung ist. NUR global verfügbar,
+# kein Raum-Override (siehe CONF_SUMMER_MODE_THRESHOLD_TEMP unten - würden
+# unterschiedliche Räume unterschiedliche Schwellen/Margen für dieselbe
+# gemeinsame Entität verwenden, könnten sie gegensätzlich auf denselben
+# Schalter schreiben). An = Sommerbetrieb (Heizung ALLER Räume pausiert),
+# Aus = Winterbetrieb (Heizung läuft normal). Automatisch anhand der obigen
+# Vorhersage-Quelle geschaltet (Schwelle + Toleranz-Marge als Hysterese),
+# bleibt aber jederzeit manuell bedienbar - dieselbe Integration schreibt
+# nur, wenn ihre Entscheidung vom aktuellen Live-Zustand abweicht (wie bei
+# Luftentfeuchter/Klimaanlage/Heizung).
+CONF_SUMMER_MODE_SWITCH_ENTITY = "summer_mode_switch_entity"
 CONF_WINDOW_ENTITY = "window_entity"
 # Standard False. True = für diesen Raum wird nie "bitte schließen"
 # empfohlen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall
@@ -189,12 +205,14 @@ CONF_HEATING_NIGHT_START_WEEKDAY = "heating_night_start_weekday"
 CONF_HEATING_NIGHT_END_WEEKDAY = "heating_night_end_weekday"
 CONF_HEATING_NIGHT_START_WEEKEND = "heating_night_start_weekend"
 CONF_HEATING_NIGHT_END_WEEKEND = "heating_night_end_weekend"
-# Vorhersage-Temperatur, ab der (+/- CONF_TEMP_MARGIN Hysterese) der
-# automatische Sommermodus-Schalter (siehe CONF_SUMMER_MODE_FORECAST_ENTITY
-# oben, switch.py) ein-/ausschaltet. Raum-überschreibbar wie jeder andere
-# Schwellenwert, da unterschiedliche Räume unterschiedlich empfindlich auf
-# "ist es schon Sommer" reagieren können sollen (z. B. ein Keller-/
-# Nordraum, der auch bei wärmeren Vorhersagen noch länger heizen soll).
+# Vorhersage-Temperatur, ab der (+/- CONF_TEMP_MARGIN Hysterese) die
+# Sommer-/Winterbetrieb-Automatik den unter CONF_SUMMER_MODE_SWITCH_ENTITY
+# gewählten Schalter ein-/ausschaltet. Bewusst NUR global auswertbar, KEIN
+# Raum-Override (anders als die meisten anderen Schwellenwerte) - es gibt
+# nur eine gemeinsame Schalter-Entität für alle Räume, ein Raum-Override
+# hätte hier keinen wohldefinierten Effekt (bei unterschiedlichen Räumen
+# mit unterschiedlichen Schwellen könnten diese gegensätzlich auf dieselbe
+# Entität schreiben).
 CONF_SUMMER_MODE_THRESHOLD_TEMP = "summer_mode_threshold_temp"
 CONF_SHUTTER_ENTITY = "shutter_entity"
 CONF_POWER_ENTITY = "power_entity"
@@ -283,13 +301,6 @@ HEATING_DOMAINS = ["climate"]
 # ein sensor (z. B. ein Template-Sensor mit der Vorhersage als Attribut/
 # state) sind sinnvoll.
 SUMMER_MODE_FORECAST_DOMAINS = ["sensor", "weather"]
-
-# Suffix für die unique_id der pro Raum automatisch angelegten
-# Sommermodus-switch-Entität (siehe switch.py), gemeinsam von switch.py
-# (zum Anlegen) und binary_sensor.py (zum Wiederfinden über die
-# Entity-Registry, siehe _get_summer_mode_entity_id()) verwendet - eine
-# einzige Quelle der Wahrheit für diese Namenskonvention.
-SUMMER_MODE_UNIQUE_ID_SUFFIX = "sommermodus"
 
 # Fenstersperre/Rollladen: entweder eine "cover"-Entität (auf/zu) oder eine
 # "switch"-Entität (1 = herunterfahren+sperren, 0 = hochfahren+entsperren).

@@ -14,7 +14,6 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import (
     async_track_state_change_event,
@@ -86,6 +85,7 @@ from .const import (
     CONF_SONOS_ENTITY,
     CONF_SUMMER_MODE_FORECAST_ATTRIBUTE,
     CONF_SUMMER_MODE_FORECAST_ENTITY,
+    CONF_SUMMER_MODE_SWITCH_ENTITY,
     CONF_SUMMER_MODE_THRESHOLD_TEMP,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
@@ -146,7 +146,6 @@ from .const import (
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     SHOWER_RISE_LOOKBACK_MINUTES,
-    SUMMER_MODE_UNIQUE_ID_SUFFIX,
     TTS_PLAYBACK_MODE_PAUSE,
     VERSION_KEY,
 )
@@ -467,9 +466,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["schwelle_heizung"] = self._effective(
                 CONF_HEATING_THRESHOLD_TEMP, DEFAULT_HEATING_THRESHOLD_TEMP
             )
-        summer_mode_entity = self._get_summer_mode_entity_id()
+        summer_mode_entity = self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None)
         if summer_mode_entity and not self._device_entity_missing(summer_mode_entity):
-            attrs["sommermodus_an"] = self._get_summer_mode_current_state() is True
+            attrs["sommermodus_an"] = self._is_summer_mode_active()
         return attrs
 
     async def async_added_to_hass(self) -> None:
@@ -776,34 +775,20 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return "comfort"
         return "standby"
 
-    def _get_summer_mode_entity_id(self) -> str | None:
-        """Liefert die entity_id der zu diesem Raum gehörenden
-        Sommermodus-switch-Entität (siehe switch.py), aufgelöst über die
-        Entity-Registry anhand ihrer festen unique_id - bewusst kein
-        direkter Python-Objektverweis zwischen den beiden separat
-        eingerichteten Plattformen (binary_sensor/switch), da das dieselbe
-        Reihenfolge-Abhängigkeit einführen würde, die Lektion 25 für den
-        Dusche-Sensor bereits als Stolperfalle dokumentiert hat - der
-        etablierte Weg in dieser Integration, eine andere Entität
-        anzusprechen, ist stattdessen ein normaler State-/Service-Zugriff
-        über ihre entity_id, wie bei jedem externen Gerät auch. None, falls
-        für diesen Raum keine Heizung konfiguriert ist (dann existiert die
-        Entität gar nicht, siehe switch.py:async_setup_entry())."""
-        registry = er.async_get(self.hass)
-        unique_id = f"{self._entry.entry_id}_{SUMMER_MODE_UNIQUE_ID_SUFFIX}"
-        return registry.async_get_entity_id("switch", DOMAIN, unique_id)
-
-    def _get_summer_mode_current_state(self) -> bool | None:
-        """Liefert den aktuellen Live-Zustand des Sommermodus-Schalters
-        (True/False), oder None, falls keine Heizung konfiguriert ist oder
-        die Entität (noch) nicht auflösbar ist (z. B. kurz nach dem Start,
-        bevor die switch-Plattform vollständig eingerichtet ist)."""
-        entity_id = self._get_summer_mode_entity_id()
+    def _is_summer_mode_active(self) -> bool:
+        """Liefert den aktuellen Live-Zustand des unter
+        CONF_SUMMER_MODE_SWITCH_ENTITY ausgewählten, bereits vorhandenen
+        Schalters (CLAUDE.md Lektion 46/47 - KEINE von dieser Integration
+        selbst erzeugte Entität, siehe _update_summer_mode()). Permissiv
+        False (Winterbetrieb, Heizung läuft normal), falls keine Entität
+        konfiguriert ist, sie fehlt, oder ihr Zustand gerade unbekannt/
+        nicht verfügbar ist."""
+        entity_id = self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None)
         if not entity_id:
-            return None
+            return False
         state = self.hass.states.get(entity_id)
         if state is None or state.state not in ("on", "off"):
-            return None
+            return False
         return state.state == "on"
 
     def _get_summer_mode_forecast_temperature(self) -> float | None:
@@ -813,11 +798,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         über CONF_SUMMER_MODE_FORECAST_ATTRIBUTE benannten Attribut, analog
         zum bestehenden Muster für CONF_TEMP_SOURCE_ENTITY/
         CONF_TEMP_ATTRIBUTE. None, falls keine Vorhersage-Entität
-        konfiguriert ist, sie fehlt/nicht verfügbar ist, das konfigurierte
-        Attribut fehlt, oder sich der Wert nicht in eine Zahl umwandeln
-        lässt - _update_summer_mode() lässt den Sommermodus-Schalter in
-        diesem Fall bewusst unverändert (weder Sicherheits- noch
-        Komfort-relevant, ein falsches Timing ist hier unkritisch)."""
+        konfiguriert ist, sie fehlt/nicht verfügbar ist, oder sich der Wert
+        nicht in eine Zahl umwandeln lässt - _update_summer_mode() lässt
+        den ausgewählten Schalter in diesem Fall bewusst unverändert (weder
+        Sicherheits- noch Komfort-relevant, ein falsches Timing ist hier
+        unkritisch)."""
         entity_id = self._effective(CONF_SUMMER_MODE_FORECAST_ENTITY, None)
         if not entity_id:
             return None
@@ -1114,35 +1099,40 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # sicherheitsrelevant, nur unkomfortabel, ein Umschalten ohne
         # verlässlichen Messwert also nicht gerechtfertigt.
         #
-        # --- Sommermodus (0.60.0/Lektion 45): automatisch anhand einer
-        # Vorhersage-Temperatur ermittelt (CONF_SUMMER_MODE_FORECAST_ENTITY/
-        # -_ATTRIBUTE, Hysterese über dieselbe Toleranz-Marge wie bei den
-        # anderen Temperaturvergleichen), bleibt aber ein echter, auch
-        # manuell bedienbarer switch (siehe switch.py) - want_summer_mode
-        # wird deshalb bewusst NICHT einfach aus dem Vergleich berechnet,
-        # sondern fällt in der Totzone (und ohne verfügbare Vorhersage) auf
-        # den aktuellen Live-Zustand des Schalters zurück: das lässt sowohl
-        # einen manuellen Schaltvorgang als auch den zuletzt automatisch
-        # gesetzten Zustand unangetastet, bis die Vorhersage eine der
-        # beiden Grenzen eindeutig über-/unterschreitet. Ohne konfigurierte
-        # Heizung (kein Schalter vorhanden) oder ohne konfigurierte
-        # Vorhersage-Entität bleibt es bei False (kein Einfluss, wie
-        # bisher).
-        summer_mode_threshold = self._effective(
+        # --- Sommer-/Winterbetrieb (0.61.0/Lektion 46/47): EIN bereits
+        # vorhandener, unter CONF_SUMMER_MODE_SWITCH_ENTITY ausgewählter
+        # Schalter (KEINE eigene Entität dieser Integration) pausiert bei
+        # Aktivierung die Heizung ALLER Räume gleichzeitig. Automatisch
+        # anhand einer Vorhersage-Temperatur geschaltet (Hysterese über
+        # dieselbe Toleranz-Marge wie bei den anderen Temperaturvergleichen)
+        # - bewusst mit den GLOBALEN Werten für Schwelle/Marge, nicht
+        # self._effective() (das würde bei einem Raum-Override eine je nach
+        # Raum unterschiedliche Entscheidung für ein und dieselbe gemeinsame
+        # Entität liefern können). want_summer_mode wird NICHT einfach aus
+        # dem Vergleich berechnet, sondern fällt in der Totzone (und ohne
+        # verfügbare Vorhersage) auf den aktuellen Live-Zustand des
+        # Schalters zurück: das lässt sowohl einen manuellen Schaltvorgang
+        # als auch den zuletzt automatisch gesetzten Zustand unangetastet,
+        # bis die Vorhersage eine der beiden Grenzen eindeutig über-/
+        # unterschreitet. Ohne konfigurierten Schalter bleibt es bei False
+        # (kein Einfluss).
+        summer_mode_forecast = self._get_summer_mode_forecast_temperature()
+        summer_mode_current = self._is_summer_mode_active()
+        global_config = self._global_config()
+        summer_mode_threshold = global_config.get(
             CONF_SUMMER_MODE_THRESHOLD_TEMP, DEFAULT_SUMMER_MODE_THRESHOLD_TEMP
         )
-        summer_mode_forecast = self._get_summer_mode_forecast_temperature()
-        summer_mode_current = self._get_summer_mode_current_state()
+        summer_mode_margin = global_config.get(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
         if summer_mode_forecast is not None and summer_mode_forecast >= (
-            summer_mode_threshold + margin
+            summer_mode_threshold + summer_mode_margin
         ):
             want_summer_mode = True
         elif summer_mode_forecast is not None and summer_mode_forecast < (
-            summer_mode_threshold - margin
+            summer_mode_threshold - summer_mode_margin
         ):
             want_summer_mode = False
         else:
-            want_summer_mode = bool(summer_mode_current)
+            want_summer_mode = summer_mode_current
         # Nutzt bewusst die frisch entschiedene want_summer_mode direkt als
         # Pausier-Grund, nicht den (u. U. noch veralteten) summer_mode_current
         # von vor dem Schreiben in _update_summer_mode() - eine Grenz-
@@ -1675,7 +1665,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         want_summer_mode: bool,
     ) -> None:
         """Steuert optionalen Luftentfeuchter, optionale Klimaanlage,
-        optionale Heizung und den automatischen Sommermodus-Schalter.
+        optionale Heizung und den globalen Sommer-/Winterbetrieb-Schalter.
 
         - Luftentfeuchter: an bei hoher Luftfeuchtigkeit, aus bei niedriger -
           unabhängig vom Fenster-Status, außer das Fenster ist offen UND die
@@ -1692,14 +1682,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
           mode wurde in _evaluate() bereits final entschieden (inkl. Fenster-/
           Anwesenheits-/Sommermodus-Pausierung und optionalem Zeitplan);
           None = unverändert lassen (Totzone/fehlender Messwert).
-        - Sommermodus: automatisch anhand einer Vorhersage-Temperatur
-          ein-/ausgeschaltet (siehe _update_summer_mode()), bleibt aber ein
-          echter, auch manuell bedienbarer switch.
+        - Sommer-/Winterbetrieb: EIN bereits vorhandener, global unter
+          CONF_SUMMER_MODE_SWITCH_ENTITY ausgewählter Schalter wird
+          automatisch anhand einer Vorhersage-Temperatur ein-/
+          ausgeschaltet (siehe _update_summer_mode()) - keine eigene
+          Entität dieser Integration, bleibt jederzeit auch manuell
+          bedienbar.
         - Ein konfigurierter Leistungssensor blockiert das Einschalten von
           Luftentfeuchter/Klimaanlage. Ist ein Gerät bereits an, wird es erst
           nach Ablauf der Abschalt-Verzögerung wegen dauerhaft zu geringer
-          Einspeisung wieder ausgeschaltet. Heizung und Sommermodus sind
-          davon unberührt.
+          Einspeisung wieder ausgeschaltet. Heizung und Sommer-/
+          Winterbetrieb-Schalter sind davon unberührt.
         """
         await self._update_single_device(
             entity_key=CONF_DEHUMIDIFIER_ENTITY,
@@ -1818,19 +1811,26 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heating_state = target_mode
 
     async def _update_summer_mode(self, *, want_summer_mode: bool) -> None:
-        """Schaltet den automatischen Sommermodus-Schalter (siehe switch.py)
-        - nur, wenn sich der Zielzustand vom aktuellen Live-Zustand
-        unterscheidet (idempotent, analog zu _update_single_device()/
-        _update_heating()). Dadurch bleibt ein manueller Schaltvorgang
-        ebenso wie der zuletzt automatisch gesetzte Zustand unangetastet,
-        solange want_summer_mode (siehe _evaluate()) sich nicht ändert."""
-        entity_id = self._get_summer_mode_entity_id()
-        if not entity_id:
+        """Schaltet den unter CONF_SUMMER_MODE_SWITCH_ENTITY ausgewählten,
+        bereits vorhandenen Schalter (CLAUDE.md Lektion 46/47 - KEINE
+        eigene Entität dieser Integration) - nur, wenn sich der Zielzustand
+        vom aktuellen Live-Zustand unterscheidet (idempotent, analog zu
+        _update_single_device()/_update_heating()). Dadurch bleibt ein
+        manueller Schaltvorgang ebenso wie der zuletzt automatisch gesetzte
+        Zustand unangetastet, solange want_summer_mode (siehe _evaluate())
+        sich nicht ändert. Da mehrere Räume unabhängig voneinander dieselbe
+        Entscheidung (siehe _evaluate(): global statt raum-effektiv
+        berechnete Schwelle/Marge) treffen und denselben Schalter ansteuern
+        können, ist ein redundanter, aber harmloser Schreibversuch mehrerer
+        Räume im selben Bewertungslauf möglich - dank Idempotenz-Prüfung
+        hier bleibt das folgenlos."""
+        entity_id = self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None)
+        if not entity_id or self._device_entity_missing(entity_id):
             return
-        current = self._get_summer_mode_current_state()
-        if want_summer_mode and current is not True:
+        current = self._is_summer_mode_active()
+        if want_summer_mode and not current:
             await self._set_summer_mode_switch(entity_id, True)
-        elif not want_summer_mode and current is not False:
+        elif not want_summer_mode and current:
             await self._set_summer_mode_switch(entity_id, False)
 
     async def _set_summer_mode_switch(self, entity_id: str, turn_on: bool) -> None:
@@ -1843,7 +1843,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         except HomeAssistantError:
             _LOGGER.warning(
-                "Konnte Sommermodus-Schalter %s nicht %s (Raum %s)",
+                "Konnte Sommer-/Winterbetrieb-Schalter %s nicht %s (Raum %s)",
                 entity_id,
                 "einschalten" if turn_on else "ausschalten",
                 self._config[CONF_ROOM_NAME],
