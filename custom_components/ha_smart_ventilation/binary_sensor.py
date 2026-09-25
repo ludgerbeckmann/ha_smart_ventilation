@@ -14,6 +14,7 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import (
     async_track_state_change_event,
@@ -32,9 +33,19 @@ from .const import (
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
+    CONF_HEATING_COMFORT_END_WEEKDAY,
+    CONF_HEATING_COMFORT_END_WEEKEND,
+    CONF_HEATING_COMFORT_START_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_ENTITY,
+    CONF_HEATING_NIGHT_END_WEEKDAY,
+    CONF_HEATING_NIGHT_END_WEEKEND,
+    CONF_HEATING_NIGHT_START_WEEKDAY,
+    CONF_HEATING_NIGHT_START_WEEKEND,
+    CONF_HEATING_NIGHT_TEMP,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_HEATING_SCHEDULE_ENABLED,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_TEMP_SOURCE,
@@ -73,6 +84,9 @@ from .const import (
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENTITY,
+    CONF_SUMMER_MODE_FORECAST_ATTRIBUTE,
+    CONF_SUMMER_MODE_FORECAST_ENTITY,
+    CONF_SUMMER_MODE_THRESHOLD_TEMP,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_MARGIN,
     CONF_TEMP_SOURCE_ENTITY,
@@ -87,7 +101,16 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
+    DEFAULT_HEATING_COMFORT_END_WEEKDAY,
+    DEFAULT_HEATING_COMFORT_END_WEEKEND,
+    DEFAULT_HEATING_COMFORT_START_WEEKDAY,
+    DEFAULT_HEATING_COMFORT_START_WEEKEND,
     DEFAULT_HEATING_COMFORT_TEMP,
+    DEFAULT_HEATING_NIGHT_END_WEEKDAY,
+    DEFAULT_HEATING_NIGHT_END_WEEKEND,
+    DEFAULT_HEATING_NIGHT_START_WEEKDAY,
+    DEFAULT_HEATING_NIGHT_START_WEEKEND,
+    DEFAULT_HEATING_NIGHT_TEMP,
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
     DEFAULT_HEAT_PROTECTION_TEMP,
@@ -112,6 +135,7 @@ from .const import (
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
     DEFAULT_SHOWER_RISE_THRESHOLD,
+    DEFAULT_SUMMER_MODE_THRESHOLD_TEMP,
     DEFAULT_TEMP_ATTRIBUTE,
     DEFAULT_TEMP_MARGIN,
     DEFAULT_TEMP_THRESHOLD_CLOSE,
@@ -122,6 +146,7 @@ from .const import (
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     SHOWER_RISE_LOOKBACK_MINUTES,
+    SUMMER_MODE_UNIQUE_ID_SUFFIX,
     TTS_PLAYBACK_MODE_PAUSE,
     VERSION_KEY,
 )
@@ -205,9 +230,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # None = noch nicht initial synchronisiert.
         self._dehumidifier_state: bool | None = None
         self._ac_state: bool | None = None
-        # True = zuletzt Comfort-Sollwert gesetzt, False = Standby, None =
+        # "comfort"/"standby"/"night" = zuletzt gesetzter Sollwert, None =
         # noch nicht initial synchronisiert - siehe _update_heating().
-        self._heating_state: bool | None = None
+        self._heating_state: str | None = None
 
         # Rein informativer Ein-/Ausschalt-Grund für die Dashboard-Karte
         # (neue Geräte-Tabelle, siehe README) - live bei jeder Neubewertung
@@ -407,31 +432,44 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["klimaanlage_grund"] = self._ac_reason
         heating_entity = self._get_heating_entity_id()
         if heating_entity and not self._device_entity_missing(heating_entity):
-            # "an" bedeutet hier nicht (wie bei Luftentfeuchter/Klimaanlage)
-            # ein einfaches Ein/Aus, sondern ob der aktuell am Gerät
-            # eingestellte Sollwert näher am Comfort- als am
-            # Standby-Sollwert liegt - live vom Gerät gelesen (Lektion 19/33:
-            # eine andere Automation oder der Nutzer selbst könnte den
-            # Sollwert direkt am Thermostat geändert haben, ohne dass diese
-            # Integration davon weiß).
+            # "heizung_modus" ist nicht wie bei Luftentfeuchter/Klimaanlage
+            # ein einfaches Ein/Aus, sondern welchem der drei Sollwerte
+            # (Comfort/Standby/Nacht) der aktuell am Gerät eingestellte
+            # Sollwert am nächsten liegt - live vom Gerät gelesen (Lektion
+            # 19/33: eine andere Automation oder der Nutzer selbst könnte
+            # den Sollwert direkt am Thermostat geändert haben, ohne dass
+            # diese Integration davon weiß). "heizung_an" bleibt als
+            # einfaches Ein/Aus für die Geräte-Tabelle erhalten (an =
+            # Comfort, aus = Standby ODER Nacht - beides "zurückgefahren").
             comfort_temp = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
             standby_temp = self._effective(CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP)
+            night_temp = self._effective(CONF_HEATING_NIGHT_TEMP, DEFAULT_HEATING_NIGHT_TEMP)
             current_target = self._get_heating_target_temperature(heating_entity)
-            heating_comfort_active = current_target is not None and abs(
-                current_target - comfort_temp
-            ) < abs(current_target - standby_temp)
-            if heating_comfort_active:
+            if current_target is None:
+                heating_mode_active = None
+            else:
+                heating_mode_active = min(
+                    ("comfort", comfort_temp),
+                    ("standby", standby_temp),
+                    ("night", night_temp),
+                    key=lambda pair: abs(current_target - pair[1]),
+                )[0]
+            if heating_mode_active == "comfort":
                 if self._heating_on_since is None:
                     self._heating_on_since = dt_util.utcnow()
                 attrs["heizung_seit"] = self._heating_on_since.isoformat()
             else:
                 self._heating_on_since = None
-            attrs["heizung_an"] = heating_comfort_active
+            attrs["heizung_an"] = heating_mode_active == "comfort"
+            attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
             attrs["schwelle_heizung"] = self._effective(
                 CONF_HEATING_THRESHOLD_TEMP, DEFAULT_HEATING_THRESHOLD_TEMP
             )
+        summer_mode_entity = self._get_summer_mode_entity_id()
+        if summer_mode_entity and not self._device_entity_missing(summer_mode_entity):
+            attrs["sommermodus_an"] = self._get_summer_mode_current_state() is True
         return attrs
 
     async def async_added_to_hass(self) -> None:
@@ -465,8 +503,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._dehumidifier_state = bool(attrs["luftentfeuchter_an"])
             if "klimaanlage_an" in attrs:
                 self._ac_state = bool(attrs["klimaanlage_an"])
-            if "heizung_an" in attrs:
-                self._heating_state = bool(attrs["heizung_an"])
+            if "heizung_modus" in attrs and attrs["heizung_modus"] in (
+                "comfort",
+                "standby",
+                "night",
+            ):
+                self._heating_state = attrs["heizung_modus"]
             # Laufzeit-Zeitstempel wiederherstellen (sonst zeigt die
             # Dashboard-Karte nach jedem Neustart fälschlich "0 Min", obwohl
             # das Gerät schon länger läuft) - werden beim nächsten Lesen von
@@ -495,7 +537,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 tracked.append(value)
 
         # Außentemperatur/-luftfeuchtigkeit kommen ausschließlich aus "Smart
-        # Ventilation Options" - direkt verfolgen, falls beim Hinzufügen
+        # Climate Optionen" - direkt verfolgen, falls beim Hinzufügen
         # bereits gesetzt (siehe Hinweis in der README zur Reaktivität bei
         # reiner Startreihenfolge-Abhängigkeit).
         outdoor_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
@@ -666,6 +708,128 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if state is None or state.state != "not_home":
                 return False
         return True
+
+    @staticmethod
+    def _time_in_window(current, start_str: str, end_str: str) -> bool:
+        """Prüft, ob "current" (datetime.time) innerhalb des Zeitfensters
+        [start, end) liegt - inklusive Mitternachts-Wraparound (start >
+        end, z. B. 22:00:00-06:00:00, wie beim typischen Nacht-Fenster).
+        Ungültige/leere Zeitstrings werden permissiv als "trifft nicht zu"
+        behandelt (kein Absturz bei fehlerhafter Konfiguration)."""
+        start = dt_util.parse_time(start_str) if start_str else None
+        end = dt_util.parse_time(end_str) if end_str else None
+        if start is None or end is None:
+            return False
+        if start <= end:
+            return start <= current < end
+        return current >= start or current < end
+
+    def _get_scheduled_heating_mode(self) -> str:
+        """Bestimmt den vom Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_ENABLED)
+        für den aktuellen Zeitpunkt erzwungenen Modus - "comfort", "night"
+        oder "standby" (außerhalb beider Fenster). Nur relevant, wenn der
+        Zeitplan aktiv ist (siehe _evaluate()) - dort ersetzt das Ergebnis
+        dann die reine Schwellenwert-Logik aus Lektion 40 vollständig, das
+        Zeitfenster erzwingt den Sollwert unabhängig von der Innentemperatur
+        (Nutzerentscheidung, siehe CLAUDE.md Lektion 44).
+
+        Werktag/Wochenende getrennt (dt_util.now().weekday() >= 5 = Samstag/
+        Sonntag), da sich z. B. der Aufstehzeitpunkt am Wochenende typisch
+        verschiebt. Bei sich überlappender (fehlerhafter) Konfiguration hat
+        das Nacht- vor dem Comfort-Fenster Vorrang - im Regelfall ergänzen
+        sich beide Fenster pro Wochentyp ohnehin lückenlos zu 24 Stunden
+        (siehe die DEFAULT_HEATING_*-Zeitwerte in const.py)."""
+        now = dt_util.now()
+        current_time = now.time()
+        is_weekend = now.weekday() >= 5
+
+        if is_weekend:
+            night_start = self._effective(
+                CONF_HEATING_NIGHT_START_WEEKEND, DEFAULT_HEATING_NIGHT_START_WEEKEND
+            )
+            night_end = self._effective(
+                CONF_HEATING_NIGHT_END_WEEKEND, DEFAULT_HEATING_NIGHT_END_WEEKEND
+            )
+            comfort_start = self._effective(
+                CONF_HEATING_COMFORT_START_WEEKEND, DEFAULT_HEATING_COMFORT_START_WEEKEND
+            )
+            comfort_end = self._effective(
+                CONF_HEATING_COMFORT_END_WEEKEND, DEFAULT_HEATING_COMFORT_END_WEEKEND
+            )
+        else:
+            night_start = self._effective(
+                CONF_HEATING_NIGHT_START_WEEKDAY, DEFAULT_HEATING_NIGHT_START_WEEKDAY
+            )
+            night_end = self._effective(
+                CONF_HEATING_NIGHT_END_WEEKDAY, DEFAULT_HEATING_NIGHT_END_WEEKDAY
+            )
+            comfort_start = self._effective(
+                CONF_HEATING_COMFORT_START_WEEKDAY, DEFAULT_HEATING_COMFORT_START_WEEKDAY
+            )
+            comfort_end = self._effective(
+                CONF_HEATING_COMFORT_END_WEEKDAY, DEFAULT_HEATING_COMFORT_END_WEEKDAY
+            )
+
+        if self._time_in_window(current_time, night_start, night_end):
+            return "night"
+        if self._time_in_window(current_time, comfort_start, comfort_end):
+            return "comfort"
+        return "standby"
+
+    def _get_summer_mode_entity_id(self) -> str | None:
+        """Liefert die entity_id der zu diesem Raum gehörenden
+        Sommermodus-switch-Entität (siehe switch.py), aufgelöst über die
+        Entity-Registry anhand ihrer festen unique_id - bewusst kein
+        direkter Python-Objektverweis zwischen den beiden separat
+        eingerichteten Plattformen (binary_sensor/switch), da das dieselbe
+        Reihenfolge-Abhängigkeit einführen würde, die Lektion 25 für den
+        Dusche-Sensor bereits als Stolperfalle dokumentiert hat - der
+        etablierte Weg in dieser Integration, eine andere Entität
+        anzusprechen, ist stattdessen ein normaler State-/Service-Zugriff
+        über ihre entity_id, wie bei jedem externen Gerät auch. None, falls
+        für diesen Raum keine Heizung konfiguriert ist (dann existiert die
+        Entität gar nicht, siehe switch.py:async_setup_entry())."""
+        registry = er.async_get(self.hass)
+        unique_id = f"{self._entry.entry_id}_{SUMMER_MODE_UNIQUE_ID_SUFFIX}"
+        return registry.async_get_entity_id("switch", DOMAIN, unique_id)
+
+    def _get_summer_mode_current_state(self) -> bool | None:
+        """Liefert den aktuellen Live-Zustand des Sommermodus-Schalters
+        (True/False), oder None, falls keine Heizung konfiguriert ist oder
+        die Entität (noch) nicht auflösbar ist (z. B. kurz nach dem Start,
+        bevor die switch-Plattform vollständig eingerichtet ist)."""
+        entity_id = self._get_summer_mode_entity_id()
+        if not entity_id:
+            return None
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state not in ("on", "off"):
+            return None
+        return state.state == "on"
+
+    def _get_summer_mode_forecast_temperature(self) -> float | None:
+        """Liest den aktuellen Vorhersagewert aus der global konfigurierten
+        Vorhersage-Entität (CONF_SUMMER_MODE_FORECAST_ENTITY) - entweder
+        direkt aus deren state (kein Attribut konfiguriert) oder aus dem
+        über CONF_SUMMER_MODE_FORECAST_ATTRIBUTE benannten Attribut, analog
+        zum bestehenden Muster für CONF_TEMP_SOURCE_ENTITY/
+        CONF_TEMP_ATTRIBUTE. None, falls keine Vorhersage-Entität
+        konfiguriert ist, sie fehlt/nicht verfügbar ist, das konfigurierte
+        Attribut fehlt, oder sich der Wert nicht in eine Zahl umwandeln
+        lässt - _update_summer_mode() lässt den Sommermodus-Schalter in
+        diesem Fall bewusst unverändert (weder Sicherheits- noch
+        Komfort-relevant, ein falsches Timing ist hier unkritisch)."""
+        entity_id = self._effective(CONF_SUMMER_MODE_FORECAST_ENTITY, None)
+        if not entity_id:
+            return None
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable"):
+            return None
+        attribute = self._effective(CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, None)
+        raw_value = state.attributes.get(attribute) if attribute else state.state
+        try:
+            return float(raw_value)
+        except (TypeError, ValueError):
+            return None
 
     def _is_device_on(self, entity_id: str) -> bool:
         """Liest den tatsächlichen Live-Zustand einer Geräte-Entität
@@ -924,35 +1088,81 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and not outdoor_drier_enough
             and not (power_entity_configured and self._check_power_ok())
         )
-        # --- Heizung: zwei feste Sollwerte (Comfort/Standby) statt einfachem
-        # Ein/Aus, wie für Heizungen üblich - siehe CONF_HEATING_COMFORT_TEMP/
-        # CONF_HEATING_STANDBY_TEMP in const.py. Comfort unterhalb der
-        # Schwelle, Standby erst ab Schwelle + Toleranz-Marge (Hysterese,
-        # dieselbe margin wie bei den anderen Temperaturvergleichen) - dazwischen
-        # bleibt der zuletzt gesetzte Sollwert unverändert. Ist indoor_temp
-        # gerade nicht verfügbar, wird bewusst NICHTS geändert (weder Comfort
-        # noch Standby) - anders als beim Frostschutz ist ein falsches Timing
-        # hier nicht sicherheitsrelevant, nur unkomfortabel, ein Umschalten
-        # ohne verlässlichen Messwert also nicht gerechtfertigt.
-        # Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen
-        # ist (_is_window_confirmed_open(), dasselbe Muster wie bei der
-        # Luftentfeuchter-Pausierung) - gegen ein offenes Fenster zu heizen
-        # verschwendet nur Energie. Ebenso pausiert (Standby), solange
-        # niemand zuhause ist (_is_heating_presence_away()) - nur relevant,
-        # wenn mindestens eine Anwesenheits-Entität konfiguriert ist.
+        # --- Heizung: drei feste Sollwerte (Comfort/Standby/Nacht) statt
+        # einfachem Ein/Aus, wie für Heizungen üblich - siehe
+        # CONF_HEATING_COMFORT_TEMP/CONF_HEATING_STANDBY_TEMP/
+        # CONF_HEATING_NIGHT_TEMP in const.py. Pausiert (Standby) mit
+        # höchster Priorität, solange das Fenster bestätigt offen ist
+        # (_is_window_confirmed_open(), dasselbe Muster wie bei der
+        # Luftentfeuchter-Pausierung - gegen ein offenes Fenster zu heizen
+        # verschwendet nur Energie) oder solange niemand zuhause ist
+        # (_is_heating_presence_away(), nur relevant, wenn mindestens eine
+        # Anwesenheits-Entität konfiguriert ist) - unabhängig davon, ob der
+        # Zeitplan aktiv ist oder nicht, da beides Pausier-, keine
+        # Komfort-Gründe sind.
+        #
+        # Ist der Zeitplan aktiv (CONF_HEATING_SCHEDULE_ENABLED,
+        # 0.60.0/Lektion 44), erzwingt das jeweilige Zeitfenster den Modus
+        # unabhängig von der Innentemperatur (_get_scheduled_heating_mode(),
+        # Nutzerentscheidung - siehe dort). Sonst gilt weiterhin exakt die
+        # ursprüngliche Lektion-40-Schwellenwert-Logik: Comfort unterhalb
+        # der Schwelle, Standby erst ab Schwelle + Toleranz-Marge (Hysterese,
+        # dieselbe margin wie bei den anderen Temperaturvergleichen) -
+        # dazwischen sowie bei fehlendem indoor_temp bleibt der zuletzt
+        # gesetzte Sollwert unverändert (heating_target_mode = None) - anders
+        # als beim Frostschutz ist ein falsches Timing hier nicht
+        # sicherheitsrelevant, nur unkomfortabel, ein Umschalten ohne
+        # verlässlichen Messwert also nicht gerechtfertigt.
+        #
+        # --- Sommermodus (0.60.0/Lektion 45): automatisch anhand einer
+        # Vorhersage-Temperatur ermittelt (CONF_SUMMER_MODE_FORECAST_ENTITY/
+        # -_ATTRIBUTE, Hysterese über dieselbe Toleranz-Marge wie bei den
+        # anderen Temperaturvergleichen), bleibt aber ein echter, auch
+        # manuell bedienbarer switch (siehe switch.py) - want_summer_mode
+        # wird deshalb bewusst NICHT einfach aus dem Vergleich berechnet,
+        # sondern fällt in der Totzone (und ohne verfügbare Vorhersage) auf
+        # den aktuellen Live-Zustand des Schalters zurück: das lässt sowohl
+        # einen manuellen Schaltvorgang als auch den zuletzt automatisch
+        # gesetzten Zustand unangetastet, bis die Vorhersage eine der
+        # beiden Grenzen eindeutig über-/unterschreitet. Ohne konfigurierte
+        # Heizung (kein Schalter vorhanden) oder ohne konfigurierte
+        # Vorhersage-Entität bleibt es bei False (kein Einfluss, wie
+        # bisher).
+        summer_mode_threshold = self._effective(
+            CONF_SUMMER_MODE_THRESHOLD_TEMP, DEFAULT_SUMMER_MODE_THRESHOLD_TEMP
+        )
+        summer_mode_forecast = self._get_summer_mode_forecast_temperature()
+        summer_mode_current = self._get_summer_mode_current_state()
+        if summer_mode_forecast is not None and summer_mode_forecast >= (
+            summer_mode_threshold + margin
+        ):
+            want_summer_mode = True
+        elif summer_mode_forecast is not None and summer_mode_forecast < (
+            summer_mode_threshold - margin
+        ):
+            want_summer_mode = False
+        else:
+            want_summer_mode = bool(summer_mode_current)
+        # Nutzt bewusst die frisch entschiedene want_summer_mode direkt als
+        # Pausier-Grund, nicht den (u. U. noch veralteten) summer_mode_current
+        # von vor dem Schreiben in _update_summer_mode() - eine Grenz-
+        # überschreitung wirkt sich so noch in DIESEM Bewertungslauf auf die
+        # Heizung aus, ohne einen Zyklus Verzögerung.
+        heating_summer_mode_active = want_summer_mode
+
         window_confirmed_open = self._is_window_confirmed_open()
         heating_presence_away = self._is_heating_presence_away()
-        want_heating_comfort = (
-            indoor_temp is not None
-            and indoor_temp < heating_threshold
-            and not window_confirmed_open
-            and not heating_presence_away
-        )
-        want_heating_standby = (
-            window_confirmed_open
-            or heating_presence_away
-            or (indoor_temp is not None and indoor_temp >= heating_threshold + margin)
-        )
+        heating_schedule_enabled = self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)
+        if window_confirmed_open or heating_presence_away or heating_summer_mode_active:
+            heating_target_mode = "standby"
+        elif heating_schedule_enabled:
+            heating_target_mode = self._get_scheduled_heating_mode()
+        elif indoor_temp is not None and indoor_temp < heating_threshold:
+            heating_target_mode = "comfort"
+        elif indoor_temp is not None and indoor_temp >= heating_threshold + margin:
+            heating_target_mode = "standby"
+        else:
+            heating_target_mode = None
 
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
@@ -995,10 +1205,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._heating_reason = "pausiert: Fenster offen"
             elif heating_presence_away:
                 self._heating_reason = "pausiert: niemand zuhause"
-            elif want_heating_standby:
-                self._heating_reason = "Innentemperatur über Schwelle, Standby"
-            elif want_heating_comfort:
+            elif heating_summer_mode_active:
+                self._heating_reason = "pausiert: Sommermodus aktiv"
+            elif heating_schedule_enabled:
+                self._heating_reason = {
+                    "comfort": "Zeitfenster: Comfort",
+                    "night": "Zeitfenster: Nacht",
+                    "standby": "Zeitfenster: Standby",
+                }[heating_target_mode]
+            elif heating_target_mode == "comfort":
                 self._heating_reason = "Innentemperatur unter Schwelle, Comfort"
+            elif heating_target_mode == "standby":
+                self._heating_reason = "Innentemperatur über Schwelle, Standby"
             else:
                 self._heating_reason = "im Sollbereich, hält letzten Zustand"
         # --- Schließen: Außenluft ist inzwischen (wieder) absolut feuchter
@@ -1106,8 +1324,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 humidity_needs_close=humidity_needs_close,
                 outdoor_cooler_enough=outdoor_cooler_enough,
                 dehumidifier_pause_open_window=dehumidifier_pause_open_window,
-                want_heating_comfort=want_heating_comfort,
-                want_heating_standby=want_heating_standby,
+                heating_target_mode=heating_target_mode,
+                want_summer_mode=want_summer_mode,
             )
             return
 
@@ -1335,8 +1553,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 humidity_needs_close=humidity_needs_close,
                 outdoor_cooler_enough=outdoor_cooler_enough,
                 dehumidifier_pause_open_window=dehumidifier_pause_open_window,
-                want_heating_comfort=want_heating_comfort,
-                want_heating_standby=want_heating_standby,
+                heating_target_mode=heating_target_mode,
+                want_summer_mode=want_summer_mode,
             )
             return
 
@@ -1347,8 +1565,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             humidity_needs_close=humidity_needs_close,
             outdoor_cooler_enough=outdoor_cooler_enough,
             dehumidifier_pause_open_window=dehumidifier_pause_open_window,
-            want_heating_comfort=want_heating_comfort,
-            want_heating_standby=want_heating_standby,
+            heating_target_mode=heating_target_mode,
+            want_summer_mode=want_summer_mode,
         )
 
         # Immer schreiben (nicht nur bei Zustandswechsel), damit die
@@ -1453,11 +1671,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         humidity_needs_close: bool,
         outdoor_cooler_enough: bool,
         dehumidifier_pause_open_window: bool,
-        want_heating_comfort: bool,
-        want_heating_standby: bool,
+        heating_target_mode: str | None,
+        want_summer_mode: bool,
     ) -> None:
-        """Steuert optionalen Luftentfeuchter, optionale Klimaanlage und
-        optionale Heizung.
+        """Steuert optionalen Luftentfeuchter, optionale Klimaanlage,
+        optionale Heizung und den automatischen Sommermodus-Schalter.
 
         - Luftentfeuchter: an bei hoher Luftfeuchtigkeit, aus bei niedriger -
           unabhängig vom Fenster-Status, außer das Fenster ist offen UND die
@@ -1469,13 +1687,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
           duplizieren. Aus, sobald die Zieltemperatur erreicht ist oder Lüften
           wieder ausreicht. Ist ein Rollladen hinterlegt, fährt dieser beim
           Einschalten herunter und beim Ausschalten wieder hoch.
-        - Heizung: kein Ein/Aus, sondern Umschalten zwischen einem Comfort-
-          und einem Standby-Sollwert (siehe _update_heating()) - pausiert
-          (Standby) zusätzlich bei bestätigt offenem Fenster.
+        - Heizung: kein Ein/Aus, sondern Umschalten zwischen Comfort-/
+          Standby-/Nacht-Sollwert (siehe _update_heating()) - heating_target_
+          mode wurde in _evaluate() bereits final entschieden (inkl. Fenster-/
+          Anwesenheits-/Sommermodus-Pausierung und optionalem Zeitplan);
+          None = unverändert lassen (Totzone/fehlender Messwert).
+        - Sommermodus: automatisch anhand einer Vorhersage-Temperatur
+          ein-/ausgeschaltet (siehe _update_summer_mode()), bleibt aber ein
+          echter, auch manuell bedienbarer switch.
         - Ein konfigurierter Leistungssensor blockiert das Einschalten von
           Luftentfeuchter/Klimaanlage. Ist ein Gerät bereits an, wird es erst
           nach Ablauf der Abschalt-Verzögerung wegen dauerhaft zu geringer
-          Einspeisung wieder ausgeschaltet. Die Heizung ist davon unberührt.
+          Einspeisung wieder ausgeschaltet. Heizung und Sommermodus sind
+          davon unberührt.
         """
         await self._update_single_device(
             entity_key=CONF_DEHUMIDIFIER_ENTITY,
@@ -1492,10 +1716,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             want_off=temp_needs_close or outdoor_cooler_enough,
             shutter_key=CONF_SHUTTER_ENTITY,
         )
-        await self._update_heating(
-            want_comfort=want_heating_comfort,
-            want_standby=want_heating_standby,
-        )
+        await self._update_summer_mode(want_summer_mode=want_summer_mode)
+        await self._update_heating(target_mode=heating_target_mode)
 
     async def _update_single_device(
         self,
@@ -1562,32 +1784,70 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # sonst: noch nicht genug Einspeiseleistung - beim nächsten
             # Tick (spätestens alle 5 Minuten) wird erneut geprüft.
 
-    async def _update_heating(self, *, want_comfort: bool, want_standby: bool) -> None:
-        """Steuert eine optionale Heizung über zwei feste Sollwerte (Comfort/
-        Standby, siehe const.py) statt eines einfachen Ein/Aus wie bei
+    async def _update_heating(self, *, target_mode: str | None) -> None:
+        """Steuert eine optionale Heizung über drei feste Sollwerte (Comfort/
+        Standby/Nacht, siehe const.py) statt eines einfachen Ein/Aus wie bei
         Luftentfeuchter/Klimaanlage - für Heizungen ist das die übliche
-        Betriebsart. want_standby hat Vorrang vor want_comfort (analog zu
-        want_off vs. want_on in _update_single_device())."""
+        Betriebsart. target_mode wurde in _evaluate() bereits final
+        entschieden (Priorität Fenster/Anwesenheit/Sommermodus vor
+        Zeitplan vor Schwellenwert-Hysterese) - None bedeutet "unverändert
+        lassen" (Totzone der Schwellenwert-Hysterese oder fehlender
+        Innentemperatur-Messwert, siehe _evaluate())."""
         entity_id = self._get_heating_entity_id()
         if not entity_id:
             return
         if self._device_entity_missing(entity_id):
             self._heating_state = None
             return
+        if target_mode is None or target_mode == self._heating_state:
+            return
 
-        current = self._heating_state
-        if want_standby and current is not False:
-            standby_temp = self._effective(
-                CONF_HEATING_STANDBY_TEMP, DEFAULT_HEATING_STANDBY_TEMP
+        temperature = self._effective(
+            {
+                "comfort": CONF_HEATING_COMFORT_TEMP,
+                "standby": CONF_HEATING_STANDBY_TEMP,
+                "night": CONF_HEATING_NIGHT_TEMP,
+            }[target_mode],
+            {
+                "comfort": DEFAULT_HEATING_COMFORT_TEMP,
+                "standby": DEFAULT_HEATING_STANDBY_TEMP,
+                "night": DEFAULT_HEATING_NIGHT_TEMP,
+            }[target_mode],
+        )
+        await self._set_heating_temperature(entity_id, temperature)
+        self._heating_state = target_mode
+
+    async def _update_summer_mode(self, *, want_summer_mode: bool) -> None:
+        """Schaltet den automatischen Sommermodus-Schalter (siehe switch.py)
+        - nur, wenn sich der Zielzustand vom aktuellen Live-Zustand
+        unterscheidet (idempotent, analog zu _update_single_device()/
+        _update_heating()). Dadurch bleibt ein manueller Schaltvorgang
+        ebenso wie der zuletzt automatisch gesetzte Zustand unangetastet,
+        solange want_summer_mode (siehe _evaluate()) sich nicht ändert."""
+        entity_id = self._get_summer_mode_entity_id()
+        if not entity_id:
+            return
+        current = self._get_summer_mode_current_state()
+        if want_summer_mode and current is not True:
+            await self._set_summer_mode_switch(entity_id, True)
+        elif not want_summer_mode and current is not False:
+            await self._set_summer_mode_switch(entity_id, False)
+
+    async def _set_summer_mode_switch(self, entity_id: str, turn_on: bool) -> None:
+        try:
+            await self.hass.services.async_call(
+                "switch",
+                "turn_on" if turn_on else "turn_off",
+                {"entity_id": entity_id},
+                blocking=False,
             )
-            await self._set_heating_temperature(entity_id, standby_temp)
-            self._heating_state = False
-        elif want_comfort and not want_standby and current is not True:
-            comfort_temp = self._effective(
-                CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP
+        except HomeAssistantError:
+            _LOGGER.warning(
+                "Konnte Sommermodus-Schalter %s nicht %s (Raum %s)",
+                entity_id,
+                "einschalten" if turn_on else "ausschalten",
+                self._config[CONF_ROOM_NAME],
             )
-            await self._set_heating_temperature(entity_id, comfort_temp)
-            self._heating_state = True
 
     async def _set_heating_temperature(self, entity_id: str, temperature: float) -> None:
         """Setzt den Sollwert einer Heizungs-climate-Entität.

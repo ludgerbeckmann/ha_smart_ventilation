@@ -1860,6 +1860,170 @@ gebildet zu werden - genau die in Lektion 10 etablierte Unterscheidung
 zwischen "wird beim nächsten Speichern schon aktuell" (falsch) und
 "braucht eine explizite Migration" (richtig).
 
+**44. Heizungs-Zeitplan: "Zeitfenster erzwingt Modus" ersetzt die
+Schwellenwert-Logik nur bei aktiviertem Schalter, mit einem dritten
+Sollwert (Nacht) und getrennten Werktag-/Wochenende-Fenstern (0.60.0).**
+Teil desselben gebündelten Feature-Requests wie Lektion 43/45. Nutzerwunsch:
+"Es sollten Zeiten definiert werden können, wann zum Beispiel Standby,
+Komfort oder Nachtmodus aktiv sein soll. Diese Zeiten im Punkt oder
+Abschnitt Parameter verfügbar machen, auch bei Bedarf pro Raum anpassbar.
+Ansonsten gilt die globale Einstellung." Drei Rückfragen (AskUserQuestion)
+klärten den Umfang vorab: (1) Zeitfenster erzwingt den Sollwert unabhängig
+von der Innentemperatur (nicht bloß als zusätzliche Bedingung neben der
+Schwelle) - vom Nutzer bestätigt. (2) Die Granularität: kein einzelnes
+Zeitfenster-Paar, sondern - abweichend von beiden angebotenen Optionen -
+"zwei Zeitfenster aber unterschiedlich für Werktag und Wochenende", also
+acht statt zwei Zeitfelder. (3) Der Rename-Umfang (siehe Lektion 43).
+
+Zentrale Architektur-Entscheidung: `CONF_HEATING_SCHEDULE_ENABLED`
+(Tri-State-Bool, raum-überschreibbar wie jede andere Einstellung, globaler
+Standard `False`) entscheidet, WELCHE der beiden grundverschiedenen
+Logiken in `_evaluate()` überhaupt läuft - bei `False` exakt die
+unveränderte Lektion-40-Schwellenwert-Hysterese (volle
+Rückwärtskompatibilität für alle bestehenden Installationen, die den
+Zeitplan nicht aktivieren), bei `True` vollständig ersetzt durch
+`_get_scheduled_heating_mode()` (reine Zeitfenster-Logik, Innentemperatur
+komplett irrelevant). Kein Versuch, beide Logiken zu einer einzigen
+Kaskade zu verschmelzen (z. B. "Zeitfenster ODER Schwelle") - das hätte
+das vom Nutzer explizit gewählte "erzwingt" (Option 1) verwässert und
+wäre nur schwer vorhersehbar gewesen, wenn beide Kriterien
+unterschiedliche Modi verlangen. `_heating_state` (Idempotenz-Tracker für
+`_update_heating()`) wurde dafür von `bool | None` (Comfort/Standby) auf
+`str | None` (`"comfort"`/`"standby"`/`"night"`) erweitert - eine dritte
+feste Sollwert-Stufe lässt sich mit einem einzelnen Bool nicht mehr
+abbilden.
+
+Pausier-Gründe (Fenster offen/niemand zuhause/Sommermodus aktiv, siehe
+Lektion 45) haben in JEDEM Fall - Zeitplan aktiv oder nicht - höchste
+Priorität und erzwingen sofort Standby; sie stehen bewusst VOR der
+Verzweigung zwischen Zeitplan- und Schwellenwert-Logik, nicht als
+Sonderfall innerhalb einer der beiden (identisches Muster zu Lektion 21:
+Sicherheits-/Pausier-Gründe dürfen nie versehentlich mit einer
+Komfort-Umschaltung mit-deaktiviert werden).
+
+Acht statt zwei Zeitfelder (`CONF_HEATING_COMFORT_START/END_WEEKDAY/
+WEEKEND`, `CONF_HEATING_NIGHT_START/END_WEEKDAY/WEEKEND`) brauchten einen
+komplett neuen Selector-Typ - `selector.TimeSelector()`, Werte als
+`"HH:MM:SS"`-String, weder Zahl noch Entity. Neue Helfer-Paare
+`_time_selector()`/`_time_override_selector()` sowie eine eigene
+`_TIME_FIELDS`-Registry, 1:1 nach dem bereits etablierten Muster von
+`_threshold_selector()`/`_override_selector()`/`_THRESHOLD_FIELDS`
+gespiegelt (inkl. Erweiterung von `_room_override_placeholders()` und
+`_apply_threshold_defaults()` um diese neuen Felder, wie in Lektion 14/38
+für jeden neuen überschreibbaren Feldtyp gefordert). Offene, nicht mit
+einer echten Home-Assistant-Instanz verifizierte Annahme: Ob ein
+geleertes `TimeSelector`-Feld beim Absenden als leerer Wert (wie
+Zahlen-/Text-Felder) oder als fehlender Schlüssel (wie `EntitySelector`,
+siehe Lektion 27) übermittelt wird, ließ sich in dieser Umgebung nicht
+gegen eine echte Instanz testen - `_time_override_selector()` trägt dazu
+einen expliziten Kommentar, der auf `ROOM_OPTIONAL_ENTITY_KEYS` als
+Fallback-Fix verweist, falls sich Lektion 27 hier doch wiederholen sollte.
+
+Mitternachts-Wraparound (`_time_in_window()`, z. B. Nacht-Fenster
+22:00–06:00) über denselben simplen `start > end`-Vergleichs-Trick gelöst,
+den viele Zeitfenster-Implementierungen nutzen - kein neues Konzept, aber
+in dieser Integration erstmals gebraucht (alle bisherigen
+Zeit-/Datumsvergleiche waren reine Dauer- oder Zeitpunkt-Vergleiche, keine
+wiederkehrenden Tageszeit-Fenster). Bei sich überlappender (fehlerhafter)
+Konfiguration hat das Nacht- vor dem Comfort-Fenster Vorrang - eine
+bewusste, aber letztlich beliebige Tie-Break-Entscheidung, da die
+Standard-Zeitfenster (siehe `DEFAULT_HEATING_*` in `const.py`) sich pro
+Wochentyp ohnehin lückenlos zu 24 Stunden ergänzen und eine Überlappung
+nur bei individueller Fehlkonfiguration auftreten sollte. Lektion: Eine
+"erzwingt statt ergänzt"-Design-Entscheidung (Rückfrage 1) verlangt einen
+eigenen Ein-/Ausschalter für die GESAMTE alternative Logik, nicht nur eine
+zusätzliche Bedingung innerhalb der bestehenden - sonst lässt sich
+rückwärtskompatibles Verhalten für Nutzer, die das neue Feature nicht
+wollen, nicht mehr sauber garantieren.
+
+**45. Sommermodus-Schalter: bewusst als generische Anfrage nach einem
+Binärsensor gestartet, aber durch Rückfrage zu einer echten,
+UI-schaltbaren `switch`-Entität mit automatischer, aber
+überschreibbarer Vorhersage-Logik geworden (0.60.0).** Teil desselben
+gebündelten Feature-Requests wie Lektion 43/44. Ursprüngliche
+Formulierung: "eine Entität für den Sommermodus, ein Binärsensor, der
+geschaltet werden kann" - ein technischer Widerspruch (`binary_sensor` ist
+in Home Assistant grundsätzlich read-only, nicht durch den Nutzer
+schaltbar). Rückfrage (AskUserQuestion) klärte das zugunsten der
+naheliegenden Auflösung: eine echte `switch`-Entität. Direkt im Anschluss,
+noch bevor Task 3 (Sommermodus) begonnen wurde, meldete sich der Nutzer
+mit einer Präzisierung, die den ursprünglichen Plan ("rein manuell
+bedienbarer Schalter") grundlegend änderte: "Der Switch soll aber
+definitiv automatisch geschaltet werden. Es sollte da ja bei mir schon
+Vorkehrungen in Home Assistant geben" - mitsamt einer eigenen, bereits
+produktiv laufenden Template-Sensor-Konfiguration, die `weather.
+get_forecasts` periodisch aufruft und das Ergebnis in mehreren
+Template-Sensoren als Attribute/State ablegt.
+
+Diese vom Nutzer mitgelieferte Konfiguration löste eine zunächst in einer
+kurzen exploratorischen Antwort (siehe Session-Verlauf) selbst
+aufgeworfene technische Sorge auf: eine direkte `weather.get_forecasts`-
+Anbindung wäre der erste Sensor-Zugriff dieser Integration gewesen, der
+nicht über einen einfachen `hass.states.get()`-Read funktioniert (Wetter-
+Vorhersagen sind in Home Assistant ein Service-Aufruf mit
+Response-Variable, kein Attribut/state einer Entität) - spürbar
+aufwändiger als jede bestehende Sensor-Anbindung dieser Integration.
+Da der Nutzer aber bereits selbst eine Template-Sensor-Brücke pflegt, die
+das Vorhersage-Ergebnis in gewöhnliche state-/Attribut-Werte umwandelt,
+entfällt diese Komplexität komplett - `CONF_SUMMER_MODE_FORECAST_ENTITY`
+(global-only, wie `CONF_OUTDOOR_TEMP_ENTITY`) plus optionales
+`CONF_SUMMER_MODE_FORECAST_ATTRIBUTE` (leer = state direkt lesen) lesen
+eine beliebige, vom Nutzer selbst bereitgestellte `sensor`-/`weather`-
+Entität genauso wie jeden anderen Sensor dieser Integration - exakt
+dasselbe `CONF_TEMP_ATTRIBUTE`-Muster wie bei `CONF_TEMP_SOURCE_ENTITY`,
+nur ein zweites Mal angewendet.
+
+Die verbleibende Design-Frage war die Kombination "automatisch UND
+weiterhin manuell bedienbar" - kein Widerspruch, aber ein Interaktions-
+Problem: Wessen Wille gewinnt, wenn Automatik und Nutzer sich
+widersprechen? Gelöst über dasselbe Idempotenz-Muster, das
+`_update_single_device()` für Luftentfeuchter/Klimaanlage bereits
+etabliert hatte (Lektion 19 u. a.): Die Automatik (`_update_summer_mode()`
+in `binary_sensor.py`) schaltet den Schalter nur dann per
+`switch.turn_on`/`switch.turn_off`-Serviceaufruf um, wenn sich ihre
+Entscheidung (`want_summer_mode`, aus einem Schwellenwert-Vergleich mit
+Toleranz-Marge-Hysterese) vom aktuellen LIVE-Zustand des Schalters
+unterscheidet - in der Totzone der Hysterese sowie ohne verfügbaren
+Vorhersagewert bleibt der Schalter unangetastet, gleich ob sein aktueller
+Zustand zuletzt automatisch oder manuell gesetzt wurde. Ein manueller
+Schaltvorgang des Nutzers "gewinnt" dadurch implizit, bis die Vorhersage
+eine der beiden Grenzen tatsächlich über-/unterschreitet - keine explizite
+"Override"-Markierung nötig, weil Automatik und manuelle Bedienung
+DIESELBE Entität ohne zweite, private Zustandskopie teilen (anders als bei
+Luftentfeuchter/Klimaanlage, wo Automatik und Gerät zwei getrennte,
+externe Objekte sind - hier ist die switch-Entität selbst ein Erzeugnis
+dieser Integration, es gibt nur einen Zustand).
+
+Cross-Plattform-Referenz zwischen `binary_sensor.py` (trifft die
+Entscheidung) und der neuen `switch.py`-Plattform (hält den Zustand) über
+die Entity-Registry gelöst (`er.async_get(hass).async_get_entity_id(
+"switch", DOMAIN, unique_id)`), nicht über einen direkten Python-
+Objektverweis wie beim Dusche-Sensor (Lektion 25) - Lektion 25 hatte genau
+diesen direkten Verweis als Quelle einer Reihenfolge-Abhängigkeit beim
+gleichzeitigen `async_add_entities()` beider Entitäten identifiziert;
+zwei unabhängige, per `async_setup_entry()` separat eingerichtete
+Plattformen (bereits seit Lektion 25 als riskanter eingeschätzt als
+zwei Entitäten derselben Plattform) machen das umso wichtiger. Der
+etablierte, dominante Zugriffsweg dieser Integration auf JEDE fremde
+Entität ist ohnehin ein normaler State-/Service-Zugriff über ihre
+entity_id (wie bei Luftentfeuchter/Klimaanlage/Heizung/Fensterkontakt) -
+die Sommermodus-switch-Entität wird hier bewusst genauso behandelt wie
+ein "externes" Gerät, obwohl sie von derselben Integration erzeugt wird.
+
+Lektion: Eine erste, in sich widersprüchliche Nutzeranforderung
+("Binärsensor, der geschaltet werden kann") ist ein zuverlässiges Signal,
+dass die eigentliche Absicht noch nicht vollständig erfasst ist - die
+Rückfrage klärte den unmittelbaren Widerspruch, aber die tatsächlich
+gewollte Interaktion (automatisch UND überschreibbar) wurde erst durch
+eine zweite, unaufgeforderte Nutzer-Präzisierung sichtbar. Ebenso: Eine
+selbst aufgeworfene technische Sorge (Komplexität einer Wetter-Service-
+Anbindung) kann sich durch zusätzlichen Kontext vom Nutzer (hier: eine
+bereits bestehende Brücken-Lösung) komplett auflösen, ohne dass die
+Integration selbst komplexer werden muss - die richtige Reaktion ist dann,
+die bereits etablierte, einfachste Zugriffsart (State-Read) unverändert
+wiederzuverwenden, statt die ursprünglich befürchtete Komplexität
+vorsorglich doch selbst zu bauen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

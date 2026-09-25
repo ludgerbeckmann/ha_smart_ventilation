@@ -94,7 +94,18 @@
               "shower_rise_threshold": "Shower detection rise threshold",
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
               "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint"
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint",
+              "heating_schedule_enabled": "Enable heating schedule",
+              "heating_comfort_start_weekday": "Comfort start (weekday)",
+              "heating_comfort_end_weekday": "Comfort end (weekday)",
+              "heating_comfort_start_weekend": "Comfort start (weekend)",
+              "heating_comfort_end_weekend": "Comfort end (weekend)",
+              "heating_night_start_weekday": "Night start (weekday)",
+              "heating_night_end_weekday": "Night end (weekday)",
+              "heating_night_start_weekend": "Night start (weekend)",
+              "heating_night_end_weekend": "Night end (weekend)",
+              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
@@ -112,9 +123,20 @@
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}",
-              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature reaches the threshold again, or while the window is open. Currently global: {global_heating_standby_temp}"
+              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
+              "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
+              "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
+              "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
+              "heating_comfort_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_start_weekend}",
+              "heating_comfort_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekend}",
+              "heating_night_start_weekday": "Empty = use the value from the global settings. If the comfort/night windows overlap, the night window takes priority. Currently global: {global_heating_night_start_weekday}",
+              "heating_night_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekday}",
+              "heating_night_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_start_weekend}",
+              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}",
+              "summer_mode_threshold_temp": "Empty = use the value from the global settings. Once the forecast temperature reaches this value (+/- tolerance margin), the summer mode switch turns on automatically, and off again below it - only effective if a forecast source is configured (Settings → Devices & Services → Smart Climate Options → Configure). Currently global: {global_summer_mode_threshold_temp}"
             }
           }
         }
@@ -213,7 +235,18 @@
               "shower_rise_threshold": "Shower detection rise threshold",
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
               "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint"
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint",
+              "heating_schedule_enabled": "Enable heating schedule",
+              "heating_comfort_start_weekday": "Comfort start (weekday)",
+              "heating_comfort_end_weekday": "Comfort end (weekday)",
+              "heating_comfort_start_weekend": "Comfort start (weekend)",
+              "heating_comfort_end_weekend": "Comfort end (weekend)",
+              "heating_night_start_weekday": "Night start (weekday)",
+              "heating_night_end_weekday": "Night end (weekday)",
+              "heating_night_start_weekend": "Night start (weekend)",
+              "heating_night_end_weekend": "Night end (weekend)",
+              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
             },
             "data_description": {
               "temp_threshold_open": "Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
@@ -231,9 +264,20 @@
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors\" section. Currently global: {global_shower_rise_threshold}",
-              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature reaches the threshold again, or while the window is open. Currently global: {global_heating_standby_temp}"
+              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
+              "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
+              "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
+              "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
+              "heating_comfort_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_start_weekend}",
+              "heating_comfort_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekend}",
+              "heating_night_start_weekday": "Empty = use the value from the global settings. If the comfort/night windows overlap, the night window takes priority. Currently global: {global_heating_night_start_weekday}",
+              "heating_night_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekday}",
+              "heating_night_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_start_weekend}",
+              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}",
+              "summer_mode_threshold_temp": "Empty = use the value from the global settings. Once the forecast temperature reaches this value (+/- tolerance margin), the summer mode switch turns on automatically, and off again below it - only effective if a forecast source is configured (Settings → Devices & Services → Smart Climate Options → Configure). Currently global: {global_summer_mode_threshold_temp}"
             }
           }
         },
@@ -263,6 +307,8 @@
               "power_entity": "Power sensor (e.g. grid feed-in)",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
               "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
+              "summer_mode_forecast_entity": "Summer mode forecast source (optional)",
+              "summer_mode_forecast_attribute": "Forecast attribute (optional)",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)"
@@ -270,6 +316,8 @@
             "data_description": {
               "outdoor_temp_entity": "Used for all rooms - can no longer be overridden per room",
               "outdoor_humidity_entity": "Used for all rooms, cannot be overridden per room. Without this sensor, ventilating on high indoor humidity is still recommended regardless of outdoor conditions. With it set, humidity-based ventilation is only recommended if it's actually drier outside than inside",
+              "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically switches the summer mode switch of every room with heating configured. Without this entity, the switch remains purely manual.",
+              "summer_mode_forecast_attribute": "Name of an attribute on the entity above to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
               "tts_entity": "Used when a room doesn't set its own TTS entity",
               "tts_volume": "Volume the speakers are set to before the announcement (not automatically restored afterwards)",
               "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
@@ -301,7 +349,18 @@
               "shower_rise_threshold": "Shower detection rise threshold",
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
               "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint"
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint",
+              "heating_schedule_enabled": "Enable heating schedule",
+              "heating_comfort_start_weekday": "Comfort start (weekday)",
+              "heating_comfort_end_weekday": "Comfort end (weekday)",
+              "heating_comfort_start_weekend": "Comfort start (weekend)",
+              "heating_comfort_end_weekend": "Comfort end (weekend)",
+              "heating_night_start_weekday": "Night start (weekday)",
+              "heating_night_end_weekday": "Night end (weekday)",
+              "heating_night_start_weekend": "Night start (weekend)",
+              "heating_night_end_weekend": "Night end (weekend)",
+              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
             },
             "data_description": {
               "co2_threshold_open": "Common recommendation: ventilate at 1000 ppm at the latest",
@@ -314,9 +373,14 @@
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled",
               "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
               "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors\" section",
-              "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby",
-              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold",
-              "heating_standby_temp": "Setpoint applied once the indoor temperature reaches the threshold again, or while the window is open"
+              "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
+              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
+              "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
+              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
+              "heating_schedule_enabled": "Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled (default): the plain threshold logic above still applies",
+              "heating_comfort_start_weekday": "Only effective while the heating schedule is enabled",
+              "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority",
+              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer mode switch turns on automatically, and off again below it - only effective if a forecast source is configured above in the \"Sensors\" section"
             }
           },
           "messages": {
