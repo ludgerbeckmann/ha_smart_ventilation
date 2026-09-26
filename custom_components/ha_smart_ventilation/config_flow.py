@@ -94,6 +94,7 @@ from .const import (
     CONF_TTS_VOLUME,
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
+    COMMON_HEATING_PRESET_MODES,
     COMMON_TEMP_ATTRIBUTES,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
@@ -399,14 +400,22 @@ _HEATING_PRESET_GUESS_KEYWORDS = {
 def _heating_preset_selector(
     key: str, defaults: dict | None, available_presets: list[str]
 ) -> tuple[vol.Marker, object]:
-    """Für RAUM-Einstellungen: echt optional (leer = dieser Modus wird
-    weiterhin über den Zahlen-Sollwert statt climate.set_preset_mode
-    gesteuert, siehe binary_sensor.py:_update_heating()). Bietet die
-    tatsächlich von der aktuell gewählten Heizungs-Entität gemeldeten
-    preset_modes als Dropdown an (zusätzlich frei editierbar über
-    custom_value, falls die Entität gerade nicht erreichbar ist oder ein
-    abweichender Wert nötig ist) und schlägt bei noch keinem gespeicherten
-    Wert per Schlüsselwort-Suche einen passenden Vorschlag vor.
+    """Echt optional (leer = dieser Modus wird weiterhin über den
+    Zahlen-Sollwert statt climate.set_preset_mode gesteuert, siehe
+    binary_sensor.py:_update_heating()). Bietet `available_presets` als
+    Dropdown an (zusätzlich frei editierbar über custom_value, falls der
+    tatsächlich gewünschte Wert nicht in der Liste steht) und schlägt bei
+    noch keinem gespeicherten Wert per Schlüsselwort-Suche einen passenden
+    Vorschlag vor.
+
+    Zwei Aufrufer mit unterschiedlicher Herkunft von `available_presets`:
+    im RAUM-Formular die tatsächlich von der aktuell gewählten
+    Heizungs-Entität gemeldeten preset_modes (dort meist ein sehr
+    zuverlässiger Vorschlag, da real vom Gerät gemeldet); in den GLOBALEN
+    Einstellungen (keine einzelne Entität, siehe COMMON_HEATING_PRESET_MODES)
+    stattdessen eine feste, nur die acht offiziellen HA-Standardwerte
+    umfassende Liste - dort daher nur ein Hinweis, kein garantiert
+    zutreffender Gerätewert.
 
     Nutzt bewusst KEIN default= (Lektion 28), analog zu
     _time_override_selector()."""
@@ -1173,19 +1182,22 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             default=defaults.get(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
         )
     ] = selector.BooleanSelector()
-    # Reine Freitextfelder als raumweiter Standard - anders als im
-    # Raum-Formular (siehe _heating_preset_selector()) gibt es hier keine
-    # konkrete Entität, deren preset_modes sich zur Vorbelegung auslesen
-    # ließen (jeder Raum kann eine andere Heizungs-Entität haben).
+    # Dropdown als raumweiter Standard - anders als im Raum-Formular (siehe
+    # _heating_preset_selector()) gibt es hier keine konkrete Entität, deren
+    # preset_modes sich auslesen ließen (jeder Raum kann eine andere
+    # Heizungs-Entität haben) - daher COMMON_HEATING_PRESET_MODES als feste
+    # Vorschlagsliste statt eines reinen Freitextfelds, weiterhin über
+    # custom_value frei editierbar.
     for key in (
         CONF_HEATING_PRESET_COMFORT,
         CONF_HEATING_PRESET_STANDBY,
         CONF_HEATING_PRESET_NIGHT,
         CONF_HEATING_PRESET_BUILDING_PROTECTION,
     ):
-        parameter_fields[_entity_marker(key, defaults, required=False)] = (
-            selector.TextSelector()
+        marker, field_selector = _heating_preset_selector(
+            key, defaults, COMMON_HEATING_PRESET_MODES
         )
+        parameter_fields[marker] = field_selector
 
     return vol.Schema(
         {

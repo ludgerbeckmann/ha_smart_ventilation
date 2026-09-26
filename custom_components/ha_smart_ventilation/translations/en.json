@@ -404,7 +404,7 @@
               "heating_comfort_start_weekday": "Only effective while the heating schedule is enabled",
               "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority",
               "heating_use_preset_mode": "Default Yes (opt-out): heating entities that support preset_mode (e.g. KNX) are controlled/shown via presets automatically instead of a numeric setpoint. Without support, it automatically stays on setpoint control - overridable per room to \"No\" to avoid using presets despite support.",
-              "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - vendor-dependent, no selection list here (no device to read from). Empty = this state keeps being set via the comfort setpoint.",
+              "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - dropdown only suggests the eight official Home Assistant standard values (no single device to read the actual presets from), freely editable. Empty = this state keeps being set via the comfort setpoint.",
               "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state.",
               "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",

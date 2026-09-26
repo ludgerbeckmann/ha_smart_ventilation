@@ -2432,6 +2432,100 @@ bleibt und nur zur Laufzeit, mit dem echten Fehlerfall, sichtbar wird -
 ein vom Nutzer bereitgestelltes Home-Assistant-Log war hier das einzige
 Mittel, das zuverlässig aufzudecken.
 
+**51. Lektion 42s Anwesenheits-Pausierung für die Heizung war als
+gleichrangiger Pausier-Grund neben Fenster/Sommerbetrieb umgesetzt - der
+Nutzer präzisierte nachträglich, dass sie ausschließlich den Comfort-Modus
+verhindern, aber Standby/Nacht/Gebäudeschutz unangetastet lassen soll
+(0.64.1).** Nutzer-Nachfrage "sicherheitshalber": "Das soll nur
+verhindern, dass die Heizung nicht in den Komfortmodus schaltet. Alle
+anderen Modi sowie Standby, Gebäudeschutz oder Eco-Nachtbetrieb sollen
+natürlich weiterhin ganz normal ablaufen." Der bisherige Code
+(`heating_target_mode`-Berechnung in `_evaluate()`) behandelte
+`heating_presence_away` bislang exakt wie `heating_summer_mode_active` -
+beide erzwangen sofort "standby", unabhängig davon, was Zeitplan oder
+Schwellenwert-Logik eigentlich ergeben hätten. Das überschrieb z. B. einen
+per Zeitplan aktiven Nacht-Modus fälschlich mit Standby, sobald zusätzlich
+niemand zuhause war - genau das wollte der Nutzer nicht.
+
+Fix: Die Anwesenheitsprüfung wandert hinter die eigentliche
+Zielmodus-Ermittlung (Fenster/Sommerbetrieb/Zeitplan/Schwellenwert) und
+degradiert das Ergebnis nur noch NACHTRÄGLICH von "comfort" auf "standby"
+(`heating_presence_blocked_comfort = heating_presence_away and
+heating_target_mode == "comfort"`) - jeder andere bereits ermittelte
+Zielmodus bleibt unverändert. Fenster/Sommerbetrieb bleiben bewusst
+unverändert als echte, dem eigentlichen Ziel übergeordnete Pausen (sie
+erzwingen ihr Ergebnis unabhängig vom sonst gewollten Modus - anders als
+Abwesenheit, die nur einen einzelnen, bereits eintretenden Fall
+korrigiert). Der `_heating_reason`-Text wurde entsprechend nur noch für
+den tatsächlich eingetretenen Fall (Comfort wurde verhindert) gesetzt,
+nicht mehr für jede Abwesenheit unabhängig vom eigentlichen Zielmodus -
+sonst hätte die Anzeige weiterhin "pausiert: niemand zuhause" suggeriert,
+obwohl in Wahrheit z. B. ein Zeitfenster den Nacht-Modus unverändert
+durchgesetzt hätte (dieselbe Art Fehler wie in Lektion 11/13: ein
+Grund-Text darf keine Ursache behaupten, die den tatsächlichen Ausgang gar
+nicht beeinflusst hat). README (Abschnitt "Sensoren & Geräte" sowie
+"Pausen im Detail") entsprechend präzisiert: Abwesenheit dort explizit als
+eigener, von den beiden echten Pausen (Fenster, Sommerbetrieb) getrennter
+Absatz beschrieben, nicht mehr als dritte gleichrangige Pause. Lektion:
+Bei einer als "Pausier-Grund" eingeführten Bedingung, die künftig für
+mehrere strukturell ähnliche Fälle wiederverwendet wird (hier: Fenster/
+Sommerbetrieb als Vorbild für die neue Anwesenheit), nicht automatisch
+annehmen, dass "gleiche Code-Stelle" auch "gleiche Priorität/gleiche
+Wirkung" bedeutet - eine spätere Nutzer-Präzisierung kann ergeben, dass
+die neue Bedingung nur einen EINZELNEN, bereits woanders ermittelten
+Fall korrigieren soll, nicht das gesamte Ergebnis unabhängig überschreiben
+darf.
+
+**52. Auf Nutzerwunsch: Die vier globalen Preset-Namen-Felder (Lektion 50)
+waren reine Freitextfelder ohne jede Vorbelegung - anders als das
+Raum-Formular (dort echte, vom Gerät gemeldete Presets als Dropdown)
+fehlte den globalen Einstellungen jede Hilfestellung beim Ausfüllen
+(0.64.1).** Nutzer-Feedback: "Die Preset-Namen in den globalen
+Einstellungen sind gar nicht vorausgefüllt. Kann man da eventuell auch
+eine Dropdown-Liste machen, wie bei dem Attribut für die Climate-Entität?"
+- Verweis auf das bereits bestehende Muster bei `CONF_TEMP_ATTRIBUTE`
+(fester Kandidaten-Katalog `COMMON_TEMP_ATTRIBUTES` als `SelectSelector`
+mit `custom_value=True`, siehe Abschnitt "Erweitert"). Für die globalen
+Preset-Felder gibt es - anders als im Raum-Formular - keine einzelne
+Heizungs-Entität, deren `preset_modes` sich live auslesen ließen (jeder
+Raum kann eine andere Entität haben, siehe `_heating_preset_selector()`s
+ursprünglicher Kommentar dazu) - der bisherige reine `TextSelector()` war
+daher eine bewusste, aber für den Nutzer unbequeme Entscheidung.
+
+Fix: Neue Konstante `COMMON_HEATING_PRESET_MODES` in `const.py` - bewusst
+NUR die acht offiziellen `PRESET_*`-Werte aus
+`homeassistant.components.climate.const` (comfort/eco/home/sleep/away/
+boost/activity/none), nicht als Import (keine Abhängigkeit von internem
+HA-Modulnamen, siehe Lektion 40), sondern als reine String-Literale.
+Explizit KEINE zusätzlichen, unverifizierten Vermutungen für
+herstellerspezifische Namen (z. B. ein geratenes "building_protection")
+ergänzt - genau die Art Fehler, die Lektion 48 bereits für
+`COMMON_TEMP_ATTRIBUTES`s drittem Vorschlagswert (`target_temperature`)
+kritisiert hatte. `_heating_preset_selector()` (bisher nur für das
+Raum-Formular gedacht, `available_presets` kam dort immer von einer realen
+Geräte-Abfrage) wird jetzt für BEIDE Formulare verwendet - die globale
+Aufrufstelle übergibt `COMMON_HEATING_PRESET_MODES` statt der Live-Liste;
+die Funktion selbst brauchte dafür keine Codeänderung, nur eine
+präzisierte Docstring (zwei Aufrufer mit unterschiedlicher Herkunft der
+Liste - einmal ein zuverlässiger Live-Wert vom Gerät, einmal nur ein
+Hinweis ohne Garantie). Die bereits bestehende Schlüsselwort-Rate-Logik
+(`_HEATING_PRESET_GUESS_KEYWORDS`) griff dadurch ohne weitere Änderung
+automatisch auch global: "comfort" wird für das Comfort-Feld vorbelegt,
+"eco" für das Nacht-Feld (da "eco" als Keyword für Nacht bereits seit
+Lektion 50 hinterlegt ist) - für Standby und Gebäudeschutz bleibt es ohne
+Vorschlag, da kein Kandidat aus der 8er-Liste zu deren Schlüsselwörtern
+passt (ehrlich, statt einen falschen Vorschlag zu erzwingen). Wie beim
+Raum-Formular bleibt das Feld über `custom_value=True` weiterhin frei
+editierbar, falls die tatsächliche Entität einen anderen (insbesondere
+herstellerspezifischen, z. B. KNX-eigenen) Namen meldet. Lektion: Ein
+bereits etabliertes "Dropdown mit Vorschlägen, aber frei editierbar"-Muster
+(hier: `COMMON_TEMP_ATTRIBUTES`) lässt sich oft direkt auf ein zweites,
+strukturell ähnliches Feld übertragen, ohne dass eine neue Auswahl-Logik
+gebaut werden müsste - wichtig ist dabei, wie Lektion 48 bereits zeigte,
+den Kandidaten-Katalog auf tatsächlich verifizierte Werte zu beschränken,
+statt die Vorschlagsliste durch unbelegte Vermutungen selbst unzuverlässig
+zu machen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

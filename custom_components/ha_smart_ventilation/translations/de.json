@@ -404,7 +404,7 @@
               "heating_comfort_start_weekday": "Nur wirksam bei aktiviertem Heizungs-Zeitplan",
               "heating_night_start_weekday": "Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang",
               "heating_use_preset_mode": "Standard Ja (Opt-out): Heizungen, deren Entität preset_mode unterstützt (z. B. KNX), werden automatisch darüber statt über einen Zahlen-Sollwert gesteuert/angezeigt. Ohne Unterstützung bleibt es automatisch bei der Sollwert-Steuerung - pro Raum auf \"Nein\" überschreibbar, um Presets trotz Unterstützung nicht zu nutzen.",
-              "heating_preset_comfort": "Preset-Name für den Comfort-Zustand (z. B. \"Comfort\") - herstellerabhängig, hier keine Auswahlliste möglich (kein Gerät zum Auslesen). Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt.",
+              "heating_preset_comfort": "Preset-Name für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt nur die acht offiziellen Home-Assistant-Standardwerte als Vorschlag (kein einzelnes Gerät zum Auslesen der tatsächlichen Presets), frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt.",
               "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand.",
               "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt).",
               "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand (wird gesetzt, solange ein Fenster bestätigt offen ist). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet.",

@@ -363,6 +363,29 @@ DEFAULT_HEATING_NIGHT_TEMP = 16.0
 # Opt-out (nicht Opt-in) - siehe CONF_HEATING_USE_PRESET_MODE oben.
 DEFAULT_HEATING_USE_PRESET_MODE = True
 
+# Vorschlagsliste für die vier Preset-Namen-Felder in den GLOBALEN
+# Einstellungen (siehe _heating_preset_selector() in config_flow.py) - dort
+# gibt es anders als im Raum-Formular keine konkrete Heizungs-Entität,
+# deren tatsächlich gemeldete preset_modes sich auslesen ließen (jeder Raum
+# kann eine andere Entität haben). Bewusst NUR die acht offiziellen,
+# in homeassistant.components.climate.const definierten PRESET_*-Werte
+# (nicht als Import, um keine Abhängigkeit von internen HA-Modulnamen
+# einzugehen, siehe Lektion 40) - keine zusätzlichen, unverifizierten
+# Vermutungen für herstellerspezifische Namen (z. B. "building_protection"),
+# analog zur in Lektion 48 kritisierten, vermutlich falschen Ergänzung bei
+# COMMON_TEMP_ATTRIBUTES. Das Feld bleibt über custom_value trotzdem frei
+# editierbar, falls die tatsächliche Entität einen anderen Namen meldet.
+COMMON_HEATING_PRESET_MODES = [
+    "comfort",
+    "eco",
+    "home",
+    "sleep",
+    "away",
+    "boost",
+    "activity",
+    "none",
+]
+
 # Standard-Zeitfenster für den optionalen Heizungs-Zeitplan (siehe
 # CONF_HEATING_SCHEDULE_ENABLED oben) - Comfort tagsüber, Nacht-Absenkung
 # ab spätem Abend, Wochenende mit üblichem späterem Aufsteh-/

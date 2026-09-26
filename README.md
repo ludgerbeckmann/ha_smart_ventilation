@@ -210,14 +210,18 @@ Entität für Dashboards/Automationen).
        falls die Empfehlung ignoriert wird
      - **Anwesenheit für Heizung (Personen)** (optional): eine oder mehrere
        `person`- oder `device_tracker`-Entitäten (Mehrfachauswahl) - ist
-       mindestens eine hinterlegt, pausiert die Heizung (Standby), solange
-       ALLE davon bestätigt "nicht zuhause" melden. Meldet mindestens eine
-       "zuhause", oder ist der Zustand einer von ihnen unbekannt/nicht
-       verfügbar, heizt der Raum normal weiter (permissiv - ein einzelner
-       GPS-Aussetzer soll die Heizung nicht fälschlich abschalten). Ohne
-       hinterlegte Entität keine Auswirkung. Unabhängig von den oben
-       konfigurierten Anwesenheits-Entitäten der App-Benachrichtigungsziele
-       - dort geht es um "wen benachrichtigen", hier um "wann heizen"
+       mindestens eine hinterlegt und melden ALLE davon bestätigt "nicht
+       zuhause", verhindert das ausschließlich den Wechsel in den
+       **Comfort**-Modus (Herabstufung auf Standby) - ein anderweitig
+       ermittelter Standby-/Nacht-/Gebäudeschutz-Modus läuft unverändert
+       normal weiter, es handelt sich also NICHT um eine eigene Pause.
+       Meldet mindestens eine "zuhause", oder ist der Zustand einer von
+       ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter
+       (permissiv - ein einzelner GPS-Aussetzer soll die Heizung nicht
+       fälschlich aus dem Comfort-Modus nehmen). Ohne hinterlegte Entität
+       keine Auswirkung. Unabhängig von den oben konfigurierten
+       Anwesenheits-Entitäten der App-Benachrichtigungsziele - dort geht es
+       um "wen benachrichtigen", hier um "wann Comfort erlaubt ist"
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
@@ -719,10 +723,13 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
 - **Heizung**: anders als Luftentfeuchter/Klimaanlage kein einfaches
   Ein/Aus, sondern ein Umschalten zwischen festen Sollwerten (Comfort/
   Standby/Nacht, über `climate.set_temperature`) - wie für Heizungen
-  typisch. Pausen (Fenster offen, niemand zuhause, Sommerbetrieb aktiv - alle
-  drei siehe unten) haben dabei immer höchste Priorität und schalten sofort
-  auf **Standby** bzw. **Gebäudeschutz** (siehe unten), unabhängig von allem
-  anderen weiter unten.
+  typisch. Zwei echte Pausen (Fenster offen, Sommerbetrieb aktiv - beide
+  siehe unten) haben dabei immer höchste Priorität und schalten sofort auf
+  **Gebäudeschutz** bzw. **Standby** (siehe unten), unabhängig von allem
+  anderen weiter unten. Abwesenheit (siehe unten) ist dagegen **keine**
+  eigene Pause, sondern verhindert ausschließlich den Wechsel in **Comfort**
+  - ein bereits anderweitig ermittelter Standby-/Nacht-/Gebäudeschutz-Modus
+  bleibt davon unberührt.
 
   **Presets statt Sollwert** (optional, Option "Presets steuern/anzeigen",
   Standard auch global Ja): Manche climate-Integrationen (z. B. KNX) bilden
@@ -777,18 +784,25 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   verwenden" direkt als Heizungs-Gerät wiederverwendet werden, statt sie
   zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen.
 
-  **Pausen im Detail:**
+  **Pausen im Detail** (schalten sofort auf Gebäudeschutz/Standby,
+  unabhängig vom eigentlich gewollten Zielmodus):
   - Solange der Fensterkontakt-Sensor das Fenster als **bestätigt offen**
     meldet - gegen ein offenes Fenster zu heizen verschwendet nur Energie.
-  - Sobald im Abschnitt "Benachrichtigungen & Anwesenheit" mindestens eine
-    Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon
-    bestätigt "nicht zuhause" melden - meldet mindestens eine "zuhause",
-    oder ist der Zustand einer von ihnen gerade unbekannt/nicht verfügbar,
-    heizt der Raum normal weiter (permissiv, ein einzelner GPS-Aussetzer
-    soll die Heizung nicht fälschlich abschalten). Ohne konfigurierte
-    Entität entfällt diese Bedingung komplett.
   - Solange der globale **Sommer-/Winterbetrieb-Schalter** (siehe unten)
     **an** ist (Sommerbetrieb) - pausiert dann die Heizung **aller** Räume.
+
+  **Abwesenheit - keine Pause, sondern ein reines Comfort-Verbot:** Sobald
+  im Abschnitt "Benachrichtigungen & Anwesenheit" mindestens eine
+  Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon
+  bestätigt "nicht zuhause" melden, wird ein ansonsten ermittelter
+  Comfort-Zielmodus auf Standby herabgestuft - ein bereits anderweitig
+  ermittelter Standby-, Nacht- oder Gebäudeschutz-Zielmodus läuft dagegen
+  unverändert normal weiter, genau wie ohne Abwesenheit. Meldet mindestens
+  eine Entität "zuhause", oder ist der Zustand einer von ihnen gerade
+  unbekannt/nicht verfügbar, greift diese Herabstufung gar nicht (permissiv,
+  ein einzelner GPS-Aussetzer soll die Heizung nicht fälschlich aus dem
+  Comfort-Modus nehmen). Ohne konfigurierte Entität entfällt diese
+  Bedingung komplett.
 - **Sommer-/Winterbetrieb**: **kein** eigenes, von dieser Integration
   angelegtes Gerät, sondern eine bereits **vorhandene** `switch`-Entität,
   die in "- Smart Climate Optionen -" hinterlegt und von dieser Integration
