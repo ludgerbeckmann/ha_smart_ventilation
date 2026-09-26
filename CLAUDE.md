@@ -2526,6 +2526,75 @@ den Kandidaten-Katalog auf tatsächlich verifizierte Werte zu beschränken,
 statt die Vorschlagsliste durch unbelegte Vermutungen selbst unzuverlässig
 zu machen.
 
+**53. Überschreibbare Dropdowns für Zahlenfelder: erstmals für zwei
+konkrete Felder umgesetzt, mit Rückfrage zum Umfang statt sofortiger
+Ausweitung auf alle ~19 Schwellenwerte (0.65.0).** Nutzerwunsch (aus den
+globalen Einstellungen heraus): "Kann man da nicht mehrere der
+Eingabefenster umstellen auf überschreibbare Dropdown-Menüs?" - konkret
+genannt: Erinnerungsintervall (Vorschläge 0/20/40/60 Minuten) und
+Mindesteinspeiseleistung (500/1000/1500/2000 Watt), mit dem offenen
+Zusatz "das wäre bei weiteren Feldern womöglich auch eine Option". Zwei
+Rückfragen klärten den Umfang vor der Umsetzung (feste Arbeitsanweisung,
+siehe oben): (1) Auch die entsprechenden RAUM-Override-Felder umstellen,
+nicht nur die globalen - Nutzer wählte die empfohlene Variante
+"Global + Raum-Override" für ein konsistentes Bedienbild. (2) Weitere
+Felder sofort mit umsetzen oder erstmal bei den zwei genannten bleiben -
+Nutzer wählte "weitere Felder, ich nenne sie dir" (noch offen, siehe
+"Offene/mögliche nächste Schritte" unten).
+
+Technisch besonders: Anders als bei `_heating_preset_selector()`/
+`COMMON_TEMP_ATTRIBUTES` (beide reine Text-Werte) speichern
+`CONF_REMINDER_INTERVAL`/`CONF_MIN_SURPLUS_POWER` echte Zahlen (int bzw.
+float), die downstream in Vergleichen mit Sensor-Messwerten verwendet
+werden. `selector.SelectSelector` liefert aber - auch mit
+`custom_value=True` für einen frei eingegebenen numerischen Wert - IMMER
+einen String zurück, nie eine Zahl (anders als `NumberSelector`, das
+selbst schon `float` liefert). Ein naiver Umstieg hätte den gespeicherten
+Wert stillschweigend von Zahl auf String verändert - unauffällig beim
+Speichern selbst (kein Fehler), aber mit Absturzpotenzial beim nächsten
+Vergleich mit einem echten Sensor-Wert (`str >= float` wirft
+`TypeError`). Fix: `vol.All(selector.SelectSelector(...),
+vol.Coerce(int|float))` als Schema-Wert - `vol.All` verkettet mehrere
+Validatoren, der `SelectSelector` validiert/normalisiert zuerst, danach
+wandelt `vol.Coerce()` den validierten String zurück in den tatsächlich
+benötigten Zahlentyp. Lokal (ohne echte Home-Assistant-Instanz) mit einer
+schlanken Nachbildung von `SelectSelector` gegen `voluptuous` verifiziert,
+dass sowohl ein aus der Vorschlagsliste gewähltes ("20") als auch ein frei
+eingegebener Wert ("45", oder mit Nachkommastelle für die
+Leistungsschwelle) korrekt zum erwarteten Zahlentyp wird - dieses Muster
+kombiniert also, anders als Lektion 52, ECHTE numerische Coercion mit dem
+Dropdown-Muster, nicht nur reine String-Werte.
+
+Beide bereits bestehenden Aufrufstellen je Feld (global über
+`_threshold_selector()`, Raum-Override über `_override_selector()`)
+teilen sich jetzt einen neuen, gemeinsamen Helper
+(`_numeric_field_selector()`), der anhand einer neuen
+`_THRESHOLD_DROPDOWN_OPTIONS`-Registry entscheidet, ob ein Feld ein
+Dropdown (mit Coercion) oder weiterhin den bisherigen `NumberSelector`
+bekommt - beide Aufrufer-Funktionen selbst (Marker-Erzeugung,
+`suggested_value`- vs. `default=`-Logik) blieben unverändert, nur die
+Selector-Erzeugung wurde ausgelagert. Dadurch wirkt sich eine künftige
+Erweiterung der Registry automatisch auf beide Ebenen (global + Raum)
+gleichzeitig aus, ohne eine der beiden Funktionen erneut anfassen zu
+müssen. Bewusst NICHT für alle ~19 `_THRESHOLD_FIELDS`-Einträge auf einmal
+umgesetzt, obwohl der Umbau technisch trivial skaliert hätte - die
+Rückfrage ergab, dass der Nutzer die übrigen Felder selbst benennen
+möchte (unterschiedliche Felder brauchen unterschiedliche, sinnvolle
+Vorschlagswerte, die sich nicht pauschal aus min/max/step ableiten
+lassen). Wie bei `_heating_preset_selector()` (Lektion 50) nicht gegen
+eine echte Instanz verifizierbar, ob ein geleertes Dropdown-Feld beim
+Absenden als leerer Wert oder wie ein `EntitySelector` als fehlender
+Schlüssel übermittelt wird (siehe `ROOM_OPTIONAL_ENTITY_KEYS`,
+Lektion 27) - folgt hier bewusst derselben, bereits bei den
+Preset-Feldern getroffenen Annahme. Lektion: Ein bereits etabliertes
+"Dropdown mit Vorschlägen, aber frei editierbar"-Muster lässt sich nicht
+blind auf jedes Feld übertragen - bei Textfeldern (Lektion 50/52) liefert
+der Selector bereits den richtigen Typ, bei Zahlenfeldern braucht es
+zusätzlich eine explizite Rückwandlung (`vol.Coerce`), da `SelectSelector`
+grundsätzlich nur Strings zurückgibt; dieser Unterschied fällt weder beim
+Anzeigen des Formulars noch beim Speichern selbst auf, sondern erst bei
+der nächsten Verwendung des gespeicherten Werts in einer Zahlen-Operation.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
@@ -2560,3 +2629,10 @@ zu machen.
   aktualisiert wird. Das Posten des vollständigen YAML-Codes im Chat bei
   jeder Änderung ist eine feste Arbeitsanweisung - siehe ganz oben in
   dieser Datei ("Feste Arbeitsanweisungen").
+- Überschreibbare Dropdowns für Zahlenfelder (siehe Lektion 53): bisher nur
+  für Erinnerungsintervall und Mindesteinspeiseleistung umgesetzt (global +
+  Raum-Override). Der Nutzer wollte weitere geeignete Felder selbst nennen
+  (offen) - bei Bedarf `_THRESHOLD_DROPDOWN_OPTIONS` in `config_flow.py`
+  um die genannten Felder samt sinnvoller Vorschlagswerte ergänzen, keine
+  weiteren Codeänderungen nötig (`_numeric_field_selector()` greift dafür
+  automatisch, sowohl global als auch beim Raum-Override).

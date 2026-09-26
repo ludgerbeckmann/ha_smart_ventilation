@@ -233,6 +233,20 @@ _THRESHOLD_FIELDS = {
     CONF_SUMMER_MODE_THRESHOLD_TEMP: (DEFAULT_SUMMER_MODE_THRESHOLD_TEMP, 5, 30, 0.5, "°C"),
 }
 
+# Für ausgewählte Felder aus _THRESHOLD_FIELDS: überschreibbares Dropdown
+# mit gängigen Vorschlagswerten statt eines reinen Zahlen-Spinners
+# (Nutzerwunsch) - analog zum bereits bestehenden Muster bei
+# COMMON_TEMP_ATTRIBUTES/_heating_preset_selector(), hier aber für
+# numerische statt Text-Felder. Gilt sowohl für die globalen Einstellungen
+# (_threshold_selector()) als auch für den Raum-Override
+# (_override_selector()) - siehe _numeric_field_selector(). Weitere Felder
+# auf Zuruf ergänzbar, absichtlich (noch) nicht für alle ~19 Felder aus
+# _THRESHOLD_FIELDS umgesetzt.
+_THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
+    CONF_REMINDER_INTERVAL: (int, [0, 20, 40, 60]),
+    CONF_MIN_SURPLUS_POWER: (float, [500, 1000, 1500, 2000]),
+}
+
 # Zeitfelder für den optionalen Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_
 # ENABLED) - Werte als "HH:MM:SS"-String (selector.TimeSelector()-Format).
 # Analoges Muster zu _THRESHOLD_FIELDS/_threshold_selector/_override_
@@ -305,15 +319,39 @@ def _entity_marker(
     return marker_cls(key, description={"suggested_value": value})
 
 
-def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
-    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
-    globalen Einstellungen, wo beim Leeren automatisch wieder der
-    Standardwert greift (siehe _apply_threshold_defaults)."""
-    defaults = defaults or {}
-    default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
-    current = defaults.get(key, default_value)
-    marker = vol.Optional(key, description={"suggested_value": current})
-    field_selector = selector.NumberSelector(
+def _numeric_field_selector(key: str, min_v, max_v, step, unit) -> object:
+    """Baut den eigentlichen Feld-Selector für ein numerisches Schwellenwert-
+    Feld. Für die in _THRESHOLD_DROPDOWN_OPTIONS gelisteten Felder ein
+    überschreibbares Dropdown mit Vorschlagswerten (weiterhin frei
+    editierbar über custom_value), sonst wie bisher ein reiner
+    Zahlen-Spinner (NumberSelector).
+
+    SelectSelector liefert bei custom_value=True IMMER einen String zurück
+    - auch für einen frei eingegebenen numerischen Wert - anders als
+    NumberSelector, das selbst schon float liefert. vol.Coerce() wandelt
+    das Ergebnis daher zurück in den tatsächlich benötigten Zahlentyp (int
+    für Minuten, float für Watt, siehe _THRESHOLD_DROPDOWN_OPTIONS) - sonst
+    würde z. B. ein späterer Vergleich mit einem Sensor-Messwert (float)
+    an einem als String gespeicherten Wert scheitern.
+
+    Nicht gegen eine echte Home-Assistant-Instanz verifiziert, ob ein
+    geleertes Dropdown-Feld beim Absenden wie ein Zahlenfeld als leerer
+    Wert oder wie ein EntitySelector als fehlender Schlüssel übermittelt
+    wird (siehe ROOM_OPTIONAL_ENTITY_KEYS) - folgt hier derselben, bereits
+    bei _heating_preset_selector() getroffenen Annahme (leerer Wert)."""
+    if key in _THRESHOLD_DROPDOWN_OPTIONS:
+        coerce_type, options = _THRESHOLD_DROPDOWN_OPTIONS[key]
+        return vol.All(
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[str(option) for option in options],
+                    custom_value=True,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Coerce(coerce_type),
+        )
+    return selector.NumberSelector(
         selector.NumberSelectorConfig(
             mode=selector.NumberSelectorMode.BOX,
             min=min_v,
@@ -322,7 +360,17 @@ def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, ob
             unit_of_measurement=unit,
         )
     )
-    return marker, field_selector
+
+
+def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
+    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
+    globalen Einstellungen, wo beim Leeren automatisch wieder der
+    Standardwert greift (siehe _apply_threshold_defaults)."""
+    defaults = defaults or {}
+    default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
+    current = defaults.get(key, default_value)
+    marker = vol.Optional(key, description={"suggested_value": current})
+    return marker, _numeric_field_selector(key, min_v, max_v, step, unit)
 
 
 def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
@@ -335,16 +383,7 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
     if current not in (None, ""):
         kwargs["description"] = {"suggested_value": current}
     marker = vol.Optional(key, **kwargs)
-    field_selector = selector.NumberSelector(
-        selector.NumberSelectorConfig(
-            mode=selector.NumberSelectorMode.BOX,
-            min=min_v,
-            max=max_v,
-            step=step,
-            unit_of_measurement=unit,
-        )
-    )
-    return marker, field_selector
+    return marker, _numeric_field_selector(key, min_v, max_v, step, unit)
 
 
 def _time_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
