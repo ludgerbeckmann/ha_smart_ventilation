@@ -94,6 +94,8 @@ from .const import (
     CONF_TTS_VOLUME,
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
+    COMMON_HEATING_PRESET_MODES,
+    COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES,
     COMMON_TEMP_ATTRIBUTES,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
@@ -232,6 +234,25 @@ _THRESHOLD_FIELDS = {
     CONF_SUMMER_MODE_THRESHOLD_TEMP: (DEFAULT_SUMMER_MODE_THRESHOLD_TEMP, 5, 30, 0.5, "°C"),
 }
 
+# Für ausgewählte Felder aus _THRESHOLD_FIELDS: überschreibbares Dropdown
+# mit gängigen Vorschlagswerten statt eines reinen Zahlen-Spinners
+# (Nutzerwunsch) - analog zum bereits bestehenden Muster bei
+# COMMON_TEMP_ATTRIBUTES/_heating_preset_selector(), hier aber für
+# numerische statt Text-Felder. Gilt sowohl für die globalen Einstellungen
+# (_threshold_selector()) als auch für den Raum-Override
+# (_override_selector()) - siehe _numeric_field_selector(). Weitere Felder
+# auf Zuruf ergänzbar, absichtlich (noch) nicht für alle ~19 Felder aus
+# _THRESHOLD_FIELDS umgesetzt.
+_THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
+    CONF_REMINDER_INTERVAL: (int, [0, 20, 40, 60]),
+    CONF_MIN_SURPLUS_POWER: (float, [500, 1000, 1500, 2000]),
+    CONF_TTS_VOLUME: (int, [30, 50, 70, 100]),
+    CONF_HEATING_THRESHOLD_TEMP: (float, [18, 19, 20, 21]),
+    CONF_HEATING_COMFORT_TEMP: (float, [19, 20, 21, 22]),
+    CONF_HEATING_STANDBY_TEMP: (float, [15, 16, 17, 18]),
+    CONF_HEATING_NIGHT_TEMP: (float, [14, 15, 16, 17]),
+}
+
 # Zeitfelder für den optionalen Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_
 # ENABLED) - Werte als "HH:MM:SS"-String (selector.TimeSelector()-Format).
 # Analoges Muster zu _THRESHOLD_FIELDS/_threshold_selector/_override_
@@ -248,7 +269,7 @@ _TIME_FIELDS = {
     CONF_HEATING_NIGHT_END_WEEKEND: DEFAULT_HEATING_NIGHT_END_WEEKEND,
 }
 
-# Die fünfzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
+# Die elf "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
 # power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
 # hierher. CONF_REMINDER_INTERVAL bewusst NICHT hier - steht wie beim Raum
@@ -258,7 +279,10 @@ _TIME_FIELDS = {
 # ebenfalls bewusst NICHT hier - alle drei stehen wie beim Raum im neuen
 # Abschnitt "Erweitert" (siehe SECTION_ADVANCED), dafür einzeln über
 # _threshold_selector() erzeugt statt über diese generische Liste (analog
-# zu volume_marker/power_marker/grace_marker/reminder_marker).
+# zu volume_marker/power_marker/grace_marker/reminder_marker). Die vier
+# Heizungs-Sollwertfelder (Schwelle/Comfort/Standby/Nacht) ebenso NICHT
+# hier - stehen wie beim Raum ebenfalls im Abschnitt "Erweitert"
+# (Nutzerwunsch), dafür einzeln über heating_threshold_marker etc. erzeugt.
 _CORE_PARAMETER_KEYS = (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TEMP_THRESHOLD_CLOSE,
@@ -270,10 +294,6 @@ _CORE_PARAMETER_KEYS = (
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
-    CONF_HEATING_THRESHOLD_TEMP,
-    CONF_HEATING_COMFORT_TEMP,
-    CONF_HEATING_STANDBY_TEMP,
-    CONF_HEATING_NIGHT_TEMP,
     CONF_SUMMER_MODE_THRESHOLD_TEMP,
 )
 
@@ -304,15 +324,39 @@ def _entity_marker(
     return marker_cls(key, description={"suggested_value": value})
 
 
-def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
-    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
-    globalen Einstellungen, wo beim Leeren automatisch wieder der
-    Standardwert greift (siehe _apply_threshold_defaults)."""
-    defaults = defaults or {}
-    default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
-    current = defaults.get(key, default_value)
-    marker = vol.Optional(key, description={"suggested_value": current})
-    field_selector = selector.NumberSelector(
+def _numeric_field_selector(key: str, min_v, max_v, step, unit) -> object:
+    """Baut den eigentlichen Feld-Selector für ein numerisches Schwellenwert-
+    Feld. Für die in _THRESHOLD_DROPDOWN_OPTIONS gelisteten Felder ein
+    überschreibbares Dropdown mit Vorschlagswerten (weiterhin frei
+    editierbar über custom_value), sonst wie bisher ein reiner
+    Zahlen-Spinner (NumberSelector).
+
+    SelectSelector liefert bei custom_value=True IMMER einen String zurück
+    - auch für einen frei eingegebenen numerischen Wert - anders als
+    NumberSelector, das selbst schon float liefert. vol.Coerce() wandelt
+    das Ergebnis daher zurück in den tatsächlich benötigten Zahlentyp (int
+    für Minuten, float für Watt, siehe _THRESHOLD_DROPDOWN_OPTIONS) - sonst
+    würde z. B. ein späterer Vergleich mit einem Sensor-Messwert (float)
+    an einem als String gespeicherten Wert scheitern.
+
+    Nicht gegen eine echte Home-Assistant-Instanz verifiziert, ob ein
+    geleertes Dropdown-Feld beim Absenden wie ein Zahlenfeld als leerer
+    Wert oder wie ein EntitySelector als fehlender Schlüssel übermittelt
+    wird (siehe ROOM_OPTIONAL_ENTITY_KEYS) - folgt hier derselben, bereits
+    bei _heating_preset_selector() getroffenen Annahme (leerer Wert)."""
+    if key in _THRESHOLD_DROPDOWN_OPTIONS:
+        coerce_type, options = _THRESHOLD_DROPDOWN_OPTIONS[key]
+        return vol.All(
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[str(option) for option in options],
+                    custom_value=True,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Coerce(coerce_type),
+        )
+    return selector.NumberSelector(
         selector.NumberSelectorConfig(
             mode=selector.NumberSelectorMode.BOX,
             min=min_v,
@@ -321,7 +365,17 @@ def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, ob
             unit_of_measurement=unit,
         )
     )
-    return marker, field_selector
+
+
+def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
+    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
+    globalen Einstellungen, wo beim Leeren automatisch wieder der
+    Standardwert greift (siehe _apply_threshold_defaults)."""
+    defaults = defaults or {}
+    default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
+    current = defaults.get(key, default_value)
+    marker = vol.Optional(key, description={"suggested_value": current})
+    return marker, _numeric_field_selector(key, min_v, max_v, step, unit)
 
 
 def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
@@ -334,16 +388,7 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
     if current not in (None, ""):
         kwargs["description"] = {"suggested_value": current}
     marker = vol.Optional(key, **kwargs)
-    field_selector = selector.NumberSelector(
-        selector.NumberSelectorConfig(
-            mode=selector.NumberSelectorMode.BOX,
-            min=min_v,
-            max=max_v,
-            step=step,
-            unit_of_measurement=unit,
-        )
-    )
-    return marker, field_selector
+    return marker, _numeric_field_selector(key, min_v, max_v, step, unit)
 
 
 def _time_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
@@ -399,14 +444,22 @@ _HEATING_PRESET_GUESS_KEYWORDS = {
 def _heating_preset_selector(
     key: str, defaults: dict | None, available_presets: list[str]
 ) -> tuple[vol.Marker, object]:
-    """Für RAUM-Einstellungen: echt optional (leer = dieser Modus wird
-    weiterhin über den Zahlen-Sollwert statt climate.set_preset_mode
-    gesteuert, siehe binary_sensor.py:_update_heating()). Bietet die
-    tatsächlich von der aktuell gewählten Heizungs-Entität gemeldeten
-    preset_modes als Dropdown an (zusätzlich frei editierbar über
-    custom_value, falls die Entität gerade nicht erreichbar ist oder ein
-    abweichender Wert nötig ist) und schlägt bei noch keinem gespeicherten
-    Wert per Schlüsselwort-Suche einen passenden Vorschlag vor.
+    """Echt optional (leer = dieser Modus wird weiterhin über den
+    Zahlen-Sollwert statt climate.set_preset_mode gesteuert, siehe
+    binary_sensor.py:_update_heating()). Bietet `available_presets` als
+    Dropdown an (zusätzlich frei editierbar über custom_value, falls der
+    tatsächlich gewünschte Wert nicht in der Liste steht) und schlägt bei
+    noch keinem gespeicherten Wert per Schlüsselwort-Suche einen passenden
+    Vorschlag vor.
+
+    Zwei Aufrufer mit unterschiedlicher Herkunft von `available_presets`:
+    im RAUM-Formular die tatsächlich von der aktuell gewählten
+    Heizungs-Entität gemeldeten preset_modes (dort meist ein sehr
+    zuverlässiger Vorschlag, da real vom Gerät gemeldet); in den GLOBALEN
+    Einstellungen (keine einzelne Entität, siehe COMMON_HEATING_PRESET_MODES)
+    stattdessen eine feste, nur die acht offiziellen HA-Standardwerte
+    umfassende Liste - dort daher nur ein Hinweis, kein garantiert
+    zutreffender Gerätewert.
 
     Nutzt bewusst KEIN default= (Lektion 28), analog zu
     _time_override_selector()."""
@@ -1058,10 +1111,6 @@ def _build_room_schema(
                 heat_marker: heat_sel,
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
-                heating_threshold_marker: heating_threshold_sel,
-                heating_comfort_marker: heating_comfort_sel,
-                heating_standby_marker: heating_standby_sel,
-                heating_night_marker: heating_night_sel,
                 heating_schedule_marker: heating_schedule_sel,
                 **{
                     marker: sel
@@ -1074,7 +1123,9 @@ def _build_room_schema(
 
     # "Erweitert" - selten geänderte Fein-Tuning-Werte (siehe SECTION_ADVANCED
     # oben) sowie das Temperatur-Attribut, das nur bei einer climate-Quelle
-    # überhaupt greift. Bewusst NICHT hier: Heizungs-Zeitplan (bleibt im
+    # überhaupt greift, und die vier Heizungs-Sollwertfelder (Schwelle/
+    # Comfort/Standby/Nacht - Nutzerwunsch, seltener geändert als die
+    # übrigen Parameter). Bewusst NICHT hier: Heizungs-Zeitplan (bleibt im
     # Abschnitt "Parameter") und TTS-Wiedergabemodus (nur global, bleibt dort).
     fields[vol.Required(SECTION_ADVANCED)] = section(
         vol.Schema(
@@ -1091,6 +1142,10 @@ def _build_room_schema(
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
+                heating_threshold_marker: heating_threshold_sel,
+                heating_comfort_marker: heating_comfort_sel,
+                heating_standby_marker: heating_standby_sel,
+                heating_night_marker: heating_night_sel,
                 margin_marker: margin_sel,
                 frost_debounce_marker: frost_debounce_sel,
                 priority_marker: priority_sel,
@@ -1133,6 +1188,21 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     shower_threshold_marker, shower_threshold_sel = _threshold_selector(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
+    # Wie beim Raum-Formular: die vier Heizungs-Sollwertfelder stehen im
+    # Abschnitt "Erweitert" (Nutzerwunsch), daher einzeln erzeugt statt über
+    # _CORE_PARAMETER_KEYS.
+    heating_threshold_marker, heating_threshold_sel = _threshold_selector(
+        CONF_HEATING_THRESHOLD_TEMP, defaults
+    )
+    heating_comfort_marker, heating_comfort_sel = _threshold_selector(
+        CONF_HEATING_COMFORT_TEMP, defaults
+    )
+    heating_standby_marker, heating_standby_sel = _threshold_selector(
+        CONF_HEATING_STANDBY_TEMP, defaults
+    )
+    heating_night_marker, heating_night_sel = _threshold_selector(
+        CONF_HEATING_NIGHT_TEMP, defaults
+    )
 
     parameter_fields = {}
     for key in _CORE_PARAMETER_KEYS:
@@ -1145,7 +1215,17 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     advanced_fields = {
         _entity_marker(
             CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
-        ): selector.TextSelector(),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES,
+                custom_value=True,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        ),
+        heating_threshold_marker: heating_threshold_sel,
+        heating_comfort_marker: heating_comfort_sel,
+        heating_standby_marker: heating_standby_sel,
+        heating_night_marker: heating_night_sel,
         frost_debounce_marker: frost_debounce_sel,
         margin_marker: margin_sel,
         shower_threshold_marker: shower_threshold_sel,
@@ -1173,19 +1253,22 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             default=defaults.get(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
         )
     ] = selector.BooleanSelector()
-    # Reine Freitextfelder als raumweiter Standard - anders als im
-    # Raum-Formular (siehe _heating_preset_selector()) gibt es hier keine
-    # konkrete Entität, deren preset_modes sich zur Vorbelegung auslesen
-    # ließen (jeder Raum kann eine andere Heizungs-Entität haben).
+    # Dropdown als raumweiter Standard - anders als im Raum-Formular (siehe
+    # _heating_preset_selector()) gibt es hier keine konkrete Entität, deren
+    # preset_modes sich auslesen ließen (jeder Raum kann eine andere
+    # Heizungs-Entität haben) - daher COMMON_HEATING_PRESET_MODES als feste
+    # Vorschlagsliste statt eines reinen Freitextfelds, weiterhin über
+    # custom_value frei editierbar.
     for key in (
         CONF_HEATING_PRESET_COMFORT,
         CONF_HEATING_PRESET_STANDBY,
         CONF_HEATING_PRESET_NIGHT,
         CONF_HEATING_PRESET_BUILDING_PROTECTION,
     ):
-        parameter_fields[_entity_marker(key, defaults, required=False)] = (
-            selector.TextSelector()
+        marker, field_selector = _heating_preset_selector(
+            key, defaults, COMMON_HEATING_PRESET_MODES
         )
+        parameter_fields[marker] = field_selector
 
     return vol.Schema(
         {

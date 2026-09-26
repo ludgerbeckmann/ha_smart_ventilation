@@ -2432,6 +2432,305 @@ bleibt und nur zur Laufzeit, mit dem echten Fehlerfall, sichtbar wird -
 ein vom Nutzer bereitgestelltes Home-Assistant-Log war hier das einzige
 Mittel, das zuverlässig aufzudecken.
 
+**51. Lektion 42s Anwesenheits-Pausierung für die Heizung war als
+gleichrangiger Pausier-Grund neben Fenster/Sommerbetrieb umgesetzt - der
+Nutzer präzisierte nachträglich, dass sie ausschließlich den Comfort-Modus
+verhindern, aber Standby/Nacht/Gebäudeschutz unangetastet lassen soll
+(0.64.1).** Nutzer-Nachfrage "sicherheitshalber": "Das soll nur
+verhindern, dass die Heizung nicht in den Komfortmodus schaltet. Alle
+anderen Modi sowie Standby, Gebäudeschutz oder Eco-Nachtbetrieb sollen
+natürlich weiterhin ganz normal ablaufen." Der bisherige Code
+(`heating_target_mode`-Berechnung in `_evaluate()`) behandelte
+`heating_presence_away` bislang exakt wie `heating_summer_mode_active` -
+beide erzwangen sofort "standby", unabhängig davon, was Zeitplan oder
+Schwellenwert-Logik eigentlich ergeben hätten. Das überschrieb z. B. einen
+per Zeitplan aktiven Nacht-Modus fälschlich mit Standby, sobald zusätzlich
+niemand zuhause war - genau das wollte der Nutzer nicht.
+
+Fix: Die Anwesenheitsprüfung wandert hinter die eigentliche
+Zielmodus-Ermittlung (Fenster/Sommerbetrieb/Zeitplan/Schwellenwert) und
+degradiert das Ergebnis nur noch NACHTRÄGLICH von "comfort" auf "standby"
+(`heating_presence_blocked_comfort = heating_presence_away and
+heating_target_mode == "comfort"`) - jeder andere bereits ermittelte
+Zielmodus bleibt unverändert. Fenster/Sommerbetrieb bleiben bewusst
+unverändert als echte, dem eigentlichen Ziel übergeordnete Pausen (sie
+erzwingen ihr Ergebnis unabhängig vom sonst gewollten Modus - anders als
+Abwesenheit, die nur einen einzelnen, bereits eintretenden Fall
+korrigiert). Der `_heating_reason`-Text wurde entsprechend nur noch für
+den tatsächlich eingetretenen Fall (Comfort wurde verhindert) gesetzt,
+nicht mehr für jede Abwesenheit unabhängig vom eigentlichen Zielmodus -
+sonst hätte die Anzeige weiterhin "pausiert: niemand zuhause" suggeriert,
+obwohl in Wahrheit z. B. ein Zeitfenster den Nacht-Modus unverändert
+durchgesetzt hätte (dieselbe Art Fehler wie in Lektion 11/13: ein
+Grund-Text darf keine Ursache behaupten, die den tatsächlichen Ausgang gar
+nicht beeinflusst hat). README (Abschnitt "Sensoren & Geräte" sowie
+"Pausen im Detail") entsprechend präzisiert: Abwesenheit dort explizit als
+eigener, von den beiden echten Pausen (Fenster, Sommerbetrieb) getrennter
+Absatz beschrieben, nicht mehr als dritte gleichrangige Pause. Lektion:
+Bei einer als "Pausier-Grund" eingeführten Bedingung, die künftig für
+mehrere strukturell ähnliche Fälle wiederverwendet wird (hier: Fenster/
+Sommerbetrieb als Vorbild für die neue Anwesenheit), nicht automatisch
+annehmen, dass "gleiche Code-Stelle" auch "gleiche Priorität/gleiche
+Wirkung" bedeutet - eine spätere Nutzer-Präzisierung kann ergeben, dass
+die neue Bedingung nur einen EINZELNEN, bereits woanders ermittelten
+Fall korrigieren soll, nicht das gesamte Ergebnis unabhängig überschreiben
+darf.
+
+**52. Auf Nutzerwunsch: Die vier globalen Preset-Namen-Felder (Lektion 50)
+waren reine Freitextfelder ohne jede Vorbelegung - anders als das
+Raum-Formular (dort echte, vom Gerät gemeldete Presets als Dropdown)
+fehlte den globalen Einstellungen jede Hilfestellung beim Ausfüllen
+(0.64.1).** Nutzer-Feedback: "Die Preset-Namen in den globalen
+Einstellungen sind gar nicht vorausgefüllt. Kann man da eventuell auch
+eine Dropdown-Liste machen, wie bei dem Attribut für die Climate-Entität?"
+- Verweis auf das bereits bestehende Muster bei `CONF_TEMP_ATTRIBUTE`
+(fester Kandidaten-Katalog `COMMON_TEMP_ATTRIBUTES` als `SelectSelector`
+mit `custom_value=True`, siehe Abschnitt "Erweitert"). Für die globalen
+Preset-Felder gibt es - anders als im Raum-Formular - keine einzelne
+Heizungs-Entität, deren `preset_modes` sich live auslesen ließen (jeder
+Raum kann eine andere Entität haben, siehe `_heating_preset_selector()`s
+ursprünglicher Kommentar dazu) - der bisherige reine `TextSelector()` war
+daher eine bewusste, aber für den Nutzer unbequeme Entscheidung.
+
+Fix: Neue Konstante `COMMON_HEATING_PRESET_MODES` in `const.py` - bewusst
+NUR die acht offiziellen `PRESET_*`-Werte aus
+`homeassistant.components.climate.const` (comfort/eco/home/sleep/away/
+boost/activity/none), nicht als Import (keine Abhängigkeit von internem
+HA-Modulnamen, siehe Lektion 40), sondern als reine String-Literale.
+Explizit KEINE zusätzlichen, unverifizierten Vermutungen für
+herstellerspezifische Namen (z. B. ein geratenes "building_protection")
+ergänzt - genau die Art Fehler, die Lektion 48 bereits für
+`COMMON_TEMP_ATTRIBUTES`s drittem Vorschlagswert (`target_temperature`)
+kritisiert hatte. `_heating_preset_selector()` (bisher nur für das
+Raum-Formular gedacht, `available_presets` kam dort immer von einer realen
+Geräte-Abfrage) wird jetzt für BEIDE Formulare verwendet - die globale
+Aufrufstelle übergibt `COMMON_HEATING_PRESET_MODES` statt der Live-Liste;
+die Funktion selbst brauchte dafür keine Codeänderung, nur eine
+präzisierte Docstring (zwei Aufrufer mit unterschiedlicher Herkunft der
+Liste - einmal ein zuverlässiger Live-Wert vom Gerät, einmal nur ein
+Hinweis ohne Garantie). Die bereits bestehende Schlüsselwort-Rate-Logik
+(`_HEATING_PRESET_GUESS_KEYWORDS`) griff dadurch ohne weitere Änderung
+automatisch auch global: "comfort" wird für das Comfort-Feld vorbelegt,
+"eco" für das Nacht-Feld (da "eco" als Keyword für Nacht bereits seit
+Lektion 50 hinterlegt ist) - für Standby und Gebäudeschutz bleibt es ohne
+Vorschlag, da kein Kandidat aus der 8er-Liste zu deren Schlüsselwörtern
+passt (ehrlich, statt einen falschen Vorschlag zu erzwingen). Wie beim
+Raum-Formular bleibt das Feld über `custom_value=True` weiterhin frei
+editierbar, falls die tatsächliche Entität einen anderen (insbesondere
+herstellerspezifischen, z. B. KNX-eigenen) Namen meldet. Lektion: Ein
+bereits etabliertes "Dropdown mit Vorschlägen, aber frei editierbar"-Muster
+(hier: `COMMON_TEMP_ATTRIBUTES`) lässt sich oft direkt auf ein zweites,
+strukturell ähnliches Feld übertragen, ohne dass eine neue Auswahl-Logik
+gebaut werden müsste - wichtig ist dabei, wie Lektion 48 bereits zeigte,
+den Kandidaten-Katalog auf tatsächlich verifizierte Werte zu beschränken,
+statt die Vorschlagsliste durch unbelegte Vermutungen selbst unzuverlässig
+zu machen.
+
+**53. Überschreibbare Dropdowns für Zahlenfelder: erstmals für zwei
+konkrete Felder umgesetzt, mit Rückfrage zum Umfang statt sofortiger
+Ausweitung auf alle ~19 Schwellenwerte (0.65.0).** Nutzerwunsch (aus den
+globalen Einstellungen heraus): "Kann man da nicht mehrere der
+Eingabefenster umstellen auf überschreibbare Dropdown-Menüs?" - konkret
+genannt: Erinnerungsintervall (Vorschläge 0/20/40/60 Minuten) und
+Mindesteinspeiseleistung (500/1000/1500/2000 Watt), mit dem offenen
+Zusatz "das wäre bei weiteren Feldern womöglich auch eine Option". Zwei
+Rückfragen klärten den Umfang vor der Umsetzung (feste Arbeitsanweisung,
+siehe oben): (1) Auch die entsprechenden RAUM-Override-Felder umstellen,
+nicht nur die globalen - Nutzer wählte die empfohlene Variante
+"Global + Raum-Override" für ein konsistentes Bedienbild. (2) Weitere
+Felder sofort mit umsetzen oder erstmal bei den zwei genannten bleiben -
+Nutzer wählte "weitere Felder, ich nenne sie dir" (noch offen, siehe
+"Offene/mögliche nächste Schritte" unten).
+
+Technisch besonders: Anders als bei `_heating_preset_selector()`/
+`COMMON_TEMP_ATTRIBUTES` (beide reine Text-Werte) speichern
+`CONF_REMINDER_INTERVAL`/`CONF_MIN_SURPLUS_POWER` echte Zahlen (int bzw.
+float), die downstream in Vergleichen mit Sensor-Messwerten verwendet
+werden. `selector.SelectSelector` liefert aber - auch mit
+`custom_value=True` für einen frei eingegebenen numerischen Wert - IMMER
+einen String zurück, nie eine Zahl (anders als `NumberSelector`, das
+selbst schon `float` liefert). Ein naiver Umstieg hätte den gespeicherten
+Wert stillschweigend von Zahl auf String verändert - unauffällig beim
+Speichern selbst (kein Fehler), aber mit Absturzpotenzial beim nächsten
+Vergleich mit einem echten Sensor-Wert (`str >= float` wirft
+`TypeError`). Fix: `vol.All(selector.SelectSelector(...),
+vol.Coerce(int|float))` als Schema-Wert - `vol.All` verkettet mehrere
+Validatoren, der `SelectSelector` validiert/normalisiert zuerst, danach
+wandelt `vol.Coerce()` den validierten String zurück in den tatsächlich
+benötigten Zahlentyp. Lokal (ohne echte Home-Assistant-Instanz) mit einer
+schlanken Nachbildung von `SelectSelector` gegen `voluptuous` verifiziert,
+dass sowohl ein aus der Vorschlagsliste gewähltes ("20") als auch ein frei
+eingegebener Wert ("45", oder mit Nachkommastelle für die
+Leistungsschwelle) korrekt zum erwarteten Zahlentyp wird - dieses Muster
+kombiniert also, anders als Lektion 52, ECHTE numerische Coercion mit dem
+Dropdown-Muster, nicht nur reine String-Werte.
+
+Beide bereits bestehenden Aufrufstellen je Feld (global über
+`_threshold_selector()`, Raum-Override über `_override_selector()`)
+teilen sich jetzt einen neuen, gemeinsamen Helper
+(`_numeric_field_selector()`), der anhand einer neuen
+`_THRESHOLD_DROPDOWN_OPTIONS`-Registry entscheidet, ob ein Feld ein
+Dropdown (mit Coercion) oder weiterhin den bisherigen `NumberSelector`
+bekommt - beide Aufrufer-Funktionen selbst (Marker-Erzeugung,
+`suggested_value`- vs. `default=`-Logik) blieben unverändert, nur die
+Selector-Erzeugung wurde ausgelagert. Dadurch wirkt sich eine künftige
+Erweiterung der Registry automatisch auf beide Ebenen (global + Raum)
+gleichzeitig aus, ohne eine der beiden Funktionen erneut anfassen zu
+müssen. Bewusst NICHT für alle ~19 `_THRESHOLD_FIELDS`-Einträge auf einmal
+umgesetzt, obwohl der Umbau technisch trivial skaliert hätte - die
+Rückfrage ergab, dass der Nutzer die übrigen Felder selbst benennen
+möchte (unterschiedliche Felder brauchen unterschiedliche, sinnvolle
+Vorschlagswerte, die sich nicht pauschal aus min/max/step ableiten
+lassen). Wie bei `_heating_preset_selector()` (Lektion 50) nicht gegen
+eine echte Instanz verifizierbar, ob ein geleertes Dropdown-Feld beim
+Absenden als leerer Wert oder wie ein `EntitySelector` als fehlender
+Schlüssel übermittelt wird (siehe `ROOM_OPTIONAL_ENTITY_KEYS`,
+Lektion 27) - folgt hier bewusst derselben, bereits bei den
+Preset-Feldern getroffenen Annahme. Lektion: Ein bereits etabliertes
+"Dropdown mit Vorschlägen, aber frei editierbar"-Muster lässt sich nicht
+blind auf jedes Feld übertragen - bei Textfeldern (Lektion 50/52) liefert
+der Selector bereits den richtigen Typ, bei Zahlenfeldern braucht es
+zusätzlich eine explizite Rückwandlung (`vol.Coerce`), da `SelectSelector`
+grundsätzlich nur Strings zurückgibt; dieser Unterschied fällt weder beim
+Anzeigen des Formulars noch beim Speichern selbst auf, sondern erst bei
+der nächsten Verwendung des gespeicherten Werts in einer Zahlen-Operation.
+
+**54. Die beiden "Sommer-Fall"-Auslöser (`outdoor_warmer`/`outdoor_wetter`)
+waren seit Lektion 13 bewusst als "nicht live nachrechenbar" eingestuft -
+bei genauerem Hinsehen stimmte das nur noch für einen der beiden, und für
+den anderen fehlte lediglich EIN Attribut (0.66.0).** Nutzer-Nachfrage zu
+einem konkreten Fall (Zimmer Ida): Auslöser "Außen wärmer" mit Zeitstempel
+09:12, obwohl die aktuell angezeigte Außentemperatur (18,3 °C) längst
+wieder unter der Innentemperatur (21,4 °C) lag - ich erklärte das
+zunächst korrekt als erwartetes, dokumentiertes Verhalten des historischen
+`letzter_grund`-Rückfallwerts (Lektion 13). Die Nutzer-Reaktion darauf:
+"Die Karte soll von dem farblichen Status her aber immer den aktuellen
+Stand widerspiegeln" - eine grundsätzliche Anforderung, die über die
+bloße Erklärung hinausging und mich veranlasste, die Lektion-13-Annahme
+("nicht live nachrechenbar") noch einmal zu überprüfen, statt sie
+unhinterfragt hinzunehmen.
+
+Ergebnis der Prüfung: Für `outdoor_wetter` ("Außenluft inzwischen
+feuchter") waren alle nötigen Werte (`absolute_luftfeuchtigkeit`,
+`aussen_absolute_luftfeuchtigkeit`) bereits als Attribute vorhanden -
+die Karte hatte sie schon immer nur für die reine Werte-Anzeige genutzt,
+nie für die Live-Berechnung des Auslösers selbst. Reiner Karten-Fix, kein
+Backend nötig. Für `outdoor_warmer` ("Außen wärmer") fehlte dagegen
+tatsächlich nur EIN einzelnes Attribut, die Toleranz-Marge
+(`CONF_TEMP_MARGIN`) - Innen-/Außentemperatur waren längst vorhanden.
+Neues, schlankes Attribut `schwelle_temperatur_marge` (1:1 nach dem
+Muster von `schwelle_frostschutz`/`schwelle_hitzeschutz` aus Lektion 13),
+danach konnte die Karte `aussentemperatur >= innentemperatur + marge`
+genauso selbst nachrechnen wie Frost-/Hitzeschutz. Nur die
+Winter-Höchstdauer (`duration`) bleibt jetzt noch als historischer
+Rückfallwert übrig - dafür fehlen weiterhin drei Attribute (Winter-
+Schwelle, Höchstdauer, Prioritäts-Flag), auf Nutzerwunsch ausdrücklich
+zurückgestellt ("reicht erstmal"), nicht in diesem Schritt mit erledigt.
+
+Technisch: `close_fallback` in der Karte wechselte von "grund_code, falls
+in [duration, outdoor_warmer, outdoor_wetter]" zu "outdoor_warmer_live,
+sonst outdoor_wetter_live, sonst grund_code falls duration" - die beiden
+neuen Live-Variablen ersetzen den historischen Rückfallwert für ihre
+beiden Fälle komplett, nicht nur als zusätzliche Bedingung daneben.
+Dadurch greift automatisch auch das bereits bestehende "Totzone
+neutral"-Prinzip (Lektion 29): Trifft aktuell kein Live-Grund mehr zu,
+wird die Karte 🟢 - unabhängig vom Fensterzustand -, genau das vom
+Nutzer beobachtete Ida-Verhalten korrigierend. Bewusst KEIN Fallback auf
+den historischen Wert, falls `schwelle_temperatur_marge` bei einer älteren
+Integration-Version (Karte schon aktualisiert, Backend noch nicht) fehlt
+- dieser Übergangsfall zeigt dann übergangsweise neutral statt eines
+falschen Werts, analog zu `frost_live`/`heat_live`, die genauso nur bei
+vorhandener Schwelle greifen. Lokal mit sechs Szenarien gegengetestet
+(Jinja-Sandbox, `StrictUndefined`): aktuell wieder kühler/trockener außen
+→ 🟢 neutral (Ida-Fall korrigiert), tatsächlich weiterhin wärmer/feuchter
+außen bei offenem (Mismatch, 🔴) und geschlossenem (Match, 🟢 "endgültig
+gelöst", Lektion 30) Fenster, sowie fehlendes `schwelle_temperatur_marge`-
+Attribut (kein Crash, fällt auf neutral zurück). Lektion: Eine als
+"strukturell identisch, beide nicht live nachrechenbar" zusammengefasste
+Gruppe von zwei Fällen (Lektion 13) kann sich bei erneuter Prüfung als
+uneinheitlich herausstellen - der eine brauchte in Wahrheit gar keine
+neue Datenbasis (nur ungenutzte, längst vorhandene Attribute), der andere
+nur ein einziges zusätzliches, schlankes Attribut nach bereits etabliertem
+Muster. Eine pauschale frühere Einschätzung ("das ist halt einer von X
+strukturell gleichen, aufwändigen Sonderfällen") verdient bei konkretem
+Anlass eine erneute Einzelprüfung, statt automatisch für alle X Fälle
+gleich viel Aufwand anzunehmen.
+
+**55. Lektion 53s Rückfrage-Antwort ("weitere Felder, ich nenne sie dir")
+brachte zwei neue numerische Dropdown-Felder, ein bisher komplettes
+Freitextfeld (Vorhersage-Attribut) sowie eine reine Abschnitts-
+Verschiebung - drei strukturell unterschiedliche Änderungen in einer
+Nachricht, zusätzlich zur Erkenntnis, dass eine Verschiebung zwischen
+Formular-Abschnitten auch `strings.json` betrifft, nicht nur die
+Python-Schema-Definition (0.67.0).** Nutzerwunsch, vier Punkte: (1)
+Wiedergabelautstärke für Sprachausgabe (`CONF_TTS_VOLUME`) als Dropdown,
+(2) Vorhersageattribut (`CONF_SUMMER_MODE_FORECAST_ATTRIBUTE`) ebenfalls
+als Dropdown, dabei "alle Angaben erweitern" (eine großzügige
+Vorschlagsliste, nicht nur 1-2 Einträge), (3) "die vier Felder für die
+Preset-Line" als Dropdown, (4) die (an anderer Stelle "Heizungssollwert"
+genannten) vier Felder in den Abschnitt "Erweitert" verschieben.
+
+Zunächst zu klären war, ob (3) dieselben vier Felder wie (4) meint oder
+andere: Die vier Preset-NAMEN-Felder (Komfort/Standby/Nacht/Gebäudeschutz,
+Lektion 50/52) sind schon länger echte Dropdowns - für sie gäbe es nichts
+umzustellen. Die vier Heizungs-SOLLWERT-Felder (Schwelle/Comfort/Standby/
+Nacht) dagegen waren bis dahin reine `NumberSelector`-Spinner. Da (3) und
+(4) denselben Wortlaut "vier Felder" mit unterschiedlichem Namen für
+denselben Themenkomplex ("Preset-Zustände" vs. "Heizungssollwert")
+verwenden, wurden beide Anweisungen auf dieselben vier Sollwert-Felder
+bezogen - zwei unabhängige Änderungen (Eingabetyp UND Abschnitt) auf
+dieselbe Feldgruppe, keine widersprüchliche doppelte Umsetzung.
+
+Für (2) wurde bewusst NICHT versucht, die exakte, vom Nutzer selbst
+gewählte Attribut-Namenskonvention seines eigenen Template-Sensor-
+Bridge-Aufbaus (siehe Lektion 45) zu erraten - das wäre exakt die Art
+unverifizierter Vermutung, die Lektion 48/52 bereits als Risiko markiert
+hatte. Stattdessen `COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES`: die zwölf
+offiziell in Home Assistants `WeatherEntity`-Basisklasse dokumentierten
+Standard-Attribute JEDER `weather.`-Entität (`temperature`, `templow`,
+`dew_point`, `humidity`, `pressure`, `wind_speed`, `wind_bearing`,
+`wind_gust_speed`, `visibility`, `uv_index`, `cloud_coverage`, `ozone`) -
+eine echte, verifizierte und zugleich großzügige ("alle Angaben
+erweitern") Liste, ohne selbst erfundene Namen. Für den Sonderfall eines
+eigenen Template-Sensors bleibt das Feld über `custom_value=True`
+weiterhin frei editierbar.
+
+Für (1)/Sollwert-Dropdowns (Erinnerungsintervall/Leistung aus Lektion 53
+als Vorbild): `_THRESHOLD_DROPDOWN_OPTIONS` einfach um fünf weitere
+Einträge ergänzt (`CONF_TTS_VOLUME`, die vier Heizungs-Sollwertfelder) -
+`_numeric_field_selector()` griff dafür ohne jede weitere Codeänderung,
+exakt wie in Lektion 53 vorgesehen (Registry-Erweiterung wirkt automatisch
+auf beide Ebenen, global UND Raum-Override).
+
+Für (4)/Abschnitts-Verschiebung ergab sich ein eigener Stolperstein,
+strukturell verwandt mit Lektion 49 (neuer Formular-Abschnitt, aber hier
+umgekehrt: ein bereits bestehendes Feld wandert zwischen zwei bereits
+bestehenden Abschnitten): Die Verschiebung in `config_flow.py` (welchem
+`fields[SECTION_...]`-Dict ein Marker zugeordnet wird) betrifft nur, WO
+ein Feld im UI erscheint - `strings.json`/`translations/*.json` speichern
+Label (`data`) und Hinweistext (`data_description`) aber pro Formular-
+SCHRITT UND -ABSCHNITT verschachtelt (`sections.parameters.data.<key>` vs.
+`sections.advanced.data.<key>`), nicht global pro Schlüsselname. Ohne die
+vier Einträge dort ebenfalls von `sections.parameters` nach
+`sections.advanced` zu verschieben (an drei Stellen: Config-Flow-Schritt
+"room", Options-Flow-Schritt "room", Options-Flow-Schritt "global"; je
+zweimal `data`/`data_description`), hätte das Feld im UI keinen Namen/
+Hinweistext mehr gehabt, obwohl der Python-Code selbst fehlerfrei
+gewesen wäre - derselbe "sieht beim bloßen Anzeigen des Formulars nicht
+nach einem Fehler aus, fällt erst beim tatsächlichen Rendern/Speichern
+auf"-Charakter wie in Lektion 49. Per Skript (statt manueller Textsuche)
+umgesetzt, um alle drei Stellen zuverlässig und identisch zu treffen, mit
+anschließendem automatisiertem Abgleich der Feld-Anzahl je Abschnitt
+zwischen `config_flow.py` und `strings.json` (Lektion 50s bereits
+etabliertes Verifikationsmuster) sowie erneuter Struktur-Parität zu
+`de.json`/`en.json`. Lektion: Eine Verschiebung zwischen zwei UI-
+Abschnitten ist nicht nur eine Python-Schema-Frage ("welchem Dict-Eintrag
+gehört der Marker jetzt an") - überall dort, wo eine Integration Label/
+Text PRO ABSCHNITT (nicht pro Feldname global) ablegt, gehört die
+Verschiebung in `strings.json` untrennbar zur selben Änderung, sonst
+bleibt sie unvollständig, ohne dass `py_compile` oder der Import-Check
+das aufdecken könnten.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
@@ -2466,3 +2765,17 @@ Mittel, das zuverlässig aufzudecken.
   aktualisiert wird. Das Posten des vollständigen YAML-Codes im Chat bei
   jeder Änderung ist eine feste Arbeitsanweisung - siehe ganz oben in
   dieser Datei ("Feste Arbeitsanweisungen").
+- Überschreibbare Dropdowns für Zahlenfelder (siehe Lektion 53): bisher nur
+  für Erinnerungsintervall und Mindesteinspeiseleistung umgesetzt (global +
+  Raum-Override). Der Nutzer wollte weitere geeignete Felder selbst nennen
+  (offen) - bei Bedarf `_THRESHOLD_DROPDOWN_OPTIONS` in `config_flow.py`
+  um die genannten Felder samt sinnvoller Vorschlagswerte ergänzen, keine
+  weiteren Codeänderungen nötig (`_numeric_field_selector()` greift dafür
+  automatisch, sowohl global als auch beim Raum-Override).
+- Winter-Höchstdauer (`duration`) ist seit Lektion 54 der letzte
+  verbleibende Auslöser, den die Dashboard-Karte nur noch historisch aus
+  `letzter_grund` anzeigt, nicht live nachrechnet - auf Nutzerwunsch
+  ("reicht erstmal") bewusst zurückgestellt. Für eine Live-Berechnung
+  fehlen der Karte noch drei Attribute (Winter-Schwelle, Höchstdauer,
+  Prioritäts-Flag `CONF_HUMIDITY_PRIORITY_OVER_DURATION`) - `empfehlung_
+  aktiv_seit` (bisherige Öffnungsdauer) ist dagegen bereits vorhanden.

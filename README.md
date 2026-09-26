@@ -100,8 +100,9 @@ Entität für Dashboards/Automationen).
        Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
        Umschalten zwischen einem Comfort-, einem Standby- und einem
        Nacht-Sollwert (siehe "Heizungs-Schwelle"/"Comfort-Sollwert"/
-       "Standby-Sollwert"/"Nacht-Sollwert"/"Heizungs-Zeitplan aktivieren" im
-       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
+       "Standby-Sollwert"/"Nacht-Sollwert" im Abschnitt "Erweitert" sowie
+       "Heizungs-Zeitplan aktivieren" im Abschnitt "Parameter") - wie für
+       Heizungen typisch. Details siehe
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
        "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
      - **Presets steuern/anzeigen** (Ja/Nein/leer, Standard auch global: Ja)
@@ -210,14 +211,18 @@ Entität für Dashboards/Automationen).
        falls die Empfehlung ignoriert wird
      - **Anwesenheit für Heizung (Personen)** (optional): eine oder mehrere
        `person`- oder `device_tracker`-Entitäten (Mehrfachauswahl) - ist
-       mindestens eine hinterlegt, pausiert die Heizung (Standby), solange
-       ALLE davon bestätigt "nicht zuhause" melden. Meldet mindestens eine
-       "zuhause", oder ist der Zustand einer von ihnen unbekannt/nicht
-       verfügbar, heizt der Raum normal weiter (permissiv - ein einzelner
-       GPS-Aussetzer soll die Heizung nicht fälschlich abschalten). Ohne
-       hinterlegte Entität keine Auswirkung. Unabhängig von den oben
-       konfigurierten Anwesenheits-Entitäten der App-Benachrichtigungsziele
-       - dort geht es um "wen benachrichtigen", hier um "wann heizen"
+       mindestens eine hinterlegt und melden ALLE davon bestätigt "nicht
+       zuhause", verhindert das ausschließlich den Wechsel in den
+       **Comfort**-Modus (Herabstufung auf Standby) - ein anderweitig
+       ermittelter Standby-/Nacht-/Gebäudeschutz-Modus läuft unverändert
+       normal weiter, es handelt sich also NICHT um eine eigene Pause.
+       Meldet mindestens eine "zuhause", oder ist der Zustand einer von
+       ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter
+       (permissiv - ein einzelner GPS-Aussetzer soll die Heizung nicht
+       fälschlich aus dem Comfort-Modus nehmen). Ohne hinterlegte Entität
+       keine Auswirkung. Unabhängig von den oben konfigurierten
+       Anwesenheits-Entitäten der App-Benachrichtigungsziele - dort geht es
+       um "wen benachrichtigen", hier um "wann Comfort erlaubt ist"
    - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
      **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
      gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
@@ -227,13 +232,8 @@ Entität für Dashboards/Automationen).
        und CO2 sowie Frostschutz-Grenze, Hitzeschutz-Grenze, Winter-Schwelle
        und Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
        (das Erinnerungsintervall steht im Abschnitt "Benachrichtigungen
-       & Anwesenheit", weitere Fein-Tuning-Werte im Abschnitt "Erweitert",
-       jeweils siehe oben/unten)
-     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
-       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
-       relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
-       hinterlegt oder die Temperaturquelle dafür wiederverwendet wird) -
-       siehe dort
+       & Anwesenheit", die vier Heizungs-Sollwertfelder sowie weitere
+       Fein-Tuning-Werte im Abschnitt "Erweitert", jeweils siehe oben/unten)
      - **Heizungs-Zeitplan aktivieren** (Ja/Nein/leer) - aktiviert, erzwingt
        ein Comfort- bzw. Nacht-Zeitfenster (je acht Zeitfelder: Start/Ende,
        getrennt nach Werktag und Wochenende) den jeweiligen Sollwert
@@ -250,6 +250,12 @@ Entität für Dashboards/Automationen).
        Innentemperatur-Entität tatsächlich eine `climate`-Entität ist – bei
        `sensor`/`number`/`input_number` wird der Wert ignoriert und
        stattdessen direkt der Entitätszustand verwendet
+     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
+       relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
+       hinterlegt oder die Temperaturquelle dafür wiederverwendet wird,
+       siehe dort) - jeweils Dropdown mit gängigen Vorschlagswerten,
+       weiterhin frei editierbar
      - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
        Winter-Höchstdauer** und **Anstiegs-Schwelle Duscherkennung**
        (letztere nur relevant, wenn die Duscherkennung im Abschnitt
@@ -299,7 +305,8 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
   für die Sprachausgabe festlegt
 - **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
-  die Lautsprecher **vor** der Ansage gesetzt werden - pro Raum im
+  die Lautsprecher **vor** der Ansage gesetzt werden - Dropdown mit
+  gängigen Vorschlagswerten, weiterhin frei editierbar; pro Raum im
   Abschnitt "Benachrichtigungen & Anwesenheit" überschreibbar
 - **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
@@ -333,8 +340,9 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  CO2-Schwellen zum Öffnen/Schließen sowie der Heizungs-Schwelle und dem
-  Comfort-/Standby-/Nacht-Sollwert (die Heizungs-Entität selbst ist wie
+  CO2-Schwellen zum Öffnen/Schließen (die Heizungs-Schwelle und der
+  Comfort-/Standby-/Nacht-Sollwert stehen wie beim Raum im Abschnitt
+  "Erweitert" weiter unten; die Heizungs-Entität selbst ist wie
   Luftentfeuchter/Klimaanlage reine Raumeinstellung, siehe Abschnitt
   "Sensoren & Geräte" im Raum-Formular)
 - **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
@@ -343,10 +351,12 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   überschreibbar wie jeder andere Parameter
 - **Presets steuern/anzeigen** (Standard Ja) + vier Preset-Namen-Felder
   (Komfort/Standby/Eco (Nacht)/Gebäudeschutz) als raumweiter Standard -
-  hier reine Freitextfelder ohne Dropdown (kein konkretes Gerät zum
-  Auslesen auf globaler Ebene), pro Raum überschreibbar und dort mit
-  Dropdown-Vorschlag der tatsächlich von der jeweiligen Entität gemeldeten
-  Presets (siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
+  hier Dropdown mit den acht offiziellen Home-Assistant-Standardwerten als
+  Vorschlag (kein konkretes Gerät zum Auslesen auf globaler Ebene, daher
+  nur ein Hinweis statt eines Live-Werts), weiterhin frei editierbar; pro
+  Raum überschreibbar und dort mit Dropdown-Vorschlag der tatsächlich von
+  der jeweiligen Entität gemeldeten Presets (siehe Abschnitt "Sensoren &
+  Geräte" im Raum-Formular)
 - **Sommermodus-Schwelle (Vorhersage)** - ab dieser Vorhersage-Temperatur
   (+/- Toleranz-Marge) wird der oben hinterlegte Sommer-/Winterbetrieb-
   Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch
@@ -359,11 +369,22 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
 **Abschnitt "Erweitert"** (seltener benötigte Fein-Tuning-Werte als
 raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
 überschreibbar):
+- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+  **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** - Dropdown
+  mit gängigen Vorschlagswerten, weiterhin frei editierbar; als raumweiter
+  Standard, pro Raum im dortigen Abschnitt "Erweitert" überschreibbar
+  (die Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
+  Raumeinstellung, siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
 - **Vorhersage-Attribut** (optional): Name eines Attributs der oben
   hinterlegten Sommermodus-Vorhersagequelle, aus dem der Vorhersagewert
-  gelesen wird (z. B. `temperature`). Leer = state der Entität direkt als
-  Zahl lesen (z. B. bei einem Template-Sensor, dessen state selbst schon
-  der Vorhersagewert ist)
+  gelesen wird - Dropdown mit den offiziell dokumentierten Standard-
+  Attributen einer `weather`-Entität (`temperature`, `templow`,
+  `dew_point`, `humidity`, `pressure`, `wind_speed`, `wind_bearing`,
+  `wind_gust_speed`, `visibility`, `uv_index`, `cloud_coverage`, `ozone`),
+  weiterhin frei editierbar für einen abweichenden, z. B. selbst gewählten
+  Attributnamen eines eigenen Template-Sensors. Leer = state der Entität
+  direkt als Zahl lesen (z. B. bei einem Template-Sensor, dessen state
+  selbst schon der Vorhersagewert ist)
 - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
   Winter-Höchstdauer** (hier "Luftfeuchtigkeit/CO2 haben Vorrang vor
   Winter-Höchstdauer" genannt) und **Anstiegs-Schwelle Duscherkennung**
@@ -719,10 +740,13 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
 - **Heizung**: anders als Luftentfeuchter/Klimaanlage kein einfaches
   Ein/Aus, sondern ein Umschalten zwischen festen Sollwerten (Comfort/
   Standby/Nacht, über `climate.set_temperature`) - wie für Heizungen
-  typisch. Pausen (Fenster offen, niemand zuhause, Sommerbetrieb aktiv - alle
-  drei siehe unten) haben dabei immer höchste Priorität und schalten sofort
-  auf **Standby** bzw. **Gebäudeschutz** (siehe unten), unabhängig von allem
-  anderen weiter unten.
+  typisch. Zwei echte Pausen (Fenster offen, Sommerbetrieb aktiv - beide
+  siehe unten) haben dabei immer höchste Priorität und schalten sofort auf
+  **Gebäudeschutz** bzw. **Standby** (siehe unten), unabhängig von allem
+  anderen weiter unten. Abwesenheit (siehe unten) ist dagegen **keine**
+  eigene Pause, sondern verhindert ausschließlich den Wechsel in **Comfort**
+  - ein bereits anderweitig ermittelter Standby-/Nacht-/Gebäudeschutz-Modus
+  bleibt davon unberührt.
 
   **Presets statt Sollwert** (optional, Option "Presets steuern/anzeigen",
   Standard auch global Ja): Manche climate-Integrationen (z. B. KNX) bilden
@@ -777,18 +801,25 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   verwenden" direkt als Heizungs-Gerät wiederverwendet werden, statt sie
   zusätzlich im Feld "Heizung" ein zweites Mal auszuwählen.
 
-  **Pausen im Detail:**
+  **Pausen im Detail** (schalten sofort auf Gebäudeschutz/Standby,
+  unabhängig vom eigentlich gewollten Zielmodus):
   - Solange der Fensterkontakt-Sensor das Fenster als **bestätigt offen**
     meldet - gegen ein offenes Fenster zu heizen verschwendet nur Energie.
-  - Sobald im Abschnitt "Benachrichtigungen & Anwesenheit" mindestens eine
-    Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon
-    bestätigt "nicht zuhause" melden - meldet mindestens eine "zuhause",
-    oder ist der Zustand einer von ihnen gerade unbekannt/nicht verfügbar,
-    heizt der Raum normal weiter (permissiv, ein einzelner GPS-Aussetzer
-    soll die Heizung nicht fälschlich abschalten). Ohne konfigurierte
-    Entität entfällt diese Bedingung komplett.
   - Solange der globale **Sommer-/Winterbetrieb-Schalter** (siehe unten)
     **an** ist (Sommerbetrieb) - pausiert dann die Heizung **aller** Räume.
+
+  **Abwesenheit - keine Pause, sondern ein reines Comfort-Verbot:** Sobald
+  im Abschnitt "Benachrichtigungen & Anwesenheit" mindestens eine
+  Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon
+  bestätigt "nicht zuhause" melden, wird ein ansonsten ermittelter
+  Comfort-Zielmodus auf Standby herabgestuft - ein bereits anderweitig
+  ermittelter Standby-, Nacht- oder Gebäudeschutz-Zielmodus läuft dagegen
+  unverändert normal weiter, genau wie ohne Abwesenheit. Meldet mindestens
+  eine Entität "zuhause", oder ist der Zustand einer von ihnen gerade
+  unbekannt/nicht verfügbar, greift diese Herabstufung gar nicht (permissiv,
+  ein einzelner GPS-Aussetzer soll die Heizung nicht fälschlich aus dem
+  Comfort-Modus nehmen). Ohne konfigurierte Entität entfällt diese
+  Bedingung komplett.
 - **Sommer-/Winterbetrieb**: **kein** eigenes, von dieser Integration
   angelegtes Gerät, sondern eine bereits **vorhandene** `switch`-Entität,
   die in "- Smart Climate Optionen -" hinterlegt und von dieser Integration
@@ -859,6 +890,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussentemperatur` | aktueller Messwert (aus "Smart Climate Optionen") |
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `schwelle_frostschutz` / `schwelle_hitzeschutz` | aktuell wirksame Frostschutz-/Hitzeschutz-Grenze - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient hauptsächlich der Dashboard-Karte, um Frost-/Hitzeschutz live gegen die aktuelle Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
+| `schwelle_temperatur_marge` | aktuell wirksame Toleranz-Marge - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient der Dashboard-Karte, um den Sommer-Fall ("Außen wärmer") live gegen Innen-/Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
 | `co2`, `schwelle_co2_oeffnen` / `_schliessen` | nur vorhanden, falls ein CO2-Sensor hinterlegt ist |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
@@ -895,7 +927,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 23** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 26** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -908,7 +940,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 23 %}
+  {% set card_version = 26 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
@@ -925,7 +957,9 @@ content: >
   {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
   {% set frost_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_frostschutz is defined and a.aussentemperatur <= a.schwelle_frostschutz %}
   {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
-  {% set close_fallback = grund_code if grund_code in ['duration', 'outdoor_warmer', 'outdoor_wetter'] else '' %}
+  {% set outdoor_warmer_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.innentemperatur is not none and a.schwelle_temperatur_marge is defined and a.aussentemperatur >= (a.innentemperatur + a.schwelle_temperatur_marge) %}
+  {% set outdoor_wetter_live = a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none and a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none and a.aussen_absolute_luftfeuchtigkeit >= a.absolute_luftfeuchtigkeit %}
+  {% set close_fallback = 'outdoor_warmer' if outdoor_warmer_live else ('outdoor_wetter' if outdoor_wetter_live else (grund_code if grund_code == 'duration' else '')) %}
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else '')) %}
   {% set comfort_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)) %}
   {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('' if no_close_rec else comfort_close)) %}
@@ -1015,8 +1049,8 @@ content: >
   {% endif %}
   {% if a.heizung_an is defined %}
   {% set heiz_name = ('🔴' if a.heizung_an else '⚫') ~ '&nbsp;Heizung' %}
-  {% set heiz_modus_label = ('Komfort' if a.heizung_modus == 'comfort' else ('Eco (Nacht)' if a.heizung_modus == 'night' else ('Gebäudeschutz' if a.heizung_modus == 'building_protection' else ('Standby' if a.heizung_modus == 'standby' else '')))) if a.heizung_modus is defined else '' %}
-  {% set heiz_name = (heiz_name ~ '<br><small>' ~ heiz_modus_label ~ '</small>') if heiz_modus_label else heiz_name %}
+  {% set heiz_modus_label = ('🔴&nbsp;Komfort' if a.heizung_modus == 'comfort' else ('🟡&nbsp;Eco (Nacht)' if a.heizung_modus == 'night' else ('🔵&nbsp;Gebäudeschutz' if a.heizung_modus == 'building_protection' else ('🟠&nbsp;Standby' if a.heizung_modus == 'standby' else '')))) if a.heizung_modus is defined else '' %}
+  {% set heiz_name = (heiz_name ~ '<br>' ~ heiz_modus_label) if heiz_modus_label else heiz_name %}
   {% set heiz_laufzeit = '–' %}
   {% if a.heizung_an and a.heizung_seit is defined %}
   {% set heiz_minutes = ((now() - as_datetime(a.heizung_seit)).total_seconds() / 60) | int %}
@@ -1157,17 +1191,23 @@ Version verzichtet komplett auf `style`-Attribute:
   gegen `schwelle_frostschutz`/`schwelle_hitzeschutz`), dann symmetrisch
   Luftfeuchtigkeit, CO2, Temperatur gegen ihre Schließen-Schwelle -
   identisch zur tatsächlichen Prioritätsreihenfolge in `binary_sensor.py`
-  (Frostschutz hat immer Vorrang). Das funktioniert unabhängig davon, ob
-  die Empfehlung schon einmal einen echten Zustandswechsel hatte, und
-  beschreibt immer den **aktuellen** Zustand, nicht nur die Historie -
-  wurde z. B. wegen eines längst vorbeigezogenen Kälte-Einbruchs
-  geschlossen und ist die Außentemperatur inzwischen wieder deutlich über
-  der Frostschutz-Grenze, zeigt der Auslöser das nicht mehr an.
-  `letzter_grund` dient nur noch als **Rückfallwert** für die drei Fälle,
-  die sich nicht live aus den angezeigten Werten nachrechnen lassen:
-  Sommer-Fall, "Außenluft inzwischen feuchter" und Winter-Höchstdauer
-  (`outdoor_warmer`/`outdoor_wetter`/`duration` - fehlende Toleranz-Marge
-  bzw. bisherige Öffnungsdauer im Vergleich zur Karte).
+  (Frostschutz hat immer Vorrang). Ebenfalls live geprüft: der Sommer-Fall
+  ("Außen wärmer", aktuelle Außentemperatur gegen Innentemperatur +
+  Toleranz-Marge, `schwelle_temperatur_marge`) und "Außenluft inzwischen
+  feuchter" (`outdoor_wetter`, absolute Luftfeuchtigkeit außen gegen
+  innen, aus `absolute_luftfeuchtigkeit`/`aussen_absolute_luftfeuchtigkeit`).
+  Das funktioniert unabhängig davon, ob die Empfehlung schon einmal einen
+  echten Zustandswechsel hatte, und beschreibt immer den **aktuellen**
+  Zustand, nicht nur die Historie - wurde z. B. wegen eines längst
+  vorbeigezogenen Kälte-Einbruchs geschlossen und ist die Außentemperatur
+  inzwischen wieder deutlich über der Frostschutz-Grenze, oder wegen eines
+  inzwischen längst wieder abgekühlten "Außen wärmer"-Falls, zeigt der
+  Auslöser das nicht mehr an.
+  `letzter_grund` dient nur noch als **Rückfallwert** für den einen
+  verbleibenden Fall, der sich nicht live aus den angezeigten Werten
+  nachrechnen lässt: die Winter-Höchstdauer (`duration` - dafür fehlen der
+  Karte die Winter-Schwelle, die Höchstdauer selbst und das
+  Prioritäts-Flag als Attribute).
   Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
   eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
   liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell

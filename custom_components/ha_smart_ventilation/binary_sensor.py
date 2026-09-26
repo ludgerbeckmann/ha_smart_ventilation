@@ -342,6 +342,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["schwelle_hitzeschutz"] = self._effective(
                 CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
             )
+            # Ebenfalls nur für Dashboard-Karten - erlaubt die Live-Auswertung
+            # von "Außen wärmer" (siehe outdoor_warmer_again in _evaluate()),
+            # bisher nur als Rückfallwert aus dem historischen letzter_grund
+            # sichtbar (siehe README, "Hervorhebung des ausschlaggebenden
+            # Werts"). Toleranz-Marge selbst ist unabhängig vom Außensensor
+            # gültig, wird hier aber bewusst nur zusammen mit den anderen
+            # beiden Schwellen gesetzt, da sie nur in Kombination mit
+            # aussentemperatur/innentemperatur überhaupt einen Sinn ergibt.
+            attrs["schwelle_temperatur_marge"] = self._effective(
+                CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN
+            )
         if self._config.get(CONF_HUMIDITY_ENTITY):
             attrs["luftfeuchtigkeit"] = humidity
             attrs["schwelle_feuchtigkeit_oeffnen"] = self._effective(
@@ -1164,11 +1175,20 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # höchster Priorität, solange das Fenster bestätigt offen ist
         # (_is_window_confirmed_open(), dasselbe Muster wie bei der
         # Luftentfeuchter-Pausierung - gegen ein offenes Fenster zu heizen
-        # verschwendet nur Energie) oder solange niemand zuhause ist
-        # (_is_heating_presence_away(), nur relevant, wenn mindestens eine
-        # Anwesenheits-Entität konfiguriert ist) - unabhängig davon, ob der
-        # Zeitplan aktiv ist oder nicht, da beides Pausier-, keine
-        # Komfort-Gründe sind.
+        # verschwendet nur Energie) - unabhängig davon, ob der Zeitplan
+        # aktiv ist oder nicht, da das ein Pausier-, kein Komfort-Grund ist.
+        #
+        # Anwesenheit (_is_heating_presence_away(), nur relevant, wenn
+        # mindestens eine Anwesenheits-Entität konfiguriert ist) ist KEIN
+        # gleichrangiger Pausier-Grund wie Fenster/Sommerbetrieb, sondern
+        # verhindert ausdrücklich NUR den Wechsel in den Comfort-Modus - der
+        # ansonsten "natürliche" Zielmodus (Zeitplan-Fenster ODER
+        # Schwellenwert-Logik) wird dafür zunächst ganz normal berechnet und
+        # erst danach auf Standby herabgestuft, falls er "comfort" ergeben
+        # hätte. Standby, Gebäudeschutz und Eco/Nacht laufen bei Abwesenheit
+        # dadurch unverändert normal weiter (Nutzerentscheidung) - anders als
+        # Fenster/Sommerbetrieb, die den Modus unabhängig vom eigentlich
+        # gewollten Ziel erzwingen.
         #
         # Ist der Zeitplan aktiv (CONF_HEATING_SCHEDULE_ENABLED,
         # 0.60.0/Lektion 44), erzwingt das jeweilige Zeitfenster den Modus
@@ -1229,11 +1249,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         heating_schedule_enabled = self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)
         # "Gebäudeschutz" (Preset, kein eigener Zahlen-Sollwert) ersetzt
         # Standby bewusst NUR beim Pausier-Grund "Fenster offen" - bei
-        # Abwesenheit oder aktivem Sommerbetrieb bleibt es bei Standby
-        # (Nutzerentscheidung).
+        # aktivem Sommerbetrieb bleibt es bei Standby (Nutzerentscheidung).
         if window_confirmed_open:
             heating_target_mode = "building_protection"
-        elif heating_presence_away or heating_summer_mode_active:
+        elif heating_summer_mode_active:
             heating_target_mode = "standby"
         elif heating_schedule_enabled:
             heating_target_mode = self._get_scheduled_heating_mode()
@@ -1243,6 +1262,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             heating_target_mode = "standby"
         else:
             heating_target_mode = None
+
+        # Anwesenheit greift erst HIER, nachdem der eigentlich gewollte
+        # Zielmodus feststeht (Zeitplan/Schwelle/Sommerbetrieb/Fenster) -
+        # sie verhindert ausdrücklich nur den Wechsel in Comfort, alle
+        # anderen bereits ermittelten Modi (Standby/Nacht/Gebäudeschutz)
+        # bleiben unverändert. Siehe Kommentar oben.
+        heating_presence_blocked_comfort = (
+            heating_presence_away and heating_target_mode == "comfort"
+        )
+        if heating_presence_blocked_comfort:
+            heating_target_mode = "standby"
 
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
@@ -1283,8 +1313,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._get_heating_entity_id():
             if window_confirmed_open:
                 self._heating_reason = "pausiert: Fenster offen"
-            elif heating_presence_away:
-                self._heating_reason = "pausiert: niemand zuhause"
+            elif heating_presence_blocked_comfort:
+                self._heating_reason = "pausiert: niemand zuhause (kein Comfort)"
             elif heating_summer_mode_active:
                 self._heating_reason = "pausiert: Sommerbetrieb aktiv"
             elif heating_schedule_enabled:

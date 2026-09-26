@@ -93,10 +93,6 @@
               "heat_protection_temp": "Heat protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "heating_threshold_temp": "Heating threshold (indoor temperature)",
-              "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint",
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
               "heating_comfort_end_weekday": "Comfort end (weekday)",
@@ -118,10 +114,6 @@
               "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
-              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
@@ -143,7 +135,11 @@
               "humidity_priority_over_duration": "Priority for winter max duration",
               "shower_rise_threshold": "Shower detection rise threshold",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
-              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
+              "heating_threshold_temp": "Heating threshold (indoor temperature)",
+              "heating_comfort_temp": "Heating comfort setpoint",
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint"
             },
             "data_description": {
               "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature in the \"Sensors & Devices\" section",
@@ -152,7 +148,11 @@
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors & Devices\" section. Currently global: {global_shower_rise_threshold}",
               "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}",
+              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
             }
           }
         }
@@ -250,10 +250,6 @@
               "heat_protection_temp": "Heat protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "heating_threshold_temp": "Heating threshold (indoor temperature)",
-              "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint",
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
               "heating_comfort_end_weekday": "Comfort end (weekday)",
@@ -275,10 +271,6 @@
               "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
-              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
@@ -300,7 +292,11 @@
               "humidity_priority_over_duration": "Priority for winter max duration",
               "shower_rise_threshold": "Shower detection rise threshold",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
-              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
+              "heating_threshold_temp": "Heating threshold (indoor temperature)",
+              "heating_comfort_temp": "Heating comfort setpoint",
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint"
             },
             "data_description": {
               "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature in the \"Sensors & Devices\" section",
@@ -309,7 +305,11 @@
               "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors & Devices\" section. Currently global: {global_shower_rise_threshold}",
               "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}"
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}",
+              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
             }
           }
         },
@@ -370,10 +370,6 @@
               "heat_protection_temp": "Heat protection limit (outdoor temperature)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
-              "heating_threshold_temp": "Heating threshold (indoor temperature)",
-              "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint",
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
               "heating_comfort_end_weekday": "Comfort end (weekday)",
@@ -396,15 +392,11 @@
               "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2",
               "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
               "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
-              "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
-              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
-              "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
-              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
               "heating_schedule_enabled": "Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled (default): the plain threshold logic above still applies",
               "heating_comfort_start_weekday": "Only effective while the heating schedule is enabled",
               "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority",
               "heating_use_preset_mode": "Default Yes (opt-out): heating entities that support preset_mode (e.g. KNX) are controlled/shown via presets automatically instead of a numeric setpoint. Without support, it automatically stays on setpoint control - overridable per room to \"No\" to avoid using presets despite support.",
-              "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - vendor-dependent, no selection list here (no device to read from). Empty = this state keeps being set via the comfort setpoint.",
+              "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - dropdown only suggests the eight official Home Assistant standard values (no single device to read the actual presets from), freely editable. Empty = this state keeps being set via the comfort setpoint.",
               "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state.",
               "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",
@@ -421,7 +413,11 @@
               "humidity_priority_over_duration": "Humidity/CO2 take priority over winter max duration",
               "shower_rise_threshold": "Shower detection rise threshold",
               "min_surplus_power_watts": "Minimum surplus power to turn on",
-              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power"
+              "power_grace_period_minutes": "Delay before turning off due to insufficient surplus power",
+              "heating_threshold_temp": "Heating threshold (indoor temperature)",
+              "heating_comfort_temp": "Heating comfort setpoint",
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint"
             },
             "data_description": {
               "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (\"Sensors\" section) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
@@ -430,7 +426,11 @@
               "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
               "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors\" section",
               "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
-              "power_grace_period_minutes": "Default delay for all rooms without their own setting"
+              "power_grace_period_minutes": "Default delay for all rooms without their own setting",
+              "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
+              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
+              "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
+              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)"
             }
           },
           "messages": {
