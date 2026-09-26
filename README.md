@@ -100,8 +100,9 @@ Entität für Dashboards/Automationen).
        Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
        Umschalten zwischen einem Comfort-, einem Standby- und einem
        Nacht-Sollwert (siehe "Heizungs-Schwelle"/"Comfort-Sollwert"/
-       "Standby-Sollwert"/"Nacht-Sollwert"/"Heizungs-Zeitplan aktivieren" im
-       Abschnitt "Parameter") - wie für Heizungen typisch. Details siehe
+       "Standby-Sollwert"/"Nacht-Sollwert" im Abschnitt "Erweitert" sowie
+       "Heizungs-Zeitplan aktivieren" im Abschnitt "Parameter") - wie für
+       Heizungen typisch. Details siehe
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
        "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
      - **Presets steuern/anzeigen** (Ja/Nein/leer, Standard auch global: Ja)
@@ -231,13 +232,8 @@ Entität für Dashboards/Automationen).
        und CO2 sowie Frostschutz-Grenze, Hitzeschutz-Grenze, Winter-Schwelle
        und Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
        (das Erinnerungsintervall steht im Abschnitt "Benachrichtigungen
-       & Anwesenheit", weitere Fein-Tuning-Werte im Abschnitt "Erweitert",
-       jeweils siehe oben/unten)
-     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
-       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
-       relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
-       hinterlegt oder die Temperaturquelle dafür wiederverwendet wird) -
-       siehe dort
+       & Anwesenheit", die vier Heizungs-Sollwertfelder sowie weitere
+       Fein-Tuning-Werte im Abschnitt "Erweitert", jeweils siehe oben/unten)
      - **Heizungs-Zeitplan aktivieren** (Ja/Nein/leer) - aktiviert, erzwingt
        ein Comfort- bzw. Nacht-Zeitfenster (je acht Zeitfelder: Start/Ende,
        getrennt nach Werktag und Wochenende) den jeweiligen Sollwert
@@ -254,6 +250,12 @@ Entität für Dashboards/Automationen).
        Innentemperatur-Entität tatsächlich eine `climate`-Entität ist – bei
        `sensor`/`number`/`input_number` wird der Wert ignoriert und
        stattdessen direkt der Entitätszustand verwendet
+     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
+       relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
+       hinterlegt oder die Temperaturquelle dafür wiederverwendet wird,
+       siehe dort) - jeweils Dropdown mit gängigen Vorschlagswerten,
+       weiterhin frei editierbar
      - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
        Winter-Höchstdauer** und **Anstiegs-Schwelle Duscherkennung**
        (letztere nur relevant, wenn die Duscherkennung im Abschnitt
@@ -303,7 +305,8 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
   für die Sprachausgabe festlegt
 - **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
-  die Lautsprecher **vor** der Ansage gesetzt werden - pro Raum im
+  die Lautsprecher **vor** der Ansage gesetzt werden - Dropdown mit
+  gängigen Vorschlagswerten, weiterhin frei editierbar; pro Raum im
   Abschnitt "Benachrichtigungen & Anwesenheit" überschreibbar
 - **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
@@ -337,8 +340,9 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
 **Abschnitt "Parameter"**:
 - Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
   wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  CO2-Schwellen zum Öffnen/Schließen sowie der Heizungs-Schwelle und dem
-  Comfort-/Standby-/Nacht-Sollwert (die Heizungs-Entität selbst ist wie
+  CO2-Schwellen zum Öffnen/Schließen (die Heizungs-Schwelle und der
+  Comfort-/Standby-/Nacht-Sollwert stehen wie beim Raum im Abschnitt
+  "Erweitert" weiter unten; die Heizungs-Entität selbst ist wie
   Luftentfeuchter/Klimaanlage reine Raumeinstellung, siehe Abschnitt
   "Sensoren & Geräte" im Raum-Formular)
 - **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
@@ -347,10 +351,12 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
   überschreibbar wie jeder andere Parameter
 - **Presets steuern/anzeigen** (Standard Ja) + vier Preset-Namen-Felder
   (Komfort/Standby/Eco (Nacht)/Gebäudeschutz) als raumweiter Standard -
-  hier reine Freitextfelder ohne Dropdown (kein konkretes Gerät zum
-  Auslesen auf globaler Ebene), pro Raum überschreibbar und dort mit
-  Dropdown-Vorschlag der tatsächlich von der jeweiligen Entität gemeldeten
-  Presets (siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
+  hier Dropdown mit den acht offiziellen Home-Assistant-Standardwerten als
+  Vorschlag (kein konkretes Gerät zum Auslesen auf globaler Ebene, daher
+  nur ein Hinweis statt eines Live-Werts), weiterhin frei editierbar; pro
+  Raum überschreibbar und dort mit Dropdown-Vorschlag der tatsächlich von
+  der jeweiligen Entität gemeldeten Presets (siehe Abschnitt "Sensoren &
+  Geräte" im Raum-Formular)
 - **Sommermodus-Schwelle (Vorhersage)** - ab dieser Vorhersage-Temperatur
   (+/- Toleranz-Marge) wird der oben hinterlegte Sommer-/Winterbetrieb-
   Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch
@@ -363,11 +369,22 @@ Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
 **Abschnitt "Erweitert"** (seltener benötigte Fein-Tuning-Werte als
 raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
 überschreibbar):
+- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+  **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** - Dropdown
+  mit gängigen Vorschlagswerten, weiterhin frei editierbar; als raumweiter
+  Standard, pro Raum im dortigen Abschnitt "Erweitert" überschreibbar
+  (die Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
+  Raumeinstellung, siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
 - **Vorhersage-Attribut** (optional): Name eines Attributs der oben
   hinterlegten Sommermodus-Vorhersagequelle, aus dem der Vorhersagewert
-  gelesen wird (z. B. `temperature`). Leer = state der Entität direkt als
-  Zahl lesen (z. B. bei einem Template-Sensor, dessen state selbst schon
-  der Vorhersagewert ist)
+  gelesen wird - Dropdown mit den offiziell dokumentierten Standard-
+  Attributen einer `weather`-Entität (`temperature`, `templow`,
+  `dew_point`, `humidity`, `pressure`, `wind_speed`, `wind_bearing`,
+  `wind_gust_speed`, `visibility`, `uv_index`, `cloud_coverage`, `ozone`),
+  weiterhin frei editierbar für einen abweichenden, z. B. selbst gewählten
+  Attributnamen eines eigenen Template-Sensors. Leer = state der Entität
+  direkt als Zahl lesen (z. B. bei einem Template-Sensor, dessen state
+  selbst schon der Vorhersagewert ist)
 - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
   Winter-Höchstdauer** (hier "Luftfeuchtigkeit/CO2 haben Vorrang vor
   Winter-Höchstdauer" genannt) und **Anstiegs-Schwelle Duscherkennung**

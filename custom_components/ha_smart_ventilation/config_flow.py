@@ -95,6 +95,7 @@ from .const import (
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     COMMON_HEATING_PRESET_MODES,
+    COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES,
     COMMON_TEMP_ATTRIBUTES,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
@@ -245,6 +246,11 @@ _THRESHOLD_FIELDS = {
 _THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
     CONF_REMINDER_INTERVAL: (int, [0, 20, 40, 60]),
     CONF_MIN_SURPLUS_POWER: (float, [500, 1000, 1500, 2000]),
+    CONF_TTS_VOLUME: (int, [30, 50, 70, 100]),
+    CONF_HEATING_THRESHOLD_TEMP: (float, [18, 19, 20, 21]),
+    CONF_HEATING_COMFORT_TEMP: (float, [19, 20, 21, 22]),
+    CONF_HEATING_STANDBY_TEMP: (float, [15, 16, 17, 18]),
+    CONF_HEATING_NIGHT_TEMP: (float, [14, 15, 16, 17]),
 }
 
 # Zeitfelder für den optionalen Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_
@@ -263,7 +269,7 @@ _TIME_FIELDS = {
     CONF_HEATING_NIGHT_END_WEEKEND: DEFAULT_HEATING_NIGHT_END_WEEKEND,
 }
 
-# Die fünfzehn "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
+# Die elf "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
 # power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
 # hierher. CONF_REMINDER_INTERVAL bewusst NICHT hier - steht wie beim Raum
@@ -273,7 +279,10 @@ _TIME_FIELDS = {
 # ebenfalls bewusst NICHT hier - alle drei stehen wie beim Raum im neuen
 # Abschnitt "Erweitert" (siehe SECTION_ADVANCED), dafür einzeln über
 # _threshold_selector() erzeugt statt über diese generische Liste (analog
-# zu volume_marker/power_marker/grace_marker/reminder_marker).
+# zu volume_marker/power_marker/grace_marker/reminder_marker). Die vier
+# Heizungs-Sollwertfelder (Schwelle/Comfort/Standby/Nacht) ebenso NICHT
+# hier - stehen wie beim Raum ebenfalls im Abschnitt "Erweitert"
+# (Nutzerwunsch), dafür einzeln über heating_threshold_marker etc. erzeugt.
 _CORE_PARAMETER_KEYS = (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TEMP_THRESHOLD_CLOSE,
@@ -285,10 +294,6 @@ _CORE_PARAMETER_KEYS = (
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
-    CONF_HEATING_THRESHOLD_TEMP,
-    CONF_HEATING_COMFORT_TEMP,
-    CONF_HEATING_STANDBY_TEMP,
-    CONF_HEATING_NIGHT_TEMP,
     CONF_SUMMER_MODE_THRESHOLD_TEMP,
 )
 
@@ -1106,10 +1111,6 @@ def _build_room_schema(
                 heat_marker: heat_sel,
                 winter_marker: winter_sel,
                 duration_marker: duration_sel,
-                heating_threshold_marker: heating_threshold_sel,
-                heating_comfort_marker: heating_comfort_sel,
-                heating_standby_marker: heating_standby_sel,
-                heating_night_marker: heating_night_sel,
                 heating_schedule_marker: heating_schedule_sel,
                 **{
                     marker: sel
@@ -1122,7 +1123,9 @@ def _build_room_schema(
 
     # "Erweitert" - selten geänderte Fein-Tuning-Werte (siehe SECTION_ADVANCED
     # oben) sowie das Temperatur-Attribut, das nur bei einer climate-Quelle
-    # überhaupt greift. Bewusst NICHT hier: Heizungs-Zeitplan (bleibt im
+    # überhaupt greift, und die vier Heizungs-Sollwertfelder (Schwelle/
+    # Comfort/Standby/Nacht - Nutzerwunsch, seltener geändert als die
+    # übrigen Parameter). Bewusst NICHT hier: Heizungs-Zeitplan (bleibt im
     # Abschnitt "Parameter") und TTS-Wiedergabemodus (nur global, bleibt dort).
     fields[vol.Required(SECTION_ADVANCED)] = section(
         vol.Schema(
@@ -1139,6 +1142,10 @@ def _build_room_schema(
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
+                heating_threshold_marker: heating_threshold_sel,
+                heating_comfort_marker: heating_comfort_sel,
+                heating_standby_marker: heating_standby_sel,
+                heating_night_marker: heating_night_sel,
                 margin_marker: margin_sel,
                 frost_debounce_marker: frost_debounce_sel,
                 priority_marker: priority_sel,
@@ -1181,6 +1188,21 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     shower_threshold_marker, shower_threshold_sel = _threshold_selector(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
+    # Wie beim Raum-Formular: die vier Heizungs-Sollwertfelder stehen im
+    # Abschnitt "Erweitert" (Nutzerwunsch), daher einzeln erzeugt statt über
+    # _CORE_PARAMETER_KEYS.
+    heating_threshold_marker, heating_threshold_sel = _threshold_selector(
+        CONF_HEATING_THRESHOLD_TEMP, defaults
+    )
+    heating_comfort_marker, heating_comfort_sel = _threshold_selector(
+        CONF_HEATING_COMFORT_TEMP, defaults
+    )
+    heating_standby_marker, heating_standby_sel = _threshold_selector(
+        CONF_HEATING_STANDBY_TEMP, defaults
+    )
+    heating_night_marker, heating_night_sel = _threshold_selector(
+        CONF_HEATING_NIGHT_TEMP, defaults
+    )
 
     parameter_fields = {}
     for key in _CORE_PARAMETER_KEYS:
@@ -1193,7 +1215,17 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     advanced_fields = {
         _entity_marker(
             CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
-        ): selector.TextSelector(),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES,
+                custom_value=True,
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        ),
+        heating_threshold_marker: heating_threshold_sel,
+        heating_comfort_marker: heating_comfort_sel,
+        heating_standby_marker: heating_standby_sel,
+        heating_night_marker: heating_night_sel,
         frost_debounce_marker: frost_debounce_sel,
         margin_marker: margin_sel,
         shower_threshold_marker: shower_threshold_sel,

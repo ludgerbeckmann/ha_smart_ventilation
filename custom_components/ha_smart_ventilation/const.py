@@ -67,6 +67,29 @@ CONF_SUMMER_MODE_FORECAST_ENTITY = "summer_mode_forecast_entity"
 # Leer = state der Entität direkt als Zahl lesen (für eine reine
 # Zahlen-Vorhersage-Entität, deren state selbst der Temperaturwert ist).
 CONF_SUMMER_MODE_FORECAST_ATTRIBUTE = "summer_mode_forecast_attribute"
+# Vorschlagsliste für das Feld oben (Dropdown, weiterhin per custom_value
+# frei editierbar, z. B. für den Namen eines eigenen Template-Sensor-
+# Attributs). Enthält die von Home Assistants ClimateEntity-Basisklasse
+# `WeatherEntity` standardisierten, offiziell dokumentierten
+# extra_state_attributes JEDER weather-Entität (nicht nur Temperatur, da
+# das Feld auch für eine andere Vorhersage-Größe genutzt werden könnte,
+# auch wenn CONF_SUMMER_MODE_THRESHOLD_TEMP selbst nur einen Temperaturwert
+# erwartet) - keine geratenen, herstellerspezifischen Namen (siehe
+# Lektion 48/52 zu unverifizierten Vorschlagswerten).
+COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES = [
+    "temperature",
+    "templow",
+    "dew_point",
+    "humidity",
+    "pressure",
+    "wind_speed",
+    "wind_bearing",
+    "wind_gust_speed",
+    "visibility",
+    "uv_index",
+    "cloud_coverage",
+    "ozone",
+]
 # Eine bereits VORHANDENE switch-Entität (kein von dieser Integration
 # erzeugter eigener Schalter, siehe CLAUDE.md Lektion 46/47) - analog zu
 # CONF_DEHUMIDIFIER_ENTITY/CONF_AC_ENTITY/CONF_HEATING_ENTITY (Entitäten,

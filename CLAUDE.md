@@ -2656,6 +2656,81 @@ strukturell gleichen, aufwändigen Sonderfällen") verdient bei konkretem
 Anlass eine erneute Einzelprüfung, statt automatisch für alle X Fälle
 gleich viel Aufwand anzunehmen.
 
+**55. Lektion 53s Rückfrage-Antwort ("weitere Felder, ich nenne sie dir")
+brachte zwei neue numerische Dropdown-Felder, ein bisher komplettes
+Freitextfeld (Vorhersage-Attribut) sowie eine reine Abschnitts-
+Verschiebung - drei strukturell unterschiedliche Änderungen in einer
+Nachricht, zusätzlich zur Erkenntnis, dass eine Verschiebung zwischen
+Formular-Abschnitten auch `strings.json` betrifft, nicht nur die
+Python-Schema-Definition (0.67.0).** Nutzerwunsch, vier Punkte: (1)
+Wiedergabelautstärke für Sprachausgabe (`CONF_TTS_VOLUME`) als Dropdown,
+(2) Vorhersageattribut (`CONF_SUMMER_MODE_FORECAST_ATTRIBUTE`) ebenfalls
+als Dropdown, dabei "alle Angaben erweitern" (eine großzügige
+Vorschlagsliste, nicht nur 1-2 Einträge), (3) "die vier Felder für die
+Preset-Line" als Dropdown, (4) die (an anderer Stelle "Heizungssollwert"
+genannten) vier Felder in den Abschnitt "Erweitert" verschieben.
+
+Zunächst zu klären war, ob (3) dieselben vier Felder wie (4) meint oder
+andere: Die vier Preset-NAMEN-Felder (Komfort/Standby/Nacht/Gebäudeschutz,
+Lektion 50/52) sind schon länger echte Dropdowns - für sie gäbe es nichts
+umzustellen. Die vier Heizungs-SOLLWERT-Felder (Schwelle/Comfort/Standby/
+Nacht) dagegen waren bis dahin reine `NumberSelector`-Spinner. Da (3) und
+(4) denselben Wortlaut "vier Felder" mit unterschiedlichem Namen für
+denselben Themenkomplex ("Preset-Zustände" vs. "Heizungssollwert")
+verwenden, wurden beide Anweisungen auf dieselben vier Sollwert-Felder
+bezogen - zwei unabhängige Änderungen (Eingabetyp UND Abschnitt) auf
+dieselbe Feldgruppe, keine widersprüchliche doppelte Umsetzung.
+
+Für (2) wurde bewusst NICHT versucht, die exakte, vom Nutzer selbst
+gewählte Attribut-Namenskonvention seines eigenen Template-Sensor-
+Bridge-Aufbaus (siehe Lektion 45) zu erraten - das wäre exakt die Art
+unverifizierter Vermutung, die Lektion 48/52 bereits als Risiko markiert
+hatte. Stattdessen `COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES`: die zwölf
+offiziell in Home Assistants `WeatherEntity`-Basisklasse dokumentierten
+Standard-Attribute JEDER `weather.`-Entität (`temperature`, `templow`,
+`dew_point`, `humidity`, `pressure`, `wind_speed`, `wind_bearing`,
+`wind_gust_speed`, `visibility`, `uv_index`, `cloud_coverage`, `ozone`) -
+eine echte, verifizierte und zugleich großzügige ("alle Angaben
+erweitern") Liste, ohne selbst erfundene Namen. Für den Sonderfall eines
+eigenen Template-Sensors bleibt das Feld über `custom_value=True`
+weiterhin frei editierbar.
+
+Für (1)/Sollwert-Dropdowns (Erinnerungsintervall/Leistung aus Lektion 53
+als Vorbild): `_THRESHOLD_DROPDOWN_OPTIONS` einfach um fünf weitere
+Einträge ergänzt (`CONF_TTS_VOLUME`, die vier Heizungs-Sollwertfelder) -
+`_numeric_field_selector()` griff dafür ohne jede weitere Codeänderung,
+exakt wie in Lektion 53 vorgesehen (Registry-Erweiterung wirkt automatisch
+auf beide Ebenen, global UND Raum-Override).
+
+Für (4)/Abschnitts-Verschiebung ergab sich ein eigener Stolperstein,
+strukturell verwandt mit Lektion 49 (neuer Formular-Abschnitt, aber hier
+umgekehrt: ein bereits bestehendes Feld wandert zwischen zwei bereits
+bestehenden Abschnitten): Die Verschiebung in `config_flow.py` (welchem
+`fields[SECTION_...]`-Dict ein Marker zugeordnet wird) betrifft nur, WO
+ein Feld im UI erscheint - `strings.json`/`translations/*.json` speichern
+Label (`data`) und Hinweistext (`data_description`) aber pro Formular-
+SCHRITT UND -ABSCHNITT verschachtelt (`sections.parameters.data.<key>` vs.
+`sections.advanced.data.<key>`), nicht global pro Schlüsselname. Ohne die
+vier Einträge dort ebenfalls von `sections.parameters` nach
+`sections.advanced` zu verschieben (an drei Stellen: Config-Flow-Schritt
+"room", Options-Flow-Schritt "room", Options-Flow-Schritt "global"; je
+zweimal `data`/`data_description`), hätte das Feld im UI keinen Namen/
+Hinweistext mehr gehabt, obwohl der Python-Code selbst fehlerfrei
+gewesen wäre - derselbe "sieht beim bloßen Anzeigen des Formulars nicht
+nach einem Fehler aus, fällt erst beim tatsächlichen Rendern/Speichern
+auf"-Charakter wie in Lektion 49. Per Skript (statt manueller Textsuche)
+umgesetzt, um alle drei Stellen zuverlässig und identisch zu treffen, mit
+anschließendem automatisiertem Abgleich der Feld-Anzahl je Abschnitt
+zwischen `config_flow.py` und `strings.json` (Lektion 50s bereits
+etabliertes Verifikationsmuster) sowie erneuter Struktur-Parität zu
+`de.json`/`en.json`. Lektion: Eine Verschiebung zwischen zwei UI-
+Abschnitten ist nicht nur eine Python-Schema-Frage ("welchem Dict-Eintrag
+gehört der Marker jetzt an") - überall dort, wo eine Integration Label/
+Text PRO ABSCHNITT (nicht pro Feldname global) ablegt, gehört die
+Verschiebung in `strings.json` untrennbar zur selben Änderung, sonst
+bleibt sie unvollständig, ohne dass `py_compile` oder der Import-Check
+das aufdecken könnten.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

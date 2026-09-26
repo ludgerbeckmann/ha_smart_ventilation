@@ -93,10 +93,6 @@
               "heat_protection_temp": "Hitzeschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
-              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
-              "heating_comfort_temp": "Heizung Comfort-Sollwert",
-              "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert",
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
               "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
@@ -118,10 +114,6 @@
               "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
-              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
               "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben). Aktuell global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekday}",
@@ -143,7 +135,11 @@
               "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
+              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
+              "heating_comfort_temp": "Heizung Comfort-Sollwert",
+              "heating_standby_temp": "Heizung Standby-Sollwert",
+              "heating_night_temp": "Heizung Nacht-Sollwert"
             },
             "data_description": {
               "temperature_attribute": "Nur relevant, wenn im Abschnitt \"Sensoren & Geräte\" eine climate-Entität als Innentemperatur gewählt wurde",
@@ -152,7 +148,11 @@
               "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren & Geräte\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}",
+              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
             }
           }
         }
@@ -250,10 +250,6 @@
               "heat_protection_temp": "Hitzeschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
-              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
-              "heating_comfort_temp": "Heizung Comfort-Sollwert",
-              "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert",
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
               "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
@@ -275,10 +271,6 @@
               "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
-              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
               "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben). Aktuell global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekday}",
@@ -300,7 +292,11 @@
               "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
+              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
+              "heating_comfort_temp": "Heizung Comfort-Sollwert",
+              "heating_standby_temp": "Heizung Standby-Sollwert",
+              "heating_night_temp": "Heizung Nacht-Sollwert"
             },
             "data_description": {
               "temperature_attribute": "Nur relevant, wenn im Abschnitt \"Sensoren & Geräte\" eine climate-Entität als Innentemperatur gewählt wurde",
@@ -309,7 +305,11 @@
               "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}",
               "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren & Geräte\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
               "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}"
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}",
+              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
             }
           }
         },
@@ -370,10 +370,6 @@
               "heat_protection_temp": "Hitzeschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
-              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
-              "heating_comfort_temp": "Heizung Comfort-Sollwert",
-              "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert",
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
               "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
@@ -396,10 +392,6 @@
               "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte",
               "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
               "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist.",
-              "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster",
-              "heating_standby_temp": "Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit",
-              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)",
               "heating_schedule_enabled": "Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert (Standard) gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben)",
               "heating_comfort_start_weekday": "Nur wirksam bei aktiviertem Heizungs-Zeitplan",
               "heating_night_start_weekday": "Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang",
@@ -421,7 +413,11 @@
               "humidity_priority_over_duration": "Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
               "min_surplus_power_watts": "Mindest-Einspeiseleistung zum Einschalten",
-              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung"
+              "power_grace_period_minutes": "Verzögerung bis Abschalten bei zu geringer Einspeisung",
+              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
+              "heating_comfort_temp": "Heizung Comfort-Sollwert",
+              "heating_standby_temp": "Heizung Standby-Sollwert",
+              "heating_night_temp": "Heizung Nacht-Sollwert"
             },
             "data_description": {
               "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (Abschnitt \"Sensoren\"), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
@@ -430,7 +426,11 @@
               "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit/hohem CO2-Wert. Frostschutz hat davon unabhängig immer Vorrang.",
               "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird - nur relevant für Räume, die die Duscherkennung im Abschnitt \"Sensoren\" aktiviert haben",
               "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
-              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe"
+              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
+              "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist.",
+              "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster",
+              "heating_standby_temp": "Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit",
+              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)"
             }
           },
           "messages": {
