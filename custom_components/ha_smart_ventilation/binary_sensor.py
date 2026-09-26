@@ -342,6 +342,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["schwelle_hitzeschutz"] = self._effective(
                 CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
             )
+            # Ebenfalls nur für Dashboard-Karten - erlaubt die Live-Auswertung
+            # von "Außen wärmer" (siehe outdoor_warmer_again in _evaluate()),
+            # bisher nur als Rückfallwert aus dem historischen letzter_grund
+            # sichtbar (siehe README, "Hervorhebung des ausschlaggebenden
+            # Werts"). Toleranz-Marge selbst ist unabhängig vom Außensensor
+            # gültig, wird hier aber bewusst nur zusammen mit den anderen
+            # beiden Schwellen gesetzt, da sie nur in Kombination mit
+            # aussentemperatur/innentemperatur überhaupt einen Sinn ergibt.
+            attrs["schwelle_temperatur_marge"] = self._effective(
+                CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN
+            )
         if self._config.get(CONF_HUMIDITY_ENTITY):
             attrs["luftfeuchtigkeit"] = humidity
             attrs["schwelle_feuchtigkeit_oeffnen"] = self._effective(

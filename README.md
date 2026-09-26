@@ -873,6 +873,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussentemperatur` | aktueller Messwert (aus "Smart Climate Optionen") |
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `schwelle_frostschutz` / `schwelle_hitzeschutz` | aktuell wirksame Frostschutz-/Hitzeschutz-Grenze - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient hauptsächlich der Dashboard-Karte, um Frost-/Hitzeschutz live gegen die aktuelle Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
+| `schwelle_temperatur_marge` | aktuell wirksame Toleranz-Marge - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient der Dashboard-Karte, um den Sommer-Fall ("Außen wärmer") live gegen Innen-/Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
 | `co2`, `schwelle_co2_oeffnen` / `_schliessen` | nur vorhanden, falls ein CO2-Sensor hinterlegt ist |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
@@ -909,7 +910,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 25** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 26** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -922,7 +923,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 25 %}
+  {% set card_version = 26 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
@@ -939,7 +940,9 @@ content: >
   {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
   {% set frost_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_frostschutz is defined and a.aussentemperatur <= a.schwelle_frostschutz %}
   {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
-  {% set close_fallback = grund_code if grund_code in ['duration', 'outdoor_warmer', 'outdoor_wetter'] else '' %}
+  {% set outdoor_warmer_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.innentemperatur is not none and a.schwelle_temperatur_marge is defined and a.aussentemperatur >= (a.innentemperatur + a.schwelle_temperatur_marge) %}
+  {% set outdoor_wetter_live = a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none and a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none and a.aussen_absolute_luftfeuchtigkeit >= a.absolute_luftfeuchtigkeit %}
+  {% set close_fallback = 'outdoor_warmer' if outdoor_warmer_live else ('outdoor_wetter' if outdoor_wetter_live else (grund_code if grund_code == 'duration' else '')) %}
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else '')) %}
   {% set comfort_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)) %}
   {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('' if no_close_rec else comfort_close)) %}
@@ -1171,17 +1174,23 @@ Version verzichtet komplett auf `style`-Attribute:
   gegen `schwelle_frostschutz`/`schwelle_hitzeschutz`), dann symmetrisch
   Luftfeuchtigkeit, CO2, Temperatur gegen ihre Schließen-Schwelle -
   identisch zur tatsächlichen Prioritätsreihenfolge in `binary_sensor.py`
-  (Frostschutz hat immer Vorrang). Das funktioniert unabhängig davon, ob
-  die Empfehlung schon einmal einen echten Zustandswechsel hatte, und
-  beschreibt immer den **aktuellen** Zustand, nicht nur die Historie -
-  wurde z. B. wegen eines längst vorbeigezogenen Kälte-Einbruchs
-  geschlossen und ist die Außentemperatur inzwischen wieder deutlich über
-  der Frostschutz-Grenze, zeigt der Auslöser das nicht mehr an.
-  `letzter_grund` dient nur noch als **Rückfallwert** für die drei Fälle,
-  die sich nicht live aus den angezeigten Werten nachrechnen lassen:
-  Sommer-Fall, "Außenluft inzwischen feuchter" und Winter-Höchstdauer
-  (`outdoor_warmer`/`outdoor_wetter`/`duration` - fehlende Toleranz-Marge
-  bzw. bisherige Öffnungsdauer im Vergleich zur Karte).
+  (Frostschutz hat immer Vorrang). Ebenfalls live geprüft: der Sommer-Fall
+  ("Außen wärmer", aktuelle Außentemperatur gegen Innentemperatur +
+  Toleranz-Marge, `schwelle_temperatur_marge`) und "Außenluft inzwischen
+  feuchter" (`outdoor_wetter`, absolute Luftfeuchtigkeit außen gegen
+  innen, aus `absolute_luftfeuchtigkeit`/`aussen_absolute_luftfeuchtigkeit`).
+  Das funktioniert unabhängig davon, ob die Empfehlung schon einmal einen
+  echten Zustandswechsel hatte, und beschreibt immer den **aktuellen**
+  Zustand, nicht nur die Historie - wurde z. B. wegen eines längst
+  vorbeigezogenen Kälte-Einbruchs geschlossen und ist die Außentemperatur
+  inzwischen wieder deutlich über der Frostschutz-Grenze, oder wegen eines
+  inzwischen längst wieder abgekühlten "Außen wärmer"-Falls, zeigt der
+  Auslöser das nicht mehr an.
+  `letzter_grund` dient nur noch als **Rückfallwert** für den einen
+  verbleibenden Fall, der sich nicht live aus den angezeigten Werten
+  nachrechnen lässt: die Winter-Höchstdauer (`duration` - dafür fehlen der
+  Karte die Winter-Schwelle, die Höchstdauer selbst und das
+  Prioritäts-Flag als Attribute).
   Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
   eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
   liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell

@@ -2595,6 +2595,67 @@ grundsätzlich nur Strings zurückgibt; dieser Unterschied fällt weder beim
 Anzeigen des Formulars noch beim Speichern selbst auf, sondern erst bei
 der nächsten Verwendung des gespeicherten Werts in einer Zahlen-Operation.
 
+**54. Die beiden "Sommer-Fall"-Auslöser (`outdoor_warmer`/`outdoor_wetter`)
+waren seit Lektion 13 bewusst als "nicht live nachrechenbar" eingestuft -
+bei genauerem Hinsehen stimmte das nur noch für einen der beiden, und für
+den anderen fehlte lediglich EIN Attribut (0.66.0).** Nutzer-Nachfrage zu
+einem konkreten Fall (Zimmer Ida): Auslöser "Außen wärmer" mit Zeitstempel
+09:12, obwohl die aktuell angezeigte Außentemperatur (18,3 °C) längst
+wieder unter der Innentemperatur (21,4 °C) lag - ich erklärte das
+zunächst korrekt als erwartetes, dokumentiertes Verhalten des historischen
+`letzter_grund`-Rückfallwerts (Lektion 13). Die Nutzer-Reaktion darauf:
+"Die Karte soll von dem farblichen Status her aber immer den aktuellen
+Stand widerspiegeln" - eine grundsätzliche Anforderung, die über die
+bloße Erklärung hinausging und mich veranlasste, die Lektion-13-Annahme
+("nicht live nachrechenbar") noch einmal zu überprüfen, statt sie
+unhinterfragt hinzunehmen.
+
+Ergebnis der Prüfung: Für `outdoor_wetter` ("Außenluft inzwischen
+feuchter") waren alle nötigen Werte (`absolute_luftfeuchtigkeit`,
+`aussen_absolute_luftfeuchtigkeit`) bereits als Attribute vorhanden -
+die Karte hatte sie schon immer nur für die reine Werte-Anzeige genutzt,
+nie für die Live-Berechnung des Auslösers selbst. Reiner Karten-Fix, kein
+Backend nötig. Für `outdoor_warmer` ("Außen wärmer") fehlte dagegen
+tatsächlich nur EIN einzelnes Attribut, die Toleranz-Marge
+(`CONF_TEMP_MARGIN`) - Innen-/Außentemperatur waren längst vorhanden.
+Neues, schlankes Attribut `schwelle_temperatur_marge` (1:1 nach dem
+Muster von `schwelle_frostschutz`/`schwelle_hitzeschutz` aus Lektion 13),
+danach konnte die Karte `aussentemperatur >= innentemperatur + marge`
+genauso selbst nachrechnen wie Frost-/Hitzeschutz. Nur die
+Winter-Höchstdauer (`duration`) bleibt jetzt noch als historischer
+Rückfallwert übrig - dafür fehlen weiterhin drei Attribute (Winter-
+Schwelle, Höchstdauer, Prioritäts-Flag), auf Nutzerwunsch ausdrücklich
+zurückgestellt ("reicht erstmal"), nicht in diesem Schritt mit erledigt.
+
+Technisch: `close_fallback` in der Karte wechselte von "grund_code, falls
+in [duration, outdoor_warmer, outdoor_wetter]" zu "outdoor_warmer_live,
+sonst outdoor_wetter_live, sonst grund_code falls duration" - die beiden
+neuen Live-Variablen ersetzen den historischen Rückfallwert für ihre
+beiden Fälle komplett, nicht nur als zusätzliche Bedingung daneben.
+Dadurch greift automatisch auch das bereits bestehende "Totzone
+neutral"-Prinzip (Lektion 29): Trifft aktuell kein Live-Grund mehr zu,
+wird die Karte 🟢 - unabhängig vom Fensterzustand -, genau das vom
+Nutzer beobachtete Ida-Verhalten korrigierend. Bewusst KEIN Fallback auf
+den historischen Wert, falls `schwelle_temperatur_marge` bei einer älteren
+Integration-Version (Karte schon aktualisiert, Backend noch nicht) fehlt
+- dieser Übergangsfall zeigt dann übergangsweise neutral statt eines
+falschen Werts, analog zu `frost_live`/`heat_live`, die genauso nur bei
+vorhandener Schwelle greifen. Lokal mit sechs Szenarien gegengetestet
+(Jinja-Sandbox, `StrictUndefined`): aktuell wieder kühler/trockener außen
+→ 🟢 neutral (Ida-Fall korrigiert), tatsächlich weiterhin wärmer/feuchter
+außen bei offenem (Mismatch, 🔴) und geschlossenem (Match, 🟢 "endgültig
+gelöst", Lektion 30) Fenster, sowie fehlendes `schwelle_temperatur_marge`-
+Attribut (kein Crash, fällt auf neutral zurück). Lektion: Eine als
+"strukturell identisch, beide nicht live nachrechenbar" zusammengefasste
+Gruppe von zwei Fällen (Lektion 13) kann sich bei erneuter Prüfung als
+uneinheitlich herausstellen - der eine brauchte in Wahrheit gar keine
+neue Datenbasis (nur ungenutzte, längst vorhandene Attribute), der andere
+nur ein einziges zusätzliches, schlankes Attribut nach bereits etabliertem
+Muster. Eine pauschale frühere Einschätzung ("das ist halt einer von X
+strukturell gleichen, aufwändigen Sonderfällen") verdient bei konkretem
+Anlass eine erneute Einzelprüfung, statt automatisch für alle X Fälle
+gleich viel Aufwand anzunehmen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
@@ -2636,3 +2697,10 @@ der nächsten Verwendung des gespeicherten Werts in einer Zahlen-Operation.
   um die genannten Felder samt sinnvoller Vorschlagswerte ergänzen, keine
   weiteren Codeänderungen nötig (`_numeric_field_selector()` greift dafür
   automatisch, sowohl global als auch beim Raum-Override).
+- Winter-Höchstdauer (`duration`) ist seit Lektion 54 der letzte
+  verbleibende Auslöser, den die Dashboard-Karte nur noch historisch aus
+  `letzter_grund` anzeigt, nicht live nachrechnet - auf Nutzerwunsch
+  ("reicht erstmal") bewusst zurückgestellt. Für eine Live-Berechnung
+  fehlen der Karte noch drei Attribute (Winter-Schwelle, Höchstdauer,
+  Prioritäts-Flag `CONF_HUMIDITY_PRIORITY_OVER_DURATION`) - `empfehlung_
+  aktiv_seit` (bisherige Öffnungsdauer) ist dagegen bereits vorhanden.
