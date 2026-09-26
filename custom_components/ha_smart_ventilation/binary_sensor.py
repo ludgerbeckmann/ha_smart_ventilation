@@ -868,6 +868,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return state.state != "off"
         return state.state == "on"
 
+    def _get_device_live_state(self, entity_id: str) -> bool | None:
+        """Wie _is_device_on(), aber für die Idempotenz-Prüfung in
+        _update_single_device() gedacht statt für die Dashboard-Anzeige:
+        liefert None bei unavailable/unknown, statt beides wie
+        _is_device_on() zu False zusammenzufassen - "wissen wir nicht"
+        muss hier von "ist aus" unterscheidbar bleiben, sonst würde bei
+        jeder kurzen Nichtverfügbarkeit unnötig ein Befehl gegen eine
+        gerade nicht antwortende Entität wiederholt (siehe CLAUDE.md
+        Lektion 56, analog zu _get_heating_target_temperature())."""
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable"):
+            return None
+        if entity_id.split(".")[0] == "climate":
+            return state.state != "off"
+        return state.state == "on"
+
     def _get_heating_entity_id(self) -> str | None:
         """Liefert die für die Heizungssteuerung tatsächlich zu verwendende
         Entity-ID.
@@ -1879,14 +1895,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     if elapsed >= grace_minutes:
                         force_off_due_to_power = True
 
-        if (want_off or force_off_due_to_power) and current is not False:
+        # Der interne Tracker allein bestätigt nur, dass ein Befehl
+        # erfolgreich AN Home Assistant übergeben wurde - nicht, dass das
+        # Gerät ihn auch tatsächlich übernommen hat (siehe CLAUDE.md
+        # Lektion 47/56: bei instabiler Funk-/Zigbee-Anbindung kann ein
+        # Befehl unbemerkt verschluckt werden). Der live gelesene
+        # Gerätezustand entscheidet deshalb zusätzlich mit, ob ein Befehl
+        # als bereits erledigt gilt - ist er gerade nicht lesbar
+        # (unavailable/unknown), bleibt es beim reinen Tracker-Vergleich,
+        # um kein Kommando gegen eine gerade nicht antwortende Entität zu
+        # wiederholen.
+        live_state = self._get_device_live_state(entity_id)
+        off_confirmed = current is False and live_state is not True
+        on_confirmed = current is True and live_state is not False
+
+        if (want_off or force_off_due_to_power) and not off_confirmed:
             await self._set_device_state(entity_id, False)
             setattr(self, state_attr, False)
             setattr(self, low_power_attr, None)
             if shutter_key:
                 await self._set_shutter(self._config.get(shutter_key), close=False)
             self.async_write_ha_state()
-        elif want_on and not force_off_due_to_power and current is not True:
+        elif want_on and not force_off_due_to_power and not on_confirmed:
             if power_ok:
                 await self._set_device_state(entity_id, True)
                 setattr(self, state_attr, True)

@@ -2731,6 +2731,60 @@ Verschiebung in `strings.json` untrennbar zur selben Änderung, sonst
 bleibt sie unvollständig, ohne dass `py_compile` oder der Import-Check
 das aufdecken könnten.
 
+**56. `_update_single_device()` (Luftentfeuchter/Klimaanlage) hatte exakt
+die von Lektion 47 bereits vorhergesagte Lücke - dort für die Heizung
+behoben, hier bewusst offen gelassen, bis ein konkreter Fall auftrat
+(0.67.1).** Nutzer-Meldung: "Der Luftentfeuchter ist nach dem Duschen
+auch nicht angegangen." Untersuchung ergab zunächst, dass die
+Duscherkennung (`_showering`) dafür nicht die Ursache sein kann - sie
+gatet ausschließlich die Öffnen-Empfehlung wegen Luftfeuchtigkeit
+(`open_by_humidity`), nicht die vom Luftentfeuchter unabhängig davon
+berechnete `want_on`-Bedingung. Der eigentliche Fund lag stattdessen in
+`_update_single_device()` selbst: Die Idempotenz-Prüfung verglich seit
+jeher ausschließlich gegen den rein internen `_dehumidifier_state`/
+`_ac_state`-Tracker (`current is not True`/`current is not False`) - nie
+gegen den tatsächlichen Live-Zustand des Geräts. Ein `turn_on`-Befehl mit
+`blocking=False`, der Home Assistant zwar erfolgreich übergeben wurde,
+aber das Gerät bei einer instabilen Funk-/Zigbee-Anbindung nie
+tatsächlich erreicht/umgesetzt hat, setzte den Tracker trotzdem bereits
+auf "an" - keine der folgenden Neubewertungen wiederholte den Befehl
+danach jemals, das Gerät blieb dauerhaft aus.
+
+Exakt das Muster, das Lektion 47 für `_update_heating()` bereits behoben
+hatte, mit der dort ausdrücklich offen gelassenen Warnung: "Betrifft nur
+die Heizung - `_update_single_device()` ... hat denselben rein-internen
+Tracker-Vergleich, wurde hier aber nicht mit angefasst, da kein konkreter
+Fall dafür gemeldet wurde; sollte sich ein analoges Symptom dort zeigen,
+gilt dieselbe Lektion." Genau dieser Fall trat jetzt ein. Fix: neuer
+Helper `_get_device_live_state(entity_id) -> bool | None` - wie das
+bereits bestehende `_is_device_on()` (Lektion 19/33, für die
+Dashboard-Anzeige gedacht), aber bewusst NICHT identisch: `_is_device_on()`
+fasst `unavailable`/`unknown` und "wirklich aus" beide zu `False`
+zusammen (für die reine An/Aus-Anzeige unproblematisch), hier muss
+"wissen wir nicht" von "ist aus" aber unterscheidbar bleiben, sonst würde
+bei jeder kurzen Nichtverfügbarkeit unnötig ein Befehl gegen eine gerade
+nicht antwortende Entität wiederholt - deshalb `None` als dritter,
+eigener Rückgabewert. `_update_single_device()` gilt ein Zustand jetzt
+nur noch als bereits erledigt, wenn sowohl der Tracker als auch (soweit
+lesbar) der Live-Zustand übereinstimmen (`off_confirmed = current is
+False and live_state is not True`, `on_confirmed = current is True and
+live_state is not False`) - weicht der Live-Zustand ab, wird der Befehl
+erneut gesendet, auch wenn der Tracker "schon erledigt" behauptet. Bei
+nicht lesbarem Live-Zustand bleibt es beim reinen Tracker-Vergleich wie
+bisher. Bewusst symmetrisch für Luftentfeuchter UND Klimaanlage
+umgesetzt, obwohl nur der Luftentfeuchter konkret gemeldet wurde - beide
+teilen sich exakt dieselbe Funktion (vgl. Lektion 33: eine Asymmetrie
+zwischen ihnen wäre eine willkürliche Lücke). Lektion: Eine in einer
+früheren Lektion bewusst dokumentierte, aber noch nicht behobene Lücke in
+einer zweiten, strukturell identischen Stelle ("kein konkreter Fall dafür
+gemeldet") ist keine abgeschlossene Entscheidung, sondern eine
+Prognose - ein späterer, konkreter Bug-Report an genau dieser Stelle
+bestätigt sie dann nur noch, statt eine neue Ursache erst wieder von
+Grund auf suchen zu müssen; die frühere Lektion beim Diagnostizieren
+eines neuen, aber strukturell verwandten Symptoms zuerst gezielt danach
+zu durchsuchen (hier: Lektion 47s eigene Warnung), ist schneller als eine
+komplette Neu-Analyse.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
