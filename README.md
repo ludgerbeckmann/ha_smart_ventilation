@@ -943,7 +943,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 30** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 31** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -956,7 +956,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 30 %}
+  {% set card_version = 31 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set today_str = now().strftime('%Y-%m-%d') %}
@@ -1139,7 +1139,7 @@ content: >
   {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
   {% set ns.rooms = ns.rooms ~ sep_before ~ entry.block %}
   {% endfor %}
-  {% set summer_header = ' Sommer/Winter |' if ns.summer_mode is not none else '' %}
+  {% set summer_header = ' Modus |' if ns.summer_mode is not none else '' %}
   {% set summer_sep = ':---:|' if ns.summer_mode is not none else '' %}
   {% set summer_cell = (' ☀️ Sommer |' if ns.summer_mode else ' ❄️ Winter |') if ns.summer_mode is not none else '' %}
   {% set version_header = (' Integration |' if ns.version is not none else '') ~ ' Karte |' %}
