@@ -896,6 +896,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
+| `letzter_wechsel` | Zeitpunkt des letzten ECHTEN Empfehlungswechsels (nur bei tatsächlichem Zustandswechsel neu gesetzt, über Neustarts hinweg korrekt erhalten) - anders als `last_changed` der Entität selbst, das Home Assistant bei jedem Neustart auf den Neustart-Zeitpunkt zurücksetzt. Von der Dashboard-Karte für die "Uhrzeit"-Spalte der Empfehlung verwendet, statt sich auf das irreführende `last_changed` zu verlassen |
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`, `outdoor_wetter`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
 | `luftentfeuchter_an`, `klimaanlage_an` | nur vorhanden, falls die jeweiligen Geräte konfiguriert sind UND ihre Entität aktuell im Zustandsautomaten existiert (nicht z. B. wegen deaktiviertem Integrationseintrag komplett entfernt) - live vom tatsächlichen Gerätezustand gelesen (auch wenn das Gerät manuell oder von einer anderen Automation ein-/ausgeschaltet wurde, nicht nur wenn diese Integration es selbst geschaltet hat). Ist die Entität komplett verschwunden, wird das Gerät auch nicht mehr gesteuert - anders als eine bloß vorübergehende "nicht verfügbar"-Meldung (Gerät kurz offline), die weiterhin wie "aus" behandelt wird |
@@ -927,7 +928,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 27** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 28** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -940,10 +941,20 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 27 %}
+  {% set card_version = 28 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
-  {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
+  {% set today_str = now().strftime('%Y-%m-%d') %}
+  {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none, window_times=[]) %}
+  {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') %}
+  {% set a = s.attributes %}
+  {% if a.fensterkontakt_entity is defined %}
+  {% set w = states(a.fensterkontakt_entity) %}
+  {% if w in ['on', 'off'] %}
+  {% set ns.window_times = ns.window_times + [as_local(states[a.fensterkontakt_entity].last_changed).strftime('%Y-%m-%d %H:%M')] %}
+  {% endif %}
+  {% endif %}
+  {% endfor %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
   {% set a = s.attributes %}
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
@@ -977,7 +988,10 @@ content: >
   {% set w = states(window_entity) %}
   {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
   {% if w in ['on', 'off'] %}
-  {% set window_changed_time = as_local(states[window_entity].last_changed).strftime('%d.%m. %H:%M') %}
+  {% set window_dt = as_local(states[window_entity].last_changed) %}
+  {% set window_key = window_dt.strftime('%Y-%m-%d %H:%M') %}
+  {% set window_mass_reset = ns.window_times.count(window_key) >= 3 %}
+  {% set window_changed_time = '–' if window_mass_reset else (window_dt.strftime('%H:%M') if window_dt.strftime('%Y-%m-%d') == today_str else window_dt.strftime('%d.%m. %H:%M')) %}
   {% endif %}
   {% if not no_window and has_live_reason and not co2_close_exception and w in ['on', 'off'] %}
   {% set is_match = (s.state == 'on') == (w == 'on') %}
@@ -1000,7 +1014,11 @@ content: >
   {% endif %}
   {% set highlight_open = '<font color="green"><strong>' if (co2_close_exception or (comfort_close_resolved_exception and highlight_ok) or no_window_resolved) else ('<font color="orange"><strong>' if (no_window or highlight_ok) else '<font color="red"><strong>') %}
   {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
-  {% set changed_time = (as_local(s.last_changed).strftime('%d.%m. %H:%M')) if has_live_reason else '–' %}
+  {% set changed_time = '–' %}
+  {% if has_live_reason and a.letzter_wechsel is defined and a.letzter_wechsel is not none %}
+  {% set wechsel_dt = as_local(as_datetime(a.letzter_wechsel)) %}
+  {% set changed_time = wechsel_dt.strftime('%H:%M') if wechsel_dt.strftime('%Y-%m-%d') == today_str else wechsel_dt.strftime('%d.%m. %H:%M') %}
+  {% endif %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
   {% set temp_val = (highlight_open ~ temp_val ~ '</strong></font>') if highlight_code == 'temp' else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
@@ -1256,16 +1274,24 @@ Auslöser/Uhrzeit - nur für Räume mit Fenster, zwei Zeilen: die erste
 zeigt ausschließlich den Fensterzustand mit dem Zeitpunkt seiner letzten
 tatsächlichen Änderung (`last_changed` des Fensterkontakt-Sensors selbst,
 "–" ohne konfigurierten Fensterkontakt), die zweite ausschließlich
-Empfehlung/Auslöser mit dem Zeitpunkt der letzten Empfehlungsänderung -
+Empfehlung/Auslöser mit dem Zeitpunkt des letzten ECHTEN Empfehlungswechsels
+(`letzter_wechsel`-Attribut, siehe "Attribute für eine Statusübersicht" -
+bewusst nicht `last_changed` der Sensor-Entität selbst, das Home Assistant
+bei jedem Neustart auf den Neustart-Zeitpunkt zurücksetzt) -
 dadurch auf einen Blick erkennbar, ob die Fensteraktion vor oder nach dem
 Empfehlungswechsel lag, z. B. um zu prüfen, ob eine fehlende
 Benachrichtigung dadurch erklärbar ist (Fenster stand zum Zeitpunkt des
-Wechsels bereits passend, siehe "Logik im Detail"). Auslöser wird live aus
-den aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung des
-ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
-Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand und
-Uhrzeit (zweite Zeile) den Zeitpunkt der letzten tatsächlichen
-Zustandsänderung; liegt aktuell **kein** Auslöser vor ("Totzone", siehe
+Wechsels bereits passend, siehe "Logik im Detail"). Beide Zeitstempel
+zeigen nur die Uhrzeit ohne Datum, falls sie auf den heutigen Tag fallen.
+Fällt bei mindestens drei Räumen zeitgleich (auf die Minute gerundet)
+derselbe Fenster-Zeitstempel auf - ein zuverlässiges Anzeichen für einen
+gemeinsamen Neustart-Reset des jeweiligen Fensterkontakt-Integrations
+statt einer echten, zufällig zeitgleichen Fensteraktion in mehreren Räumen
+- wird "–" statt dieses irreführenden Zeitstempels angezeigt. Auslöser
+wird live aus den aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung
+des ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt,
+zeigt Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand;
+liegt aktuell **kein** Auslöser vor ("Totzone", siehe
 oben), wird die zweite Zeile komplett ausgeblendet statt einer sonst
 nicht mehr begründbaren Empfehlung mit lauter "–". Das Icon am Raumnamen richtet sich danach, ob aktuell ein
 Auslöser vorliegt und, falls ja, ob das Fenster bereits entsprechend

@@ -224,6 +224,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._open_since = None
         self._last_notified_at = None
         self._last_reason: str | None = None
+        # Zeitpunkt des letzten ECHTEN Empfehlungswechsels - anders als
+        # last_changed der Entität selbst (das Home Assistant bei jedem
+        # Neustart auf den Neustart-Zeitpunkt zurücksetzt, siehe README)
+        # über RestoreEntity erhalten, da nur beim tatsächlichen Wechsel
+        # neu gesetzt (analog zu _open_since).
+        self._last_state_change_at = None
         self._unsub_tick = None
 
         # Ob aktuell eine Push- bzw. persistente Web-Benachrichtigung
@@ -410,6 +416,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["persistent_aktiv"] = True
         if self._open_since is not None:
             attrs["empfehlung_aktiv_seit"] = self._open_since.isoformat()
+        if self._last_state_change_at is not None:
+            attrs["letzter_wechsel"] = self._last_state_change_at.isoformat()
         if self._last_notified_at is not None:
             attrs["letzte_benachrichtigung"] = self._last_notified_at.isoformat()
         if self._last_reason is not None:
@@ -519,6 +527,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if "empfehlung_aktiv_seit" in attrs:
                 self._open_since = dt_util.parse_datetime(
                     attrs["empfehlung_aktiv_seit"]
+                )
+            if "letzter_wechsel" in attrs:
+                self._last_state_change_at = dt_util.parse_datetime(
+                    attrs["letzter_wechsel"]
                 )
             if "letzter_grund" in attrs and attrs["letzter_grund"] != "frost_unavailable":
                 # "frost_unavailable" ist ein seit 0.35.0 entfernter Grund-Code
@@ -1657,6 +1669,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if new_state != self._attr_is_on:
             self._attr_is_on = new_state
             self._last_reason = None if silent_frost_close else reason
+            self._last_state_change_at = dt_util.utcnow()
             if new_state:
                 self._open_since = dt_util.utcnow()
             else:
