@@ -927,7 +927,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 26** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 27** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -940,7 +940,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 26 %}
+  {% set card_version = 27 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none) %}
@@ -1077,7 +1077,10 @@ content: >
   {% set uhrzeit_val = changed_time %}
   {% set empf_table = '' %}
   {% if not no_window %}
-  {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | – | – | ' ~ window_changed_time ~ ' |\n| – | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
+  {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | – | – | ' ~ window_changed_time ~ ' |' %}
+  {% if has_live_reason %}
+  {% set empf_table = empf_table ~ '\n| – | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
+  {% endif %}
   {% endif %}
   {% set values_table = '| Messwert | Innen | Außen | Öffnen | Schließen |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
@@ -1263,9 +1266,8 @@ ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt, zeigt
 Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand und
 Uhrzeit (zweite Zeile) den Zeitpunkt der letzten tatsächlichen
 Zustandsänderung; liegt aktuell **kein** Auslöser vor ("Totzone", siehe
-oben), zeigen Empfehlung
-und Uhrzeit ebenfalls "–" statt einer sonst nicht mehr begründbaren
-Empfehlung. Das Icon am Raumnamen richtet sich danach, ob aktuell ein
+oben), wird die zweite Zeile komplett ausgeblendet statt einer sonst
+nicht mehr begründbaren Empfehlung mit lauter "–". Das Icon am Raumnamen richtet sich danach, ob aktuell ein
 Auslöser vorliegt und, falls ja, ob das Fenster bereits entsprechend
 steht (🔴 bei echtem Fenster-Mismatch, 🟠 wenn das Fenster schon korrekt
 steht, aber die Werte noch außerhalb der Norm liegen, 🟢 bei einem
@@ -1381,7 +1383,13 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   Raum zusätzlich den aktuellen Entitäts-Zustand samt aller Attribute
   sowie eine Momentaufnahme (Zustand + Attribute) aller referenzierten
   Roh-Sensoren - Innentemperatur-Quelle, Luftfeuchtigkeit, CO2,
-  Fensterkontakt sowie die globale Außentemperatur/-luftfeuchtigkeit.
+  Fensterkontakt sowie die globale Außentemperatur/-luftfeuchtigkeit. Bei
+  den globalen Einstellungen zusätzlich für jedes App-Benachrichtigungsziel
+  mit hinterlegter Anwesenheits-Entität eine Momentaufnahme von deren
+  Zustand und Zeitpunkt der letzten Änderung (ohne die Entity-ID oder
+  weitere Attribute) - nützlich, um zu erkennen, ob ein Push wegen
+  "Person/Gerät nicht zuhause" übersprungen wurde (dieser Fall wird sonst
+  nur mit Debug-Logging sichtbar).
   Damit lässt sich z. B. sofort erkennen, ob ein referenzierter Sensor
   gerade `unavailable`/`unknown` meldet. Diese Datei kann direkt
   hochgeladen/geteilt werden, z. B. um ein auffälliges Verhalten zu

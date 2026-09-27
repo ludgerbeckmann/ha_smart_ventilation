@@ -328,7 +328,7 @@
         },
         "sections": {
           "sensors": {
-            "name": "Sensors",
+            "name": "Sensors & Devices",
             "description": "Sensors and playback settings as the room-wide default.",
             "data": {
               "outdoor_temp_entity": "Outdoor temperature",
@@ -349,7 +349,7 @@
               "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically controls the summer/winter mode switch selected below. Without this entity, the switch remains purely manual.",
               "summer_mode_switch_entity": "An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (\"Parameters\" section) again. Without a configured entity, summer/winter mode has no effect.",
               "tts_entity": "Used when a room doesn't set its own TTS entity",
-              "tts_volume": "Volume the speakers are set to before the announcement (not automatically restored afterwards)",
+              "tts_volume": "Volume the speakers are set to before the announcement - automatically restored to the previous value afterwards (see README)",
               "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
               "power_entity": "Used when a room doesn't set its own power sensor",
               "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
@@ -400,7 +400,7 @@
               "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state.",
               "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",
-              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above in the \"Sensors\" section"
+              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above in the \"Sensors & Devices\" section"
             }
           },
           "advanced": {
@@ -420,11 +420,11 @@
               "heating_night_temp": "Heating night setpoint"
             },
             "data_description": {
-              "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (\"Sensors\" section) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
+              "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (\"Sensors & Devices\" section) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
               "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
               "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay",
               "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
-              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors\" section",
+              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors & Devices\" section",
               "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
               "power_grace_period_minutes": "Default delay for all rooms without their own setting",
               "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
@@ -452,7 +452,7 @@
               "msg_reminder": "Reminder"
             },
             "data_description": {
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled.",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Leaving it empty also becomes 0 when saved.",
               "msg_open_humidity": "｛raum｝ = room name. ｛wert｝ = current humidity, ｛schwelle｝ = humidity threshold to open (each incl. %).",
               "msg_open_co2": "｛raum｝ = room name. ｛wert｝ = current CO2 value, ｛schwelle｝ = CO2 threshold to open (each incl. ppm).",
               "msg_open_temp": "｛raum｝ = room name. ｛wert｝ = current indoor temperature, ｛schwelle｝ = temperature threshold to open (each incl. °C).",
