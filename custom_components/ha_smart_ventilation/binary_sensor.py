@@ -348,25 +348,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["schwelle_hitzeschutz"] = self._effective(
                 CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
             )
-            # Ebenfalls nur für Dashboard-Karten - erlaubt die Live-Auswertung
-            # von "Außen wärmer" (siehe outdoor_warmer_again in _evaluate()),
-            # bisher nur als Rückfallwert aus dem historischen letzter_grund
-            # sichtbar (siehe README, "Hervorhebung des ausschlaggebenden
-            # Werts"). Toleranz-Marge selbst ist unabhängig vom Außensensor
-            # gültig, wird hier aber bewusst nur zusammen mit den anderen
-            # beiden Schwellen gesetzt, da sie nur in Kombination mit
-            # aussentemperatur/innentemperatur überhaupt einen Sinn ergibt.
-            attrs["schwelle_temperatur_marge"] = self._effective(
-                CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN
-            )
         if self._config.get(CONF_HUMIDITY_ENTITY):
             attrs["luftfeuchtigkeit"] = humidity
-            attrs["schwelle_feuchtigkeit_oeffnen"] = self._effective(
+            hum_open = self._effective(
                 CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
             )
+            attrs["schwelle_feuchtigkeit_oeffnen"] = hum_open
             attrs["schwelle_feuchtigkeit_schliessen"] = self._effective(
                 CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
             )
+            if indoor_temp is not None:
+                # Nur für Dashboard-Karten - erlaubt die Live-Auswertung von
+                # "Außen feuchter" (outdoor_humidity_confirmed_worse in
+                # _evaluate()): die Feuchtigkeits-Öffnen-Schwelle
+                # ("Normalbereich"-Obergrenze), bereits über die aktuelle
+                # Innentemperatur in absolute Luftfeuchtigkeit umgerechnet -
+                # die Karte kann die dafür nötige Magnus-Formel selbst nicht
+                # nachrechnen (anders als beim strukturell identischen
+                # Temperatur-Fall, wo Innen-/Außenwert direkt vergleichbar
+                # sind, siehe schwelle_temperatur_oeffnen).
+                attrs["schwelle_absolute_feuchtigkeit_oeffnen"] = round(
+                    self._absolute_humidity(indoor_temp, hum_open), 1
+                )
         if self._config.get(CONF_CO2_ENTITY):
             attrs["co2"] = co2
             attrs["schwelle_co2_oeffnen"] = self._effective(
@@ -1358,8 +1361,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             else:
                 self._heating_reason = "im Sollbereich, hält letzten Zustand"
         # --- Schließen: Außenluft ist inzwischen (wieder) absolut feuchter
-        # als die Innenluft - das Pendant zu outdoor_warmer_again weiter
-        # unten, nur für Luftfeuchtigkeit statt Temperatur. outdoor_drier_enough
+        # als der Normalbereich (Feuchtigkeits-Öffnen-Schwelle, umgerechnet
+        # in absolute Luftfeuchtigkeit über die aktuelle Innentemperatur) -
+        # das Pendant zu outdoor_warmer_again weiter unten, nur für
+        # Luftfeuchtigkeit statt Temperatur. Vergleicht bewusst NICHT mehr
+        # gegen den aktuellen Live-Innenwert (siehe Git-Historie vor diesem
+        # "Normalbereich"-Umbau), sondern gegen dieselbe Schwelle, die auch
+        # das Öffnen auslöst - identisches Prinzip wie bei der Temperatur:
+        # Erst wenn die Außenluft selbst außerhalb des Normalbereichs liegt,
+        # macht Lüften die Lage schlechter statt besser. outdoor_drier_enough
         # oben gilt nur einmalig als Öffnen-Gate; einmal geöffnet, wird dieser
         # Vergleich sonst nicht mehr erneut geprüft - eine bereits aktive
         # "bitte öffnen"-Empfehlung wegen Luftfeuchtigkeit bliebe sonst auch
@@ -1368,7 +1378,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Werten ausgelöst (nicht schon bei fehlendem Sensor/Messwert - anders
         # als beim konservativen Öffnen-Gate oben ist "wir wissen es nicht"
         # hier kein Sicherheits-, sondern ein reiner Komfort-Fall, der ohne
-        # positive Bestätigung nicht vorsorglich schließen soll).
+        # positive Bestätigung nicht vorsorglich schließen soll). `humidity`
+        # bleibt bewusst als reines Scope-Gate erhalten (Mechanismus nur für
+        # Räume mit konfiguriertem Innen-Feuchtigkeitssensor), fließt aber
+        # nicht mehr selbst in den Vergleich ein.
         outdoor_humidity_confirmed_worse = (
             outdoor_humidity_entity is not None
             and outdoor_humidity is not None
@@ -1376,7 +1389,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and indoor_temp is not None
             and outdoor_temp is not None
             and self._absolute_humidity(outdoor_temp, outdoor_humidity)
-            >= self._absolute_humidity(indoor_temp, humidity)
+            >= self._absolute_humidity(indoor_temp, hum_open)
         )
 
         # --- Duscherkennung: solange die Luftfeuchtigkeit gerade schnell
@@ -1472,11 +1485,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         ) and not frost_block and not heat_block
 
         # --- Schließen: Sommer-Fall (draußen wieder spürbar wärmer) ---
-        outdoor_warmer_again = (
-            outdoor_temp is not None
-            and indoor_temp is not None
-            and outdoor_temp >= indoor_temp + margin
-        )
+        # Vergleicht bewusst NICHT mehr gegen die aktuelle Live-Innentemperatur
+        # + Toleranz-Marge (siehe Git-Historie), sondern gegen die Öffnen-
+        # Schwelle des Raums selbst ("Normalbereich"-Obergrenze) - erst wenn
+        # die Außenluft selbst außerhalb dieses Normalbereichs liegt, macht
+        # Lüften die Lage schlechter statt besser. Vermeidet damit den Fall,
+        # dass eine noch gar nicht kritische, aber knapp unter der Öffnen-
+        # Schwelle liegende Innentemperatur bereits eine Schließempfehlung
+        # auslöst, sobald die Außentemperatur diese knapp übersteigt.
+        outdoor_warmer_again = outdoor_temp is not None and outdoor_temp >= temp_open
         close_by_summer_outdoor = (
             self._attr_is_on
             and outdoor_warmer_again
