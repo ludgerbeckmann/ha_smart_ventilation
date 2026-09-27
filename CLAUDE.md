@@ -2853,6 +2853,82 @@ Benachrichtigungsprobleme nachvollziehen" gedacht ist (siehe deren eigene
 Docstring) - dann gehört jeder neue "leise Sonderfall" konsequent auch
 dort ergänzt, nicht nur ins Log.
 
+**58. "Außen wärmer"/"Außen feuchter" verglichen bislang gegen die
+aktuelle Live-Innentemperatur/-Innenfeuchtigkeit statt gegen den
+Normalbereich selbst - bei einer noch gar nicht kritischen Innentemperatur
+löste das unnötig eine Schließempfehlung aus, sobald die Außenluft die
+Innenluft nur knapp überstieg (0.69.0).** Nutzer-Meldung (Screenshot,
+Hauswirtschaftsraum): Empfehlung "Schließen"/"Außen wärmer" bei Innen
+19,2 °C/Außen 20,8 °C, obwohl die Öffnen-Schwelle des Raums erst bei
+23 °C liegt - die Innentemperatur war zu diesem Zeitpunkt also gar nicht
+im kritischen Bereich, nur die Außentemperatur lag knapp über der
+Innentemperatur + Toleranz-Marge (Standard 1,0 °C), was `outdoor_warmer_again`
+(Lektion 23) bis dahin allein auslöste. Auf meinen erklärenden ersten
+Rückfrage-Vorschlag, den Vergleich statt gegen die Innentemperatur gegen
+die statische Schließen-Schwelle zu verankern, wies der Nutzer selbst per
+Gegenbeispiel auf eine Regression hin (eine tatsächlich heiße
+Innentemperatur, z. B. 25 °C, hätte mit einer nur wenig über der
+Schließen-Schwelle liegenden Außentemperatur fälschlich schon geschlossen,
+obwohl weiterhin sinnvoll gelüftet werden könnte) - der Nutzer schlug
+stattdessen die tatsächlich korrekte Alternative vor: Verankerung an der
+Öffnen-Schwelle selbst, umgedeutet als obere "Normalbereich"-Grenze -
+per drei AskUserQuestion-Rückfragen bestätigt (Formel, Übertragung auf
+den strukturell identischen Luftfeuchtigkeits-Fall, sowie zusätzlich die
+Umbenennung der Formular-Labels).
+
+Fix: `outdoor_warmer_again` (`_evaluate()`) von `outdoor_temp >= indoor_temp
++ margin` auf `outdoor_temp >= temp_open` vereinfacht - `indoor_temp`/
+`margin` werden für diesen Vergleich nicht mehr gebraucht (beide bleiben an
+anderer Stelle im Backend unverändert in Verwendung, z. B.
+`outdoor_cooler_enough`, Sommermodus-Schwelle, Heizungs-Hysterese). Analog
+`outdoor_humidity_confirmed_worse`: Vergleich wechselt von
+`_absolute_humidity(indoor_temp, humidity)` (Live-Innenwert) auf
+`_absolute_humidity(indoor_temp, hum_open)` (Feuchtigkeits-Öffnen-Schwelle,
+über die aktuelle Innentemperatur in absolute Luftfeuchtigkeit
+umgerechnet) - `humidity is not None` bleibt bewusst als reines Scope-Gate
+erhalten (Mechanismus nur für Räume mit konfiguriertem
+Innen-Feuchtigkeitssensor), fließt aber nicht mehr in den Vergleich selbst
+ein. Neues Karten-Attribut `schwelle_absolute_feuchtigkeit_oeffnen` nötig,
+weil die Dashboard-Karte die dafür erforderliche Magnus-Formel-Umrechnung
+selbst nicht nachrechnen kann (anders als bei Temperatur, wo
+`schwelle_temperatur_oeffnen` bereits unconditional exponiert war und die
+Karte den Vergleich direkt übernehmen konnte) - `outdoor_warmer_live`/
+`outdoor_wetter_live` im Karten-Template entsprechend vereinfacht/ergänzt
+(`card_version` 28 → 29). Das bisherige `schwelle_temperatur_marge`-Attribut
+wurde durch die Vereinfachung kartenseitig komplett tot (einziger
+Verwender war `outdoor_warmer_live`) und ersatzlos entfernt (Lektion-11-
+Prinzip: ein wirklich totes Attribut wird entfernt, nicht nur unbenutzt
+liegen gelassen) - `CONF_TEMP_MARGIN`/`margin` selbst bleiben davon
+unberührt.
+
+Auf ausdrücklichen Nutzerwunsch zusätzlich die Formular-Labels der
+Öffnen-/Schließen-Schwellenfelder umbenannt (`strings.json`/
+`translations/{de,en}.json`, Temperatur/Luftfeuchtigkeit/CO2, jeweils
+Config-Flow-Raum, Options-Flow-Raum UND Options-Flow-global): von
+"Temperatur-Schwelle zum Öffnen"/"...zum Schließen" zu
+"Normalbereich-Obergrenze (Temperatur, öffnet ab hier)"/
+"Normalbereich-Untergrenze (..., schließt ab hier)" - CO2 wurde bewusst
+einheitlich mitgezogen, obwohl es dort (anders als bei Temperatur/
+Luftfeuchtigkeit) keinen Außenluft-Umkehr-Mechanismus gibt: Das
+Öffnen-/Schließen-Schwellenpaar bildet für alle drei Größen strukturell
+identisch eine "Normalbereich"-Totzone (Lektion 29), nur die CO2-Grenzen
+selbst (`CONF_CO2_THRESHOLD_OPEN`/`_CLOSE`) und ihre `data_description`-
+Platzhaltertexte blieben unverändert. Lektion: Eine erste, naheliegende
+Vereinfachungs-Idee für ein Problem ("gegen die bereits vorhandene
+Schließen-Schwelle verankern") kann eine neue Regression einführen, die
+sich erst über ein konkretes Gegenbeispiel zeigt - der Nutzer selbst fand
+hier die korrekte Alternative (Verankerung an der jeweils anderen, weiter
+entfernten Schwelle), nachdem die erste Idee mit ihrer Schwachstelle
+konfrontiert wurde, statt dass ich sie selbst hätte finden müssen. Ebenso:
+Eine als "nicht live nachrechenbar" eingestufte Karten-Bedingung (hier
+`outdoor_wetter`, siehe Lektion 54) kann sich bei einer erneuten
+Formel-Änderung im Backend als plötzlich doch nachrechenbar erweisen,
+wenn die neue Formel bereits vorhandene oder mit wenig Aufwand ergänzbare
+Attribute verwendet (hier: die Öffnen-Schwelle selbst, statt eines nur
+zur Laufzeit bekannten Live-Werts) - bei jeder Formeländerung im Backend
+lohnt sich ein erneuter Blick darauf, ob die zugehörige Karten-Bedingung
+davon ebenfalls profitieren kann.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

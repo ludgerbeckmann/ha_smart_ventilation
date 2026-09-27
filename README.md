@@ -505,6 +505,16 @@ zur unbeschränkten Auswahl zurückzukehren.
 
 ## Logik im Detail
 
+Jede der drei Größen (Temperatur, Luftfeuchtigkeit, CO2) hat ein Paar
+Schwellenwerte, die zusammen einen **Normalbereich** aufspannen: unterhalb
+der "Normalbereich-Untergrenze" (Formularfeld "... zum Schließen") wird
+geschlossen, oberhalb der "Normalbereich-Obergrenze" (Formularfeld "... zum
+Öffnen") wird geöffnet, dazwischen bleibt der zuletzt gesetzte Zustand
+unverändert (Hysterese/Totzone, siehe unten). Genau diese
+Normalbereich-Grenzen entscheiden bei Temperatur und Luftfeuchtigkeit auch
+mit darüber, wann die Außenluft selbst als "nicht mehr hilfreich" gilt
+(Sommer-Fall/"Außen feuchter", siehe unten).
+
 **Öffnen** wird empfohlen, wenn (und weder Frost- noch Hitzeschutz greift):
 - Innentemperatur ≥ "Schwelle zum Öffnen" **und** draußen mindestens um die
   Toleranz-Marge kühler ist als drinnen, **oder**
@@ -530,14 +540,19 @@ zur unbeschränkten Auswahl zurückzukehren.
   Auslöser-Eintrag in der Empfehlungs-Tabelle erscheint trotzdem ganz
   normal (der Grund ist ja real), nur die Benachrichtigung entfällt -
   kein zwingender Handlungsbedarf, **oder**
-- **Sommer-Fall**: draußen ist mittlerweile mindestens um die Toleranz-Marge
-  wärmer als drinnen – *außer* es wird gerade noch aus Feuchtigkeits- oder
-  CO2-Gründen gelüftet, **oder**
+- **Sommer-Fall**: die Außentemperatur selbst hat inzwischen die "Normalbereich"-
+  Obergrenze (Temperatur-Schwelle zum Öffnen) erreicht/überschritten – die
+  Außenluft ist damit nicht mehr nur wärmer als die aktuelle Innenluft,
+  sondern liegt selbst außerhalb des Normalbereichs, sodass Lüften die
+  Situation nicht mehr verbessern würde – *außer* es wird gerade noch aus
+  Feuchtigkeits- oder CO2-Gründen gelüftet, **oder**
 - **Außenluft inzwischen feuchter**: das Pendant zum Sommer-Fall für
   Luftfeuchtigkeit – die Öffnen-Empfehlung wegen Luftfeuchtigkeit prüft
   einmalig beim Öffnen, ob die Außenluft absolut trockener ist als die
-  Innenluft (siehe oben); ändert sich das *danach* (Außenluft wird absolut
-  feuchter als die Innenluft, z. B. weil es zu regnen beginnt), würde
+  Innenluft (siehe oben); danach gilt, identisch zum Sommer-Fall, dieselbe
+  "Normalbereich"-Logik: Erst wenn die absolute Außenluftfeuchtigkeit die
+  in absolute Luftfeuchtigkeit umgerechnete "Normalbereich"-Obergrenze
+  (Feuchtigkeits-Schwelle zum Öffnen) selbst erreicht/überschreitet, würde
   Lüften die Situation nur noch verschlimmern. Schließt daher genauso
   nach, *außer* es wird gerade noch aus Temperatur- oder CO2-Gründen
   gelüftet. Nur bei vollständig vorliegenden Innen-/Außenwerten aktiv -
@@ -890,8 +905,8 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `aussentemperatur` | aktueller Messwert (aus "Smart Climate Optionen") |
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `schwelle_frostschutz` / `schwelle_hitzeschutz` | aktuell wirksame Frostschutz-/Hitzeschutz-Grenze - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient hauptsächlich der Dashboard-Karte, um Frost-/Hitzeschutz live gegen die aktuelle Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
-| `schwelle_temperatur_marge` | aktuell wirksame Toleranz-Marge - nur vorhanden, falls ein Außentemperatur-Sensor hinterlegt ist. Dient der Dashboard-Karte, um den Sommer-Fall ("Außen wärmer") live gegen Innen-/Außentemperatur zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
+| `schwelle_absolute_feuchtigkeit_oeffnen` | die Feuchtigkeits-Öffnen-Schwelle, bereits über die aktuelle Innentemperatur in absolute Luftfeuchtigkeit (g/m³) umgerechnet - nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist. Dient der Dashboard-Karte, um den Sommer-Fall ("Außen feuchter") live gegen die absolute Außenluftfeuchtigkeit zu prüfen, statt sich auf den historischen `letzter_grund` verlassen zu müssen |
 | `co2`, `schwelle_co2_oeffnen` / `_schliessen` | nur vorhanden, falls ein CO2-Sensor hinterlegt ist |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
@@ -928,7 +943,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 28** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 29** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -941,7 +956,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 28 %}
+  {% set card_version = 29 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set today_str = now().strftime('%Y-%m-%d') %}
@@ -968,8 +983,8 @@ content: >
   {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
   {% set frost_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_frostschutz is defined and a.aussentemperatur <= a.schwelle_frostschutz %}
   {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
-  {% set outdoor_warmer_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.innentemperatur is not none and a.schwelle_temperatur_marge is defined and a.aussentemperatur >= (a.innentemperatur + a.schwelle_temperatur_marge) %}
-  {% set outdoor_wetter_live = a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none and a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none and a.aussen_absolute_luftfeuchtigkeit >= a.absolute_luftfeuchtigkeit %}
+  {% set outdoor_warmer_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.aussentemperatur >= a.schwelle_temperatur_oeffnen %}
+  {% set outdoor_wetter_live = a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none and a.schwelle_absolute_feuchtigkeit_oeffnen is defined and a.aussen_absolute_luftfeuchtigkeit >= a.schwelle_absolute_feuchtigkeit_oeffnen %}
   {% set close_fallback = 'outdoor_warmer' if outdoor_warmer_live else ('outdoor_wetter' if outdoor_wetter_live else (grund_code if grund_code == 'duration' else '')) %}
   {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else '')) %}
   {% set comfort_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)) %}
@@ -1213,10 +1228,15 @@ Version verzichtet komplett auf `style`-Attribute:
   Luftfeuchtigkeit, CO2, Temperatur gegen ihre Schließen-Schwelle -
   identisch zur tatsächlichen Prioritätsreihenfolge in `binary_sensor.py`
   (Frostschutz hat immer Vorrang). Ebenfalls live geprüft: der Sommer-Fall
-  ("Außen wärmer", aktuelle Außentemperatur gegen Innentemperatur +
-  Toleranz-Marge, `schwelle_temperatur_marge`) und "Außenluft inzwischen
-  feuchter" (`outdoor_wetter`, absolute Luftfeuchtigkeit außen gegen
-  innen, aus `absolute_luftfeuchtigkeit`/`aussen_absolute_luftfeuchtigkeit`).
+  ("Außen wärmer", aktuelle Außentemperatur gegen die Öffnen-Schwelle
+  selbst - die obere Normalbereich-Grenze, `schwelle_temperatur_oeffnen`)
+  und "Außenluft inzwischen feuchter" (`outdoor_wetter`, absolute
+  Außenluftfeuchtigkeit gegen die auf dieselbe Weise in absolute
+  Luftfeuchtigkeit umgerechnete Feuchtigkeits-Öffnen-Schwelle,
+  `schwelle_absolute_feuchtigkeit_oeffnen`) - beide Male schließt Lüften
+  also erst, wenn die Außenluft selbst außerhalb des Normalbereichs liegt,
+  nicht schon, wenn sie nur wärmer/feuchter als die aktuelle (noch im
+  Normalbereich liegende) Innenluft ist.
   Das funktioniert unabhängig davon, ob die Empfehlung schon einmal einen
   echten Zustandswechsel hatte, und beschreibt immer den **aktuellen**
   Zustand, nicht nur die Historie - wurde z. B. wegen eines längst
