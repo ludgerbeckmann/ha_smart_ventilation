@@ -943,7 +943,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 31** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 32** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -956,7 +956,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 31 %}
+  {% set card_version = 32 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set today_str = now().strftime('%Y-%m-%d') %}
@@ -975,18 +975,32 @@ content: >
   {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
   {% set no_close_rec = a.schliessempfehlung_deaktiviert is defined and a.schliessempfehlung_deaktiviert %}
   {% set grund_code = a.letzter_grund if a.letzter_grund is defined else '' %}
-  {% set temp_needs_open = a.innentemperatur is not none and a.innentemperatur >= a.schwelle_temperatur_oeffnen %}
-  {% set temp_needs_close = a.innentemperatur is not none and a.innentemperatur <= a.schwelle_temperatur_schliessen %}
-  {% set hum_needs_open = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit >= a.schwelle_feuchtigkeit_oeffnen %}
-  {% set hum_needs_close = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit <= a.schwelle_feuchtigkeit_schliessen %}
-  {% set co2_needs_open = a.co2 is defined and a.co2 is not none and a.co2 >= a.schwelle_co2_oeffnen %}
-  {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 <= a.schwelle_co2_schliessen %}
+  {% set temp_needs_open = a.innentemperatur is not none and a.innentemperatur > a.schwelle_temperatur_oeffnen %}
+  {% set temp_needs_close = a.innentemperatur is not none and a.innentemperatur < a.schwelle_temperatur_schliessen %}
+  {% set hum_needs_open = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit > a.schwelle_feuchtigkeit_oeffnen %}
+  {% set hum_needs_close = a.luftfeuchtigkeit is defined and a.luftfeuchtigkeit is not none and a.luftfeuchtigkeit < a.schwelle_feuchtigkeit_schliessen %}
+  {% set co2_needs_open = a.co2 is defined and a.co2 is not none and a.co2 > a.schwelle_co2_oeffnen %}
+  {% set co2_needs_close = a.co2 is defined and a.co2 is not none and a.co2 < a.schwelle_co2_schliessen %}
   {% set frost_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_frostschutz is defined and a.aussentemperatur <= a.schwelle_frostschutz %}
   {% set heat_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.schwelle_hitzeschutz is defined and a.aussentemperatur >= a.schwelle_hitzeschutz %}
-  {% set outdoor_warmer_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.aussentemperatur >= a.schwelle_temperatur_oeffnen %}
-  {% set outdoor_wetter_live = a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none and a.schwelle_absolute_feuchtigkeit_oeffnen is defined and a.aussen_absolute_luftfeuchtigkeit >= a.schwelle_absolute_feuchtigkeit_oeffnen %}
+  {% set outdoor_warmer_live = a.aussentemperatur is defined and a.aussentemperatur is not none and a.aussentemperatur > a.schwelle_temperatur_oeffnen %}
+  {% set outdoor_wetter_live = a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none and a.schwelle_absolute_feuchtigkeit_oeffnen is defined and a.aussen_absolute_luftfeuchtigkeit > a.schwelle_absolute_feuchtigkeit_oeffnen %}
   {% set close_fallback = 'outdoor_warmer' if outdoor_warmer_live else ('outdoor_wetter' if outdoor_wetter_live else (grund_code if grund_code == 'duration' else '')) %}
-  {% set live_grund_open = 'temp' if temp_needs_open else ('humidity' if hum_needs_open else ('co2' if co2_needs_open else '')) %}
+  {% set open_reasons = [] %}
+  {% if temp_needs_open %}
+  {% set open_reasons = open_reasons + ['temp'] %}
+  {% endif %}
+  {% if hum_needs_open %}
+  {% set open_reasons = open_reasons + ['humidity'] %}
+  {% endif %}
+  {% if co2_needs_open %}
+  {% set open_reasons = open_reasons + ['co2'] %}
+  {% endif %}
+  {% set room_ns = namespace(open_label='') %}
+  {% for code in open_reasons %}
+  {% set room_ns.open_label = room_ns.open_label ~ (', ' if room_ns.open_label else '') ~ grund_text.get(code, code) %}
+  {% endfor %}
+  {% set live_grund_open = open_reasons[0] if open_reasons else '' %}
   {% set comfort_close = 'humidity' if hum_needs_close else ('co2' if co2_needs_close else ('temp' if temp_needs_close else close_fallback)) %}
   {% set live_grund_close = 'frost' if frost_live else ('heat' if heat_live else ('' if no_close_rec else comfort_close)) %}
   {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
@@ -1034,21 +1048,24 @@ content: >
   {% set wechsel_dt = as_local(as_datetime(a.letzter_wechsel)) %}
   {% set changed_time = wechsel_dt.strftime('%H:%M') if wechsel_dt.strftime('%Y-%m-%d') == today_str else wechsel_dt.strftime('%d.%m. %H:%M') %}
   {% endif %}
+  {% set highlight_temp = ('temp' in open_reasons) if s.state == 'on' else (highlight_code == 'temp') %}
+  {% set highlight_hum = ('humidity' in open_reasons) if s.state == 'on' else (highlight_code == 'humidity') %}
+  {% set highlight_co2_cell = ('co2' in open_reasons) if s.state == 'on' else (highlight_code == 'co2') %}
   {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
-  {% set temp_val = (highlight_open ~ temp_val ~ '</strong></font>') if highlight_code == 'temp' else temp_val %}
+  {% set temp_val = (highlight_open ~ temp_val ~ '</strong></font>') if highlight_temp else temp_val %}
   {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
   {% set outdoor_temp_val = (highlight_open ~ outdoor_temp_val ~ '</strong></font>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
   {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
   {% set hum_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_val = (highlight_open ~ hum_val ~ '</strong></font>') if highlight_code == 'humidity' else hum_val %}
+  {% set hum_val = (highlight_open ~ hum_val ~ '</strong></font>') if highlight_hum else hum_val %}
   {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | ' ~ ([a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen] | min | round(0) | int | string) ~ ' - ' ~ ([a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen] | max | round(0) | int | string) ~ ' % |' %}
   {% endif %}
   {% set co2_row = '' %}
   {% if a.co2 is defined %}
   {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
-  {% set co2_val = (highlight_open ~ co2_val ~ '</strong></font>') if highlight_code == 'co2' else co2_val %}
+  {% set co2_val = (highlight_open ~ co2_val ~ '</strong></font>') if highlight_co2_cell else co2_val %}
   {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | ' ~ ([a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen] | min | round(0) | int | string) ~ ' - ' ~ ([a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen] | max | round(0) | int | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
@@ -1104,7 +1121,7 @@ content: >
   {% set device_rows = device_rows ~ '\n| ' ~ dusche_name ~ ' | ' ~ dusche_laufzeit ~ ' | ' ~ dusche_grund ~ ' |' %}
   {% endif %}
   {% set device_table = ('| Gerät | Laufzeit | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
-  {% set grund_label = grund_text.get(highlight_code, highlight_code) if highlight_code else '–' %}
+  {% set grund_label = (room_ns.open_label if room_ns.open_label else '–') if s.state == 'on' else (grund_text.get(highlight_code, highlight_code) if highlight_code else '–') %}
   {% set header = '### ' ~ match_icon ~ a.raum %}
   {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
   {% set uhrzeit_val = changed_time %}
