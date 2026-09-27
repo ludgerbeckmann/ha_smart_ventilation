@@ -943,7 +943,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 29** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 30** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -956,7 +956,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 29 %}
+  {% set card_version = 30 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set today_str = now().strftime('%Y-%m-%d') %}
@@ -1043,20 +1043,20 @@ content: >
   {% if a.luftfeuchtigkeit is defined %}
   {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
   {% set hum_val = (highlight_open ~ hum_val ~ '</strong></font>') if highlight_code == 'humidity' else hum_val %}
-  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | > ' ~ (a.schwelle_feuchtigkeit_oeffnen | round(0) | int | string) ~ ' % | < ' ~ (a.schwelle_feuchtigkeit_schliessen | round(0) | int | string) ~ ' % |' %}
+  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | ' ~ ([a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen] | min | round(0) | int | string) ~ ' - ' ~ ([a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen] | max | round(0) | int | string) ~ ' % |' %}
   {% endif %}
   {% set co2_row = '' %}
   {% if a.co2 is defined %}
   {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
   {% set co2_val = (highlight_open ~ co2_val ~ '</strong></font>') if highlight_code == 'co2' else co2_val %}
-  {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | > ' ~ (a.schwelle_co2_oeffnen | round(0) | int | string) ~ ' ppm | < ' ~ (a.schwelle_co2_schliessen | round(0) | int | string) ~ ' ppm |' %}
+  {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | ' ~ ([a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen] | min | round(0) | int | string) ~ ' - ' ~ ([a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen] | max | round(0) | int | string) ~ ' ppm |' %}
   {% endif %}
   {% set abs_row = '' %}
   {% if a.luftfeuchtigkeit is defined %}
   {% set abs_in = (a.absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none) else '–' %}
   {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none) else '–' %}
   {% set abs_out = (highlight_open ~ abs_out ~ '</strong></font>') if highlight_code == 'outdoor_wetter' else abs_out %}
-  {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' | ' ~ abs_out ~ ' | – | – |' %}
+  {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' | ' ~ abs_out ~ ' | – |' %}
   {% endif %}
   {% set device_rows = '' %}
   {% if a.luftentfeuchter_an is defined %}
@@ -1115,7 +1115,7 @@ content: >
   {% set empf_table = empf_table ~ '\n| – | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
   {% endif %}
   {% endif %}
-  {% set values_table = '| Messwert | Innen | Außen | Öffnen | Schließen |\n|---|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | > ' ~ (a.schwelle_temperatur_oeffnen | string) ~ ' °C | < ' ~ (a.schwelle_temperatur_schliessen | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
+  {% set values_table = '| Messwert | Innen | Außen | Normalbereich |\n|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | ' ~ ([a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen] | min | string) ~ ' - ' ~ ([a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen] | max | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
   {% set n1 = 'Sprachausgabe' %}
   {% set n1_status = '🟢' if a.sprachausgabe_aktiv is defined else '⚫' %}
   {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
