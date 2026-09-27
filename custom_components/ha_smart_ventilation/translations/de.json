@@ -21,6 +21,9 @@
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
+              "tts_quiet_start": "Nachtruhe-Start",
+              "tts_quiet_end": "Nachtruhe-Ende",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)",
@@ -33,6 +36,9 @@
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
+              "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
+              "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
               "reminder_interval_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
               "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung."
             }
@@ -58,6 +64,7 @@
               "no_window": "Dieser Raum hat kein Fenster",
               "dehumidifier_entity": "Luftentfeuchter",
               "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
+              "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
               "ac_entity": "Klimaanlage"
             },
             "data_description": {
@@ -76,6 +83,7 @@
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
+              "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde"
             }
           },
@@ -178,6 +186,9 @@
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
+              "tts_quiet_start": "Nachtruhe-Start",
+              "tts_quiet_end": "Nachtruhe-Ende",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)",
@@ -190,6 +201,9 @@
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
+              "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
+              "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
               "reminder_interval_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
               "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung."
             }
@@ -215,6 +229,7 @@
               "no_window": "Dieser Raum hat kein Fenster",
               "dehumidifier_entity": "Luftentfeuchter",
               "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
+              "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
               "ac_entity": "Klimaanlage"
             },
             "data_description": {
@@ -233,6 +248,7 @@
               "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
+              "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
               "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde"
             }
           },
@@ -335,6 +351,9 @@
               "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
               "tts_entity": "TTS-Entität",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
+              "tts_quiet_start": "Nachtruhe-Start",
+              "tts_quiet_end": "Nachtruhe-Ende",
               "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
               "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "summer_mode_forecast_entity": "Sommermodus-Vorhersagequelle (optional)",
@@ -347,6 +366,8 @@
               "summer_mode_switch_entity": "Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Abschnitt \"Parameter\") wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
               "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
               "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
+              "tts_quiet_hours_enabled": "Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen.",
+              "tts_quiet_start": "Nur wirksam, wenn die Nachtruhe oben aktiviert ist.",
               "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
               "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt"
             }
@@ -447,7 +468,8 @@
               "msg_close_duration": "Schließen wegen Winter-Höchstdauer",
               "msg_close_outdoor_warmer": "Schließen weil draußen wärmer",
               "msg_close_outdoor_wetter": "Schließen weil draußen feuchter",
-              "msg_reminder": "Erinnerung"
+              "msg_reminder": "Erinnerung",
+              "msg_tank_full": "Wassertank voll"
             },
             "data_description": {
               "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
@@ -464,7 +486,8 @@
               "msg_close_duration": "｛raum｝ = Raumname. ｛wert｝ = bisherige Öffnungsdauer, ｛schwelle｝ = Winter-Höchstdauer (jeweils inkl. Minuten).",
               "msg_close_outdoor_warmer": "｛raum｝ = Raumname. ｛wert｝ = aktuelle Außentemperatur, ｛schwelle｝ = aktuelle Innentemperatur (jeweils inkl. °C).",
               "msg_close_outdoor_wetter": "｛raum｝ = Raumname. ｛wert｝ = aktuelle absolute Außen-Luftfeuchtigkeit, ｛schwelle｝ = aktuelle absolute Innen-Luftfeuchtigkeit (jeweils inkl. g/m³).",
-              "msg_reminder": "｛raum｝ = Raumname. ｛wert｝/｛schwelle｝ = aktueller Wert bzw. Öffnen-Schwelle des ursprünglichen Lüftungsgrundes (Temperatur/Luftfeuchtigkeit/CO2), inkl. jeweiliger Einheit."
+              "msg_reminder": "｛raum｝ = Raumname. ｛wert｝/｛schwelle｝ = aktueller Wert bzw. Öffnen-Schwelle des ursprünglichen Lüftungsgrundes (Temperatur/Luftfeuchtigkeit/CO2), inkl. jeweiliger Einheit.",
+              "msg_tank_full": "｛raum｝ = Raumname. Kein ｛wert｝/｛schwelle｝, da der Tankstatus rein binär ist (voll/nicht voll)."
             }
           }
         }

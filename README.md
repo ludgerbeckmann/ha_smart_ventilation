@@ -162,8 +162,16 @@ Entität für Dashboards/Automationen).
        `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
        bzw. ein Fehler vorliegt - rein informativ, wird auf der
        Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
-       dem Luftentfeuchter-Status angezeigt; hat keine Auswirkung auf die
-       Lüftungs- oder Geräte-Steuerung selbst
+       dem Luftentfeuchter-Status angezeigt; hat für sich allein keine
+       Auswirkung auf die Lüftungs- oder Geräte-Steuerung selbst
+     - **Benachrichtigung bei vollem Tank** (Standard aus): aktiviert eine
+       echte Benachrichtigung, sobald der oben gewählte Tankstatus-Sensor
+       "voll" meldet - nutzt dieselben, für den Raum aktuell wirksamen
+       Kanäle wie die Lüftungsempfehlung (Sprachausgabe/App-Push/persistente
+       Benachrichtigung), mit eigenem Text (siehe "Smart Climate Optionen",
+       Abschnitt "Benachrichtigungen"). Löst sich automatisch wieder auf,
+       sobald der Tank wieder als "leer" gemeldet wird. Nur wirksam, wenn
+       oben auch tatsächlich ein Tankstatus-Sensor ausgewählt ist
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität (die
        zugehörige Mindest-Einspeiseleistung/Verzögerung bis Abschalten
        steht im Abschnitt "Erweitert" weiter unten)
@@ -180,6 +188,14 @@ Entität für Dashboards/Automationen).
        für diesen Raum die in "Smart Climate Optionen" hinterlegte
        Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext
        zeigt den aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 40 %")
+     - **Sprachausgabe-Nachtruhe** (Ja/Nein/leer, Standard aus) sowie
+       **Nachtruhe-Start**/**Nachtruhe-Ende** (optional, überschreiben die
+       globalen Zeiten aus "Smart Climate Optionen", Standard 22:00–07:00):
+       Ist die Nachtruhe aktiviert, wird die Sprachausgabe innerhalb dieses
+       Zeitfensters unterdrückt - **ausschließlich** die Sprachausgabe, App-
+       Push und persistente Benachrichtigung laufen unverändert weiter. Das
+       Zeitfenster gilt für alle Wochentage gleich und unterstützt einen
+       Mitternachts-Wraparound (Start > Ende, z. B. 22:00–07:00)
      - **Home Assistant Companion App** (Ja/Nein/leer) – direkt darunter:
        eine Liste von **App-Benachrichtigungszielen** (leer = globale Ziele
        verwenden). Pro Eintrag: eine `notify.*`-Entität (Pflicht, die
@@ -1545,6 +1561,11 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   plattformübergreifend (über alle `media_player`-Integrationen hinweg)
   nicht robust lösbar. "Überlagern" (Standard) spielt die Ansage einfach
   direkt über die laufende Wiedergabe.
+- **Sprachausgabe-Nachtruhe**: Optionales Zeitfenster (global oder pro Raum,
+  Standard aus, Standard-Zeiten 22:00–07:00), in dem ausschließlich die
+  Sprachausgabe unterdrückt wird - App-Push und persistente Benachrichtigung
+  werden davon nicht beeinflusst. Betrifft auch die Tank-voll-Benachrichtigung
+  (siehe unten).
 - Für App-Benachrichtigungen wird `notify.send_message` auf die gewählte
   notify-Entität aufgerufen (benötigt Home Assistant 2024.9 oder neuer).
 - **"Clean Notification"**: Erledigt sich eine Lüften-Empfehlung (Fenster
@@ -1567,6 +1588,13 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   und lehnt diese `data` per Schema ab, wird nur eine Warnung geloggt
   ("Konnte Push-Benachrichtigung an ... nicht senden"), statt die
   Neubewertung fehlschlagen zu lassen.
+- **Benachrichtigung bei vollem Wassertank**: Ist für einen Raum ein
+  Tankstatus-Sensor konfiguriert UND die zugehörige Benachrichtigung
+  aktiviert, löst ein Vollwerden des Tanks eine eigene Benachrichtigung über
+  dieselben, für den Raum aktuell wirksamen Kanäle aus (eigener Text, eigener
+  `tag`/eigene `notification_id`, unabhängig von der Lüftungsempfehlung) und
+  löst sich nach demselben "Clean Notification"-Muster automatisch wieder
+  auf, sobald der Tank wieder als "leer" gemeldet wird.
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
   sie informiert nur. Falls du motorisierte Fenster hast, kannst du den
   `binary_sensor` als Trigger in einer eigenen Automation verwenden, um

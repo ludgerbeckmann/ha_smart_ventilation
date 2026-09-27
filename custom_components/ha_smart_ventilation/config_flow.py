@@ -20,6 +20,7 @@ from .const import (
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
+    CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
@@ -68,6 +69,7 @@ from .const import (
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
     CONF_MSG_REMINDER,
+    CONF_MSG_TANK_FULL,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PERSISTENT_ENABLED,
@@ -91,6 +93,9 @@ from .const import (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TTS_ENTITY,
     CONF_TTS_PLAYBACK_MODE,
+    CONF_TTS_QUIET_END,
+    CONF_TTS_QUIET_HOURS_ENABLED,
+    CONF_TTS_QUIET_START,
     CONF_TTS_VOLUME,
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
@@ -99,6 +104,7 @@ from .const import (
     COMMON_TEMP_ATTRIBUTES,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
+    DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HEATING_COMFORT_END_WEEKDAY,
@@ -132,6 +138,7 @@ from .const import (
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
     DEFAULT_MSG_REMINDER,
+    DEFAULT_MSG_TANK_FULL,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
@@ -142,6 +149,9 @@ from .const import (
     DEFAULT_TEMP_THRESHOLD_CLOSE,
     DEFAULT_TEMP_THRESHOLD_OPEN,
     DEFAULT_TTS_PLAYBACK_MODE,
+    DEFAULT_TTS_QUIET_END,
+    DEFAULT_TTS_QUIET_HOURS_ENABLED,
+    DEFAULT_TTS_QUIET_START,
     DEFAULT_TTS_VOLUME,
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DEHUMIDIFIER_DOMAINS,
@@ -254,10 +264,17 @@ _THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
 }
 
 # Zeitfelder für den optionalen Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_
-# ENABLED) - Werte als "HH:MM:SS"-String (selector.TimeSelector()-Format).
-# Analoges Muster zu _THRESHOLD_FIELDS/_threshold_selector/_override_
-# selector (siehe _time_selector/_time_override_selector unten), nur ohne
-# min/max/step/unit, die ein TimeSelector nicht braucht.
+# ENABLED) sowie die Sprachausgabe-Nachtruhe (CONF_TTS_QUIET_HOURS_ENABLED) -
+# Werte als "HH:MM:SS"-String (selector.TimeSelector()-Format). Analoges
+# Muster zu _THRESHOLD_FIELDS/_threshold_selector/_override_selector (siehe
+# _time_selector/_time_override_selector unten), nur ohne min/max/step/unit,
+# die ein TimeSelector nicht braucht. Dient ausschließlich den generischen,
+# section-unabhängigen Helfern (_room_override_placeholders(),
+# _apply_threshold_defaults()) - WELCHEM Formular-Abschnitt ein einzelnes
+# Zeitfeld zugeordnet wird, entscheidet sich an der jeweiligen Aufrufstelle
+# in _build_room_schema()/_build_global_edit_schema() (siehe
+# _HEATING_TIME_FIELD_KEYS unten für die Heizungs-Zeitfenster, die
+# Nachtruhe-Felder werden einzeln platziert, analog zu tts_volume_marker).
 _TIME_FIELDS = {
     CONF_HEATING_COMFORT_START_WEEKDAY: DEFAULT_HEATING_COMFORT_START_WEEKDAY,
     CONF_HEATING_COMFORT_END_WEEKDAY: DEFAULT_HEATING_COMFORT_END_WEEKDAY,
@@ -267,7 +284,27 @@ _TIME_FIELDS = {
     CONF_HEATING_NIGHT_END_WEEKDAY: DEFAULT_HEATING_NIGHT_END_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND: DEFAULT_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_END_WEEKEND: DEFAULT_HEATING_NIGHT_END_WEEKEND,
+    CONF_TTS_QUIET_START: DEFAULT_TTS_QUIET_START,
+    CONF_TTS_QUIET_END: DEFAULT_TTS_QUIET_END,
 }
+
+# Die acht Heizungs-Zeitfenster-Felder aus _TIME_FIELDS oben, OHNE die beiden
+# Nachtruhe-Felder - für die generische Platzierungs-Schleife in
+# _build_room_schema() (Abschnitt "Parameter") bzw. _build_global_edit_schema()
+# (Abschnitt "Parameter"), die ALLE hier gelisteten Felder an derselben
+# Stelle im Formular erzeugt. Die Nachtruhe-Felder gehören dagegen zum
+# Abschnitt "Benachrichtigungen" (direkt bei der TTS-Lautstärke) und werden
+# deshalb einzeln, nicht über diese Schleife platziert.
+_HEATING_TIME_FIELD_KEYS = (
+    CONF_HEATING_COMFORT_START_WEEKDAY,
+    CONF_HEATING_COMFORT_END_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_COMFORT_END_WEEKEND,
+    CONF_HEATING_NIGHT_START_WEEKDAY,
+    CONF_HEATING_NIGHT_END_WEEKDAY,
+    CONF_HEATING_NIGHT_START_WEEKEND,
+    CONF_HEATING_NIGHT_END_WEEKEND,
+)
 
 # Die elf "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
 # dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
@@ -540,6 +577,7 @@ def _room_override_placeholders(hass) -> dict[str, str]:
         (CONF_HUMIDITY_PRIORITY_OVER_DURATION, DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION),
         (CONF_HEATING_SCHEDULE_ENABLED, False),
         (CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
+        (CONF_TTS_QUIET_HOURS_ENABLED, DEFAULT_TTS_QUIET_HOURS_ENABLED),
     ):
         value = global_data.get(key)
         if value is None:
@@ -601,6 +639,7 @@ _MESSAGE_FIELD_DEFAULTS = {
     CONF_MSG_CLOSE_OUTDOOR_WARMER: DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     CONF_MSG_CLOSE_OUTDOOR_WETTER: DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
     CONF_MSG_REMINDER: DEFAULT_MSG_REMINDER,
+    CONF_MSG_TANK_FULL: DEFAULT_MSG_TANK_FULL,
 }
 
 
@@ -643,6 +682,7 @@ def _flatten_step_data(data: dict) -> dict:
         CONF_MOBILE_ENABLED,
         CONF_PERSISTENT_ENABLED,
         CONF_HEATING_SCHEDULE_ENABLED,
+        CONF_TTS_QUIET_HOURS_ENABLED,
     ):
         value = flat.get(tri_state_key)
         if value in ("true", "false"):
@@ -830,8 +870,17 @@ def _build_room_schema(
         no_label="Nein – reine Schwellenwert-Logik",
     )
     time_field_markers = {
-        key: _time_override_selector(key, defaults) for key in _TIME_FIELDS
+        key: _time_override_selector(key, defaults) for key in _HEATING_TIME_FIELD_KEYS
     }
+    tts_quiet_hours_marker, tts_quiet_hours_sel = _tri_state_bool_selector(
+        CONF_TTS_QUIET_HOURS_ENABLED, defaults, yes_label="Ja", no_label="Nein"
+    )
+    tts_quiet_start_marker, tts_quiet_start_sel = _time_override_selector(
+        CONF_TTS_QUIET_START, defaults
+    )
+    tts_quiet_end_marker, tts_quiet_end_sel = _time_override_selector(
+        CONF_TTS_QUIET_END, defaults
+    )
 
     # App-Push und persistente Benachrichtigung sind überschreibbare
     # Raum-Einstellungen: leer gelassen gilt die globale Einstellung aus
@@ -1033,6 +1082,13 @@ def _build_room_schema(
                         **({"include_entities": window_include} if window_include else {}),
                     )
                 ),
+                vol.Optional(
+                    CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+                    default=defaults.get(
+                        CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+                        DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+                    ),
+                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_AC_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1071,6 +1127,9 @@ def _build_room_schema(
                     )
                 ),
                 tts_volume_marker: tts_volume_sel,
+                tts_quiet_hours_marker: tts_quiet_hours_sel,
+                tts_quiet_start_marker: tts_quiet_start_sel,
+                tts_quiet_end_marker: tts_quiet_end_sel,
                 mobile_marker: mobile_sel,
                 vol.Optional(
                     CONF_MOBILE_TARGETS, default=defaults.get(CONF_MOBILE_TARGETS) or []
@@ -1226,9 +1285,16 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     for key in _CORE_PARAMETER_KEYS:
         marker, sel = _threshold_selector(key, defaults)
         parameter_fields[marker] = sel
-    for key in _TIME_FIELDS:
+    for key in _HEATING_TIME_FIELD_KEYS:
         marker, sel = _time_selector(key, defaults)
         parameter_fields[marker] = sel
+
+    tts_quiet_start_marker, tts_quiet_start_sel = _time_selector(
+        CONF_TTS_QUIET_START, defaults
+    )
+    tts_quiet_end_marker, tts_quiet_end_sel = _time_selector(
+        CONF_TTS_QUIET_END, defaults
+    )
 
     advanced_fields = {
         _entity_marker(
@@ -1341,6 +1407,15 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                                 mode=selector.SelectSelectorMode.LIST,
                             )
                         ),
+                        vol.Required(
+                            CONF_TTS_QUIET_HOURS_ENABLED,
+                            default=defaults.get(
+                                CONF_TTS_QUIET_HOURS_ENABLED,
+                                DEFAULT_TTS_QUIET_HOURS_ENABLED,
+                            ),
+                        ): selector.BooleanSelector(),
+                        tts_quiet_start_marker: tts_quiet_start_sel,
+                        tts_quiet_end_marker: tts_quiet_end_sel,
                         _entity_marker(
                             CONF_POWER_ENTITY, defaults, required=False
                         ): selector.EntitySelector(
@@ -1492,6 +1567,14 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             CONF_MSG_REMINDER,
                             default=defaults.get(
                                 CONF_MSG_REMINDER, DEFAULT_MSG_REMINDER
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_TANK_FULL,
+                            default=defaults.get(
+                                CONF_MSG_TANK_FULL, DEFAULT_MSG_TANK_FULL
                             ),
                         ): selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)
