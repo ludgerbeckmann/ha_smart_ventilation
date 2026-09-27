@@ -30,6 +30,7 @@ from .const import (
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
+    CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
@@ -77,6 +78,7 @@ from .const import (
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
     CONF_MSG_REMINDER,
+    CONF_MSG_TANK_FULL,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PERSISTENT_ENABLED,
@@ -100,11 +102,15 @@ from .const import (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TTS_ENTITY,
     CONF_TTS_PLAYBACK_MODE,
+    CONF_TTS_QUIET_END,
+    CONF_TTS_QUIET_HOURS_ENABLED,
+    CONF_TTS_QUIET_START,
     CONF_TTS_VOLUME,
     CONF_WINDOW_ENTITY,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
+    DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HEATING_COMFORT_END_WEEKDAY,
@@ -138,6 +144,7 @@ from .const import (
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
     DEFAULT_MSG_REMINDER,
+    DEFAULT_MSG_TANK_FULL,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
@@ -148,6 +155,9 @@ from .const import (
     DEFAULT_TEMP_THRESHOLD_CLOSE,
     DEFAULT_TEMP_THRESHOLD_OPEN,
     DEFAULT_TTS_PLAYBACK_MODE,
+    DEFAULT_TTS_QUIET_END,
+    DEFAULT_TTS_QUIET_HOURS_ENABLED,
+    DEFAULT_TTS_QUIET_START,
     DEFAULT_TTS_VOLUME,
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
@@ -237,6 +247,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # aufgelöst wurde - siehe _maybe_clear_notifications().
         self._mobile_notification_active = False
         self._persistent_notification_active = False
+
+        # Zuletzt bekannter Wassertank-Status (None = noch nicht initial
+        # synchronisiert) sowie eigene "clean notification"-Tracker für die
+        # Tank-Benachrichtigung (CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED)
+        # - unabhängig von den obigen beiden, da eine eigene notification_id/
+        # tag verwendet wird (siehe _tank_notification_id()).
+        self._tank_full_state: bool | None = None
+        self._tank_mobile_notification_active = False
+        self._tank_persistent_notification_active = False
 
         # Zuletzt kommandierter Soll-Zustand der optionalen Geräte.
         # None = noch nicht initial synchronisiert.
@@ -544,6 +563,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 # Neustart unverändert wiederhergestellt und weiterhin als
                 # veralteter Auslöser angezeigt.
                 self._last_reason = attrs["letzter_grund"]
+            if "luftentfeuchter_tank_fehler" in attrs:
+                # Verhindert eine erneute Tank-Benachrichtigung direkt nach
+                # jedem Neustart, solange der Tank ununterbrochen voll
+                # bleibt (siehe _check_tank_full()) - analog zur Wieder-
+                # herstellung von _dehumidifier_state/_ac_state direkt
+                # darunter.
+                self._tank_full_state = bool(attrs["luftentfeuchter_tank_fehler"])
             if "luftentfeuchter_an" in attrs:
                 self._dehumidifier_state = bool(attrs["luftentfeuchter_an"])
             if "klimaanlage_an" in attrs:
@@ -592,6 +618,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         outdoor_humidity_entity = self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
         if outdoor_humidity_entity:
             tracked.append(outdoor_humidity_entity)
+
+        # Der Wassertank-Sensor wird - anders als Luftentfeuchter/Klimaanlage/
+        # Heizung (siehe Lektion 19/31, bewusst nicht verfolgt, da nur live in
+        # extra_state_attributes gelesen) - hier gezielt verfolgt, aber NUR
+        # wenn die Tank-Benachrichtigung aktiviert ist: Für diesen neuen Zweck
+        # (siehe _check_tank_full()) wird eine zeitnahe Reaktion auf das
+        # Vollwerden gebraucht, nicht nur eine gelegentliche Aktualisierung
+        # der Dashboard-Anzeige.
+        if self._config.get(CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED):
+            tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
+            if tank_full_entity:
+                tracked.append(tank_full_entity)
 
         self.async_on_remove(
             async_track_state_change_event(self.hass, tracked, self._handle_state_change)
@@ -769,6 +807,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if start <= end:
             return start <= current < end
         return current >= start or current < end
+
+    def _is_tts_quiet_hours_active(self) -> bool:
+        """True, wenn die Sprachausgabe-Nachtruhe (CONF_TTS_QUIET_HOURS_
+        ENABLED) für diesen Raum aktiv ist UND die aktuelle Uhrzeit im
+        konfigurierten Zeitfenster liegt. Betrifft ausschließlich die
+        Sprachausgabe (siehe _notify()/_notify_tank_full()) - App-Push und
+        persistente Benachrichtigung laufen unverändert weiter (Lektion 16:
+        "silent" für einen Kanal bedeutet nicht automatisch "silent" für
+        alle)."""
+        if not self._effective(
+            CONF_TTS_QUIET_HOURS_ENABLED, DEFAULT_TTS_QUIET_HOURS_ENABLED
+        ):
+            return False
+        start = self._effective(CONF_TTS_QUIET_START, DEFAULT_TTS_QUIET_START)
+        end = self._effective(CONF_TTS_QUIET_END, DEFAULT_TTS_QUIET_END)
+        return self._time_in_window(dt_util.now().time(), start, end)
 
     def _get_scheduled_heating_mode(self) -> str:
         """Bestimmt den vom Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_ENABLED)
@@ -1708,6 +1762,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # entfällt, da kein zwingender Handlungsbedarf besteht.
         silent_co2_close = reason == "co2" and should_close and self._attr_is_on
 
+        # Wassertank-Benachrichtigung - bewusst als eigener, von der
+        # eigentlichen Lüftungsempfehlung komplett unabhängiger Schritt VOR
+        # der should_open/should_close-Verzweigung, damit sie in JEDEM
+        # Neubewertungs-Durchlauf geprüft wird, unabhängig davon, welcher
+        # der beiden Zweige unten folgt.
+        await self._check_tank_full()
+
         if new_state != self._attr_is_on:
             self._attr_is_on = new_state
             self._last_reason = None if silent_frost_close else reason
@@ -2540,7 +2601,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if sonos_entities:
             tts_entity = self._effective(CONF_TTS_ENTITY, None)
             if tts_entity:
-                await self._play_tts(sonos_entities, tts_entity, message)
+                if self._is_tts_quiet_hours_active():
+                    _LOGGER.debug(
+                        "Sprachausgabe in Raum %s wegen Nachtruhe unterdrückt",
+                        room,
+                    )
+                else:
+                    await self._play_tts(sonos_entities, tts_entity, message)
             else:
                 _LOGGER.warning(
                     "Sprachausgabe-Lautsprecher ausgewählt, aber keine "
@@ -2615,8 +2682,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         clear_notification)."""
         return f"smart_ventilation_{self._entry.entry_id}"
 
+    def _tank_notification_id(self) -> str:
+        """Wie _notification_id(), aber eigenständig für die Wassertank-
+        Benachrichtigung (siehe _notify_tank_full()) - verhindert, dass eine
+        Tank-Benachrichtigung eine gerade angezeigte Lüftungsempfehlung (oder
+        umgekehrt) auf demselben Gerät überschreibt, da beide sonst densel-
+        ben tag/dieselbe notification_id teilen würden."""
+        return f"{self._notification_id()}_tank"
+
     async def _send_mobile_push(
-        self, entity_id: str, message: str, *, title: str | None = None
+        self,
+        entity_id: str,
+        message: str,
+        *,
+        title: str | None = None,
+        tag: str | None = None,
     ) -> None:
         """Verschickt eine App-Push-Nachricht an eine einzelne notify-
         Entität, inkl. `tag` im `data`-Feld für das "clean notification"-
@@ -2648,7 +2728,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         data = {
             "entity_id": entity_id,
             "message": message,
-            "data": {"tag": self._notification_id()},
+            "data": {"tag": tag or self._notification_id()},
         }
         if title is not None:
             data["title"] = title
@@ -2691,6 +2771,105 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             blocking=False,
         )
         self._persistent_notification_active = False
+
+    async def _check_tank_full(self) -> None:
+        """Prüft bei jeder Neubewertung, ob sich der Wassertank-Status des
+        Luftentfeuchters geändert hat, und benachrichtigt bei Bedarf (siehe
+        CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED) - komplett unabhängig
+        von der eigentlichen Lüftungsempfehlung. Ohne konfigurierten
+        Tank-Sensor oder ohne aktivierte Benachrichtigung bleibt
+        _tank_full_state unverändert auf None, es passiert nichts."""
+        tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
+        if not tank_full_entity or not self._config.get(
+            CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+            DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+        ):
+            return
+        tank_state = self.hass.states.get(tank_full_entity)
+        tank_full = tank_state is not None and tank_state.state == "on"
+        if tank_full != self._tank_full_state:
+            self._tank_full_state = tank_full
+            await self._notify_tank_full(tank_full)
+
+    async def _notify_tank_full(self, tank_full: bool) -> None:
+        """Benachrichtigt über den vollen Wassertank des Luftentfeuchters -
+        nutzt dieselben, für den Raum aktuell wirksamen Kanäle wie die
+        Lüftungsempfehlung (_notify()), aber mit eigenem Text
+        (CONF_MSG_TANK_FULL) und eigener notification_id/tag (siehe
+        _tank_notification_id()), damit sich beide Benachrichtigungen nicht
+        gegenseitig überschreiben. Löst sich automatisch wieder auf, sobald
+        der Tank wieder als "leer" gemeldet wird (analog zum "Clean
+        Notification"-Muster, Lektion 18/43), unabhängig vom Zustand der
+        eigentlichen Lüftungsempfehlung."""
+        room = self._config[CONF_ROOM_NAME]
+        sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
+        mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
+        persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
+
+        if not tank_full:
+            if self._tank_mobile_notification_active:
+                for target in self._get_mobile_targets():
+                    entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
+                    if entity_id:
+                        await self._send_mobile_push(
+                            entity_id,
+                            "clear_notification",
+                            tag=self._tank_notification_id(),
+                        )
+                self._tank_mobile_notification_active = False
+            if self._tank_persistent_notification_active:
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "dismiss",
+                    {"notification_id": self._tank_notification_id()},
+                    blocking=False,
+                )
+                self._tank_persistent_notification_active = False
+            return
+
+        template = self._effective(CONF_MSG_TANK_FULL, DEFAULT_MSG_TANK_FULL)
+        try:
+            message = template.format(raum=room)
+        except (KeyError, ValueError, IndexError):
+            _LOGGER.warning(
+                "Wassertank-Benachrichtigungstext für Raum %s enthält einen "
+                "ungültigen Platzhalter - wird unverändert gesendet: %s",
+                room,
+                template,
+            )
+            message = template
+
+        if sonos_entities:
+            tts_entity = self._effective(CONF_TTS_ENTITY, None)
+            if tts_entity and not self._is_tts_quiet_hours_active():
+                await self._play_tts(sonos_entities, tts_entity, message)
+
+        if mobile_enabled:
+            for target in self._get_mobile_targets():
+                entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
+                if not entity_id:
+                    continue
+                if self._is_present(target.get(CONF_PRESENCE_ENTITY)):
+                    await self._send_mobile_push(
+                        entity_id,
+                        message,
+                        title="Wassertank",
+                        tag=self._tank_notification_id(),
+                    )
+            self._tank_mobile_notification_active = True
+
+        if persistent_enabled:
+            await self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "notification_id": self._tank_notification_id(),
+                    "title": "Wassertank",
+                    "message": message,
+                },
+                blocking=False,
+            )
+            self._tank_persistent_notification_active = True
 
 
 class SmartVentilationShowerBinarySensor(BinarySensorEntity):

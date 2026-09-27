@@ -3132,6 +3132,100 @@ alle strukturell identischen Vergleiche desselben Konzepts (nicht nur den
 einen ursprünglich gemeldeten Fall) übertragen werden, mit einer bewussten,
 begründeten Ausnahme für die Sicherheits-Kategorie (Frost/Hitze).
 
+**62. Zwei gebündelte, unabhängige Features in einer Nachricht: Sprachausgabe-
+Nachtruhe (Zeitfenster-Stummschaltung) und eine echte Benachrichtigung bei
+vollem Wassertank - beide nach bereits etablierten Mustern zusammengesetzt,
+mit einer eigenen Klarstellung je Feature vorab (0.72.0).** Zwei
+Nutzeranfragen in unmittelbarer Folge, beide mit eigener Vorab-Rückfrage
+(AskUserQuestion) zum Scope, bevor umgesetzt wurde (feste
+Arbeitsanweisung siehe oben):
+
+Zu "Nachtruhe für die Sprachausgabe, nachts": drei Rückfragen klärten (1)
+ein einziges Zeitfenster für alle Wochentage (kein Werktag-/Wochenende-
+Split wie beim Heizungs-Zeitplan, Lektion 44 - hier nicht angefragt), (2)
+global + Raum-Override (konsistent mit fast jeder anderen Einstellung),
+(3) ein eigener Ein-/Ausschalter mit Standard aus (wie
+`CONF_HEATING_SCHEDULE_ENABLED`), nicht implizit über gesetzte Zeiten aktiv.
+Technisch fast vollständige Wiederverwendung von Lektion 44s Infrastruktur:
+`_time_selector()`/`_time_override_selector()`, `_TIME_FIELDS`-Registry
+(inkl. der generischen Helfer `_room_override_placeholders()`/
+`_apply_threshold_defaults()`), `_time_in_window()` (Mitternachts-
+Wraparound). Ein struktureller Haken dabei: `_TIME_FIELDS` diente bis dahin
+GLEICHZEITIG als generische Registry für die Helfer UND als Grundlage für
+zwei Schleifen, die ALLE ihre Schlüssel automatisch in denselben
+Formular-Abschnitt (Heizungs-Zeitplan, "Parameter") einsortierten - die
+beiden neuen Nachtruhe-Zeitfelder gehören aber inhaltlich zu
+"Benachrichtigungen", direkt neben der TTS-Lautstärke. Fix: neue,
+schmalere `_HEATING_TIME_FIELD_KEYS`-Tupel (die ursprünglichen acht
+Heizungs-Felder) ersetzt `_TIME_FIELDS` in genau diesen beiden
+Platzierungs-Schleifen; die generischen Helfer iterieren weiterhin über
+das volle, jetzt zehn Einträge umfassende `_TIME_FIELDS`, unverändert
+korrekt. Die Sprachausgabe-Unterdrückung selbst sitzt als einzelne
+Prüfung (`_is_tts_quiet_hours_active()`) direkt vor dem `_play_tts()`-
+Aufruf in `_notify()` - bewusst NUR dort: App-Push und persistente
+Benachrichtigung bleiben unverändert (Lektion 16: "silent" für einen
+Kanal bedeutet nicht automatisch "silent" für alle).
+
+Zu "Benachrichtigungsfunktion für den Wassertank, bei Bedarf aktiviert,
+gleiche Benachrichtigungsmethoden wie der Raum, globalen Text ergänzen":
+eine Rückfrage klärte, ob sich die Benachrichtigung wie die
+Lüftungsempfehlung automatisch wieder auflösen soll, sobald der Tank
+wieder leer ist (Nutzer: ja, konsistent zum bestehenden "Clean
+Notification"-Muster, Lektion 18/43). Neue Opt-in-Checkbox
+`CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED` (Standard aus, nur pro Raum -
+keine globale Einstellung, analog zur Duscherkennung, Lektion 25: an die
+bereits raumspezifische Tank-Sensor-Auswahl gekoppelt) sowie ein neuer,
+ausschließlich globaler Benachrichtigungstext `CONF_MSG_TANK_FULL`
+(Abschnitt "Benachrichtigungen", Platzhalter nur `{raum}` - kein
+`{wert}`/`{schwelle}`, da der Tankstatus rein binär ist).
+
+Zwei technische Besonderheiten, die über eine reine Wiederverwendung
+hinausgingen: (1) Der Tankstatus-Sensor wurde bislang bewusst NICHT
+verfolgt (`async_track_state_change_event`) - Lektion 19/31 hatte
+Geräte-Entitäten absichtlich nur live in `extra_state_attributes` gelesen,
+nie für eine `_evaluate()`-Auslösung. Für eine ZEITNAHE Benachrichtigung
+reicht das nicht - der Sensor wird jetzt zusätzlich verfolgt, aber NUR wenn
+die Tank-Benachrichtigung für den Raum aktiviert ist, um bei
+nicht-aktivierten Räumen keine unnötige zusätzliche Neubewertung
+einzuführen. (2) `_send_mobile_push()` verwendete für den `tag` im
+`data`-Feld bislang unveränderlich `self._notification_id()` (fest pro
+Config-Entry) - eine Tank-Benachrichtigung mit demselben Tag hätte auf dem
+Gerät die gerade angezeigte Lüftungsempfehlung überschrieben (oder
+umgekehrt), da beide dieselbe notification_id/denselben tag teilen würden.
+Fix: `_send_mobile_push()` bekommt einen optionalen `tag`-Parameter
+(Standard weiterhin `self._notification_id()`, für Rückwärtskompatibilität
+der bestehenden zwei Aufrufer), die Tank-Benachrichtigung übergibt einen
+eigenen, zweiten Bezeichner (`_tank_notification_id()`, `f"{self.
+_notification_id()}_tank"`) - beide Benachrichtigungen können dadurch
+unabhängig voneinander angezeigt/aufgelöst werden, obwohl sie sich
+denselben Kanal (dieselbe notify-Entität) teilen. Die eigentliche
+Tank-Zustandsprüfung (`_check_tank_full()`) läuft als eigener, von der
+should_open/should_close-Verzweigung komplett unabhängiger Schritt ganz am
+Anfang von `_evaluate()`s Entscheidungsteil - unabhängig davon, was die
+Lüftungsempfehlung in diesem Durchlauf tut, wird der Tank-Status immer
+geprüft. `_tank_full_state` wird wie `_dehumidifier_state`/`_ac_state`
+über `RestoreEntity` aus dem bereits bestehenden `luftentfeuchter_tank_
+fehler`-Attribut wiederhergestellt, um nach jedem Neustart keine erneute
+Benachrichtigung auszulösen, solange der Tank ununterbrochen voll bleibt.
+
+Kein Dashboard-Karten-Update für beide Features nötig (reine
+Verhaltensänderungen ohne neues Anzeige-Attribut). Lektion: Eine bereits
+etablierte generische Registry (`_TIME_FIELDS`), die bislang zufällig nur
+für EINEN thematischen Zweck (Heizungs-Zeitplan) verwendet wurde, kann bei
+ihrer zweiten, strukturell andersartigen Verwendung (Nachtruhe, anderer
+Formular-Abschnitt) eine bis dahin unsichtbare Kopplung offenbaren -
+zwischen "diese Registry wird für generische Helfer gebraucht" und "die
+Reihenfolge/Menge dieser Registry bestimmt automatisch eine bestimmte
+Formular-Platzierung". Beide Rollen sollten spätestens dann in getrennte
+Konstanten aufgeteilt werden, sobald ein neues Feld nur die erste Rolle,
+nicht aber die zweite teilen soll. Ebenso: Ein fest verdrahteter
+Benachrichtigungs-`tag`/`notification_id` (hier: `_notification_id()`) ist
+nur so lange unproblematisch, wie es genau EINE Sache pro Raum gibt, die
+ihn braucht - sobald ein zweiter, unabhängiger Benachrichtigungs-Anlass für
+denselben Raum hinzukommt, muss er einen eigenen, unterscheidbaren
+Bezeichner bekommen, sonst überschreiben oder löschen sich beide
+gegenseitig auf dem Zielgerät.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

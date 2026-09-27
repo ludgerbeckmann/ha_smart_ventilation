@@ -147,6 +147,21 @@ TTS_PLAYBACK_MODE_OVERLAY = "overlay"
 DEFAULT_TTS_VOLUME = 40  # Prozent
 DEFAULT_TTS_PLAYBACK_MODE = TTS_PLAYBACK_MODE_OVERLAY
 
+# Sprachausgabe-Stummschaltung ("Nachtruhe") - unterdrückt ausschließlich
+# die Sprachausgabe (TTS), App-Push und persistente Benachrichtigung
+# bleiben unberührt (siehe Lektion 16 - "silent" für einen Kanal bedeutet
+# nicht automatisch "silent" für alle). Ein Zeitfenster für alle
+# Wochentage gleich (kein Werktag-/Wochenende-Split wie beim Heizungs-
+# Zeitplan, Lektion 44) - Standard aus, global + Raum-Override wie die
+# übrigen Zeitfelder (_time_selector()/_time_override_selector() in
+# config_flow.py, _time_in_window() in binary_sensor.py).
+CONF_TTS_QUIET_HOURS_ENABLED = "tts_quiet_hours_enabled"
+CONF_TTS_QUIET_START = "tts_quiet_start"
+CONF_TTS_QUIET_END = "tts_quiet_end"
+DEFAULT_TTS_QUIET_HOURS_ENABLED = False
+DEFAULT_TTS_QUIET_START = "22:00:00"
+DEFAULT_TTS_QUIET_END = "07:00:00"
+
 # Erweiterte Lüftungslogik
 CONF_TEMP_MARGIN = "temp_margin"
 CONF_FROST_PROTECTION_TEMP = "frost_protection_temp"
@@ -162,6 +177,15 @@ CONF_DEHUMIDIFIER_ENTITY = "dehumidifier_entity"
 # Luftentfeuchters voll ist/einen Fehler hat - nur zur Anzeige (Dashboard-
 # Karte), keine Auswirkung auf die Lüftungs-/Geräte-Logik selbst.
 CONF_DEHUMIDIFIER_TANK_FULL_ENTITY = "dehumidifier_tank_full_entity"
+# Echte Benachrichtigung (nicht nur die rein informative Dashboard-Anzeige
+# über luftentfeuchter_tank_fehler oben), sobald der Wassertank voll ist -
+# nutzt dieselben, für den Raum aktuell wirksamen Kanäle wie die
+# Lüftungsempfehlung (Sprachausgabe/Push/persistent). Standard aus
+# (Opt-in), nur pro Raum einstellbar - keine globale Einstellung, analog
+# zur Duscherkennung (CONF_SHOWER_DETECTION_ENABLED), da an die bereits
+# raumspezifische Tank-Sensor-Auswahl gekoppelt.
+CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED = "dehumidifier_tank_notification_enabled"
+DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED = False
 CONF_AC_ENTITY = "ac_entity"
 # Heizung: bewusst nur "climate"-Entitäten (siehe HEATING_DOMAINS) - anders
 # als Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern zwei feste
@@ -474,6 +498,7 @@ CONF_MSG_CLOSE_OUTDOOR_WARMER = "msg_close_outdoor_warmer"
 CONF_MSG_CLOSE_OUTDOOR_WETTER = "msg_close_outdoor_wetter"
 CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
 CONF_MSG_REMINDER = "msg_reminder"
+CONF_MSG_TANK_FULL = "msg_tank_full"
 
 DEFAULT_MSG_OPEN_HUMIDITY = (
     "Bitte das Fenster im {raum} öffnen - die Luftfeuchtigkeit liegt mit "
@@ -527,4 +552,7 @@ DEFAULT_MSG_CLOSE_DEFAULT = (
 DEFAULT_MSG_REMINDER = (
     "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein "
     "({wert}, Schwellenwert {schwelle})."
+)
+DEFAULT_MSG_TANK_FULL = (
+    "Der Wassertank des Luftentfeuchters im {raum} ist voll - bitte leeren."
 )
