@@ -1086,12 +1086,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         has_window = not self._config.get(CONF_NO_WINDOW, False)
 
         # --- Grundbedingungen ---
-        humidity_needs_open = humidity is not None and humidity >= hum_open
-        humidity_needs_close = humidity is not None and humidity <= hum_close
-        co2_needs_open = co2 is not None and co2 >= co2_open
-        co2_needs_close = co2 is not None and co2 <= co2_close
-        temp_needs_open = indoor_temp is not None and indoor_temp >= temp_open
-        temp_needs_close = indoor_temp is not None and indoor_temp <= temp_close
+        # Bewusst strikt (>/<), nicht inklusiv (>=/<=): Der Schwellenwert
+        # selbst gilt noch als Teil des Normalbereichs ("öffnet ab hier"/
+        # "schließt ab hier" meint "sobald überschritten", nicht "bei
+        # exaktem Erreichen"), siehe CLAUDE.md Lektion 61.
+        humidity_needs_open = humidity is not None and humidity > hum_open
+        humidity_needs_close = humidity is not None and humidity < hum_close
+        co2_needs_open = co2 is not None and co2 > co2_open
+        co2_needs_close = co2 is not None and co2 < co2_close
+        temp_needs_open = indoor_temp is not None and indoor_temp > temp_open
+        temp_needs_close = indoor_temp is not None and indoor_temp < temp_close
 
         # --- Frostschutz: harte Grenze ---
         # Ist ein Außentemperatur-Sensor konfiguriert, aber aktuell nicht
@@ -1401,7 +1405,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and indoor_temp is not None
             and outdoor_temp is not None
             and self._absolute_humidity(outdoor_temp, outdoor_humidity)
-            >= self._absolute_humidity(indoor_temp, hum_open)
+            > self._absolute_humidity(indoor_temp, hum_open)
         )
 
         # --- Duscherkennung: solange die Luftfeuchtigkeit gerade schnell
@@ -1505,23 +1509,32 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # dass eine noch gar nicht kritische, aber knapp unter der Öffnen-
         # Schwelle liegende Innentemperatur bereits eine Schließempfehlung
         # auslöst, sobald die Außentemperatur diese knapp übersteigt.
-        outdoor_warmer_again = outdoor_temp is not None and outdoor_temp >= temp_open
+        outdoor_warmer_again = outdoor_temp is not None and outdoor_temp > temp_open
+        # Blockiert bewusst NUR, wenn Luftfeuchtigkeit/CO2 AKTUELL selbst
+        # noch eine Öffnen-Bedingung erfüllen (open_by_humidity/open_by_co2),
+        # nicht schon, wenn sie nur noch nicht bis zur eigenen Schließen-
+        # Schwelle gefallen sind (die breitere *_still_needed-Hysterese, die
+        # für die drei PRIMÄREN Schließgründe unten weiterhin richtig ist,
+        # um deren eigenes Geflacker zu verhindern) - sonst blockiert z. B.
+        # eine noch nicht ganz abgeklungene Luftfeuchtigkeit diesen
+        # Außenluft-Mechanismus, obwohl sie gar nicht der Grund fürs
+        # aktuelle Offenbleiben war (siehe CLAUDE.md Lektion 30/61).
         close_by_summer_outdoor = (
             self._attr_is_on
             and outdoor_warmer_again
-            and not humidity_still_needed
-            and not co2_still_needed
+            and not open_by_humidity
+            and not open_by_co2
         )
 
         # --- Schließen: Pendant zu close_by_summer_outdoor, nur für
         # Luftfeuchtigkeit statt Temperatur (siehe outdoor_humidity_confirmed_worse
-        # oben) - schließt nicht, solange Temperatur oder CO2 noch
-        # Lüftungsbedarf anzeigen, analog zu den anderen Schließ-Bedingungen.
+        # oben) - schließt nicht, solange Temperatur oder CO2 AKTUELL selbst
+        # noch eine Öffnen-Bedingung erfüllen (siehe Kommentar oben).
         close_by_humidity_outdoor_reversal = (
             self._attr_is_on
             and outdoor_humidity_confirmed_worse
-            and not temp_still_needed
-            and not co2_still_needed
+            and not open_by_temp
+            and not open_by_co2
         )
 
         # --- Schließen: Winter-Höchstdauer ---

@@ -3031,6 +3031,107 @@ Raum-Formular) bereits korrekt ist - das täuscht nicht automatisch
 Konsistenz vor, wenn die globale und die Raum-Fassung eines Formulars
 unabhängig gepflegt werden.
 
+**61. Lektion 30s "Fenster steht schon richtig, Werte aber noch außerhalb
+der Norm"-Problematik trat erneut auf, diesmal bei den beiden Außenluft-
+Umkehr-Mechanismen selbst - der zu breite Hysterese-Schutz blockierte sie,
+obwohl die andere Größe gar keinen aktiven Grund zum Offenbleiben hatte;
+außerdem zeigte die Karte bei mehreren gleichzeitig erfüllten Öffnen-
+Gründen bislang nur den ranghöchsten an, und die Normalbereich-Grenzwerte
+selbst waren inklusiv statt exklusiv definiert (0.71.0).** Nutzer-Meldung
+(Screenshot, Wohnzimmer): Öffnen-Empfehlung mit Auslöser "Luftfeuchtigkeit"
+bei Innen 60 %/Außen 72 % relativ, aber Innen 11.8 g/m³/Außen 12.3 g/m³
+absolut - die Außenluft war damit bereits wieder feuchter als die
+Innenluft, Lüften hätte die Lage also verschlimmert statt verbessert. Der
+dafür zuständige Mechanismus (`close_by_humidity_outdoor_reversal`,
+Lektion 23) hätte greifen müssen, wurde aber durch `temp_still_needed`
+blockiert - nicht weil Temperatur (22.2 °C) tatsächlich noch ein aktiver
+Öffnen-Grund war (`open_by_temp` war `False`, die Schwelle lag bei
+23.0 °C), sondern weil die Innentemperatur nur noch nicht bis zur eigenen
+Schließen-Schwelle (21.0 °C) gefallen war - exakt dieselbe Verwechslung
+von "Hysterese-Totzone" und "aktiver Grund", die Lektion 30 bereits für
+die Kartenanzeige gelöst hatte, hier aber im BACKEND selbst, für zwei
+strukturell andere Mechanismen. Gleichzeitig war CO2 (1224 ppm) bereits
+über der eigenen Öffnen-Schwelle (1000 ppm) - die Gesamt-Empfehlung
+"Öffnen" war also inhaltlich weiterhin richtig, nur der angezeigte Grund
+falsch: Die Karte zeigte nur EINEN Auslöser (Prioritätsreihenfolge
+Temperatur > Luftfeuchtigkeit > CO2), obwohl mehrere Öffnen-Gründe
+gleichzeitig zutrafen.
+
+Fix 1 (Backend, `binary_sensor.py`): `close_by_summer_outdoor`/
+`close_by_humidity_outdoor_reversal` prüfen jetzt `not open_by_humidity`/
+`not open_by_co2` bzw. `not open_by_temp`/`not open_by_co2` - die
+schmalere, "erfüllt AKTUELL selbst noch eine eigene Öffnen-Bedingung"-
+Prüfung - statt der breiteren `*_still_needed`-Hysterese, die für die drei
+PRIMÄREN Schließgründe (Temperatur/Luftfeuchtigkeit/CO2 selbst) weiterhin
+unverändert richtig bleibt (dort soll die Hysterese ja genau verhindern,
+dass die jeweils EIGENE Schließ-Bedingung vorzeitig flackert - ein völlig
+anderer Zweck als das Blockieren eines FREMDEN Außenluft-Mechanismus).
+
+Fix 2 (Karte, README.md): `open_reasons`, eine Liste aller aktuell
+gleichzeitig erfüllten Öffnen-Bedingungen (Prioritätsreihenfolge Temperatur
+→ Luftfeuchtigkeit → CO2 nur noch für die Anzeige-Reihenfolge, nicht mehr
+als Auswahl), ersetzt den bisherigen `live_grund_open`-Einzelwert-Ternary.
+Die Auslöser-Zelle zeigt jetzt alle zutreffenden Labels kommagetrennt
+(`room_ns.open_label`, über `namespace()` und eine verschachtelte
+`{% for %}`-Schleife aufgebaut - Lektion 15), und JEDE zugehörige
+Werte-Zelle wird hervorgehoben (`highlight_temp`/`highlight_hum`/
+`highlight_co2_cell`, je `code in open_reasons` statt `highlight_code ==
+code`), nicht mehr nur die des ranghöchsten Grunds. Betrifft
+ausschließlich die OFFENE Seite (`s.state == 'on'`) - die Schließen-Seite
+bleibt bei genau einem Grund, da dort strukturell nur eine der drei
+PRIMÄREN Bedingungen gleichzeitig "gewinnen" kann (Frost/Hitze haben
+ohnehin Vorrang, danach genau eine Komfort-Bedingung über `comfort_close`).
+
+Fix 3 (Nutzer-Anschlussfrage, Backend UND Karte): "liegt 60 % nicht
+außerdem noch im Normalbereich, sodass grundsätzlich erst ab 61 % die
+Empfehlung greifen dürfte?" - die bisherigen Vergleiche waren inklusiv
+(`>=`/`<=`), der Schwellenwert selbst galt also schon als Auslöser. Auf
+Bestätigung umgestellt auf strikt (`>`/`<`) für alle sechs
+Normalbereich-Vergleiche (Temperatur/Luftfeuchtigkeit/CO2 × Öffnen/
+Schließen) - der Schwellenwert selbst zählt jetzt noch zum Normalbereich,
+"öffnet/schließt ab hier" (Lektion 58) meint "sobald überschritten", nicht
+"bei exaktem Erreichen". Konsequent auch auf die beiden Außenluft-Anker
+angewendet, die denselben "Normalbereich-Obergrenze"-Wert referenzieren
+(`outdoor_warmer_again`/`outdoor_wetter_live` gegen die Temperatur-
+Öffnen-Schwelle, `outdoor_humidity_confirmed_worse`/`outdoor_wetter_live`
+gegen die über die Feuchtigkeits-Öffnen-Schwelle umgerechnete absolute
+Luftfeuchtigkeit) - bewusst NICHT auf Frost-/Hitzeschutz übertragen
+(`frost_block`/`heat_block`/`frost_live`/`heat_live` bleiben `<=`/`>=`):
+das sind Sicherheitsmechanismen mit einem einzelnen Schwellenwert, keine
+zweiseitigen "Normalbereich"-Paare, und lagen außerhalb der vom Nutzer
+gestellten Frage. Änderung musste in BEIDEN Dateien identisch erfolgen
+(`binary_sensor.py` für die tatsächliche Entscheidung, README-Kartenvorlage
+für deren Live-Nachrechnung, siehe Lektion 22/58/59) - lokal mit sieben
+Szenarien gegengetestet (Jinja-Sandbox, `StrictUndefined`): Mehrfach-
+Auslöser (Luftfeuchtigkeit + CO2, beide hervorgehoben), Grenzwert exakt
+auf allen drei Öffnen-Schwellen (kein Auslöser mehr), Grenzwert exakt auf
+der Feuchtigkeits-Schließen-Schwelle, Außentemperatur exakt auf der
+Öffnen-Schwelle (kein `outdoor_warmer` mehr), Einzel-Auslöser-Regression,
+Neutral-Fall, sowie ein fensterloser Raum.
+
+Lektion: Ein bereits behobener Bug (Lektion 30, dort in der KARTE) kann in
+einer strukturell verwandten, aber unabhängigen Form im BACKEND selbst
+erneut auftreten - dieselbe Verwechslung ("Hysterese-Totzone einer eigenen
+Bedingung" vs. "aktiver Grund einer ANDEREN Bedingung, die etwas blockiert")
+ist nicht auf eine einzige Code-Schicht beschränkt, nur weil sie dort einmal
+gefunden und gefixt wurde. Außerdem: Eine "zeige den EINEN gewinnenden
+Grund"-Priorisierung (ursprünglich für die Schließen-Seite eingeführt, wo
+strukturell wirklich nur einer gewinnen kann) überträgt sich nicht
+automatisch korrekt auf die Öffnen-Seite, wenn dort mehrere Gründe
+GLEICHZEITIG und unabhängig voneinander gültig sein können, ohne dass
+einer den anderen ausschließt - eine einzelne, plausibel wirkende Anzeige
+kann dadurch technisch korrekt, aber inhaltlich irreführend sein (zeigt
+"Luftfeuchtigkeit", obwohl gerade DIESER Grund gegenstandslos ist und nur
+CO2 den tatsächlich weiterhin gültigen Grund liefert). Schließlich: Eine
+inklusive Schwellenwert-Definition ("ab hier" im Sinne von "einschließlich
+diesem Wert") ist eine plausible, aber nicht zwingende Lesart derselben
+Formular-Beschriftung - eine gezielte Nutzer-Nachfrage zu einem konkreten
+Grenzfall (60 % bei einer 60 %-Schwelle) deckte auf, dass die tatsächlich
+gewollte Lesart die andere war, und die Änderung musste konsequent auf
+alle strukturell identischen Vergleiche desselben Konzepts (nicht nur den
+einen ursprünglich gemeldeten Fall) übertragen werden, mit einer bewussten,
+begründeten Ausnahme für die Sicherheits-Kategorie (Frost/Hitze).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
