@@ -2971,6 +2971,66 @@ Stellen für sich genommen korrekt arbeiten - die Rundung gehört an die
 Quelle (beim Einlesen), nicht separat an jede einzelne Verwendungsstelle,
 damit Anzeige und Entscheidung nie auseinanderlaufen können.
 
+**60. Ein roher Zahlenwert als `suggested_value` für ein Dropdown-Feld
+(Lektion 53) führte zu einem 'expected str'-Validierungsfehler beim
+Öffnen/Speichern eines Raum-Formulars - zusätzlich stand die Push-/
+persistente-Benachrichtigung-Konfiguration in den globalen Einstellungen
+seit jeher im falschen Abschnitt (0.70.1).** Nutzer-Meldung (Screenshot,
+Raum-Formular Badezimmer): Fehlerbanner "expected str at
+'notify.reminder_interval_minutes'" und "expected str at
+'advanced.min_surplus_power_watts'" beim Öffnen des Options-Flows. Ursache:
+`_threshold_selector()`/`_override_selector()` befüllten `description=
+{"suggested_value": current}` für JEDES Schwellenwert-Feld mit dem
+gespeicherten Rohwert (int/float) - für die reguläre `NumberSelector`-
+Variante korrekt, aber für die beiden auf `SelectSelector` umgestellten
+Dropdown-Felder (Erinnerungsintervall, Mindest-Einspeiseleistung, siehe
+Lektion 53) falsch: `SelectSelector` verlangt beim Validieren zwingend
+einen String (auch die Optionsliste selbst besteht aus Strings, siehe
+`_numeric_field_selector()`) - ein roher Zahlenwert wird von Home
+Assistants interner Schema-Validierung beim Verarbeiten des zuletzt
+gezeigten Formulars abgelehnt, mit exakt dieser generischen
+voluptuous-Fehlermeldung statt einer hilfreichen Formularfehleranzeige.
+Lokal mit einer schlanken `SelectSelector`-Simulation gegen `voluptuous`
+reproduziert (roher `1500.0`-Wert schlägt fehl) und der Fix verifiziert
+(String `"1500"` validiert und coerced korrekt zurück zu `1500.0`) - ohne
+echte Home-Assistant-Instanz, aber mit demselben Fehlertext wie im
+Screenshot. Fix: neue Funktion `_dropdown_suggested_value(key, value)` -
+für die beiden Dropdown-Felder wird der Wert vor dem Einsetzen in
+`suggested_value` in einen String umgewandelt (ganze Zahlen, die als
+float gespeichert sind, ohne `.0`, damit sie optisch zu den ganzzahlig
+formatierten Vorschlagswerten passen); für alle anderen (`NumberSelector`)
+Felder unverändert. Betrifft `_threshold_selector()` (globale
+Einstellungen) UND `_override_selector()` (Raum-Override) gleichermaßen.
+
+Direkt im selben Screenshot fiel zusätzlich auf, dass die globalen
+Einstellungen `CONF_MOBILE_ENABLED`/`CONF_MOBILE_TARGETS`/
+`CONF_PERSISTENT_ENABLED` im Abschnitt "Sensoren & Geräte" standen, obwohl
+sie inhaltlich zu "Benachrichtigungen" gehören - im Raum-Formular waren
+diese drei Felder schon lange korrekt im Abschnitt "Benachrichtigungen &
+Anwesenheit" (siehe Lektion 42/48) verortet, nur die globale Fassung hatte
+diese Umstellung nie mitgemacht. Fix (auf Nutzerwunsch): die drei
+Feld-Definitionen in `_build_global_edit_schema()` vom `SECTION_SENSORS`-
+in das `SECTION_MESSAGES`-Dict verschoben, inklusive der zugehörigen
+`data`/`data_description`-Einträge in `strings.json`/
+`translations/{de,en}.json` (dort pro Abschnitt gespeichert, siehe
+Lektion 55 - eine reine Python-Verschiebung allein hätte die Labels im
+falschen Abschnitt zurückgelassen) sowie der entsprechenden README-
+Bullet-Punkte. Per Skript statt manueller Bearbeitung umgesetzt (wie schon
+in Lektion 55), um alle drei JSON-Dateien identisch und mit minimalem Diff
+zu treffen. Lektion: Ein neu eingeführter Feldtyp (hier: `SelectSelector`
+statt `NumberSelector` für Dropdown-Felder, Lektion 53) kann eine bereits
+bestehende, für den alten Feldtyp korrekte Hilfsfunktion (hier: die
+`suggested_value`-Befüllung) unbemerkt brechen, wenn diese Hilfsfunktion
+nicht selbst auch auf den neuen Feldtyp geprüft wird - der Fehler zeigt
+sich dann nicht beim Schreiben des neuen Codes, sondern erst beim
+nächsten Öffnen eines Formulars, das ein bereits gespeichertes Ergebnis
+dieses neuen Feldtyps anzeigen soll. Außerdem, anknüpfend an Lektion 48:
+Eine Abschnitts-Fehlplatzierung kann über mehrere Versionen unbemerkt
+bleiben, wenn eine strukturell identische zweite Stelle (hier: das
+Raum-Formular) bereits korrekt ist - das täuscht nicht automatisch
+Konsistenz vor, wenn die globale und die Raum-Fassung eines Formulars
+unabhängig gepflegt werden.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
