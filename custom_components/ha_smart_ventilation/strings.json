@@ -328,7 +328,7 @@
         },
         "sections": {
           "sensors": {
-            "name": "Sensoren",
+            "name": "Sensoren & Geräte",
             "description": "Sensoren und Wiedergabe-Einstellungen als raumweiter Standard.",
             "data": {
               "outdoor_temp_entity": "Außen-Temperatur",
@@ -349,7 +349,7 @@
               "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
               "summer_mode_switch_entity": "Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Abschnitt \"Parameter\") wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
               "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
-              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden (wird danach nicht automatisch zurückgesetzt)",
+              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
               "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
               "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
               "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
@@ -400,7 +400,7 @@
               "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand.",
               "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt).",
               "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand (wird gesetzt, solange ein Fenster bestätigt offen ist). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet.",
-              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben im Abschnitt \"Sensoren\" sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind"
+              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben im Abschnitt \"Sensoren & Geräte\" sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind"
             }
           },
           "advanced": {
@@ -420,11 +420,11 @@
               "heating_night_temp": "Heizung Nacht-Sollwert"
             },
             "data_description": {
-              "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (Abschnitt \"Sensoren\"), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
+              "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (Abschnitt \"Sensoren & Geräte\"), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
               "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
               "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung",
               "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit/hohem CO2-Wert. Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird - nur relevant für Räume, die die Duscherkennung im Abschnitt \"Sensoren\" aktiviert haben",
+              "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird - nur relevant für Räume, die die Duscherkennung im Abschnitt \"Sensoren & Geräte\" aktiviert haben",
               "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
               "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
               "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist.",
@@ -452,7 +452,7 @@
               "msg_reminder": "Erinnerung"
             },
             "data_description": {
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert.",
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Leer wird beim Speichern ebenfalls zu 0.",
               "msg_open_humidity": "｛raum｝ = Raumname. ｛wert｝ = aktuelle Luftfeuchtigkeit, ｛schwelle｝ = Feuchtigkeits-Schwelle zum Öffnen (jeweils inkl. %).",
               "msg_open_co2": "｛raum｝ = Raumname. ｛wert｝ = aktueller CO2-Wert, ｛schwelle｝ = CO2-Schwelle zum Öffnen (jeweils inkl. ppm).",
               "msg_open_temp": "｛raum｝ = Raumname. ｛wert｝ = aktuelle Innentemperatur, ｛schwelle｝ = Temperatur-Schwelle zum Öffnen (jeweils inkl. °C).",

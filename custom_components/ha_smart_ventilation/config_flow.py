@@ -1272,9 +1272,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
 
     return vol.Schema(
         {
-            vol.Required(
-                RESET_TO_DEFAULTS_KEY, default=False
-            ): selector.BooleanSelector(),
             vol.Required(SECTION_SENSORS): section(
                 vol.Schema(
                     {
@@ -1488,6 +1485,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             vol.Required(SECTION_ADVANCED): section(
                 vol.Schema(advanced_fields), {"collapsed": True}
             ),
+            vol.Required(
+                RESET_TO_DEFAULTS_KEY, default=False
+            ): selector.BooleanSelector(),
         }
     )
 
