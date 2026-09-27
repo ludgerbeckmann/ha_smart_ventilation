@@ -1383,7 +1383,13 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   Raum zusätzlich den aktuellen Entitäts-Zustand samt aller Attribute
   sowie eine Momentaufnahme (Zustand + Attribute) aller referenzierten
   Roh-Sensoren - Innentemperatur-Quelle, Luftfeuchtigkeit, CO2,
-  Fensterkontakt sowie die globale Außentemperatur/-luftfeuchtigkeit.
+  Fensterkontakt sowie die globale Außentemperatur/-luftfeuchtigkeit. Bei
+  den globalen Einstellungen zusätzlich für jedes App-Benachrichtigungsziel
+  mit hinterlegter Anwesenheits-Entität eine Momentaufnahme von deren
+  Zustand und Zeitpunkt der letzten Änderung (ohne die Entity-ID oder
+  weitere Attribute) - nützlich, um zu erkennen, ob ein Push wegen
+  "Person/Gerät nicht zuhause" übersprungen wurde (dieser Fall wird sonst
+  nur mit Debug-Logging sichtbar).
   Damit lässt sich z. B. sofort erkennen, ob ein referenzierter Sensor
   gerade `unavailable`/`unknown` meldet. Diese Datei kann direkt
   hochgeladen/geteilt werden, z. B. um ein auffälliges Verhalten zu

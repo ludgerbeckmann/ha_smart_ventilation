@@ -24,6 +24,7 @@ from .const import (
     CONF_HUMIDITY_ENTITY,
     CONF_IS_GLOBAL,
     CONF_MOBILE_NOTIFY_ENTITY,
+    CONF_MOBILE_TARGETS,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PRESENCE_ENTITY,
@@ -57,6 +58,24 @@ def _snapshot(hass: HomeAssistant, entity_id: str | None) -> dict[str, Any] | No
     }
 
 
+def _presence_snapshot(hass: HomeAssistant, entity_id: str | None) -> dict[str, Any] | None:
+    """Momentaufnahme einer Anwesenheits-Entität (App-Benachrichtigungsziel)
+    für die Diagnose - bewusst NUR Zustand + Zeitpunkt der letzten Änderung,
+    weder die Entity-ID noch ihre Attribute (die bei person-/
+    device_tracker-Entitäten z. B. GPS-Koordinaten enthalten können) -
+    anders als _snapshot(), das für unbedenkliche Sensor-Attribute gedacht
+    ist. Ohne diese Momentaufnahme war bisher aus einer Diagnose-Datei
+    nicht nachvollziehbar, ob ein App-Push wegen _is_present() == False
+    (Person/Gerät nicht zuhause) übersprungen wurde - das wird nur mit
+    _LOGGER.debug() protokolliert, siehe binary_sensor.py."""
+    if not entity_id:
+        return None
+    state = hass.states.get(entity_id)
+    if state is None:
+        return {"state": None, "last_changed": None}
+    return {"state": state.state, "last_changed": state.last_changed.isoformat()}
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
@@ -68,8 +87,21 @@ async def async_get_config_entry_diagnostics(
 
     if entry.data.get(CONF_IS_GLOBAL):
         # Die globalen Einstellungen erzeugen keine eigene Entität - hier
-        # ist die (bereinigte) Konfiguration bereits die vollständige
-        # Diagnose.
+        # ist die (bereinigte) Konfiguration die Basis der Diagnose,
+        # ergänzt um eine Live-Momentaufnahme jeder in den
+        # App-Benachrichtigungszielen hinterlegten Anwesenheits-Entität
+        # (siehe _presence_snapshot()) - deren Zustand entscheidet live
+        # mit, ob ein Push tatsächlich verschickt wird.
+        diagnostics["mobile_target_presence"] = [
+            snapshot
+            for target in entry.data.get(CONF_MOBILE_TARGETS) or []
+            if (
+                snapshot := _presence_snapshot(
+                    hass, target.get(CONF_PRESENCE_ENTITY)
+                )
+            )
+            is not None
+        ]
         return diagnostics
 
     # Ein Raum kann inzwischen zwei Entitäten haben (Haupt-Sensor + optionaler

@@ -68,6 +68,16 @@ GitHub: `ludgerbeckmann/ha_smart_ventilation` (Domain `ha_smart_ventilation`).
      bereits bestehende Karte einfügt.
   3. Vor dem Posten immer lokal in der Jinja-Sandbox testen (siehe
      Lektion 7) - `StrictUndefined` nicht vergessen.
+- **Nach Bestätigung der Umsetzung: Branch → Commit → Push → PR → CI-
+  Verifikation → Merge (Squash) → Feature-Branch auf neuen `main`-Stand
+  zurücksetzen komplett selbstständig durchführen, ohne vor dem Merge
+  nochmal separat nachzufragen** (seit dieser Session ausdrücklich vom
+  Nutzer gewünscht: "Zukünftig alle Änderungen auch immer direkt
+  mergen."). Die unter dem ersten Punkt oben beschriebene
+  Vorab-Zusammenfassung mit Bestätigung VOR der Umsetzung bleibt davon
+  unberührt - die hier gemeinte Nachfrage ist ausschließlich der
+  zusätzliche "soll ich jetzt mergen?"-Schritt NACH bereits erfolgter
+  Bestätigung/Umsetzung, der damit entfällt.
 
 ## Dateistruktur (Kurzreferenz)
 
@@ -2784,6 +2794,64 @@ Grund auf suchen zu müssen; die frühere Lektion beim Diagnostizieren
 eines neuen, aber strukturell verwandten Symptoms zuerst gezielt danach
 zu durchsuchen (hier: Lektion 47s eigene Warnung), ist schneller als eine
 komplette Neu-Analyse.
+
+**57. Ein App-Push wurde stillschweigend übersprungen, weil die zugehörige
+Anwesenheits-Entität kurz nicht "home" meldete - protokolliert nur auf
+Debug-Ebene, dadurch aus dem normalen Log nicht erkennbar; die Diagnose-
+Datei kannte diesen Fall bislang ebenfalls nicht (0.67.3).** Nutzer-
+Meldung: "Ich habe den Eindruck, dass ich aktuell auch keine Push-
+Benachrichtigungen mehr erhalte." Betraf alle Räume, keine Log-Einträge
+zu `ha_smart_ventilation` im System-Log. Ausschlussverfahren: Dashboard
+zeigte "App-Benachrichtigung" korrekt 🟢 mit gültigem Ziel
+(`notify.iphone_ludger`); ein manueller `notify.send_message`-Testaufruf
+mit identischer Payload (inkl. `data.tag`) kam auf dem Gerät an - schloss
+damit Companion App, Zustellpfad und das `tag`-Feld (Lektion 35) als
+Ursache aus. Die Zeitstempel der Dashboard-Karte (Fenster-Zeile vs.
+Empfehlungs-Zeile) zeigten zudem, dass das Fenster zum Zeitpunkt der
+Empfehlungsänderung noch NICHT im gewünschten Zustand war -
+`_window_action_needed()` hätte also ausgelöst. Damit blieb nur eine
+Erklärung: `_notify()` wurde zwar aufgerufen, aber der eigentliche
+Sendeversuch pro Ziel prüft zusätzlich `_is_present(presence_entity)`
+(jedes App-Benachrichtigungsziel kann optional eine Anwesenheits-Entität
+haben, siehe Lektion "mobile_targets") - meldete diese zum fraglichen
+Zeitpunkt (auch nur kurz, z. B. durch einen GPS-/Netzwerk-Ausrutscher)
+nicht "home", wird der Versand für dieses Ziel übersprungen. Der Haken:
+Dieser Überspring-Fall wird nur mit `_LOGGER.debug()` protokolliert, nicht
+mit `.warning()` wie die übrigen Fehlerfälle in `_notify()`/
+`_send_mobile_push()` - Debug-Logs sind in Home Assistant standardmäßig
+unsichtbar, ohne dass für diese Integration explizit Debug-Logging
+aktiviert wurde. Ein Nutzer, der nur das normale Log durchsucht, findet
+für diesen Fall also nichts, ganz anders als bei einem echten Fehler.
+
+Direkt im Anschluss die naheliegende Nutzer-Frage: "Kann man solche
+Probleme nicht über das Diagnose-Log analysieren?" - Antwort: bis dahin
+nein. `diagnostics.py` liefert für die globalen Einstellungen nur die
+rohe (bereinigte) Konfiguration - `CONF_PRESENCE_ENTITY` steht dabei
+sogar in `TO_REDACT` (aus Datenschutzgründen unkenntlich gemacht) - ohne
+jede Live-Zustands-Momentaufnahme, wie sie für die Raum-Sensoren
+(Temperatur, Fensterkontakt etc.) längst existiert. Genau der Fall, der
+hier tagelang nur über Chat-Rückfragen und Screenshots eingegrenzt werden
+konnte, wäre aus einer heruntergeladenen Diagnose-Datei bis dahin gar
+nicht ablesbar gewesen. Fix: neue Funktion `_presence_snapshot()` in
+`diagnostics.py` - anders als das bereits bestehende `_snapshot()`
+(gedacht für unbedenkliche Sensor-Attribute) liefert sie bewusst NUR
+`state` und `last_changed`, weder die Entity-ID selbst noch ihre
+Attribute (bei `person`-/`device_tracker`-Entitäten können Attribute
+GPS-Koordinaten enthalten) - dasselbe Datenschutz-Niveau wie die
+bestehende Redaction, nur eben mit sichtbarem Live-Zustand statt
+komplettem Verschweigen. Für jedes App-Benachrichtigungsziel mit
+hinterlegter Anwesenheits-Entität landet jetzt ein solcher
+Zustands-Snapshot unter `mobile_target_presence` in der Diagnose der
+globalen Einstellungen. Lektion: Ein Übersprung-/Skip-Zweig, der
+funktional korrekt und absichtlich leise sein soll (hier: kein Push an
+eine gerade abwesende Person - sinnvolles Verhalten, keine Fehlermeldung
+wert), braucht trotzdem einen Weg, ihn nachträglich zu diagnostizieren,
+wenn er unerwartet zuschlägt (z. B. durch einen kurzen Sensor-Ausrutscher)
+- eine Debug-Log-Zeile allein reicht dafür nicht, wenn schon eine
+Diagnose-Downloadfunktion existiert, die genau für "Flacker-/
+Benachrichtigungsprobleme nachvollziehen" gedacht ist (siehe deren eigene
+Docstring) - dann gehört jeder neue "leise Sonderfall" konsequent auch
+dort ergänzt, nicht nur ins Log.
 
 ## Versionierung & Release
 
