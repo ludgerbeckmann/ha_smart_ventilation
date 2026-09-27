@@ -295,12 +295,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     @property
     def extra_state_attributes(self) -> dict:
         indoor_temp = self._get_indoor_temperature()
-        humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
-        co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
+        humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY), decimals=0)
+        co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY), decimals=0)
         outdoor_temp_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
-        outdoor_temp = self._get_float_state(outdoor_temp_entity)
+        outdoor_temp = self._get_float_state(outdoor_temp_entity, decimals=1)
         outdoor_humidity = self._get_float_state(
-            self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
+            self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None), decimals=0
         )
 
         attrs = {
@@ -1005,16 +1005,25 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         """
         return self.hass.states.get(entity_id) is None
 
-    def _get_float_state(self, entity_id: str | None) -> float | None:
+    def _get_float_state(
+        self, entity_id: str | None, decimals: int | None = None
+    ) -> float | None:
+        """Liest einen Sensorwert als float. `decimals` rundet direkt beim
+        Einlesen (z. B. auf die auch angezeigte/verglichene Genauigkeit) -
+        damit Entscheidungslogik, Dashboard-Anzeige und Benachrichtigungs-
+        text nie mit unterschiedlich präzisen Werten desselben Sensors
+        arbeiten (sonst könnte die Karte z. B. "55 %" zeigen, während intern
+        noch mit 55.4 % verglichen wird)."""
         if not entity_id:
             return None
         state = self.hass.states.get(entity_id)
         if state is None or state.state in ("unknown", "unavailable"):
             return None
         try:
-            return float(state.state)
+            value = float(state.state)
         except ValueError:
             return None
+        return round(value, decimals) if decimals is not None else value
 
     def _get_indoor_temperature(self) -> float | None:
         entity_id = self._config[CONF_TEMP_SOURCE_ENTITY]
@@ -1033,19 +1042,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             value = state.state
 
         try:
-            return float(value)
+            # Auf 1 Nachkommastelle gerundet - dieselbe Genauigkeit, mit der
+            # die Innentemperatur überall angezeigt/verglichen wird (siehe
+            # _get_float_state()).
+            return round(float(value), 1)
         except (TypeError, ValueError):
             return None
 
     async def _evaluate(self) -> None:  # noqa: C901 - bewusst als ein Ablauf gehalten
         """Prüft alle Bedingungen und aktualisiert ggf. den Zustand."""
         indoor_temp = self._get_indoor_temperature()
-        humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
-        co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
+        humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY), decimals=0)
+        co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY), decimals=0)
         outdoor_entity = self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
-        outdoor_temp = self._get_float_state(outdoor_entity)
+        outdoor_temp = self._get_float_state(outdoor_entity, decimals=1)
         outdoor_humidity_entity = self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
-        outdoor_humidity = self._get_float_state(outdoor_humidity_entity)
+        outdoor_humidity = self._get_float_state(outdoor_humidity_entity, decimals=0)
 
         temp_open = self._effective(CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN)
         temp_close = self._effective(CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE)
@@ -2181,7 +2193,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Schließen-Schwelle unterscheiden sich bei Temperatur/Luftfeuchtigkeit/
         CO2)."""
         if context_reason == "humidity":
-            humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
+            humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY), decimals=0)
             threshold = self._effective(
                 CONF_HUMIDITY_THRESHOLD_OPEN if opening else CONF_HUMIDITY_THRESHOLD_CLOSE,
                 DEFAULT_HUMIDITY_THRESHOLD_OPEN if opening else DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
@@ -2191,7 +2203,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._format_measurement(threshold, "%"),
             )
         if context_reason == "co2":
-            co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY))
+            co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY), decimals=0)
             threshold = self._effective(
                 CONF_CO2_THRESHOLD_OPEN if opening else CONF_CO2_THRESHOLD_CLOSE,
                 DEFAULT_CO2_THRESHOLD_OPEN if opening else DEFAULT_CO2_THRESHOLD_CLOSE,
@@ -2202,7 +2214,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if context_reason == "frost":
             outdoor_temp = self._get_float_state(
-                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None), decimals=1
             )
             threshold = self._effective(
                 CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP
@@ -2213,7 +2225,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if context_reason == "heat":
             outdoor_temp = self._get_float_state(
-                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None), decimals=1
             )
             threshold = self._effective(
                 CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
@@ -2224,7 +2236,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if context_reason == "outdoor_warmer":
             outdoor_temp = self._get_float_state(
-                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None), decimals=1
             )
             indoor_temp = self._get_indoor_temperature()
             return (
@@ -2233,13 +2245,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
         if context_reason == "outdoor_wetter":
             outdoor_humidity = self._get_float_state(
-                self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
+                self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None), decimals=0
             )
             outdoor_temp = self._get_float_state(
-                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None)
+                self._effective(CONF_OUTDOOR_TEMP_ENTITY, None), decimals=1
             )
             indoor_temp = self._get_indoor_temperature()
-            humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY))
+            humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY), decimals=0)
             outdoor_abs = (
                 self._absolute_humidity(outdoor_temp, outdoor_humidity)
                 if outdoor_temp is not None and outdoor_humidity is not None

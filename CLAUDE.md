@@ -2929,6 +2929,48 @@ zur Laufzeit bekannten Live-Werts) - bei jeder Formeländerung im Backend
 lohnt sich ein erneuter Blick darauf, ob die zugehörige Karten-Bedingung
 davon ebenfalls profitieren kann.
 
+**59. Messwerte wurden bislang ungerundet in der Entscheidungslogik
+verglichen, aber gerundet angezeigt - dieselbe Art Inkonsistenz wie
+Lektion 58, nur zwischen Rohwert und Anzeige statt zwischen zwei
+Formel-Varianten (0.70.0).** Nutzer-Meldung (Screenshot, Flur KG): Der
+Luftentfeuchter lief trotz angezeigter 55 % Luftfeuchtigkeit (Normalbereich
+55-60 %, Schließen-Schwelle also erreicht) unverändert weiter, Grund-Text
+"im Sollbereich, hält letzten Zustand". Kein Bug in der Hysterese selbst -
+`humidity_needs_close = humidity <= hum_close` verglich weiterhin korrekt
+gegen den tatsächlichen Rohmesswert (z. B. 55,4 %), der aber für die
+Kartenanzeige längst auf "55 %" gerundet wurde (`| round(0)`). Die Karte
+suggerierte damit "Schwelle erreicht", während die Entscheidungslogik
+intern noch mit einem Wert arbeitete, der die Schwelle knapp verfehlte -
+irritierend, weil Anzeige und tatsächlicher Vergleichswert unterschiedliche
+Präzision hatten, nicht weil die Logik selbst falsch gewesen wäre.
+
+Fix: `_get_float_state()` bekommt einen optionalen `decimals`-Parameter,
+der den Wert direkt beim Einlesen rundet - angewendet an JEDER Stelle, die
+Luftfeuchtigkeit/Außenluftfeuchtigkeit/CO2 liest (`decimals=0`, identisch
+zur Kartenanzeige `round(0)`) sowie Außentemperatur (`decimals=1`).
+`_get_indoor_temperature()` rundet jetzt intern fest auf 1 Nachkommastelle
+(Innentemperatur wird nirgends mit anderer Präzision gebraucht, daher kein
+Parameter nötig). Betrifft sowohl `_evaluate()` (Entscheidungslogik -
+Öffnen/Schließen-Schwellen, Frost-/Hitzeschutz, Luftentfeuchter-/
+Klimaanlagen-/Heizungssteuerung, absolute Luftfeuchtigkeit) als auch
+`extra_state_attributes` (Anzeige, vorher schon separat gerundet - jetzt
+bereits beim Einlesen, nicht mehr nur beim Anzeigen) und
+`_measurement_context()` (Platzhalter `{wert}`/`{schwelle}` in
+Benachrichtigungstexten). Bewusst NICHT angefasst: die Leistungsschwelle
+(`CONF_POWER_ENTITY`, andere Größenordnung/Einheit, kein Bezug zu diesem
+Problem) und die konfigurierten Schwellenwerte selbst (nur die Messwerte
+werden gerundet, nicht die Grenzen). Auswirkung auf Frost-/Hitzeschutz
+minimal (max. 0,05 °C Rundungsdifferenz, irrelevant gegenüber der
+bestehenden Debounce-Absicherung) und auf die Duscherkennung gering (der
+Anstieg wird über mehrere Minuten gemittelt, eine einzelne
+Rundungsdifferenz von ±0,5 % fällt darin nicht ins Gewicht). Lektion:
+Wann immer ein Wert für die Anzeige gerundet wird, aber an anderer Stelle
+(hier: Entscheidungslogik) weiterhin ungerundet verwendet wird, ist eine
+knapp-an-der-Schwelle-Situation für Nutzer unerklärlich, obwohl beide
+Stellen für sich genommen korrekt arbeiten - die Rundung gehört an die
+Quelle (beim Einlesen), nicht separat an jede einzelne Verwendungsstelle,
+damit Anzeige und Entscheidung nie auseinanderlaufen können.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
