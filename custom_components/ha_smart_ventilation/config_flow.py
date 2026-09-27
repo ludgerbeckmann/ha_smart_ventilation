@@ -367,13 +367,31 @@ def _numeric_field_selector(key: str, min_v, max_v, step, unit) -> object:
     )
 
 
+def _dropdown_suggested_value(key: str, value):
+    """Für die in _THRESHOLD_DROPDOWN_OPTIONS gelisteten Felder muss der
+    Vorschlagswert (suggested_value) ein String sein - SelectSelector
+    erwartet beim Validieren zwingend einen String (siehe
+    _numeric_field_selector()), ein roher Zahlenwert (int/float, wie er in
+    _THRESHOLD_FIELDS/im Config-Entry gespeichert ist) führte sonst zu
+    einem 'expected str'-Validierungsfehler beim Öffnen/Speichern des
+    Formulars. Ganze Zahlen, die als float gespeichert sind (z. B.
+    CONF_MIN_SURPLUS_POWER), werden ohne '.0' dargestellt, damit sie
+    optisch mit den angebotenen, ganzzahlig formatierten Vorschlagswerten
+    übereinstimmen. Für alle anderen (NumberSelector-)Felder unverändert."""
+    if key not in _THRESHOLD_DROPDOWN_OPTIONS or value is None:
+        return value
+    if isinstance(value, float) and value == int(value):
+        return str(int(value))
+    return str(value)
+
+
 def _threshold_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
     """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
     globalen Einstellungen, wo beim Leeren automatisch wieder der
     Standardwert greift (siehe _apply_threshold_defaults)."""
     defaults = defaults or {}
     default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
-    current = defaults.get(key, default_value)
+    current = _dropdown_suggested_value(key, defaults.get(key, default_value))
     marker = vol.Optional(key, description={"suggested_value": current})
     return marker, _numeric_field_selector(key, min_v, max_v, step, unit)
 
@@ -383,7 +401,7 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
     Leer = die globale Einstellung (bzw. deren Standardwert) gilt."""
     defaults = defaults or {}
     _default_value, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
-    current = defaults.get(key)
+    current = _dropdown_suggested_value(key, defaults.get(key))
     kwargs = {}
     if current not in (None, ""):
         kwargs["description"] = {"suggested_value": current}
@@ -1328,6 +1346,16 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="sensor")
                         ),
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(SECTION_PARAMETERS): section(
+                vol.Schema(parameter_fields), {"collapsed": True}
+            ),
+            vol.Required(SECTION_MESSAGES): section(
+                vol.Schema(
+                    {
                         vol.Required(
                             CONF_MOBILE_ENABLED,
                             default=defaults.get(CONF_MOBILE_ENABLED, False),
@@ -1367,16 +1395,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             CONF_PERSISTENT_ENABLED,
                             default=defaults.get(CONF_PERSISTENT_ENABLED, False),
                         ): selector.BooleanSelector(),
-                    }
-                ),
-                {"collapsed": True},
-            ),
-            vol.Required(SECTION_PARAMETERS): section(
-                vol.Schema(parameter_fields), {"collapsed": True}
-            ),
-            vol.Required(SECTION_MESSAGES): section(
-                vol.Schema(
-                    {
                         reminder_marker: reminder_sel,
                         vol.Required(
                             CONF_MSG_OPEN_HUMIDITY,

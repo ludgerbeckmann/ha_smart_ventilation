@@ -313,10 +313,6 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
 - **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
   im Raum-Formular auswählbar (die zugehörige Mindest-Einspeiseleistung/
   Verzögerung bis Abschalten steht im Abschnitt "Erweitert" weiter unten)
-- **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
-  Standard, pro Raum überschreibbar
-- **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
-  Standard, pro Raum überschreibbar
 - **Sommermodus-Vorhersagequelle** (optional, nur global): eine `sensor`-
   oder `weather`-Entität mit einer Temperatur-Vorhersage - z. B. ein eigener
   Template-Sensor, der die Tagesvorhersage als Attribut bereitstellt (kein
@@ -397,6 +393,10 @@ raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
 **Abschnitt "Benachrichtigungen"** (früher "Benachrichtigungstexte" -
 umbenannt, da hier jetzt auch das Erinnerungsintervall steht, direkt neben
 dem zugehörigen Erinnerungstext; standardmäßig eingeklappt):
+- **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
+  Standard, pro Raum überschreibbar
+- **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
+  Standard, pro Raum überschreibbar
 - **Erinnerungsintervall** als raumweiter Standard - pro Raum im Abschnitt
   "Benachrichtigungen & Anwesenheit" überschreibbar (siehe oben)
 
