@@ -19,8 +19,9 @@ Entity-ID `binary_sensor.lueften_empfohlen_<raum>` unverändert - nur der
 angezeigte Name ändert sich; neu angelegte Räume erhalten eine daraus
 abgeleitete Entity-ID):
 
-- **on** = Lüften wird empfohlen (Fenster sollte offen sein)
-- **off** = Lüften kann beendet werden
+- **on** = Lüften wird empfohlen (Fenster sollte offen sein) - Symbol
+  `mdi:window-open-variant`
+- **off** = Lüften kann beendet werden - Symbol `mdi:window-closed-variant`
 
 Bei jedem Wechsel wird automatisch eine Sprachansage und/oder Push-
 Benachrichtigung ausgelöst – ganz ohne zusätzliche Automationen. Du kannst
@@ -33,7 +34,8 @@ Dusche aktiv**" angelegt - ein reiner, vom Haupt-Sensor abgeleiteter
 Anzeige-Sensor ohne eigene Konfiguration, der **on** meldet, solange
 gerade geduscht wird (identisch zum weiterhin vorhandenen
 `duschen_erkannt`-Attribut des Haupt-Sensors, nur eben als eigenständige
-Entität für Dashboards/Automationen).
+Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
+`mdi:shower-head` bei **off**.
 
 ## Installation
 

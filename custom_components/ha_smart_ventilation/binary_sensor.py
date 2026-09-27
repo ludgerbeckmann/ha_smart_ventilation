@@ -306,6 +306,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._shower_sensor = shower_sensor
 
     @property
+    def icon(self) -> str:
+        return "mdi:window-open-variant" if self._attr_is_on else "mdi:window-closed-variant"
+
+    @property
     def showering(self) -> bool:
         """Aktueller Duscherkennungs-Zustand - vom separaten 'Dusche aktiv'-
         Sensor gelesen (siehe SmartVentilationShowerBinarySensor)."""
@@ -2897,6 +2901,10 @@ class SmartVentilationShowerBinarySensor(BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self._room_sensor.showering
+
+    @property
+    def icon(self) -> str:
+        return "mdi:shower" if self.is_on else "mdi:shower-head"
 
     async def async_added_to_hass(self) -> None:
         """Schreibt einmalig den aktuellen Zustand, sobald diese Entität
