@@ -932,6 +932,20 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   einschaltet, und wieder deaktiviert, sobald sie ausschaltet. Unterstützt
   sowohl `cover`-Entitäten (auf/zu) als auch `switch`-Entitäten (an =
   herunterfahren + gesperrt, aus = hochfahren + entsperrt).
+- **Höchstlaufzeit** (Abschnitt "Erweitert", global + Raum-Override, Standard
+  0 = deaktiviert): Läuft Luftentfeuchter oder Klimaanlage ununterbrochen
+  länger als diese Zeit, werden sie zwangsweise abgeschaltet - unabhängig
+  davon, ob die eigentliche Zielbedingung (Feuchtigkeit/Temperatur) noch
+  erfüllt ist. Verfolgt wird dafür die tatsächlich am Gerät live abgefragte
+  Laufzeit, nicht nur der zuletzt von dieser Integration gesendete Befehl.
+  Ein vorhandener Einspeiseleistungs-Überschuss (siehe Leistungssensor oben)
+  hebt die Begrenzung auf - ohne konfigurierten Leistungssensor gilt sie
+  immer. Nach einem solchen Zwangs-Abschalten gilt zusätzlich eine
+  konfigurierbare **Ruhezeit** (Standard 30 Minuten), bevor das Gerät wieder
+  einschalten darf - ohne sie würde es bei weiterhin hoher Feuchtigkeit/
+  Temperatur sofort wieder anspringen und die Begrenzung wäre wirkungslos.
+  Während der Ruhezeit zeigt die Geräte-Tabelle als Grund "Ruhezeit nach
+  Höchstlaufzeit, bis HH:MM" an.
 
 ## Attribute für eine Statusübersicht
 

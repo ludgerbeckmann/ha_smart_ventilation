@@ -151,7 +151,9 @@
               "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert"
+              "heating_night_temp": "Heizung Nacht-Sollwert",
+              "device_max_runtime_minutes": "Höchstlaufzeit Luftentfeuchter/Klimaanlage",
+              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit"
             },
             "data_description": {
               "temperature_attribute": "Nur relevant, wenn im Abschnitt \"Sensoren & Geräte\" eine climate-Entität als Innentemperatur gewählt wurde",
@@ -164,7 +166,9 @@
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
+              "device_max_runtime_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = deaktiviert. Erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist - ein vorhandener Einspeiseleistungs-Überschuss hebt die Begrenzung auf. Aktuell global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}"
             }
           }
         }
@@ -320,7 +324,9 @@
               "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert"
+              "heating_night_temp": "Heizung Nacht-Sollwert",
+              "device_max_runtime_minutes": "Höchstlaufzeit Luftentfeuchter/Klimaanlage",
+              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit"
             },
             "data_description": {
               "temperature_attribute": "Nur relevant, wenn im Abschnitt \"Sensoren & Geräte\" eine climate-Entität als Innentemperatur gewählt wurde",
@@ -333,7 +339,9 @@
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
+              "device_max_runtime_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = deaktiviert. Erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist - ein vorhandener Einspeiseleistungs-Überschuss hebt die Begrenzung auf. Aktuell global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}"
             }
           }
         },
@@ -430,7 +438,9 @@
               "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert"
+              "heating_night_temp": "Heizung Nacht-Sollwert",
+              "device_max_runtime_minutes": "Höchstlaufzeit Luftentfeuchter/Klimaanlage",
+              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit"
             },
             "data_description": {
               "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (Abschnitt \"Sensoren & Geräte\"), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
@@ -443,7 +453,9 @@
               "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist.",
               "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster",
               "heating_standby_temp": "Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit",
-              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)"
+              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)",
+              "device_max_runtime_minutes": "Maximale ununterbrochene Laufzeit, bevor Luftentfeuchter/Klimaanlage zwangsweise abgeschaltet werden - 0 = deaktiviert. Ein vorhandener Einspeiseleistungs-Überschuss hebt die Begrenzung auf. Standardwert für alle Räume ohne eigene Angabe.",
+              "device_max_runtime_cooldown_minutes": "Mindest-Ruhezeit nach einem solchen Zwangs-Abschalten, bevor das Gerät wieder einschalten darf. Standardwert für alle Räume ohne eigene Angabe."
             }
           },
           "messages": {

@@ -31,6 +31,8 @@ from .const import (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    CONF_DEVICE_MAX_RUNTIME_MINUTES,
     CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
@@ -114,6 +116,8 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
@@ -300,6 +304,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
         self._dehumidifier_low_power_since = None
         self._ac_low_power_since = None
+
+        # Höchstlaufzeit-Begrenzung (CONF_DEVICE_MAX_RUNTIME_MINUTES, siehe
+        # _update_single_device()) - seit wann das jeweilige Gerät LIVE
+        # ununterbrochen läuft (nicht über Neustarts hinweg wiederhergestellt,
+        # analog zu den Leistungs-Trackern oben - nach einem Neustart beginnt
+        # die Zählung neu), sowie bis wann eine nach einem Zwangs-Abschalten
+        # erzwungene Ruhezeit gilt.
+        self._dehumidifier_max_runtime_since = None
+        self._dehumidifier_max_runtime_cooldown_until = None
+        self._ac_max_runtime_since = None
+        self._ac_max_runtime_cooldown_until = None
 
         # Seit wann frost_block ununterbrochen aktiv ist (für den Debounce,
         # siehe _evaluate()) - gilt gleichermaßen für einen tatsächlich
@@ -1558,6 +1573,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
             if not self._config.get(CONF_HUMIDITY_ENTITY):
                 self._dehumidifier_reason = "kein Feuchtigkeitssensor konfiguriert"
+            elif (
+                self._dehumidifier_max_runtime_cooldown_until is not None
+                and dt_util.utcnow() < self._dehumidifier_max_runtime_cooldown_until
+            ):
+                self._dehumidifier_reason = (
+                    "Ruhezeit nach Höchstlaufzeit, bis "
+                    + dt_util.as_local(
+                        self._dehumidifier_max_runtime_cooldown_until
+                    ).strftime("%H:%M")
+                )
             elif humidity_needs_close:
                 self._dehumidifier_reason = "Luftfeuchtigkeit unter Schwelle"
             elif dehumidifier_pause_open_window:
@@ -1571,7 +1596,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if self._effective(CONF_POWER_ENTITY, None) and not self._check_power_ok():
                 self._dehumidifier_reason += " (Einspeiseleistung zu gering)"
         if self._config.get(CONF_AC_ENTITY):
-            if temp_needs_close:
+            if (
+                self._ac_max_runtime_cooldown_until is not None
+                and dt_util.utcnow() < self._ac_max_runtime_cooldown_until
+            ):
+                self._ac_reason = (
+                    "Ruhezeit nach Höchstlaufzeit, bis "
+                    + dt_util.as_local(self._ac_max_runtime_cooldown_until).strftime(
+                        "%H:%M"
+                    )
+                )
+            elif temp_needs_close:
                 self._ac_reason = "Innentemperatur unter Schwelle"
             elif outdoor_cooler_enough:
                 self._ac_reason = (
@@ -2152,6 +2187,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             low_power_attr="_dehumidifier_low_power_since",
             want_on=humidity_needs_open and not dehumidifier_pause_open_window,
             want_off=humidity_needs_close or dehumidifier_pause_open_window,
+            runtime_since_attr="_dehumidifier_max_runtime_since",
+            cooldown_until_attr="_dehumidifier_max_runtime_cooldown_until",
         )
         await self._update_single_device(
             entity_key=CONF_AC_ENTITY,
@@ -2160,6 +2197,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             want_on=temp_needs_open and not outdoor_cooler_enough,
             want_off=temp_needs_close or outdoor_cooler_enough,
             shutter_key=CONF_SHUTTER_ENTITY,
+            runtime_since_attr="_ac_max_runtime_since",
+            cooldown_until_attr="_ac_max_runtime_cooldown_until",
         )
         await self._update_summer_mode(want_summer_mode=want_summer_mode)
         await self._update_heating(target_mode=heating_target_mode)
@@ -2173,6 +2212,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         want_on: bool,
         want_off: bool,
         shutter_key: str | None = None,
+        runtime_since_attr: str | None = None,
+        cooldown_until_attr: str | None = None,
     ) -> None:
         entity_id = self._config.get(entity_key)
         if not entity_id:
@@ -2180,12 +2221,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._device_entity_missing(entity_id):
             # Integrationseintrag deaktiviert oder Entität sonst komplett
             # entfernt - kein Steuerversuch gegen eine nicht existierende
-            # Entität, und der interne Soll-Zustand-Tracker wird
-            # zurückgesetzt, damit bei Rückkehr der Entität eine sauber
-            # neue Synchronisierung stattfindet, statt auf einem
-            # veralteten Zustand aufzusetzen.
+            # Entität, und die internen Tracker werden zurückgesetzt, damit
+            # bei Rückkehr der Entität eine sauber neue Synchronisierung
+            # stattfindet, statt auf einem veralteten Zustand aufzusetzen.
             setattr(self, state_attr, None)
             setattr(self, low_power_attr, None)
+            if runtime_since_attr is not None:
+                setattr(self, runtime_since_attr, None)
+            if cooldown_until_attr is not None:
+                setattr(self, cooldown_until_attr, None)
             return
 
         current = getattr(self, state_attr)
@@ -2225,14 +2269,75 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         off_confirmed = current is False and live_state is not True
         on_confirmed = current is True and live_state is not False
 
-        if (want_off or force_off_due_to_power) and not off_confirmed:
+        # Höchstlaufzeit-Begrenzung (CONF_DEVICE_MAX_RUNTIME_MINUTES) -
+        # verfolgt die tatsächliche, LIVE abgefragte Laufzeit (nicht den
+        # internen Tracker "current", der nur bestätigt, dass wir zuletzt
+        # "an" kommandiert haben, siehe Lektion 47/56). Ein vorhandener
+        # Einspeiseleistungs-Überschuss hebt die Begrenzung auf (identisches
+        # Muster zu dehumidifier_pause_open_window, Lektion 34).
+        force_off_due_to_max_runtime = False
+        if runtime_since_attr is not None:
+            if live_state is True:
+                if getattr(self, runtime_since_attr) is None:
+                    setattr(self, runtime_since_attr, dt_util.utcnow())
+            elif live_state is False:
+                setattr(self, runtime_since_attr, None)
+            # live_state is None (Entität kurz nicht lesbar): Timer bleibt
+            # unverändert stehen - sonst würde ein einzelner Ausrutscher die
+            # bereits gelaufene Zeit verschleiern (analog zur on_confirmed/
+            # off_confirmed-Behandlung von "nicht lesbar" oben).
+
+            runtime_since = getattr(self, runtime_since_attr)
+            max_minutes = self._effective(
+                CONF_DEVICE_MAX_RUNTIME_MINUTES, DEFAULT_DEVICE_MAX_RUNTIME_MINUTES
+            )
+            if (
+                max_minutes > 0
+                and runtime_since is not None
+                and not (power_entity_configured and power_ok)
+                and (dt_util.utcnow() - runtime_since).total_seconds() / 60
+                >= max_minutes
+            ):
+                force_off_due_to_max_runtime = True
+                if cooldown_until_attr is not None:
+                    cooldown_minutes = self._effective(
+                        CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+                        DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+                    )
+                    setattr(
+                        self,
+                        cooldown_until_attr,
+                        dt_util.utcnow() + timedelta(minutes=cooldown_minutes),
+                    )
+
+        # Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit - ohne
+        # diese würde das Gerät bei weiterhin hoher Luftfeuchtigkeit/
+        # Temperatur sofort wieder einschalten und die Begrenzung wäre
+        # wirkungslos.
+        block_on_due_to_cooldown = False
+        if cooldown_until_attr is not None:
+            cooldown_until = getattr(self, cooldown_until_attr)
+            if cooldown_until is not None:
+                if dt_util.utcnow() < cooldown_until:
+                    block_on_due_to_cooldown = True
+                else:
+                    setattr(self, cooldown_until_attr, None)
+
+        if (
+            want_off or force_off_due_to_power or force_off_due_to_max_runtime
+        ) and not off_confirmed:
             await self._set_device_state(entity_id, False)
             setattr(self, state_attr, False)
             setattr(self, low_power_attr, None)
             if shutter_key:
                 await self._set_shutter(self._config.get(shutter_key), close=False)
             self.async_write_ha_state()
-        elif want_on and not force_off_due_to_power and not on_confirmed:
+        elif (
+            want_on
+            and not force_off_due_to_power
+            and not block_on_due_to_cooldown
+            and not on_confirmed
+        ):
             if power_ok:
                 await self._set_device_state(entity_id, True)
                 setattr(self, state_attr, True)

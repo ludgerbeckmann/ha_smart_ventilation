@@ -21,6 +21,8 @@ from .const import (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    CONF_DEVICE_MAX_RUNTIME_MINUTES,
     CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
@@ -108,6 +110,8 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
@@ -248,6 +252,20 @@ _THRESHOLD_FIELDS = {
     CONF_HEATING_STANDBY_TEMP: (DEFAULT_HEATING_STANDBY_TEMP, 5, 25, 0.5, "°C"),
     CONF_HEATING_NIGHT_TEMP: (DEFAULT_HEATING_NIGHT_TEMP, 5, 25, 0.5, "°C"),
     CONF_SUMMER_MODE_THRESHOLD_TEMP: (DEFAULT_SUMMER_MODE_THRESHOLD_TEMP, 5, 30, 0.5, "°C"),
+    CONF_DEVICE_MAX_RUNTIME_MINUTES: (
+        DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
+        0,
+        720,
+        15,
+        "min",
+    ),
+    CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES: (
+        DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+        0,
+        240,
+        5,
+        "min",
+    ),
 }
 
 # Für ausgewählte Felder aus _THRESHOLD_FIELDS: überschreibbares Dropdown
@@ -848,6 +866,12 @@ def _build_room_schema(
     reminder_marker, reminder_sel = _override_selector(CONF_REMINDER_INTERVAL, defaults)
     power_marker, power_sel = _override_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _override_selector(CONF_POWER_GRACE_PERIOD, defaults)
+    max_runtime_marker, max_runtime_sel = _override_selector(
+        CONF_DEVICE_MAX_RUNTIME_MINUTES, defaults
+    )
+    max_runtime_cooldown_marker, max_runtime_cooldown_sel = _override_selector(
+        CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES, defaults
+    )
     priority_marker, priority_sel = _tri_state_bool_selector(
         CONF_HUMIDITY_PRIORITY_OVER_DURATION,
         defaults,
@@ -1254,6 +1278,8 @@ def _build_room_schema(
                 shower_threshold_marker: shower_threshold_sel,
                 power_marker: power_sel,
                 grace_marker: grace_sel,
+                max_runtime_marker: max_runtime_sel,
+                max_runtime_cooldown_marker: max_runtime_cooldown_sel,
             }
         ),
         {"collapsed": True},
@@ -1278,6 +1304,12 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
+    max_runtime_marker, max_runtime_sel = _threshold_selector(
+        CONF_DEVICE_MAX_RUNTIME_MINUTES, defaults
+    )
+    max_runtime_cooldown_marker, max_runtime_cooldown_sel = _threshold_selector(
+        CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES, defaults
+    )
     reminder_marker, reminder_sel = _threshold_selector(CONF_REMINDER_INTERVAL, defaults)
     # Wie volume_marker/power_marker/grace_marker: einzeln erzeugt statt über
     # _CORE_PARAMETER_KEYS, da diese drei im neuen Abschnitt "Erweitert"
@@ -1340,6 +1372,8 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         shower_threshold_marker: shower_threshold_sel,
         power_marker: power_sel,
         grace_marker: grace_sel,
+        max_runtime_marker: max_runtime_sel,
+        max_runtime_cooldown_marker: max_runtime_cooldown_sel,
     }
     advanced_fields[
         vol.Required(
