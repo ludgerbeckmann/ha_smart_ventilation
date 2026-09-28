@@ -1484,7 +1484,10 @@ Update einfach eine neue Karte anlegen und als Typ
 `Custom: Smart Climate Karte` wählen (oder im YAML-Modus
 `type: custom:smart-climate-card` eintragen) - ohne weitere Konfiguration
 findet die Karte automatisch alle Räume über das `raum`-Attribut, genau
-wie die Markdown-Karte.
+wie die Markdown-Karte. Optional lässt sich ein Kartentitel vergeben
+(`title:` im YAML-Modus, oder über das Textfeld im Karten-Editor - dafür
+bringt die Karte einen eigenen, schlanken visuellen Editor mit) - leer
+gelassen erscheint kein Titel, wie bisher.
 
 Die JS-Karte hat eine eigene, von der `card_version` der Jinja-Vorlage
 unabhängige Versionierung (eigene Konstante `CARD_VERSION` am Anfang der

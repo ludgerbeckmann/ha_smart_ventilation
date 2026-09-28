@@ -12,7 +12,7 @@
  * Eigene, von der Jinja-Karte unabhängige Versionierung (siehe unten).
  */
 
-const CARD_VERSION = 1;
+const CARD_VERSION = 2;
 
 const GRUND_TEXT = {
   temp: "Temperatur",
@@ -80,6 +80,10 @@ function has(attrs, key) {
 class SmartClimateCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
+    // Direktes Re-Rendern schon hier (nicht erst beim nächsten hass-Tick) -
+    // damit eine Titel-Änderung im Editor sofort in der Vorschau sichtbar
+    // wird, auch wenn hass sich zwischen zwei Ticks nicht ändert.
+    if (this._hass) this._render();
   }
 
   set hass(hass) {
@@ -89,6 +93,10 @@ class SmartClimateCard extends HTMLElement {
 
   getCardSize() {
     return 8;
+  }
+
+  static getConfigElement() {
+    return document.createElement("smart-climate-card-editor");
   }
 
   connectedCallback() {
@@ -126,6 +134,11 @@ class SmartClimateCard extends HTMLElement {
       this._card.appendChild(this._content);
       this.appendChild(this._card);
     }
+    // Optionales Titel-Feld (siehe smart-climate-card-editor) - nutzt
+    // ha-cards eigenes header-Attribut, damit der Titel exakt wie bei
+    // Home Assistants Standard-Karten aussieht. Leer/nicht gesetzt = kein
+    // Header, wie bisher.
+    this._card.header = this._config.title || undefined;
 
     if (!entityIds.length) {
       this._content.innerHTML =
@@ -379,7 +392,9 @@ class SmartClimateCard extends HTMLElement {
         `<tr><td>Persistente Benachrichtigung</td><td class="center">${n3Status}</td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
-      const header = `<h3>${matchIcon} ${esc(a.raum)}</h3>`;
+      const statusClass =
+        matchIcon === "🔴" ? "status-red" : matchIcon === "🟠" ? "status-orange" : "status-green";
+      const header = `<div class="room-header"><span class="room-icon">${matchIcon}</span><h3>${esc(a.raum)}</h3></div>`;
       let body = empfTable;
       body += valuesTable;
       if (deviceTable) body += deviceTable;
@@ -388,58 +403,132 @@ class SmartClimateCard extends HTMLElement {
       const colorRank = matchIcon === "🔴" ? 0 : matchIcon === "🟠" ? 1 : 2;
       entries.push({
         sortKey: `${colorRank}${a.raum}`,
-        html: `<div class="room">${header}${body}</div>`,
+        html: `<div class="room ${statusClass}">${header}${body}</div>`,
       });
     }
 
     entries.sort((x, y) => x.sortKey.localeCompare(y.sortKey));
 
-    const overviewCols = [];
-    const overviewVals = [];
-    overviewCols.push("🟢", "🟠", "🔴");
-    overviewVals.push(String(green), String(orange), String(red));
+    const overviewCells = [
+      { label: "🟢", value: String(green), cls: "ov-green" },
+      { label: "🟠", value: String(orange), cls: "ov-orange" },
+      { label: "🔴", value: String(red), cls: "ov-red" },
+    ];
     if (summerMode !== null) {
-      overviewCols.push("Modus");
-      overviewVals.push(summerMode ? "☀️ Sommer" : "❄️ Winter");
+      overviewCells.push({
+        label: "Modus",
+        value: summerMode ? "☀️ Sommer" : "❄️ Winter",
+        cls: "",
+      });
     }
     if (version !== null) {
-      overviewCols.push("Integration");
-      overviewVals.push(esc(version));
+      overviewCells.push({ label: "Integration", value: esc(version), cls: "" });
     }
-    overviewCols.push("Karte");
-    overviewVals.push(String(CARD_VERSION));
+    overviewCells.push({ label: "Karte", value: String(CARD_VERSION), cls: "" });
 
     const overviewTable =
-      `<table class="overview"><thead><tr>${overviewCols
-        .map((c) => `<th>${c}</th>`)
-        .join("")}</tr></thead><tbody><tr>${overviewVals
-        .map((v) => `<td>${v}</td>`)
+      `<table class="overview"><thead><tr>${overviewCells
+        .map((c) => `<th class="${c.cls}">${c.label}</th>`)
+        .join("")}</tr></thead><tbody><tr>${overviewCells
+        .map((c) => `<td class="${c.cls}">${c.value}</td>`)
         .join("")}</tr></tbody></table>`;
 
-    const roomsHtml = entries.map((e) => e.html).join('<hr class="room-sep">');
+    const roomsHtml = entries.map((e) => e.html).join("");
 
-    this._content.innerHTML = `${overviewTable}<hr class="room-sep">${roomsHtml}`;
+    this._content.innerHTML = `<div class="overview-wrap">${overviewTable}</div>${roomsHtml}`;
   }
 
   static _css() {
     return `
-      .smart-climate-card-content { padding: 16px; }
-      table.overview, table.values { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+      .smart-climate-card-content { padding: 12px 16px 16px; }
+
+      .overview-wrap { margin-bottom: 16px; }
+
+      table.overview, table.values {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        margin-bottom: 10px;
+      }
       table.overview th, table.overview td,
       table.values th, table.values td {
-        border-bottom: 1px solid var(--divider-color, #ccc);
-        padding: 4px 8px;
+        padding: 7px 10px;
         text-align: left;
-        font-size: 0.9em;
+        font-size: 0.92em;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      table.overview tbody tr:last-child td,
+      table.values tbody tr:last-child td { border-bottom: none; }
+      table.overview th, table.values th {
+        background: var(--secondary-background-color, rgba(127, 127, 127, 0.08));
+        font-weight: 600;
+        font-size: 0.82em;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        opacity: 0.8;
+      }
+      table.values tbody tr:nth-child(even) td {
+        background: var(--secondary-background-color, rgba(127, 127, 127, 0.04));
       }
       table.overview th, table.overview td { text-align: center; }
+      table.overview th.ov-green, table.overview td.ov-green {
+        background: rgba(76, 175, 80, 0.12);
+      }
+      table.overview th.ov-orange, table.overview td.ov-orange {
+        background: rgba(255, 152, 0, 0.12);
+      }
+      table.overview th.ov-red, table.overview td.ov-red {
+        background: rgba(244, 67, 54, 0.12);
+      }
+      table.overview td { font-size: 1.1em; font-weight: 600; }
       table.values td.center { text-align: center; }
-      .room h3 { margin: 8px 0 4px 0; }
-      hr.room-sep { border: none; border-top: 1px solid var(--divider-color, #ccc); margin: 12px 0; }
+
+      .room {
+        border-radius: 10px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        border-left: 4px solid var(--divider-color, #e0e0e0);
+        background: var(--card-background-color, transparent);
+        padding: 10px 14px 14px;
+        margin-bottom: 14px;
+      }
+      .room.status-green { border-left-color: var(--success-color, #4caf50); }
+      .room.status-orange { border-left-color: var(--warning-color, #ff9800); }
+      .room.status-red { border-left-color: var(--error-color, #f44336); }
+
+      .room-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .room-icon { font-size: 1.1em; line-height: 1; }
+      .room-header h3 {
+        margin: 0;
+        font-size: 1.15em;
+        font-weight: 600;
+      }
+
       .hl-green { color: var(--success-color, #4caf50); font-weight: bold; }
       .hl-orange { color: var(--warning-color, #ff9800); font-weight: bold; }
       .hl-red { color: var(--error-color, #f44336); font-weight: bold; }
-      details summary { cursor: pointer; margin: 4px 0; }
+
+      details {
+        border-radius: 10px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        padding: 2px 10px;
+        margin-top: 4px;
+      }
+      details table.values { margin-top: 8px; margin-bottom: 4px; }
+      details summary {
+        cursor: pointer;
+        padding: 6px 0;
+        font-size: 0.9em;
+        opacity: 0.85;
+      }
+
       .empty { padding: 8px; opacity: 0.7; }
     `;
   }
@@ -450,6 +539,74 @@ class SmartClimateCard extends HTMLElement {
 }
 
 customElements.define("smart-climate-card", SmartClimateCard);
+
+/*
+ * Minimaler visueller Editor - ausschließlich für das optionale title-Feld.
+ * Ohne diesen Editor (static getConfigElement() auf der Haupt-Karte) zeigt
+ * Home Assistants Karten-Editor-Dialog generell den Hinweis "Visueller
+ * Editor wird nicht unterstützt" für JEDE Custom-Card ohne eigenen Editor,
+ * unabhängig von deren Config-Feldern - das Feld selbst hätte diesen
+ * Hinweis also nicht verschwinden lassen, ohne diesen (bewusst schlanken)
+ * Editor dazu.
+ */
+class SmartClimateCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    // Defensiv, falls connectedCallback (bei Einfügen ins DOM) vor
+    // setConfig() feuert - die Aufrufreihenfolge ist beim Editor-Element
+    // (anders als bei der Haupt-Karte, wo Lovelace setConfig() garantiert
+    // vor dem Einfügen aufruft) nicht in jedem Fall dieselbe.
+    this._config = {};
+  }
+
+  setConfig(config) {
+    this._config = config || {};
+    this._syncField();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+  }
+
+  connectedCallback() {
+    this._build();
+  }
+
+  _build() {
+    if (this._built) return;
+    this._built = true;
+    const wrapper = document.createElement("div");
+    wrapper.style.padding = "12px 0";
+    this._field = document.createElement("ha-textfield");
+    this._field.label = "Titel (optional)";
+    this._field.addEventListener("input", (ev) => {
+      const value = ev.target.value;
+      const newConfig = { ...this._config };
+      if (value) {
+        newConfig.title = value;
+      } else {
+        delete newConfig.title;
+      }
+      this._config = newConfig;
+      this.dispatchEvent(
+        new CustomEvent("config-changed", {
+          detail: { config: newConfig },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    });
+    wrapper.appendChild(this._field);
+    this.appendChild(wrapper);
+    this._syncField();
+  }
+
+  _syncField() {
+    if (this._field) this._field.value = this._config.title || "";
+  }
+}
+
+customElements.define("smart-climate-card-editor", SmartClimateCardEditor);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
