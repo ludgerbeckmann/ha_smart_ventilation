@@ -1382,6 +1382,21 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             selector.EntitySelectorConfig(domain="switch")
                         ),
                         _entity_marker(
+                            CONF_POWER_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(domain="sensor")
+                        ),
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(SECTION_PARAMETERS): section(
+                vol.Schema(parameter_fields), {"collapsed": True}
+            ),
+            vol.Required(SECTION_MESSAGES): section(
+                vol.Schema(
+                    {
+                        _entity_marker(
                             CONF_TTS_ENTITY, defaults, required=False
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="tts")
@@ -1416,21 +1431,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ): selector.BooleanSelector(),
                         tts_quiet_start_marker: tts_quiet_start_sel,
                         tts_quiet_end_marker: tts_quiet_end_sel,
-                        _entity_marker(
-                            CONF_POWER_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain="sensor")
-                        ),
-                    }
-                ),
-                {"collapsed": True},
-            ),
-            vol.Required(SECTION_PARAMETERS): section(
-                vol.Schema(parameter_fields), {"collapsed": True}
-            ),
-            vol.Required(SECTION_MESSAGES): section(
-                vol.Schema(
-                    {
                         vol.Required(
                             CONF_MOBILE_ENABLED,
                             default=defaults.get(CONF_MOBILE_ENABLED, False),

@@ -349,12 +349,6 @@
             "data": {
               "outdoor_temp_entity": "Outdoor temperature",
               "outdoor_humidity_entity": "Outdoor humidity",
-              "tts_entity": "TTS entity",
-              "tts_volume": "Playback volume for voice announcements",
-              "tts_quiet_hours_enabled": "Voice announcement quiet hours",
-              "tts_quiet_start": "Quiet hours start",
-              "tts_quiet_end": "Quiet hours end",
-              "tts_playback_mode": "Existing playback when announcing",
               "power_entity": "Power sensor (e.g. grid feed-in)",
               "summer_mode_forecast_entity": "Summer mode forecast source (optional)",
               "summer_mode_switch_entity": "Summer/winter mode switch (optional)"
@@ -364,11 +358,6 @@
               "outdoor_humidity_entity": "Used for all rooms, cannot be overridden per room. Without this sensor, ventilating on high indoor humidity is still recommended regardless of outdoor conditions. With it set, humidity-based ventilation is only recommended if it's actually drier outside than inside",
               "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically controls the summer/winter mode switch selected below. Without this entity, the switch remains purely manual.",
               "summer_mode_switch_entity": "An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (\"Parameters\" section) again. Without a configured entity, summer/winter mode has no effect.",
-              "tts_entity": "Used when a room doesn't set its own TTS entity",
-              "tts_volume": "Volume the speakers are set to before the announcement - automatically restored to the previous value afterwards (see README)",
-              "tts_quiet_hours_enabled": "When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected.",
-              "tts_quiet_start": "Only effective if quiet hours above are enabled.",
-              "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
               "power_entity": "Used when a room doesn't set its own power sensor"
             }
           },
@@ -453,6 +442,12 @@
             "name": "Notifications",
             "description": "The reminder interval and the texts sent for the respective recommendations. For the texts, three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit).",
             "data": {
+              "tts_entity": "TTS entity",
+              "tts_volume": "Playback volume for voice announcements",
+              "tts_playback_mode": "Existing playback when announcing",
+              "tts_quiet_hours_enabled": "Voice announcement quiet hours",
+              "tts_quiet_start": "Quiet hours start",
+              "tts_quiet_end": "Quiet hours end",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification (web interface)",
@@ -472,6 +467,11 @@
               "msg_tank_full": "Water tank full"
             },
             "data_description": {
+              "tts_entity": "Used when a room doesn't set its own TTS entity",
+              "tts_volume": "Volume the speakers are set to before the announcement - automatically restored to the previous value afterwards (see README)",
+              "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
+              "tts_quiet_hours_enabled": "When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected.",
+              "tts_quiet_start": "Only effective if quiet hours above are enabled.",
               "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
               "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved",
               "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Leaving it empty also becomes 0 when saved.",
