@@ -327,6 +327,23 @@ CONF_SHUTTER_ENTITY = "shutter_entity"
 CONF_POWER_ENTITY = "power_entity"
 CONF_MIN_SURPLUS_POWER = "min_surplus_power_watts"
 CONF_POWER_GRACE_PERIOD = "power_grace_period_minutes"
+# Höchstlaufzeit für Luftentfeuchter UND Klimaanlage (gemeinsames Feld, da
+# strukturell identisches Szenario) - verfolgt die tatsächliche, live
+# abgefragte Laufzeit (nicht den internen Steuerungs-Tracker, siehe
+# Lektion 47/56) und erzwingt bei Überschreiten ein Abschalten, siehe
+# binary_sensor.py:_update_single_device(). Standard 0 = deaktiviert, damit
+# sich bestehende Installationen nicht unbemerkt ändern. Ein vorhandener
+# Einspeiseleistungs-Überschuss hebt die Begrenzung auf (identisches Muster
+# zu dehumidifier_pause_open_window, Lektion 34) - ohne konfigurierten
+# Leistungssensor gilt sie immer.
+CONF_DEVICE_MAX_RUNTIME_MINUTES = "device_max_runtime_minutes"
+DEFAULT_DEVICE_MAX_RUNTIME_MINUTES = 0
+# Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor
+# das Gerät wieder einschalten darf - ohne diese würde es bei weiterhin
+# hoher Luftfeuchtigkeit/Temperatur sofort wieder anspringen und die
+# Begrenzung wäre wirkungslos.
+CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES = "device_max_runtime_cooldown_minutes"
+DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES = 30
 
 NOTIFY_METHOD_SONOS = "sonos"
 NOTIFY_METHOD_MOBILE = "mobile_app"

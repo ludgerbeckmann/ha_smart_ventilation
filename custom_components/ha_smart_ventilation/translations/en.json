@@ -151,7 +151,9 @@
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint"
+              "heating_night_temp": "Heating night setpoint",
+              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC",
+              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
             },
             "data_description": {
               "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature in the \"Sensors & Devices\" section",
@@ -164,7 +166,9 @@
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
+              "device_max_runtime_minutes": "Empty = use the value from the global settings. 0 = disabled. Forces the device off once it has run this long uninterrupted - an available power surplus lifts this limit. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}"
             }
           }
         }
@@ -320,7 +324,9 @@
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint"
+              "heating_night_temp": "Heating night setpoint",
+              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC",
+              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
             },
             "data_description": {
               "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature in the \"Sensors & Devices\" section",
@@ -333,7 +339,9 @@
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
+              "device_max_runtime_minutes": "Empty = use the value from the global settings. 0 = disabled. Forces the device off once it has run this long uninterrupted - an available power surplus lifts this limit. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}"
             }
           }
         },
@@ -430,7 +438,9 @@
               "heating_threshold_temp": "Heating threshold (indoor temperature)",
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint"
+              "heating_night_temp": "Heating night setpoint",
+              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC",
+              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
             },
             "data_description": {
               "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (\"Sensors & Devices\" section) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
@@ -443,7 +453,9 @@
               "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
               "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
               "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
-              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)"
+              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
+              "device_max_runtime_minutes": "Maximum uninterrupted runtime before the dehumidifier/AC is forced off - 0 = disabled. An available power surplus lifts this limit. Default for all rooms without their own value.",
+              "device_max_runtime_cooldown_minutes": "Minimum rest period after such a forced shutoff before the device may turn on again. Default for all rooms without their own value."
             }
           },
           "messages": {
