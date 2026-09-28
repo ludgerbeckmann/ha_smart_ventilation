@@ -376,6 +376,27 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         heat_live = outdoor_temp is not None and outdoor_temp >= heat_temp
         no_close_rec = self._config.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False)
 
+        # Live-Pendants zu outdoor_cooler_enough/outdoor_drier_enough
+        # (siehe _evaluate()) - verhindern, dass "outdoor_warmer"/
+        # "outdoor_wetter" direkt nach dem Öffnen aufblitzen, obwohl die
+        # Außenluft nach demselben Live-Maßstab, der dort das Öffnen-Gate
+        # bildet, noch vorteilhaft ist (siehe CLAUDE.md Lektion 65 - dieselbe
+        # Übergangszonen-Inkonsistenz wie im Backend, hier für die Karte).
+        margin = self._effective(CONF_TEMP_MARGIN, DEFAULT_TEMP_MARGIN)
+        outdoor_cooler_enough_live = (
+            outdoor_temp is not None
+            and indoor_temp is not None
+            and outdoor_temp <= indoor_temp - margin
+        )
+        outdoor_drier_enough_live = (
+            outdoor_humidity is not None
+            and humidity is not None
+            and indoor_temp is not None
+            and outdoor_temp is not None
+            and self._absolute_humidity(outdoor_temp, outdoor_humidity)
+            < self._absolute_humidity(indoor_temp, humidity)
+        )
+
         close_reason = ""
         if frost_live:
             close_reason = "frost"
@@ -388,7 +409,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 close_reason = "co2"
             elif indoor_temp is not None and indoor_temp < temp_close:
                 close_reason = "temp"
-            elif outdoor_temp is not None and outdoor_temp > temp_open:
+            elif (
+                outdoor_temp is not None
+                and outdoor_temp > temp_open
+                and not outdoor_cooler_enough_live
+            ):
                 close_reason = "outdoor_warmer"
             elif (
                 hum_open is not None
@@ -397,6 +422,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 and indoor_temp is not None
                 and self._absolute_humidity(outdoor_temp, outdoor_humidity)
                 > self._absolute_humidity(indoor_temp, hum_open)
+                and not outdoor_drier_enough_live
             ):
                 close_reason = "outdoor_wetter"
             elif self._last_reason == "duration":
@@ -1682,22 +1708,38 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # eine noch nicht ganz abgeklungene Luftfeuchtigkeit diesen
         # Außenluft-Mechanismus, obwohl sie gar nicht der Grund fürs
         # aktuelle Offenbleiben war (siehe CLAUDE.md Lektion 30/61).
+        # Zusätzlich `not outdoor_cooler_enough`: Verhindert ein Geflacker
+        # direkt nach dem Öffnen - `outdoor_cooler_enough` (Öffnen-Gate)
+        # vergleicht gegen den aktuellen LIVE-Innenwert, `outdoor_warmer_again`
+        # dagegen bewusst gegen die feste Öffnen-Schwelle (siehe deren
+        # Kommentar). Direkt beim Öffnen liegen beide Referenzwerte dicht
+        # beieinander - fällt die Außentemperatur in die schmale Lücke
+        # dazwischen, würde ohne diese Zusatzbedingung sofort wieder
+        # geschlossen, obwohl das Öffnen-Gate die Außenluft gerade erst als
+        # (knapp) kühler genug bewertet hat. Kann eine bestehende Dauerschleife
+        # (öffnen → sofort schließen → sofort wieder öffnen → ...) auslösen,
+        # solange die Außentemperatur in dieser Lücke verharrt.
         close_by_summer_outdoor = (
             self._attr_is_on
             and outdoor_warmer_again
             and not open_by_humidity
             and not open_by_co2
+            and not outdoor_cooler_enough
         )
 
         # --- Schließen: Pendant zu close_by_summer_outdoor, nur für
         # Luftfeuchtigkeit statt Temperatur (siehe outdoor_humidity_confirmed_worse
         # oben) - schließt nicht, solange Temperatur oder CO2 AKTUELL selbst
-        # noch eine Öffnen-Bedingung erfüllen (siehe Kommentar oben).
+        # noch eine Öffnen-Bedingung erfüllen (siehe Kommentar oben). Zusätzlich
+        # `not outdoor_drier_enough` - identische Begründung wie bei
+        # close_by_summer_outdoor oben, nur für Luftfeuchtigkeit statt
+        # Temperatur.
         close_by_humidity_outdoor_reversal = (
             self._attr_is_on
             and outdoor_humidity_confirmed_worse
             and not open_by_temp
             and not open_by_co2
+            and not outdoor_drier_enough
         )
 
         # --- Schließen: Winter-Höchstdauer ---
