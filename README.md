@@ -177,6 +177,21 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität (die
        zugehörige Mindest-Einspeiseleistung/Verzögerung bis Abschalten
        steht im Abschnitt "Erweitert" weiter unten)
+     - **Benachrichtigung bei Fenster-Gerät-Konflikt** (Standard aus): EIN
+       gemeinsamer Schalter für Luftentfeuchter UND Klimaanlage. Aktiviert
+       eine echte Benachrichtigung, solange eines der beiden konfigurierten
+       Geräte bei offenem Fenster gegen ungünstigere Außenluft ankämpft
+       (Luftentfeuchter: Außenluft nicht trockener als drinnen;
+       Klimaanlage: Außenluft nicht kühler als drinnen) - bewusst
+       **unabhängig** von einem eventuellen Einspeiseleistungs-Überschuss,
+       da das Schließen dem Gerät hilft, sein Ziel tatsächlich zu
+       erreichen, auch wenn der Betrieb gerade "kostenlos" ist. Nutzt
+       dieselben Kanäle wie die Lüftungsempfehlung, mit eigenem Text
+       (siehe "Smart Climate Optionen", Abschnitt "Benachrichtigungen") und
+       löst sich automatisch wieder auf, sobald das Fenster geschlossen
+       wird oder die Außenluft wieder hilft. Läuft komplett unabhängig von
+       der eigentlichen Öffnen/Schließen-Empfehlung - kann also auch dann
+       auslösen, wenn diese gerade "aus"/neutral ist
    - **Abschnitt "Benachrichtigungen & Anwesenheit"** (früher
      "Benachrichtigungsmethoden" - umbenannt, da hier jetzt auch die
      Anwesenheits-Entitäten für die Heizungs-Pausierung stehen):
@@ -1632,6 +1647,19 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   `tag`/eigene `notification_id`, unabhängig von der Lüftungsempfehlung) und
   löst sich nach demselben "Clean Notification"-Muster automatisch wieder
   auf, sobald der Tank wieder als "leer" gemeldet wird.
+- **Benachrichtigung bei Fenster-Gerät-Konflikt**: Ist für einen Raum die
+  entsprechende Option aktiviert UND läuft dort ein konfigurierter
+  Luftentfeuchter oder eine konfigurierte Klimaanlage bei offenem Fenster
+  gegen ungünstigere Außenluft an, löst das eine eigene Benachrichtigung
+  über dieselben, für den Raum aktuell wirksamen Kanäle aus (eigener Text
+  mit `{raum}`/`{geraet}`-Platzhaltern, eigener `tag`/eigene
+  `notification_id` je Gerät, unabhängig von der eigentlichen
+  Lüftungsempfehlung - kann also auch dann auslösen, wenn diese gerade
+  "aus"/neutral ist). Löst sich nach demselben "Clean Notification"-Muster
+  automatisch wieder auf, sobald das Fenster geschlossen wird oder die
+  Außenluft wieder hilft. Bewusst unabhängig von einem eventuellen
+  Einspeiseleistungs-Überschuss - das Schließen hilft dem Gerät, sein Ziel
+  tatsächlich zu erreichen, auch wenn der Betrieb gerade "kostenlos" ist.
 - Diese Integration öffnet/schließt keine motorisierten Fenster automatisch –
   sie informiert nur. Falls du motorisierte Fenster hast, kannst du den
   `binary_sensor` als Trigger in einer eigenen Automation verwenden, um
