@@ -3226,6 +3226,74 @@ denselben Raum hinzukommt, muss er einen eigenen, unterscheidbaren
 Bezeichner bekommen, sonst überschreiben oder löschen sich beide
 gegenseitig auf dem Zielgerät.
 
+**63. Auf die exploratorische Frage nach einer eigenen JS-Custom-Card
+stellte sich heraus, dass der eigentliche Gewinn (weniger/robustere
+Karten-Attribute) unabhängig von JS vs. Jinja bereits mit Bordmitteln
+erreichbar war (0.73.0).** Nutzerfrage: "Wäre es eine Überlegung, das
+Dashboard als eigene Custom Card zu bauen?" - Antwort: grundsätzlich ja
+(würde alle Jinja-Sandbox-Einschränkungen los), aber der Haupt-Trade-off
+(anderer Tech-Stack, kein lokales Testen gegen echtes HA-Rendering) ist
+erheblich. Nachfrage des Nutzers, ob eine JS-Karte auch viele der
+speziell für die Karte eingerichteten Sensor-Attribute überflüssig machen
+würde - Antwort: nur teilweise, denn eine JS-Karte hat genau denselben
+State-/Attribute-Zugriff wie die Jinja-Karte, keinen Zugriff auf
+`_evaluate()` selbst. Der eigentliche Hebel liegt woanders: Statt
+Rohwerte/Schwellen zu exponieren, damit die Karte den Vergleich selbst
+"live" nachrechnet (ursprünglich nötig, weil `extra_state_attributes`
+als eigene Property zu einem anderen Zeitpunkt als `_evaluate()`
+ausgewertet wird und dessen lokale Variablen nicht kennt, siehe Lektion 13),
+kann das Backend die ohnehin schon live berechneten Booleans direkt als
+fertige Liste/Wert exponieren - unabhängig von JS vs. Jinja. Nutzer
+bestätigte darauf "Hört sich sinnvoll an, bitte umsetzen".
+
+Umsetzung: Neue Methode `_live_reasons()` in `binary_sensor.py` - bewusst
+NICHT die tatsächlichen `should_open`/`should_close`-Booleans aus
+`_evaluate()` wiederverwendet (diese sind zusätzlich vom aktuellen
+`self._attr_is_on`, Außenluft-Gates und Hysterese abhängig, siehe
+Lektion 61s Unterscheidung zwischen "Hysterese-Totzone einer eigenen
+Bedingung" und "aktiver Grund einer anderen Bedingung") - sondern eine
+eigene, bewusst zustandsunabhängige Neuimplementierung exakt der
+Vergleichslogik, die bis dahin in der Jinja-Vorlage stand (reines "liegt
+der Messwert gerade außerhalb des Normalbereichs" ohne Berücksichtigung
+von Außenluft-Vergleich/aktuellem Zustand) - für 100 % Verhaltensparität
+mit der bisherigen Karte, nicht für eine Vereinheitlichung mit der
+tatsächlichen Empfehlungslogik (die bewusst strenger ist, siehe Lektion 13:
+die Karte prüft unabhängig von der eigentlichen Empfehlung, ob der
+Fensterzustand zum reinen Messwert passt). Neue Attribute `offene_gruende`
+(Liste, mehrere Öffnen-Gründe gleichzeitig möglich, siehe Lektion 61) und
+`schliessgrund_live` (einzelner Wert, inkl. `CONF_DISABLE_CLOSE_RECOMMENDATION`-
+Berücksichtigung) ersetzen in der Karte die gesamte, ca. 25-zeilige
+Live-Neuberechnung aus `schwelle_frostschutz`/`schwelle_hitzeschutz`/
+`schwelle_absolute_feuchtigkeit_oeffnen` + diversen `_needs_open`/
+`_needs_close`-Vergleichen - diese drei Attribute wurden dadurch komplett
+überflüssig und entfernt (nur diese drei; `schwelle_temperatur_oeffnen`/
+`_schliessen`, `schwelle_feuchtigkeit_oeffnen`/`_schliessen`,
+`schwelle_co2_oeffnen`/`_schliessen` bleiben bestehen, da sie zusätzlich
+für die angezeigte "Normalbereich"-Spalte der Werte-Tabelle gebraucht
+werden, nicht nur für die Live-Neuberechnung). Da `_live_reasons()`
+`CONF_DISABLE_CLOSE_RECOMMENDATION` bereits intern mitprüft (identisch
+zur bisherigen Karten-Variable `no_close_rec`), wurde
+auch das dafür ursprünglich nur für die Karte gedachte Attribut
+`schliessempfehlung_deaktiviert` als jetzt echt totes Attribut entfernt
+(Lektion 11-Prinzip: nicht nur unbenutzt liegen lassen). `letzter_grund`
+bleibt unverändert als Rückfallwert nur noch für die Winter-Höchstdauer
+(`duration`) bestehen - dieser eine verbleibende Fall (siehe Lektion 54)
+wurde bei diesem Umbau bewusst nicht mit angegangen. Lokal mit sechs
+Szenarien gegengetestet (Jinja-Sandbox, `StrictUndefined`, siehe Lektion 7):
+mehrere gleichzeitige Öffnen-Gründe, `outdoor_wetter` "endgültig gelöst"
+(Lektion 30), fensterloser Raum mit gelöstem Feuchtigkeits-Schließen-Grund
+(Lektion 39), Frostschutz-Mismatch, neutraler Totzone-Fall (Lektion 29),
+sowie ein Übergangsfall mit fehlenden neuen Attributen (simuliert eine
+Karte, die schon aktualisiert ist, während das Backend es noch nicht ist -
+kein Crash, fällt auf neutral zurück, identisch zum bereits etablierten
+Muster bei `frost_live`/`heat_live` in Lektion 58). Lektion: Eine
+exploratorische Überlegung ("sollten wir X grundsätzlich anders bauen?")
+kann sich als unnötig herausstellen, sobald man die tatsächliche Ursache
+des empfundenen Problems (hier: zu viele Karten-Attribute) von der zuerst
+vorgeschlagenen Lösung (JS-Custom-Card) trennt - der eigentliche Gewinn
+lag in einer Verschiebung VON "Rohwert exponieren, Konsument rechnet
+nach" ZU "Ergebnis exponieren", nicht im verwendeten Templating-System.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

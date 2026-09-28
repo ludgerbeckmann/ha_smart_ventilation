@@ -315,6 +315,86 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Sensor gelesen (siehe SmartVentilationShowerBinarySensor)."""
         return self._showering
 
+    def _live_reasons(
+        self,
+        indoor_temp: float | None,
+        humidity: float | None,
+        co2: float | None,
+        outdoor_temp: float | None,
+        outdoor_humidity: float | None,
+    ) -> tuple[list[str], str]:
+        """Für die Dashboard-Karte: welche der drei Öffnen-Gründe (Temperatur/
+        Luftfeuchtigkeit/CO2) aktuell live zutreffen (mehrere gleichzeitig
+        möglich, siehe CLAUDE.md Lektion 61) sowie ein einzelner, live
+        berechneter Schließen-Grund (hier kann strukturell nur einer
+        "gewinnen", siehe Lektion 30/61).
+
+        Bewusst KEINE Wiederverwendung der should_open/should_close-Booleans
+        aus _evaluate() - diese sind zusätzlich vom aktuellen Zustand
+        (self._attr_is_on), Außenluft-Gates und Hysterese abhängig, hier
+        geht es dagegen um einen reinen, zustandsunabhängigen "liegt der
+        Messwert gerade außerhalb des Normalbereichs"-Vergleich, den die
+        Karte für ihren Fenster-Mismatch-Abgleich unabhängig von der
+        eigentlichen Empfehlung braucht - identisch zur bisherigen,
+        gleichnamigen Logik direkt in der Jinja-Vorlage (siehe README)."""
+        temp_open = self._effective(CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN)
+        temp_close = self._effective(CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE)
+        open_reasons: list[str] = []
+        if indoor_temp is not None and indoor_temp > temp_open:
+            open_reasons.append("temp")
+
+        hum_open = hum_close = None
+        if self._config.get(CONF_HUMIDITY_ENTITY):
+            hum_open = self._effective(
+                CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
+            )
+            hum_close = self._effective(
+                CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
+            )
+            if humidity is not None and humidity > hum_open:
+                open_reasons.append("humidity")
+
+        co2_close = None
+        if self._config.get(CONF_CO2_ENTITY):
+            co2_open = self._effective(CONF_CO2_THRESHOLD_OPEN, DEFAULT_CO2_THRESHOLD_OPEN)
+            co2_close = self._effective(CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE)
+            if co2 is not None and co2 > co2_open:
+                open_reasons.append("co2")
+
+        frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
+        heat_temp = self._effective(CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP)
+        frost_live = outdoor_temp is not None and outdoor_temp <= frost_temp
+        heat_live = outdoor_temp is not None and outdoor_temp >= heat_temp
+        no_close_rec = self._config.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False)
+
+        close_reason = ""
+        if frost_live:
+            close_reason = "frost"
+        elif heat_live:
+            close_reason = "heat"
+        elif not no_close_rec:
+            if hum_close is not None and humidity is not None and humidity < hum_close:
+                close_reason = "humidity"
+            elif co2_close is not None and co2 is not None and co2 < co2_close:
+                close_reason = "co2"
+            elif indoor_temp is not None and indoor_temp < temp_close:
+                close_reason = "temp"
+            elif outdoor_temp is not None and outdoor_temp > temp_open:
+                close_reason = "outdoor_warmer"
+            elif (
+                hum_open is not None
+                and outdoor_humidity is not None
+                and outdoor_temp is not None
+                and indoor_temp is not None
+                and self._absolute_humidity(outdoor_temp, outdoor_humidity)
+                > self._absolute_humidity(indoor_temp, hum_open)
+            ):
+                close_reason = "outdoor_wetter"
+            elif self._last_reason == "duration":
+                close_reason = "duration"
+
+        return open_reasons, close_reason
+
     @property
     def extra_state_attributes(self) -> dict:
         indoor_temp = self._get_indoor_temperature()
@@ -324,6 +404,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         outdoor_temp = self._get_float_state(outdoor_temp_entity, decimals=1)
         outdoor_humidity = self._get_float_state(
             self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None), decimals=0
+        )
+        offene_gruende, schliessgrund_live = self._live_reasons(
+            indoor_temp, humidity, co2, outdoor_temp, outdoor_humidity
         )
 
         attrs = {
@@ -336,6 +419,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             "schwelle_temperatur_schliessen": self._effective(
                 CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE
             ),
+            # Für die Dashboard-Karte (siehe README) - ersetzt die bisherige,
+            # in der Jinja-Vorlage selbst nachgebaute Live-Neuberechnung
+            # dieser Gründe aus diversen Rohwert-/Schwellen-Attributen (siehe
+            # CLAUDE.md, "Custom-Card"-Überlegung): temp/humidity/co2 können
+            # gleichzeitig als Öffnen-Grund zutreffen (Lektion 61), auf der
+            # Schließen-Seite gewinnt strukturell immer nur einer.
+            "offene_gruende": offene_gruende,
+            "schliessgrund_live": schliessgrund_live,
         }
         integration_version = self.hass.data.get(DOMAIN, {}).get(VERSION_KEY)
         if integration_version:
@@ -348,51 +439,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # vorhanden) fügt bewusst nichts hinzu, um bestehende Dashboards
             # nicht zu verändern.
             attrs["hat_fenster"] = False
-        if self._config.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False):
-            # Nur gesetzt, wenn aktiv - Dashboard-Karten berechnen Auslöser/
-            # Empfehlung sonst komplett live aus Messwerten/Schwellen (siehe
-            # README), unabhängig vom tatsächlichen should_close in
-            # _evaluate(). Ohne dieses Attribut würde eine Karte für diesen
-            # Raum weiterhin eine reine Komfort-Schließempfehlung (Temperatur/
-            # Feuchtigkeit/CO2/Winter-Höchstdauer) anzeigen, obwohl der Raum
-            # genau das deaktiviert hat. Frost-/Hitzeschutz bleiben davon
-            # unberührt.
-            attrs["schliessempfehlung_deaktiviert"] = True
         if outdoor_temp is not None:
             attrs["aussentemperatur"] = outdoor_temp
-        if outdoor_temp_entity:
-            # Nur für Dashboard-Karten (Live-Auswertung "Frostschutz"/
-            # "Hitzeschutz" ohne Rückgriff auf das historische letzter_grund) -
-            # unabhängig vom aktuellen Sensorwert, damit die Schwelle auch bei
-            # kurzzeitig fehlendem Sensor sichtbar bleibt.
-            attrs["schwelle_frostschutz"] = self._effective(
-                CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP
-            )
-            attrs["schwelle_hitzeschutz"] = self._effective(
-                CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP
-            )
         if self._config.get(CONF_HUMIDITY_ENTITY):
             attrs["luftfeuchtigkeit"] = humidity
-            hum_open = self._effective(
+            attrs["schwelle_feuchtigkeit_oeffnen"] = self._effective(
                 CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
             )
-            attrs["schwelle_feuchtigkeit_oeffnen"] = hum_open
             attrs["schwelle_feuchtigkeit_schliessen"] = self._effective(
                 CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
             )
-            if indoor_temp is not None:
-                # Nur für Dashboard-Karten - erlaubt die Live-Auswertung von
-                # "Außen feuchter" (outdoor_humidity_confirmed_worse in
-                # _evaluate()): die Feuchtigkeits-Öffnen-Schwelle
-                # ("Normalbereich"-Obergrenze), bereits über die aktuelle
-                # Innentemperatur in absolute Luftfeuchtigkeit umgerechnet -
-                # die Karte kann die dafür nötige Magnus-Formel selbst nicht
-                # nachrechnen (anders als beim strukturell identischen
-                # Temperatur-Fall, wo Innen-/Außenwert direkt vergleichbar
-                # sind, siehe schwelle_temperatur_oeffnen).
-                attrs["schwelle_absolute_feuchtigkeit_oeffnen"] = round(
-                    self._absolute_humidity(indoor_temp, hum_open), 1
-                )
         if self._config.get(CONF_CO2_ENTITY):
             attrs["co2"] = co2
             attrs["schwelle_co2_oeffnen"] = self._effective(
