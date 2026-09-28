@@ -12,7 +12,7 @@
  * Eigene, von der Jinja-Karte unabhängige Versionierung (siehe unten).
  */
 
-const CARD_VERSION = 2;
+const CARD_VERSION = 3;
 
 const GRUND_TEXT = {
   temp: "Temperatur",
@@ -133,7 +133,33 @@ class SmartClimateCard extends HTMLElement {
       this._card.appendChild(this._style);
       this._card.appendChild(this._content);
       this.appendChild(this._card);
+      // Ein/Ausklapp-Zustand je Raum (siehe roomOpenState unten) - "toggle"
+      // bubbelt nicht (DOM-Spezifikation), wird aber im Capture-Durchlauf
+      // trotzdem an jedem Vorfahren sichtbar, deshalb Listener mit
+      // useCapture=true statt der üblichen Bubble-Delegation. Einmalig
+      // hier registriert (überlebt das komplette Ersetzen von innerHTML
+      // bei jedem Render, da _content selbst nicht neu erzeugt wird).
+      this._content.addEventListener(
+        "toggle",
+        (ev) => {
+          const details = ev.target;
+          const room = details && details.dataset && details.dataset.room;
+          if (!room || !this._roomOpenState) return;
+          const entry = this._roomOpenState.get(room);
+          this._roomOpenState.set(room, {
+            statusClass: entry ? entry.statusClass : undefined,
+            open: details.open,
+          });
+        },
+        true
+      );
     }
+    // Merkt sich je Raum den zuletzt gerenderten Status UND den aktuellen
+    // Auf-/Zu-Zustand - siehe Verwendung weiter unten. Überlebt über
+    // mehrere Renders hinweg (nicht Teil von innerHTML), aber nicht über
+    // ein Neuladen der Seite (rein clientseitiger Zustand, bewusst nicht
+    // in localStorage persistiert - siehe Zusammenfassung im Chat).
+    if (!this._roomOpenState) this._roomOpenState = new Map();
     // Optionales Titel-Feld (siehe smart-climate-card-editor) - nutzt
     // ha-cards eigenes header-Attribut, damit der Titel exakt wie bei
     // Home Assistants Standard-Karten aussieht. Leer/nicht gesetzt = kein
@@ -385,7 +411,7 @@ class SmartClimateCard extends HTMLElement {
       const n2Ziel = has(a, "app_ziele") ? esc(a.app_ziele.join(", ")) : "–";
       const n3Status = has(a, "persistent_aktiv") ? "🟢" : "⚫";
       const notifyTable =
-        `<details><summary><strong>Benachrichtigungen</strong></summary>` +
+        `<details class="notify-details"><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Status</th><th>Ziel(e)</th></tr></thead><tbody>` +
         `<tr><td>Sprachausgabe</td><td class="center">${n1Status}</td><td>${n1Ziel}</td></tr>` +
         `<tr><td>App-Benachrichtigung</td><td class="center">${n2Status}</td><td>${n2Ziel}</td></tr>` +
@@ -394,7 +420,23 @@ class SmartClimateCard extends HTMLElement {
 
       const statusClass =
         matchIcon === "🔴" ? "status-red" : matchIcon === "🟠" ? "status-orange" : "status-green";
-      const header = `<div class="room-header"><span class="room-icon">${matchIcon}</span><h3>${esc(a.raum)}</h3></div>`;
+
+      // Standard: 🟢 eingeklappt, 🟠/🔴 aufgeklappt - manuelles Auf-/
+      // Zuklappen bleibt erhalten, SOLANGE sich der Status dieses Raums
+      // nicht ändert (siehe Zusammenfassung im Chat); ändert er sich,
+      // wird die alte Einstellung verworfen und der Standard für den
+      // neuen Status greift wieder - verhindert, dass ein Raum, der
+      // gerade neu Aufmerksamkeit braucht, dauerhaft eingeklappt bleibt,
+      // nur weil er vorher mal grün und manuell eingeklappt wurde.
+      const defaultOpen = statusClass !== "status-green";
+      const storedRoomState = this._roomOpenState.get(a.raum);
+      const isOpen =
+        storedRoomState && storedRoomState.statusClass === statusClass
+          ? storedRoomState.open
+          : defaultOpen;
+      this._roomOpenState.set(a.raum, { statusClass, open: isOpen });
+
+      const header = `<summary class="room-header"><span class="room-icon">${matchIcon}</span><h3>${esc(a.raum)}</h3></summary>`;
       let body = empfTable;
       body += valuesTable;
       if (deviceTable) body += deviceTable;
@@ -403,7 +445,7 @@ class SmartClimateCard extends HTMLElement {
       const colorRank = matchIcon === "🔴" ? 0 : matchIcon === "🟠" ? 1 : 2;
       entries.push({
         sortKey: `${colorRank}${a.raum}`,
-        html: `<div class="room ${statusClass}">${header}${body}</div>`,
+        html: `<details class="room ${statusClass}" data-room="${esc(a.raum)}"${isOpen ? " open" : ""}>${header}${body}</details>`,
       });
     }
 
@@ -486,7 +528,7 @@ class SmartClimateCard extends HTMLElement {
       table.overview td { font-size: 1.1em; font-weight: 600; }
       table.values td.center { text-align: center; }
 
-      .room {
+      details.room {
         border-radius: 10px;
         border: 1px solid var(--divider-color, #e0e0e0);
         border-left: 4px solid var(--divider-color, #e0e0e0);
@@ -494,6 +536,7 @@ class SmartClimateCard extends HTMLElement {
         padding: 10px 14px 14px;
         margin-bottom: 14px;
       }
+      details.room:not([open]) { padding-bottom: 10px; }
       .room.status-green { border-left-color: var(--success-color, #4caf50); }
       .room.status-orange { border-left-color: var(--warning-color, #ff9800); }
       .room.status-red { border-left-color: var(--error-color, #f44336); }
@@ -503,7 +546,21 @@ class SmartClimateCard extends HTMLElement {
         align-items: center;
         gap: 8px;
         margin-bottom: 8px;
+        cursor: pointer;
+        list-style: none;
       }
+      details.room[open] > .room-header { margin-bottom: 8px; }
+      details.room:not([open]) > .room-header { margin-bottom: 0; }
+      .room-header::-webkit-details-marker { display: none; }
+      .room-header::marker { content: ""; }
+      .room-header::after {
+        content: "▾";
+        margin-left: auto;
+        opacity: 0.55;
+        font-size: 0.85em;
+        transition: transform 0.15s ease;
+      }
+      details.room:not([open]) > .room-header::after { transform: rotate(-90deg); }
       .room-icon { font-size: 1.1em; line-height: 1; }
       .room-header h3 {
         margin: 0;
@@ -515,14 +572,14 @@ class SmartClimateCard extends HTMLElement {
       .hl-orange { color: var(--warning-color, #ff9800); font-weight: bold; }
       .hl-red { color: var(--error-color, #f44336); font-weight: bold; }
 
-      details {
+      .notify-details {
         border-radius: 10px;
         border: 1px solid var(--divider-color, #e0e0e0);
         padding: 2px 10px;
         margin-top: 4px;
       }
-      details table.values { margin-top: 8px; margin-bottom: 4px; }
-      details summary {
+      .notify-details table.values { margin-top: 8px; margin-bottom: 4px; }
+      .notify-details summary {
         cursor: pointer;
         padding: 6px 0;
         font-size: 0.9em;
