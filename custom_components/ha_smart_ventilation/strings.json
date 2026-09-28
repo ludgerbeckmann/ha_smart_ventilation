@@ -20,6 +20,7 @@
             "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "tts_light_entity": "Licht für Sprachausgabe (optional)",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
               "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
               "tts_quiet_start": "Nachtruhe-Start",
@@ -35,6 +36,7 @@
               "persistent_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
+              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
@@ -185,6 +187,7 @@
             "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
+              "tts_light_entity": "Licht für Sprachausgabe (optional)",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
               "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
               "tts_quiet_start": "Nachtruhe-Start",
@@ -200,6 +203,7 @@
               "persistent_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
               "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
+              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",

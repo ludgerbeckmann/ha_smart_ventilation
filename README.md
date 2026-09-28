@@ -186,6 +186,14 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        auch keine globale Einstellung dafür. Die TTS-Entität selbst kommt
        ausschließlich aus "Smart Climate Optionen" und ist hier nicht
        auswählbar
+     - **Licht für Sprachausgabe** (optional, `light`-Entität): leer =
+       Sprachausgabe funktioniert unabhängig vom Licht (wie bisher). Ist
+       hier ein Licht hinterlegt, wird die Ansage nur unterdrückt, wenn
+       dieses Licht aktuell **bestätigt aus** ist - ein unbekannter/nicht
+       verfügbarer Zustand (z. B. kurz nach einem Neustart) unterdrückt die
+       Ansage **nicht** (bewusst permissiv, reiner Komfort-Fall ohne
+       Sicherheitsrelevanz). Betrifft ausschließlich die Sprachausgabe,
+       App-Push und persistente Benachrichtigung laufen unverändert weiter
      - **Wiedergabelautstärke für Sprachausgabe** (optional): überschreibt
        für diesen Raum die in "Smart Climate Optionen" hinterlegte
        Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext

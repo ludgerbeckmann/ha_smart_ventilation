@@ -126,6 +126,20 @@ CONF_CO2_THRESHOLD_CLOSE = "co2_threshold_close"
 CONF_NOTIFY_METHOD = "notify_method"
 CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
+# Optional, nur pro Raum: eine light-Entität, deren Zustand die
+# Sprachausgabe für diesen Raum zusätzlich gattet - Grundidee: eine Ansage
+# ergibt nur Sinn, wenn sich vermutlich jemand im Raum befindet, und ein
+# eingeschaltetes Licht ist dafür ein brauchbarer, bereits vorhandener
+# Anhaltspunkt. Leer = Sprachausgabe unverändert wie bisher, unabhängig vom
+# Licht. Bewusst PERMISSIV bei unbekanntem/nicht verfügbarem Lichtzustand
+# (z. B. kurz nach einem Neustart) - nur ein tatsächlich bestätigtes "aus"
+# unterdrückt die Ansage, ein unbekannter Zustand tut es nicht (anders als
+# z. B. bei Frostschutz, wo Unsicherheit sicherheitsrelevant konservativ
+# behandelt wird - hier geht es nur um Komfort, siehe binary_sensor.py:
+# _is_tts_light_off()). Betrifft ausschließlich den Sprachausgabe-Kanal,
+# App-Push und persistente Benachrichtigung bleiben unverändert (Lektion 16
+# - "silent" für einen Kanal bedeutet nicht automatisch "silent" für alle).
+CONF_TTS_LIGHT_ENTITY = "tts_light_entity"
 # Aktivierungs-Checkbox im Raum-Formular (Abschnitt "Benachrichtigungs-
 # methoden") - ersetzt die frühere Mehrfachauswahl als eigenständiges Feld.
 # Sprachausgabe hat keine eigene Checkbox mehr - sie ist aktiv, sobald
