@@ -9,10 +9,10 @@
  * (Lektion 4-7) und volle CSS-Kontrolle statt der <font>/<strong>-Notlösung
  * aus Lektion 5.
  *
- * Eigene, von der Jinja-Karte unabhängige Versionierung (siehe unten).
+ * Wird von der Integration selbst automatisch als Lovelace-Ressource
+ * bereitgestellt - dadurch immer auf demselben Stand wie die installierte
+ * Integration, keine eigene Versionsanzeige nötig (siehe README).
  */
-
-const CARD_VERSION = 3;
 
 const GRUND_TEXT = {
   temp: "Temperatur",
@@ -133,23 +133,30 @@ class SmartClimateCard extends HTMLElement {
       this._card.appendChild(this._style);
       this._card.appendChild(this._content);
       this.appendChild(this._card);
-      // Ein/Ausklapp-Zustand je Raum (siehe roomOpenState unten) - "toggle"
-      // bubbelt nicht (DOM-Spezifikation), wird aber im Capture-Durchlauf
-      // trotzdem an jedem Vorfahren sichtbar, deshalb Listener mit
-      // useCapture=true statt der üblichen Bubble-Delegation. Einmalig
-      // hier registriert (überlebt das komplette Ersetzen von innerHTML
-      // bei jedem Render, da _content selbst nicht neu erzeugt wird).
+      // Ein/Ausklapp-Zustand je Raum (siehe roomOpenState unten) UND je
+      // "Benachrichtigungen"-Unterbereich (siehe notifyOpenState unten) -
+      // "toggle" bubbelt nicht (DOM-Spezifikation), wird aber im
+      // Capture-Durchlauf trotzdem an jedem Vorfahren sichtbar, deshalb
+      // Listener mit useCapture=true statt der üblichen Bubble-Delegation.
+      // Einmalig hier registriert (überlebt das komplette Ersetzen von
+      // innerHTML bei jedem Render, da _content selbst nicht neu erzeugt
+      // wird). Unterscheidung der beiden <details>-Arten über die jeweils
+      // gesetzte data-Markierung.
       this._content.addEventListener(
         "toggle",
         (ev) => {
           const details = ev.target;
-          const room = details && details.dataset && details.dataset.room;
-          if (!room || !this._roomOpenState) return;
-          const entry = this._roomOpenState.get(room);
-          this._roomOpenState.set(room, {
-            statusClass: entry ? entry.statusClass : undefined,
-            open: details.open,
-          });
+          if (!details || !details.dataset) return;
+          if (details.dataset.room && this._roomOpenState) {
+            const room = details.dataset.room;
+            const entry = this._roomOpenState.get(room);
+            this._roomOpenState.set(room, {
+              statusClass: entry ? entry.statusClass : undefined,
+              open: details.open,
+            });
+          } else if (details.dataset.notifyRoom && this._notifyOpenState) {
+            this._notifyOpenState.set(details.dataset.notifyRoom, details.open);
+          }
         },
         true
       );
@@ -160,6 +167,11 @@ class SmartClimateCard extends HTMLElement {
     // ein Neuladen der Seite (rein clientseitiger Zustand, bewusst nicht
     // in localStorage persistiert - siehe Zusammenfassung im Chat).
     if (!this._roomOpenState) this._roomOpenState = new Map();
+    // Analog für den "Benachrichtigungen"-Unterbereich je Raum - anders als
+    // roomOpenState gibt es hier keinen statusabhängigen Standardwert
+    // (immer "zu" beim allerersten Rendern), daher genügt ein einfaches
+    // Raum -> bool statt eines Objekts.
+    if (!this._notifyOpenState) this._notifyOpenState = new Map();
     // Optionales Titel-Feld (siehe smart-climate-card-editor) - nutzt
     // ha-cards eigenes header-Attribut, damit der Titel exakt wie bei
     // Home Assistants Standard-Karten aussieht. Leer/nicht gesetzt = kein
@@ -410,8 +422,9 @@ class SmartClimateCard extends HTMLElement {
       const n2Status = has(a, "app_aktiv") ? "🟢" : "⚫";
       const n2Ziel = has(a, "app_ziele") ? esc(a.app_ziele.join(", ")) : "–";
       const n3Status = has(a, "persistent_aktiv") ? "🟢" : "⚫";
+      const notifyOpen = this._notifyOpenState.get(a.raum) || false;
       const notifyTable =
-        `<details class="notify-details"><summary><strong>Benachrichtigungen</strong></summary>` +
+        `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Status</th><th>Ziel(e)</th></tr></thead><tbody>` +
         `<tr><td>Sprachausgabe</td><td class="center">${n1Status}</td><td>${n1Ziel}</td></tr>` +
         `<tr><td>App-Benachrichtigung</td><td class="center">${n2Status}</td><td>${n2Ziel}</td></tr>` +
@@ -466,7 +479,6 @@ class SmartClimateCard extends HTMLElement {
     if (version !== null) {
       overviewCells.push({ label: "Integration", value: esc(version), cls: "" });
     }
-    overviewCells.push({ label: "Karte", value: String(CARD_VERSION), cls: "" });
 
     const overviewTable =
       `<table class="overview"><thead><tr>${overviewCells
@@ -488,6 +500,7 @@ class SmartClimateCard extends HTMLElement {
 
       table.overview, table.values {
         width: 100%;
+        table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0;
         border-radius: 10px;
@@ -500,7 +513,14 @@ class SmartClimateCard extends HTMLElement {
         padding: 7px 10px;
         text-align: left;
         font-size: 0.92em;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        border-right: 1px solid var(--divider-color, #e0e0e0);
+      }
+      table.overview th:last-child, table.overview td:last-child,
+      table.values th:last-child, table.values td:last-child {
+        border-right: none;
       }
       table.overview tbody tr:last-child td,
       table.values tbody tr:last-child td { border-bottom: none; }
@@ -511,9 +531,6 @@ class SmartClimateCard extends HTMLElement {
         text-transform: uppercase;
         letter-spacing: 0.02em;
         opacity: 0.8;
-      }
-      table.values tbody tr:nth-child(even) td {
-        background: var(--secondary-background-color, rgba(127, 127, 127, 0.04));
       }
       table.overview th, table.overview td { text-align: center; }
       table.overview th.ov-green, table.overview td.ov-green {

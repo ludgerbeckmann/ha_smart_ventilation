@@ -1503,11 +1503,11 @@ wie die Markdown-Karte. Optional lässt sich ein Kartentitel vergeben
 bringt die Karte einen eigenen, schlanken visuellen Editor mit) - leer
 gelassen erscheint kein Titel, wie bisher.
 
-Die JS-Karte hat eine eigene, von der `card_version` der Jinja-Vorlage
-unabhängige Versionierung (eigene Konstante `CARD_VERSION` am Anfang der
-`.js`-Datei) - beide Versionsnummern werden getrennt in der
-Übersichts-Tabelle angezeigt (Spalte "Karte"), je nachdem, welche der
-beiden Karten gerade verwendet wird.
+Anders als die Jinja-Vorlage (die der Nutzer manuell in eine Karte
+einfügt und die dadurch veralten kann, siehe `card_version` oben) hat die
+JS-Karte keine eigene Versionsanzeige - sie wird automatisch als
+Lovelace-Ressource von der Integration selbst bereitgestellt und ist
+dadurch immer auf demselben Stand wie die installierte Integration.
 
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
