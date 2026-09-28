@@ -1440,6 +1440,44 @@ Einfügeproblemen. Diese Version wurde sowohl gegen eine echte
 YAML-Faltung (`content: >`) als auch gegen Home Assistants sandboxed
 Jinja-Umgebung getestet.
 
+### Alternative: eigenständige JS-Custom-Card
+
+Seit Version 0.75.0 gibt es zusätzlich zur oben beschriebenen Markdown/
+Jinja-Karte eine eigenständige, in reinem JavaScript geschriebene
+Lovelace-Custom-Card (`smart-climate-card.js`) - **parallel** zur
+bisherigen Karte nutzbar, keine der beiden ersetzt die andere. Sie zeigt
+inhaltlich dieselben Informationen (Übersichts-Tabelle, pro Raum
+Empfehlungs-/Werte-/Geräte-Tabelle, Benachrichtigungen) und liest dafür
+exakt dieselben Sensor-Attribute wie die Markdown-Karte - unterliegt aber
+nicht den Einschränkungen von Home Assistants Jinja-Sandbox (siehe oben,
+u. a. keine mutierenden Listen-Methoden, kein gefiltertes `style`-Attribut)
+und lässt sich daher mit normalem CSS gestalten statt über die `<font>`/
+`<strong>`-Notlösung.
+
+**Einrichtung:** Die Karte wird von der Integration selbst automatisch als
+Lovelace-Ressource bereitgestellt - es ist **keine** eigene
+`resources:`-Eintragung im Dashboard nötig. Nach der Installation/einem
+Update einfach eine neue Karte anlegen und als Typ
+`Custom: Smart Climate Karte` wählen (oder im YAML-Modus
+`type: custom:smart-climate-card` eintragen) - ohne weitere Konfiguration
+findet die Karte automatisch alle Räume über das `raum`-Attribut, genau
+wie die Markdown-Karte.
+
+Die JS-Karte hat eine eigene, von der `card_version` der Jinja-Vorlage
+unabhängige Versionierung (eigene Konstante `CARD_VERSION` am Anfang der
+`.js`-Datei) - beide Versionsnummern werden getrennt in der
+Übersichts-Tabelle angezeigt (Spalte "Karte"), je nachdem, welche der
+beiden Karten gerade verwendet wird.
+
+**Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
+tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
+simulierte DOM-Umgebung (jsdom) mit Beispieldaten gegen die dokumentierten
+Szenarien (mehrere gleichzeitige Öffnen-Gründe, aufgelöster Schließen-Grund
+bei fensterlosen Räumen, Frostschutz-Mismatch, Totzone-Neutralfall,
+Laufzeit-Formatierung) verifizieren - echtes Home-Assistant-Frontend-
+Verhalten (Rendering-Details, Registrierung als Lovelace-Ressource) bleibt
+bis zu einer Rückmeldung aus der echten Oberfläche ungewiss.
+
 ## Fehlersuche / Diagnose
 
 Zwei Bordmittel helfen bei der Fehlersuche, ohne dass Werte oder

@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
@@ -26,6 +29,13 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[str] = ["binary_sensor"]
+
+# Eigenständige JS-Custom-Card (parallel zur README-Markdown/Jinja-Karte
+# nutzbar, siehe CLAUDE.md) - wird automatisch als Lovelace-Ressource
+# registriert, damit der Nutzer keine eigene resources:-URL im Dashboard
+# eintragen muss.
+CARD_JS_FILENAME = "smart-climate-card.js"
+CARD_URL_PATH = f"/{DOMAIN}/{CARD_JS_FILENAME}"
 
 # Diese Integration lässt sich ausschließlich über den Config-Flow (UI)
 # einrichten, nicht über configuration.yaml - hassfest verlangt trotzdem
@@ -121,6 +131,38 @@ def _migrate_global_entry_title(hass: HomeAssistant, entry: ConfigEntry) -> None
     )
 
 
+async def _register_frontend_card(hass: HomeAssistant, integration) -> None:
+    """Registriert die eigenständige JS-Custom-Card (siehe
+    custom_components/ha_smart_ventilation/www/smart-climate-card.js)
+    automatisch als statischen Pfad + Lovelace-Ressource.
+
+    Bewusst mit einem breiten try/except abgesichert: Ein Fehler hierbei
+    (z. B. eine zukünftig geänderte Home-Assistant-Frontend-API) darf
+    niemals das eigentliche Setup der Integration (Sensoren/Steuerung)
+    verhindern - die Karte ist ein rein optionales Zusatzangebot, parallel
+    zur bereits bestehenden Markdown/Jinja-Karte im README.
+
+    Der Versions-Query-Parameter (?v=...) sorgt dafür, dass der Browser
+    nach einem Integrations-Update nicht die alte JS-Datei aus dem Cache
+    verwendet - analog zum bereits bestehenden Muster für die Karten-
+    Versionsanzeige (VERSION_KEY).
+    """
+    try:
+        js_path = Path(integration.file_path) / "www" / CARD_JS_FILENAME
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(CARD_URL_PATH, str(js_path), cache_headers=False)]
+        )
+        version = str(integration.version) if integration.version is not None else "0"
+        add_extra_js_url(hass, f"{CARD_URL_PATH}?v={version}")
+    except Exception:  # noqa: BLE001 - siehe Docstring: darf das Setup nie verhindern
+        _LOGGER.warning(
+            "Konnte die eigenständige Dashboard-Karte (smart-climate-card.js) "
+            "nicht als Lovelace-Ressource registrieren - die bisherige "
+            "Markdown/Jinja-Karte (siehe README) ist davon unberührt.",
+            exc_info=True,
+        )
+
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Läuft einmal beim (ersten) Setup der Integration in dieser
     Home-Assistant-Sitzung. Stellt sicher, dass der Eintrag "Smart
@@ -133,6 +175,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     integration = await async_get_integration(hass, DOMAIN)
     if integration.version is not None:
         hass.data[DOMAIN][VERSION_KEY] = str(integration.version)
+    await _register_frontend_card(hass, integration)
     _create_global_settings_entry(hass)
     return True
 
