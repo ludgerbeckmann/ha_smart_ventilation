@@ -298,6 +298,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heating_on_since = None
         self._shower_on_since = None
 
+        # Dauer des letzten abgeschlossenen Laufs in Minuten (Dashboard-
+        # Karte, Spalte "Laufzeit" - zeigt diese, solange das Gerät gerade
+        # aus ist, statt nur "–") - beim jeweiligen Aus-Übergang neben
+        # `_on_since` gepflegt, siehe extra_state_attributes()/_evaluate().
+        self._dehumidifier_last_runtime_minutes = None
+        self._ac_last_runtime_minutes = None
+        self._heating_last_runtime_minutes = None
+        self._shower_last_runtime_minutes = None
+
     def attach_shower_sensor(
         self, shower_sensor: "SmartVentilationShowerBinarySensor"
     ) -> None:
@@ -461,6 +470,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["duschen_erkannt"] = self._showering
             if self._shower_on_since is not None:
                 attrs["dusche_seit"] = self._shower_on_since.isoformat()
+            if self._shower_last_runtime_minutes is not None:
+                attrs["dusche_letzte_laufzeit"] = self._shower_last_runtime_minutes
         if outdoor_humidity is not None:
             attrs["aussen_luftfeuchtigkeit"] = outdoor_humidity
         if humidity is not None and indoor_temp is not None:
@@ -513,8 +524,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     self._dehumidifier_on_since = dt_util.utcnow()
                 attrs["luftentfeuchter_seit"] = self._dehumidifier_on_since.isoformat()
             else:
+                if self._dehumidifier_on_since is not None:
+                    self._dehumidifier_last_runtime_minutes = int(
+                        (dt_util.utcnow() - self._dehumidifier_on_since).total_seconds()
+                        / 60
+                    )
                 self._dehumidifier_on_since = None
             attrs["luftentfeuchter_an"] = dehumidifier_on
+            if self._dehumidifier_last_runtime_minutes is not None:
+                attrs["luftentfeuchter_letzte_laufzeit"] = (
+                    self._dehumidifier_last_runtime_minutes
+                )
             attrs["luftentfeuchter_grund"] = self._dehumidifier_reason
         tank_full_entity = self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY)
         if tank_full_entity:
@@ -535,8 +555,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     self._ac_on_since = dt_util.utcnow()
                 attrs["klimaanlage_seit"] = self._ac_on_since.isoformat()
             else:
+                if self._ac_on_since is not None:
+                    self._ac_last_runtime_minutes = int(
+                        (dt_util.utcnow() - self._ac_on_since).total_seconds() / 60
+                    )
                 self._ac_on_since = None
             attrs["klimaanlage_an"] = ac_on
+            if self._ac_last_runtime_minutes is not None:
+                attrs["klimaanlage_letzte_laufzeit"] = self._ac_last_runtime_minutes
             attrs["klimaanlage_grund"] = self._ac_reason
         heating_entity = self._get_heating_entity_id()
         if heating_entity and not self._device_entity_missing(heating_entity):
@@ -579,8 +605,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     self._heating_on_since = dt_util.utcnow()
                 attrs["heizung_seit"] = self._heating_on_since.isoformat()
             else:
+                if self._heating_on_since is not None:
+                    self._heating_last_runtime_minutes = int(
+                        (dt_util.utcnow() - self._heating_on_since).total_seconds() / 60
+                    )
                 self._heating_on_since = None
             attrs["heizung_an"] = heating_mode_active == "comfort"
+            if self._heating_last_runtime_minutes is not None:
+                attrs["heizung_letzte_laufzeit"] = self._heating_last_runtime_minutes
             attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
@@ -656,6 +688,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._heating_on_since = dt_util.parse_datetime(attrs["heizung_seit"])
             if "dusche_seit" in attrs:
                 self._shower_on_since = dt_util.parse_datetime(attrs["dusche_seit"])
+            # Letzte abgeschlossene Laufzeit wiederherstellen (sonst würde
+            # die Dashboard-Karte nach jedem Neustart, bevor der nächste
+            # Lauf beendet ist, wieder auf "–" zurückfallen).
+            if "luftentfeuchter_letzte_laufzeit" in attrs:
+                self._dehumidifier_last_runtime_minutes = attrs[
+                    "luftentfeuchter_letzte_laufzeit"
+                ]
+            if "klimaanlage_letzte_laufzeit" in attrs:
+                self._ac_last_runtime_minutes = attrs["klimaanlage_letzte_laufzeit"]
+            if "heizung_letzte_laufzeit" in attrs:
+                self._heating_last_runtime_minutes = attrs["heizung_letzte_laufzeit"]
+            if "dusche_letzte_laufzeit" in attrs:
+                self._shower_last_runtime_minutes = attrs["dusche_letzte_laufzeit"]
 
         tracked = [self._config[CONF_TEMP_SOURCE_ENTITY]]
         for key in (
@@ -1539,6 +1584,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if self._shower_on_since is None:
                 self._shower_on_since = dt_util.utcnow()
         else:
+            if self._shower_on_since is not None:
+                self._shower_last_runtime_minutes = int(
+                    (dt_util.utcnow() - self._shower_on_since).total_seconds() / 60
+                )
             self._shower_on_since = None
         if self._shower_sensor is not None and self._shower_sensor.hass is not None:
             # hass kann bei der allerersten Bewertung noch None sein, falls

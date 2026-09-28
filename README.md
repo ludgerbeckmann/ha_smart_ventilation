@@ -936,11 +936,13 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert und seine Entität vorhanden ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
+| `luftentfeuchter_letzte_laufzeit`, `klimaanlage_letzte_laufzeit`, `dusche_letzte_laufzeit` | Dauer (Minuten) des letzten ABGESCHLOSSENEN Laufs - nur vorhanden, sobald mindestens einmal ein Lauf beendet wurde, bleibt danach bis zum nächsten abgeschlossenen Lauf unverändert stehen. Die Dashboard-Karte zeigt in der Spalte "Laufzeit" diesen Wert, solange das Gerät gerade aus ist (bzw. die Duscherkennung nicht anschlägt) - andernfalls weiterhin die laufende Zeit aus `..._seit` |
 | `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true` genau bei Comfort - erkennt daher auch, wenn der Sollwert/Preset manuell oder von einer anderen Automation geändert wurde |
 | `heizung_modus` | wie `heizung_an`, aber alle vier Stufen: `"comfort"`/`"standby"`/`"night"`/`"building_protection"` (bzw. `null`, falls sich der aktuelle Zustand nicht ablesen/zuordnen lässt). Bei aktiver Preset-Steuerung direkt aus dem live gemeldeten `preset_mode` zurückgemappt, sonst aus der Näherung zum aktuellen Zahlen-Sollwert (kennt dabei kein `"building_protection"`, da es dafür keinen eigenen Sollwert gibt) |
 | `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen, unabhängig von Preset- oder Sollwert-Steuerung), `null` falls (noch) nicht ablesbar |
 | `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
+| `heizung_letzte_laufzeit` | wie `luftentfeuchter_letzte_laufzeit`/`klimaanlage_letzte_laufzeit`, nur für die Heizung |
 | `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist. Ohne Wirkung, solange der Heizungs-Zeitplan aktiviert ist |
 | `sommermodus_an` | nur vorhanden, falls in "- Smart Climate Optionen -" ein Sommer-/Winterbetrieb-Schalter hinterlegt ist UND diese Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen. Identisch für jeden Raum, da es sich um eine hausweite, nicht raumspezifische Einstellung handelt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
@@ -960,7 +962,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 33** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 34** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -973,7 +975,7 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 33 %}
+  {% set card_version = 34 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
   {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set today_str = now().strftime('%Y-%m-%d') %}
@@ -1077,6 +1079,9 @@ content: >
   {% if a.luftentfeuchter_an and a.luftentfeuchter_seit is defined %}
   {% set dehum_minutes = ((now() - as_datetime(a.luftentfeuchter_seit)).total_seconds() / 60) | int %}
   {% set dehum_laufzeit = (dehum_minutes ~ ' Min') if dehum_minutes < 60 else ((dehum_minutes // 60) ~ 'h ' ~ (dehum_minutes % 60) ~ ' Min') %}
+  {% elif a.luftentfeuchter_letzte_laufzeit is defined %}
+  {% set dehum_minutes = a.luftentfeuchter_letzte_laufzeit %}
+  {% set dehum_laufzeit = (dehum_minutes ~ ' Min') if dehum_minutes < 60 else ((dehum_minutes // 60) ~ 'h ' ~ (dehum_minutes % 60) ~ ' Min') %}
   {% endif %}
   {% set dehum_grund = a.luftentfeuchter_grund if a.luftentfeuchter_grund is defined else '–' %}
   {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_laufzeit ~ ' | ' ~ dehum_grund ~ ' |' %}
@@ -1086,6 +1091,9 @@ content: >
   {% set ac_laufzeit = '–' %}
   {% if a.klimaanlage_an and a.klimaanlage_seit is defined %}
   {% set ac_minutes = ((now() - as_datetime(a.klimaanlage_seit)).total_seconds() / 60) | int %}
+  {% set ac_laufzeit = (ac_minutes ~ ' Min') if ac_minutes < 60 else ((ac_minutes // 60) ~ 'h ' ~ (ac_minutes % 60) ~ ' Min') %}
+  {% elif a.klimaanlage_letzte_laufzeit is defined %}
+  {% set ac_minutes = a.klimaanlage_letzte_laufzeit %}
   {% set ac_laufzeit = (ac_minutes ~ ' Min') if ac_minutes < 60 else ((ac_minutes // 60) ~ 'h ' ~ (ac_minutes % 60) ~ ' Min') %}
   {% endif %}
   {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
@@ -1099,6 +1107,9 @@ content: >
   {% if a.heizung_an and a.heizung_seit is defined %}
   {% set heiz_minutes = ((now() - as_datetime(a.heizung_seit)).total_seconds() / 60) | int %}
   {% set heiz_laufzeit = (heiz_minutes ~ ' Min') if heiz_minutes < 60 else ((heiz_minutes // 60) ~ 'h ' ~ (heiz_minutes % 60) ~ ' Min') %}
+  {% elif a.heizung_letzte_laufzeit is defined %}
+  {% set heiz_minutes = a.heizung_letzte_laufzeit %}
+  {% set heiz_laufzeit = (heiz_minutes ~ ' Min') if heiz_minutes < 60 else ((heiz_minutes // 60) ~ 'h ' ~ (heiz_minutes % 60) ~ ' Min') %}
   {% endif %}
   {% set heiz_grund = a.heizung_grund if a.heizung_grund is defined else '–' %}
   {% set heiz_grund = (heiz_grund ~ ' (' ~ (a.heizung_zieltemperatur | round(1) | string) ~ ' °C)') if (a.heizung_zieltemperatur is defined and a.heizung_zieltemperatur is not none) else heiz_grund %}
@@ -1109,6 +1120,9 @@ content: >
   {% set dusche_laufzeit = '–' %}
   {% if a.duschen_erkannt and a.dusche_seit is defined %}
   {% set dusche_minutes = ((now() - as_datetime(a.dusche_seit)).total_seconds() / 60) | int %}
+  {% set dusche_laufzeit = (dusche_minutes ~ ' Min') if dusche_minutes < 60 else ((dusche_minutes // 60) ~ 'h ' ~ (dusche_minutes % 60) ~ ' Min') %}
+  {% elif a.dusche_letzte_laufzeit is defined %}
+  {% set dusche_minutes = a.dusche_letzte_laufzeit %}
   {% set dusche_laufzeit = (dusche_minutes ~ ' Min') if dusche_minutes < 60 else ((dusche_minutes // 60) ~ 'h ' ~ (dusche_minutes % 60) ~ ' Min') %}
   {% endif %}
   {% set dusche_grund = 'Luftfeuchtigkeit steigt schnell' if a.duschen_erkannt else '–' %}

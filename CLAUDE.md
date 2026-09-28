@@ -3294,6 +3294,49 @@ vorgeschlagenen Lösung (JS-Custom-Card) trennt - der eigentliche Gewinn
 lag in einer Verschiebung VON "Rohwert exponieren, Konsument rechnet
 nach" ZU "Ergebnis exponieren", nicht im verwendeten Templating-System.
 
+**64. Die Laufzeit-Spalte der Geräte-Tabelle sprang beim Ausschalten
+sofort auf "–" zurück - die Info "wie lange lief es zuletzt" ging
+verloren, statt nur die laufende Zeit zu ersetzen (0.74.0).** Nutzerwunsch:
+"Im Dashboard in der Gerätetabelle soll die Spalte Laufzeit die aktuelle
+Laufzeit bzw. die letzte Laufzeit darstellen." Bisher wurde `_on_since`
+(Lektion 31/32) beim Aus-Übergang einfach auf `None` zurückgesetzt, ohne
+die bis dahin gelaufene Dauer irgendwo festzuhalten - die Karte zeigte
+dadurch "–" für jedes gerade ausgeschaltete Gerät, unabhängig davon, wie
+kurz zuvor es noch gelaufen war.
+
+Fix: Beim jeweiligen Aus-Übergang (genau an der Stelle, an der `_on_since`
+bisher nur auf `None` gesetzt wurde) wird die abgelaufene Dauer zusätzlich
+einmalig in Minuten in einen neuen Tracker geschrieben
+(`_dehumidifier_last_runtime_minutes`/`_ac_last_runtime_minutes`/
+`_heating_last_runtime_minutes`/`_shower_last_runtime_minutes`) und als
+neues Attribut exponiert (`luftentfeuchter_letzte_laufzeit` usw.) - bleibt
+bis zum nächsten abgeschlossenen Lauf unverändert stehen, übersteht per
+`RestoreEntity` auch einen Neustart (analog zur bereits bestehenden
+`_seit`-Wiederherstellung). Bewusst symmetrisch auf alle vier Geräte-Zeilen
+angewendet (Luftentfeuchter/Klimaanlage/Heizung/Dusche), obwohl nur
+allgemein von "der Gerätetabelle" gesprochen wurde - alle vier teilen sich
+exakt dasselbe Laufzeit-Spalten-Muster (vgl. Lektion 33/56: eine Asymmetrie
+zwischen strukturell identischen Fällen wäre eine willkürliche Lücke).
+
+Die Dashboard-Karte prüft in der Laufzeit-Berechnung jeder der vier Zeilen
+jetzt zusätzlich `elif a.<gerät>_letzte_laufzeit is defined` - liegt kein
+laufender Wert vor (Gerät aus), aber ein abgeschlossener, wird dieser mit
+derselben Stunden/Minuten-Formatierung angezeigt wie die laufende Zeit;
+liegt gar keiner vor (noch nie gelaufen), bleibt es bei "–". Bewusst
+KEINE zusätzliche Kennzeichnung ("läuft" vs. "letzter Lauf") ergänzt - das
+An/Aus-Icon in derselben Zeile (🔴/⚫ bzw. 🟢/⚫) macht diese Unterscheidung
+bereits eindeutig. Lokal mit einem zusätzlichen Szenario gegengetestet
+(Jinja-Sandbox, `StrictUndefined`): live laufendes Gerät (Minuten seit
+`_seit`), ausgeschaltetes Gerät mit über 60 Minuten letzter Laufzeit
+(Stunden/Minuten-Format), nie gelaufenes Gerät ("–"). Lektion: Ein beim
+Zurücksetzen eines Zustands-Trackers (hier: `_on_since` auf `None`)
+verworfener Zwischenwert (die gerade abgelaufene Dauer) ist oft genau der
+Wert, den eine Anzeige als "letzter bekannter Stand" noch gebrauchen kann -
+bevor ein Tracker beim Übergang in den "inaktiv"-Zustand einfach gelöscht
+wird, lohnt sich die Frage, ob der davor gültige Wert nicht in einen
+zweiten, persistenten Tracker überführt werden sollte, statt ihn ersatzlos
+zu verwerfen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
