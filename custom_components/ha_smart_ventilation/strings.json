@@ -349,12 +349,6 @@
             "data": {
               "outdoor_temp_entity": "Außen-Temperatur",
               "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
-              "tts_entity": "TTS-Entität",
-              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
-              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
-              "tts_quiet_start": "Nachtruhe-Start",
-              "tts_quiet_end": "Nachtruhe-Ende",
-              "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
               "power_entity": "Leistungssensor (z. B. Einspeiseleistung)",
               "summer_mode_forecast_entity": "Sommermodus-Vorhersagequelle (optional)",
               "summer_mode_switch_entity": "Sommer-/Winterbetrieb-Schalter (optional)"
@@ -364,11 +358,6 @@
               "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen",
               "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
               "summer_mode_switch_entity": "Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Abschnitt \"Parameter\") wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
-              "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
-              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
-              "tts_quiet_hours_enabled": "Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen.",
-              "tts_quiet_start": "Nur wirksam, wenn die Nachtruhe oben aktiviert ist.",
-              "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
               "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt"
             }
           },
@@ -453,6 +442,12 @@
             "name": "Benachrichtigungen",
             "description": "Das Erinnerungsintervall sowie die Texte, die bei den jeweiligen Empfehlungen verschickt werden. Bei den Texten stehen drei Platzhalter zur Verfügung: ｛raum｝ (Raumname), ｛wert｝ (aktueller Mess- bzw. Ist-Wert inkl. Einheit) und ｛schwelle｝ (zugehöriger Schwellenwert inkl. Einheit).",
             "data": {
+              "tts_entity": "TTS-Entität",
+              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
+              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
+              "tts_quiet_start": "Nachtruhe-Start",
+              "tts_quiet_end": "Nachtruhe-Ende",
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung (Weboberfläche)",
@@ -472,6 +467,11 @@
               "msg_tank_full": "Wassertank voll"
             },
             "data_description": {
+              "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
+              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
+              "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
+              "tts_quiet_hours_enabled": "Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen.",
+              "tts_quiet_start": "Nur wirksam, wenn die Nachtruhe oben aktiviert ist.",
               "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
               "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat",
               "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Leer wird beim Speichern ebenfalls zu 0.",

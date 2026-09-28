@@ -3337,6 +3337,66 @@ wird, lohnt sich die Frage, ob der davor gültige Wert nicht in einen
 zweiten, persistenten Tracker überführt werden sollte, statt ihn ersatzlos
 zu verwerfen.
 
+**65. Die beiden Außenluft-Umkehr-Schließgründe (Lektion 61s Fix 1) konnten
+direkt nach dem Öffnen in eine Dauerschleife geraten - Öffnen-Gate und
+Schließen-Auslöser verglichen dieselbe physikalische Frage gegen zwei
+unterschiedliche Referenzwerte (0.74.1).** Nutzer-Meldung (Badezimmer):
+Sprachansage "bitte öffnen" (Luftfeuchtigkeit), direkt gefolgt von "bitte
+schließen" (Außenluft feuchter) - und auf Nachfrage bestätigt, dass sich
+das ohne aktivierte Erinnerung ständig wiederholt, in beide Richtungen
+(mal "schließen" wiederholt bei offenem Fenster, mal "öffnen" wiederholt
+bei geschlossenem). Ursache: `outdoor_drier_enough` (Öffnen-Gate für
+`open_by_humidity`, siehe Lektion 24) vergleicht die Außenluft gegen den
+aktuellen LIVE-Innenwert; `outdoor_humidity_confirmed_worse` (Schließen-
+Auslöser "Außen feuchter", seit Lektion 58 bewusst auf die Öffnen-Schwelle
+verankert, um einen anderen, damals gemeldeten Bug zu beheben) vergleicht
+dieselbe Außenluft dagegen gegen die FESTE Öffnen-Schwelle. Direkt beim
+Öffnen (Live-Innenwert liegt nur knapp über der Schwelle) liegen beide
+Referenzwerte dicht beieinander - fällt die absolute Außenluftfeuchtigkeit
+in die schmale Lücke dazwischen (drockener als der Live-Wert, aber
+feuchter als die Schwelle), öffnet die Integration zunächst korrekt,
+schließt bei der nächsten Neubewertung aber sofort wieder - und öffnet
+danach ebenso sofort wieder, solange die Innenfeuchtigkeit weiterhin über
+der Öffnen-Schwelle liegt und die Außenluft in dieser Lücke verharrt: eine
+Dauerschleife aus ECHTEN Zustandswechseln, jeder davon löst regulär eine
+neue Sprachansage aus - nicht die (hier deaktivierte)
+`CONF_REMINDER_INTERVAL`-Erinnerung, die mit dem beobachteten Verhalten
+nichts zu tun hatte. Strukturell identisch bei Temperatur
+(`outdoor_cooler_enough` vs. `outdoor_warmer_again`), auch wenn hier nur
+für Luftfeuchtigkeit konkret gemeldet.
+
+Fix: Beide Schließen-Auslöser bekommen eine zusätzliche Bedingung - sie
+dürfen nur greifen, wenn die Außenluft nicht AUCH schon nach dem
+Live-Maßstab des jeweiligen Öffnen-Gates unvorteilhaft ist:
+`close_by_summer_outdoor` zusätzlich `and not outdoor_cooler_enough`,
+`close_by_humidity_outdoor_reversal` zusätzlich `and not
+outdoor_drier_enough`. Verschärft beide Bedingungen nur (reine
+UND-Verknüpfung mit einer weiteren Bedingung), kann also keine neuen
+Fehlalarme einführen - verhindert aber zuverlässig, dass der Schließen-
+Auslöser unmittelbar nach einem Öffnen feuert, dessen eigenes Gate die
+Außenluft gerade erst (wenn auch nur knapp) als vorteilhaft bewertet hat.
+Bewusst NICHT die Karte angepasst - `_live_reasons()` (Lektion 63) bildet
+für beide Außenluft-Auslöser ohnehin schon bewusst eine vereinfachte,
+nicht 1:1 backend-identische Vergleichslogik nach (ohne die in Lektion 61
+eingeführten Cross-Exclusions `not open_by_temp`/`not open_by_co2` -
+dieselbe Asymmetrie besteht dort also strukturell bereits und wurde bei
+Lektion 61 ebenfalls bewusst nicht auf die Karte übertragen).
+
+Lektion: Zwei Bedingungen, die dieselbe physikalische Frage beantworten
+sollen ("hilft die Außenluft gerade?"), aber an unterschiedlichen Stellen
+im Code mit unterschiedlichen Referenzwerten formuliert sind (hier: Live-
+Wert vs. feste Schwelle - beide für sich genommen aus guten, historisch
+gewachsenen Gründen, siehe Lektion 24 bzw. 58), können in der Übergangs-
+zone zwischen beiden Referenzwerten widersprüchliche Ergebnisse liefern -
+und zwar nicht nur einmalig, sondern als sich selbst erhaltende
+Oszillation, sobald jede Seite der Schleife die jeweils andere Seite
+erneut auslöst. Bei der Einführung eines neuen, bewusst anders
+verankerten Vergleichs (wie in Lektion 58) immer auch prüfen, ob ein
+bereits bestehender, verwandter Vergleich (hier: das entsprechende
+Öffnen-Gate) noch den alten Referenzwert nutzt - eine Inkonsistenz
+zwischen beiden fällt oft erst auf, wenn die Werte tatsächlich in die
+schmale Übergangszone fallen, nicht beim ursprünglichen Fix selbst.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
