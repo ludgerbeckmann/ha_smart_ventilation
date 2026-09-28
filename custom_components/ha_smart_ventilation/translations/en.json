@@ -20,6 +20,7 @@
             "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "tts_light_entity": "Light for voice announcements (optional)",
               "tts_volume": "Playback volume for voice announcements",
               "tts_quiet_hours_enabled": "Voice announcement quiet hours",
               "tts_quiet_start": "Quiet hours start",
@@ -35,6 +36,7 @@
               "persistent_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
               "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
+              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
@@ -185,6 +187,7 @@
             "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
+              "tts_light_entity": "Light for voice announcements (optional)",
               "tts_volume": "Playback volume for voice announcements",
               "tts_quiet_hours_enabled": "Voice announcement quiet hours",
               "tts_quiet_start": "Quiet hours start",
@@ -200,6 +203,7 @@
               "persistent_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
               "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
               "sonos_entity": "Empty = no voice announcement for this room",
+              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",

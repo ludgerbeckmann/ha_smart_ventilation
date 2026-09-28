@@ -92,6 +92,7 @@ from .const import (
     CONF_TEMP_THRESHOLD_CLOSE,
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TTS_ENTITY,
+    CONF_TTS_LIGHT_ENTITY,
     CONF_TTS_PLAYBACK_MODE,
     CONF_TTS_QUIET_END,
     CONF_TTS_QUIET_HOURS_ENABLED,
@@ -196,6 +197,7 @@ SECTION_ADVANCED = "advanced"
 # behandelt (siehe async_step_room).
 ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_SONOS_ENTITY,
+    CONF_TTS_LIGHT_ENTITY,
     CONF_HUMIDITY_ENTITY,
     CONF_CO2_ENTITY,
     CONF_WINDOW_ENTITY,
@@ -1105,6 +1107,9 @@ def _build_room_schema(
     sonos_include = _area_include_entities(
         area_entities, "media_player", defaults.get(CONF_SONOS_ENTITY)
     )
+    light_include = _area_include_entities(
+        area_entities, "light", defaults.get(CONF_TTS_LIGHT_ENTITY)
+    )
 
     # "Benachrichtigungen & Anwesenheit" - bewusst NACH "Sensoren & Geräte"
     # platziert (siehe Docstring oben): die Anwesenheits-Entitäten für die
@@ -1124,6 +1129,14 @@ def _build_room_schema(
                         domain="media_player",
                         multiple=True,
                         **({"include_entities": sonos_include} if sonos_include else {}),
+                    )
+                ),
+                _entity_marker(
+                    CONF_TTS_LIGHT_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="light",
+                        **({"include_entities": light_include} if light_include else {}),
                     )
                 ),
                 tts_volume_marker: tts_volume_sel,

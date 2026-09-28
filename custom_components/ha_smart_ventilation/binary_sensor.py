@@ -101,6 +101,7 @@ from .const import (
     CONF_TEMP_THRESHOLD_CLOSE,
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TTS_ENTITY,
+    CONF_TTS_LIGHT_ENTITY,
     CONF_TTS_PLAYBACK_MODE,
     CONF_TTS_QUIET_END,
     CONF_TTS_QUIET_HOURS_ENABLED,
@@ -954,6 +955,26 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         start = self._effective(CONF_TTS_QUIET_START, DEFAULT_TTS_QUIET_START)
         end = self._effective(CONF_TTS_QUIET_END, DEFAULT_TTS_QUIET_END)
         return self._time_in_window(dt_util.now().time(), start, end)
+
+    def _is_tts_light_off(self) -> bool:
+        """True, wenn für diesen Raum eine Licht-Entität
+        (CONF_TTS_LIGHT_ENTITY) konfiguriert ist UND diese aktuell
+        bestätigt "aus" meldet -
+        unterdrückt in diesem Fall die Sprachausgabe (siehe _notify()/
+        _notify_tank_full()). Betrifft ausschließlich die Sprachausgabe,
+        analog zu _is_tts_quiet_hours_active() (Lektion 16).
+
+        Bewusst PERMISSIV bei unbekanntem/nicht verfügbarem Lichtzustand
+        (liefert dann False, die Ansage bleibt aktiv) - anders als z. B.
+        beim Frostschutz ist Unsicherheit hier nicht sicherheitsrelevant,
+        sondern reiner Komfort, eine konservative Behandlung wäre also
+        unnötig. Ohne konfigurierte Entität immer False (unverändertes
+        Verhalten wie bisher)."""
+        light_entity = self._config.get(CONF_TTS_LIGHT_ENTITY)
+        if not light_entity:
+            return False
+        state = self.hass.states.get(light_entity)
+        return state is not None and state.state == "off"
 
     def _get_scheduled_heating_mode(self) -> str:
         """Bestimmt den vom Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_ENABLED)
@@ -2757,6 +2778,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                         "Sprachausgabe in Raum %s wegen Nachtruhe unterdrückt",
                         room,
                     )
+                elif self._is_tts_light_off():
+                    _LOGGER.debug(
+                        "Sprachausgabe in Raum %s unterdrückt, da das "
+                        "konfigurierte Licht aus ist",
+                        room,
+                    )
                 else:
                     await self._play_tts(sonos_entities, tts_entity, message)
             else:
@@ -2992,7 +3019,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         if sonos_entities:
             tts_entity = self._effective(CONF_TTS_ENTITY, None)
-            if tts_entity and not self._is_tts_quiet_hours_active():
+            if (
+                tts_entity
+                and not self._is_tts_quiet_hours_active()
+                and not self._is_tts_light_off()
+            ):
                 await self._play_tts(sonos_entities, tts_entity, message)
 
         if mobile_enabled:
