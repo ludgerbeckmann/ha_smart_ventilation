@@ -201,6 +201,23 @@ CONF_DEHUMIDIFIER_TANK_FULL_ENTITY = "dehumidifier_tank_full_entity"
 CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED = "dehumidifier_tank_notification_enabled"
 DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED = False
 CONF_AC_ENTITY = "ac_entity"
+# Echte Benachrichtigung ("bitte Fenster schließen"), wenn ein konfigurierter
+# Luftentfeuchter ODER eine konfigurierte Klimaanlage bei offenem Fenster
+# gegen nachströmende, ungünstigere Außenluft ankämpft (siehe
+# dehumidifier_pause_open_window/outdoor_cooler_enough in binary_sensor.py) -
+# EIN gemeinsamer Schalter für beide Geräte, da beide dieselbe physikalische
+# Situation ("Gerät läuft ins Leere, solange das Fenster offen bleibt")
+# betreffen. Bewusst UNABHÄNGIG vom Einspeiseleistungs-Überschuss (anders
+# als die reine Pausier-Logik, siehe Lektion 34) - das Schließen hilft dem
+# Gerät, sein Ziel tatsächlich zu erreichen, auch wenn der Betrieb gerade
+# "kostenlos" ist; die physikalische Ineffizienz besteht unabhängig vom
+# Stromkosten-Argument. Standard aus (Opt-in), nur pro Raum einstellbar -
+# analog zu CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED, keine globale
+# Einstellung.
+CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED = (
+    "device_window_conflict_notification_enabled"
+)
+DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED = False
 # Heizung: bewusst nur "climate"-Entitäten (siehe HEATING_DOMAINS) - anders
 # als Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern zwei feste
 # Sollwerte (Comfort/Standby, siehe CONF_HEATING_COMFORT_TEMP/
@@ -513,6 +530,7 @@ CONF_MSG_CLOSE_OUTDOOR_WETTER = "msg_close_outdoor_wetter"
 CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
 CONF_MSG_REMINDER = "msg_reminder"
 CONF_MSG_TANK_FULL = "msg_tank_full"
+CONF_MSG_DEVICE_WINDOW_CONFLICT = "msg_device_window_conflict"
 
 DEFAULT_MSG_OPEN_HUMIDITY = (
     "Bitte das Fenster im {raum} öffnen - die Luftfeuchtigkeit liegt mit "
@@ -569,4 +587,8 @@ DEFAULT_MSG_REMINDER = (
 )
 DEFAULT_MSG_TANK_FULL = (
     "Der Wassertank des Luftentfeuchters im {raum} ist voll - bitte leeren."
+)
+DEFAULT_MSG_DEVICE_WINDOW_CONFLICT = (
+    "Bitte das Fenster im {raum} schließen - {geraet} arbeitet sonst gegen "
+    "die einströmende Luft."
 )

@@ -31,6 +31,7 @@ from .const import (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
@@ -74,6 +75,7 @@ from .const import (
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
     CONF_MSG_CLOSE_OUTDOOR_WETTER,
+    CONF_MSG_DEVICE_WINDOW_CONFLICT,
     CONF_MSG_OPEN_CO2,
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
@@ -112,6 +114,7 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HEATING_COMFORT_END_WEEKDAY,
@@ -141,6 +144,7 @@ from .const import (
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
+    DEFAULT_MSG_DEVICE_WINDOW_CONFLICT,
     DEFAULT_MSG_OPEN_CO2,
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
@@ -257,6 +261,24 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._tank_full_state: bool | None = None
         self._tank_mobile_notification_active = False
         self._tank_persistent_notification_active = False
+
+        # Analoges "clean notification"-Muster für die Fenster-Gerät-
+        # Konflikt-Benachrichtigung
+        # (CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED, siehe
+        # _check_device_window_conflict()) -
+        # eigene Tracker-Trios für Luftentfeuchter und Klimaanlage, da beide
+        # Konflikte unabhängig voneinander auftreten/enden können. Bewusst
+        # NICHT über RestoreEntity wiederhergestellt (wie bereits
+        # _mobile_notification_active/_persistent_notification_active) -
+        # bleibt die Situation über einen Neustart hinweg bestehen, kann die
+        # Benachrichtigung danach einmalig erneut auftauchen, statt dafür
+        # eine eigene Wiederherstellungs-Infrastruktur zu brauchen.
+        self._dehumidifier_window_conflict_state = False
+        self._dehumidifier_window_conflict_mobile_active = False
+        self._dehumidifier_window_conflict_persistent_active = False
+        self._ac_window_conflict_state = False
+        self._ac_window_conflict_mobile_active = False
+        self._ac_window_conflict_persistent_active = False
 
         # Zuletzt kommandierter Soll-Zustand der optionalen Geräte.
         # None = noch nicht initial synchronisiert.
@@ -1940,6 +1962,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Neubewertungs-Durchlauf geprüft wird, unabhängig davon, welcher
         # der beiden Zweige unten folgt.
         await self._check_tank_full()
+        await self._check_device_window_conflict(
+            humidity_needs_open=humidity_needs_open,
+            temp_needs_open=temp_needs_open,
+            outdoor_drier_enough=outdoor_drier_enough,
+            outdoor_cooler_enough=outdoor_cooler_enough,
+        )
 
         if new_state != self._attr_is_on:
             self._attr_is_on = new_state
@@ -3052,6 +3080,170 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 blocking=False,
             )
             self._tank_persistent_notification_active = True
+
+    def _dehumidifier_window_conflict_notification_id(self) -> str:
+        """Wie _tank_notification_id(), aber eigenständig für die
+        Fenster-Konflikt-Benachrichtigung des Luftentfeuchters (siehe
+        _check_device_window_conflict())."""
+        return f"{self._notification_id()}_dehum_window_conflict"
+
+    def _ac_window_conflict_notification_id(self) -> str:
+        """Wie _dehumidifier_window_conflict_notification_id(), aber für die
+        Klimaanlage - eigener Bezeichner, damit sich beide Fenster-Konflikt-
+        Benachrichtigungen nicht gegenseitig überschreiben, falls in einem
+        Raum sowohl Luftentfeuchter als auch Klimaanlage konfiguriert sind
+        und beide Konflikte gleichzeitig auftreten."""
+        return f"{self._notification_id()}_ac_window_conflict"
+
+    async def _check_device_window_conflict(
+        self,
+        *,
+        humidity_needs_open: bool,
+        temp_needs_open: bool,
+        outdoor_drier_enough: bool,
+        outdoor_cooler_enough: bool,
+    ) -> None:
+        """Prüft bei jeder Neubewertung, ob ein konfigurierter Luftentfeuchter
+        und/oder eine konfigurierte Klimaanlage bei offenem Fenster gegen
+        nachströmende, ungünstigere Außenluft ankämpft (siehe
+        CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED) - komplett
+        unabhängig von der eigentlichen Lüftungsempfehlung, da diese hier
+        durchaus bereits "aus"/neutral sein kann (should_close hat in diesem
+        Zustand keine Wirkung mehr, siehe CLAUDE.md).
+
+        Bewusst UNABHÄNGIG vom Einspeiseleistungs-Überschuss (anders als
+        dehumidifier_pause_open_window/das reine Einschalten selbst) - das
+        Schließen des Fensters hilft dem Gerät, sein Ziel tatsächlich zu
+        erreichen, auch wenn der Betrieb gerade "kostenlos" ist.
+
+        Luftentfeuchter und Klimaanlage werden unabhängig voneinander
+        geprüft und benachrichtigt (eigene Zustands-Tracker/Notification-
+        IDs) - beide Konflikte können gleichzeitig, aber auch zeitlich
+        versetzt auftreten und enden."""
+        if not self._config.get(
+            CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
+            DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
+        ):
+            return
+        window_open = self._is_window_confirmed_open()
+
+        if self._config.get(CONF_DEHUMIDIFIER_ENTITY):
+            conflict = window_open and humidity_needs_open and not outdoor_drier_enough
+            if conflict != self._dehumidifier_window_conflict_state:
+                self._dehumidifier_window_conflict_state = conflict
+                await self._notify_device_window_conflict(
+                    conflict,
+                    mobile_active_attr="_dehumidifier_window_conflict_mobile_active",
+                    persistent_active_attr="_dehumidifier_window_conflict_persistent_active",
+                    notification_id=self._dehumidifier_window_conflict_notification_id(),
+                    device_label="Luftentfeuchter",
+                )
+
+        if self._config.get(CONF_AC_ENTITY):
+            conflict = window_open and temp_needs_open and not outdoor_cooler_enough
+            if conflict != self._ac_window_conflict_state:
+                self._ac_window_conflict_state = conflict
+                await self._notify_device_window_conflict(
+                    conflict,
+                    mobile_active_attr="_ac_window_conflict_mobile_active",
+                    persistent_active_attr="_ac_window_conflict_persistent_active",
+                    notification_id=self._ac_window_conflict_notification_id(),
+                    device_label="Klimaanlage",
+                )
+
+    async def _notify_device_window_conflict(
+        self,
+        conflict: bool,
+        *,
+        mobile_active_attr: str,
+        persistent_active_attr: str,
+        notification_id: str,
+        device_label: str,
+    ) -> None:
+        """Benachrichtigt über einen Fenster-Gerät-Konflikt (siehe
+        _check_device_window_conflict()) - nutzt dieselben, für den Raum
+        aktuell wirksamen Kanäle wie die Lüftungsempfehlung (_notify()),
+        aber mit eigenem Text (CONF_MSG_DEVICE_WINDOW_CONFLICT) und eigener
+        notification_id/eigenem tag, parametrisiert über mobile_active_attr/
+        persistent_active_attr/notification_id, damit dieselbe Methode für
+        Luftentfeuchter UND Klimaanlage wiederverwendet werden kann, ohne
+        sich gegenseitig zu überschreiben. Löst sich automatisch wieder auf
+        ("clean notification", Lektion 18/43/62), sobald der Konflikt nicht
+        mehr besteht."""
+        room = self._config[CONF_ROOM_NAME]
+        sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
+        mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
+        persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
+
+        if not conflict:
+            if getattr(self, mobile_active_attr):
+                for target in self._get_mobile_targets():
+                    entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
+                    if entity_id:
+                        await self._send_mobile_push(
+                            entity_id, "clear_notification", tag=notification_id
+                        )
+                setattr(self, mobile_active_attr, False)
+            if getattr(self, persistent_active_attr):
+                await self.hass.services.async_call(
+                    "persistent_notification",
+                    "dismiss",
+                    {"notification_id": notification_id},
+                    blocking=False,
+                )
+                setattr(self, persistent_active_attr, False)
+            return
+
+        template = self._effective(
+            CONF_MSG_DEVICE_WINDOW_CONFLICT, DEFAULT_MSG_DEVICE_WINDOW_CONFLICT
+        )
+        try:
+            message = template.format(raum=room, geraet=device_label)
+        except (KeyError, ValueError, IndexError):
+            _LOGGER.warning(
+                "Benachrichtigungstext für Fenster-Gerät-Konflikt in Raum "
+                "%s enthält einen ungültigen Platzhalter - wird unverändert "
+                "gesendet: %s",
+                room,
+                template,
+            )
+            message = template
+
+        if sonos_entities:
+            tts_entity = self._effective(CONF_TTS_ENTITY, None)
+            if (
+                tts_entity
+                and not self._is_tts_quiet_hours_active()
+                and not self._is_tts_light_off()
+            ):
+                await self._play_tts(sonos_entities, tts_entity, message)
+
+        if mobile_enabled:
+            for target in self._get_mobile_targets():
+                entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
+                if not entity_id:
+                    continue
+                if self._is_present(target.get(CONF_PRESENCE_ENTITY)):
+                    await self._send_mobile_push(
+                        entity_id,
+                        message,
+                        title="Fenster schließen",
+                        tag=notification_id,
+                    )
+            setattr(self, mobile_active_attr, True)
+
+        if persistent_enabled:
+            await self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "notification_id": notification_id,
+                    "title": "Fenster schließen",
+                    "message": message,
+                },
+                blocking=False,
+            )
+            setattr(self, persistent_active_attr, True)
 
 
 class SmartVentilationShowerBinarySensor(BinarySensorEntity):

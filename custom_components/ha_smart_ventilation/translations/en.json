@@ -67,7 +67,8 @@
               "dehumidifier_entity": "Dehumidifier",
               "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
               "dehumidifier_tank_notification_enabled": "Notify when tank is full",
-              "ac_entity": "Air conditioner"
+              "ac_entity": "Air conditioner",
+              "device_window_conflict_notification_enabled": "Notify on window/device conflict"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
@@ -86,7 +87,8 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
               "dehumidifier_tank_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room) as soon as the tank status sensor selected above reports \"full\" - only effective if a sensor is actually selected there.",
-              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help"
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "device_window_conflict_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room), while a dehumidifier and/or air conditioner configured here is fighting unfavourable outdoor air through an open window - regardless of any surplus feed-in power. Automatically resolves once the window is closed or the outdoor air becomes favourable again."
             }
           },
           "parameters": {
@@ -234,7 +236,8 @@
               "dehumidifier_entity": "Dehumidifier",
               "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
               "dehumidifier_tank_notification_enabled": "Notify when tank is full",
-              "ac_entity": "Air conditioner"
+              "ac_entity": "Air conditioner",
+              "device_window_conflict_notification_enabled": "Notify on window/device conflict"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
@@ -253,7 +256,8 @@
               "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
               "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
               "dehumidifier_tank_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room) as soon as the tank status sensor selected above reports \"full\" - only effective if a sensor is actually selected there.",
-              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help"
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "device_window_conflict_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room), while a dehumidifier and/or air conditioner configured here is fighting unfavourable outdoor air through an open window - regardless of any surplus feed-in power. Automatically resolves once the window is closed or the outdoor air becomes favourable again."
             }
           },
           "parameters": {
@@ -468,7 +472,8 @@
               "msg_close_outdoor_warmer": "Close because it's warmer outside",
               "msg_close_outdoor_wetter": "Close because it's more humid outside",
               "msg_reminder": "Reminder",
-              "msg_tank_full": "Water tank full"
+              "msg_tank_full": "Water tank full",
+              "msg_device_window_conflict": "Window/device conflict"
             },
             "data_description": {
               "tts_entity": "Used when a room doesn't set its own TTS entity",
@@ -491,7 +496,8 @@
               "msg_close_outdoor_warmer": "｛raum｝ = room name. ｛wert｝ = current outdoor temperature, ｛schwelle｝ = current indoor temperature (each incl. °C).",
               "msg_close_outdoor_wetter": "｛raum｝ = room name. ｛wert｝ = current absolute outdoor humidity, ｛schwelle｝ = current absolute indoor humidity (each incl. g/m³).",
               "msg_reminder": "｛raum｝ = room name. ｛wert｝/｛schwelle｝ = current value and open threshold of the original ventilation reason (temperature/humidity/CO2), each incl. its unit.",
-              "msg_tank_full": "｛raum｝ = room name. No ｛wert｝/｛schwelle｝, since the tank status is purely binary (full/not full)."
+              "msg_tank_full": "｛raum｝ = room name. No ｛wert｝/｛schwelle｝, since the tank status is purely binary (full/not full).",
+              "msg_device_window_conflict": "Sent once a dehumidifier or air conditioner is fighting unfavourable outdoor air through an open window (see the room option \"Notify on window/device conflict\"). Placeholders: ｛raum｝, ｛geraet｝ (\"Luftentfeuchter\"/\"Klimaanlage\")."
             }
           }
         }

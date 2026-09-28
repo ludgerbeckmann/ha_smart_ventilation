@@ -67,7 +67,8 @@
               "dehumidifier_entity": "Luftentfeuchter",
               "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
               "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
-              "ac_entity": "Klimaanlage"
+              "ac_entity": "Klimaanlage",
+              "device_window_conflict_notification_enabled": "Benachrichtigung bei Fenster-Gerät-Konflikt"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
@@ -86,7 +87,8 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
               "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
-              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde"
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "device_window_conflict_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), solange ein hier konfigurierter Luftentfeuchter und/oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft - unabhängig von einem eventuellen Einspeiseleistungs-Überschuss. Löst sich automatisch wieder auf, sobald das Fenster geschlossen wird oder die Außenluft wieder hilft."
             }
           },
           "parameters": {
@@ -234,7 +236,8 @@
               "dehumidifier_entity": "Luftentfeuchter",
               "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
               "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
-              "ac_entity": "Klimaanlage"
+              "ac_entity": "Klimaanlage",
+              "device_window_conflict_notification_enabled": "Benachrichtigung bei Fenster-Gerät-Konflikt"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
@@ -253,7 +256,8 @@
               "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
               "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
               "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
-              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde"
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "device_window_conflict_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), solange ein hier konfigurierter Luftentfeuchter und/oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft - unabhängig von einem eventuellen Einspeiseleistungs-Überschuss. Löst sich automatisch wieder auf, sobald das Fenster geschlossen wird oder die Außenluft wieder hilft."
             }
           },
           "parameters": {
@@ -468,7 +472,8 @@
               "msg_close_outdoor_warmer": "Schließen weil draußen wärmer",
               "msg_close_outdoor_wetter": "Schließen weil draußen feuchter",
               "msg_reminder": "Erinnerung",
-              "msg_tank_full": "Wassertank voll"
+              "msg_tank_full": "Wassertank voll",
+              "msg_device_window_conflict": "Fenster-Gerät-Konflikt"
             },
             "data_description": {
               "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
@@ -491,7 +496,8 @@
               "msg_close_outdoor_warmer": "｛raum｝ = Raumname. ｛wert｝ = aktuelle Außentemperatur, ｛schwelle｝ = aktuelle Innentemperatur (jeweils inkl. °C).",
               "msg_close_outdoor_wetter": "｛raum｝ = Raumname. ｛wert｝ = aktuelle absolute Außen-Luftfeuchtigkeit, ｛schwelle｝ = aktuelle absolute Innen-Luftfeuchtigkeit (jeweils inkl. g/m³).",
               "msg_reminder": "｛raum｝ = Raumname. ｛wert｝/｛schwelle｝ = aktueller Wert bzw. Öffnen-Schwelle des ursprünglichen Lüftungsgrundes (Temperatur/Luftfeuchtigkeit/CO2), inkl. jeweiliger Einheit.",
-              "msg_tank_full": "｛raum｝ = Raumname. Kein ｛wert｝/｛schwelle｝, da der Tankstatus rein binär ist (voll/nicht voll)."
+              "msg_tank_full": "｛raum｝ = Raumname. Kein ｛wert｝/｛schwelle｝, da der Tankstatus rein binär ist (voll/nicht voll).",
+              "msg_device_window_conflict": "Gesendet, sobald ein Luftentfeuchter oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft (siehe Raum-Option \"Benachrichtigung bei Fenster-Gerät-Konflikt\"). Platzhalter: ｛raum｝, ｛geraet｝ (\"Luftentfeuchter\" oder \"Klimaanlage\")."
             }
           }
         }

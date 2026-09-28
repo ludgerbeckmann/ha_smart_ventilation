@@ -21,6 +21,7 @@ from .const import (
     CONF_DEHUMIDIFIER_ENTITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
@@ -65,6 +66,7 @@ from .const import (
     CONF_MSG_CLOSE_HUMIDITY,
     CONF_MSG_CLOSE_OUTDOOR_WARMER,
     CONF_MSG_CLOSE_OUTDOOR_WETTER,
+    CONF_MSG_DEVICE_WINDOW_CONFLICT,
     CONF_MSG_OPEN_CO2,
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
@@ -106,6 +108,7 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_CLOSE,
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
+    DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
     DEFAULT_HEATING_COMFORT_END_WEEKDAY,
@@ -135,6 +138,7 @@ from .const import (
     DEFAULT_MSG_CLOSE_HUMIDITY,
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
+    DEFAULT_MSG_DEVICE_WINDOW_CONFLICT,
     DEFAULT_MSG_OPEN_CO2,
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
@@ -642,6 +646,7 @@ _MESSAGE_FIELD_DEFAULTS = {
     CONF_MSG_CLOSE_OUTDOOR_WETTER: DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
     CONF_MSG_REMINDER: DEFAULT_MSG_REMINDER,
     CONF_MSG_TANK_FULL: DEFAULT_MSG_TANK_FULL,
+    CONF_MSG_DEVICE_WINDOW_CONFLICT: DEFAULT_MSG_DEVICE_WINDOW_CONFLICT,
 }
 
 
@@ -1099,6 +1104,13 @@ def _build_room_schema(
                         **({"include_entities": ac_include} if ac_include else {}),
                     )
                 ),
+                vol.Optional(
+                    CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
+                    default=defaults.get(
+                        CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
+                        DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
+                    ),
+                ): selector.BooleanSelector(),
             }
         ),
         {"collapsed": True},
@@ -1588,6 +1600,15 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             CONF_MSG_TANK_FULL,
                             default=defaults.get(
                                 CONF_MSG_TANK_FULL, DEFAULT_MSG_TANK_FULL
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_DEVICE_WINDOW_CONFLICT,
+                            default=defaults.get(
+                                CONF_MSG_DEVICE_WINDOW_CONFLICT,
+                                DEFAULT_MSG_DEVICE_WINDOW_CONFLICT,
                             ),
                         ): selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)
