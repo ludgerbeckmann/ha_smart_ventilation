@@ -9,10 +9,10 @@
  * (Lektion 4-7) und volle CSS-Kontrolle statt der <font>/<strong>-Notlösung
  * aus Lektion 5.
  *
- * Eigene, von der Jinja-Karte unabhängige Versionierung (siehe unten).
+ * Wird von der Integration selbst automatisch als Lovelace-Ressource
+ * bereitgestellt - dadurch immer auf demselben Stand wie die installierte
+ * Integration, keine eigene Versionsanzeige nötig (siehe README).
  */
-
-const CARD_VERSION = 3;
 
 const GRUND_TEXT = {
   temp: "Temperatur",
@@ -466,7 +466,6 @@ class SmartClimateCard extends HTMLElement {
     if (version !== null) {
       overviewCells.push({ label: "Integration", value: esc(version), cls: "" });
     }
-    overviewCells.push({ label: "Karte", value: String(CARD_VERSION), cls: "" });
 
     const overviewTable =
       `<table class="overview"><thead><tr>${overviewCells
@@ -488,6 +487,7 @@ class SmartClimateCard extends HTMLElement {
 
       table.overview, table.values {
         width: 100%;
+        table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0;
         border-radius: 10px;
@@ -500,7 +500,14 @@ class SmartClimateCard extends HTMLElement {
         padding: 7px 10px;
         text-align: left;
         font-size: 0.92em;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        border-right: 1px solid var(--divider-color, #e0e0e0);
+      }
+      table.overview th:last-child, table.overview td:last-child,
+      table.values th:last-child, table.values td:last-child {
+        border-right: none;
       }
       table.overview tbody tr:last-child td,
       table.values tbody tr:last-child td { border-bottom: none; }
@@ -511,9 +518,6 @@ class SmartClimateCard extends HTMLElement {
         text-transform: uppercase;
         letter-spacing: 0.02em;
         opacity: 0.8;
-      }
-      table.values tbody tr:nth-child(even) td {
-        background: var(--secondary-background-color, rgba(127, 127, 127, 0.04));
       }
       table.overview th, table.overview td { text-align: center; }
       table.overview th.ov-green, table.overview td.ov-green {
