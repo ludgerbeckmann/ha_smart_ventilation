@@ -30,6 +30,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
 from .const import (
+    CO2_WARM_OUTDOOR_OVERRIDE_FACTOR,
     CONF_AC_ENTITY,
     CONF_CO2_ENTITY,
     CONF_CO2_THRESHOLD_CLOSE,
@@ -384,6 +385,26 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Sensor gelesen (siehe SmartVentilationShowerBinarySensor)."""
         return self._showering
 
+    @staticmethod
+    def _co2_blocked_by_warm_outdoor(
+        co2: float,
+        co2_open: float,
+        outdoor_temp: float | None,
+        temp_open: float,
+    ) -> bool:
+        """CO2 öffnet nicht, solange die Außenluft wärmer ist als die
+        Temperatur-Obergrenze (Lüften würde den Raum aufheizen) - außer der
+        CO2-Wert liegt deutlich über der Öffnen-Schwelle (Faktor
+        CO2_WARM_OUTDOOR_OVERRIDE_FACTOR), dann hat die Luftqualität Vorrang.
+        Ohne (verfügbaren) Außentemperaturwert kein Block: die Luftqualität
+        soll nicht von einem Sensorausfall abhängen (siehe CLAUDE.md
+        Lektion 67)."""
+        return (
+            outdoor_temp is not None
+            and outdoor_temp > temp_open
+            and co2 <= co2_open * CO2_WARM_OUTDOOR_OVERRIDE_FACTOR
+        )
+
     def _live_reasons(
         self,
         indoor_temp: float | None,
@@ -401,41 +422,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Bewusst KEINE Wiederverwendung der should_open/should_close-Booleans
         aus _evaluate() - diese sind zusätzlich vom aktuellen Zustand
         (self._attr_is_on), Außenluft-Gates und Hysterese abhängig, hier
-        geht es dagegen um einen reinen, zustandsunabhängigen "liegt der
-        Messwert gerade außerhalb des Normalbereichs"-Vergleich, den die
-        Karte für ihren Fenster-Mismatch-Abgleich unabhängig von der
-        eigentlichen Empfehlung braucht - identisch zur bisherigen,
-        gleichnamigen Logik direkt in der Jinja-Vorlage (siehe README)."""
+        geht es dagegen um einen zustandsunabhängigen "liegt der Messwert
+        gerade außerhalb des Normalbereichs"-Vergleich, den die Karte für
+        ihren Fenster-Mismatch-Abgleich unabhängig von der eigentlichen
+        Empfehlung braucht. Die Außenluft-Gates der Öffnen-Gründe gelten
+        dabei wie im Backend (siehe CLAUDE.md Lektion 67), damit die Karte
+        keinen Auslöser zeigt, der die Empfehlung gar nicht auslöst."""
         temp_open = self._effective(CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN)
         temp_close = self._effective(CONF_TEMP_THRESHOLD_CLOSE, DEFAULT_TEMP_THRESHOLD_CLOSE)
-        open_reasons: list[str] = []
-        if indoor_temp is not None and indoor_temp > temp_open:
-            open_reasons.append("temp")
-
-        hum_open = hum_close = None
-        if self._config.get(CONF_HUMIDITY_ENTITY):
-            hum_open = self._effective(
-                CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
-            )
-            hum_close = self._effective(
-                CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
-            )
-            if humidity is not None and humidity > hum_open:
-                open_reasons.append("humidity")
-
-        co2_close = None
-        if self._config.get(CONF_CO2_ENTITY):
-            co2_open = self._effective(CONF_CO2_THRESHOLD_OPEN, DEFAULT_CO2_THRESHOLD_OPEN)
-            co2_close = self._effective(CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE)
-            if co2 is not None and co2 > co2_open:
-                open_reasons.append("co2")
-
-        frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
-        heat_temp = self._effective(CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP)
-        frost_live = outdoor_temp is not None and outdoor_temp <= frost_temp
-        heat_live = outdoor_temp is not None and outdoor_temp >= heat_temp
-        no_close_rec = self._config.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False)
-
         # Live-Pendants zu outdoor_cooler_enough/outdoor_drier_enough
         # (siehe _evaluate()) - verhindern, dass "outdoor_warmer"/
         # "outdoor_wetter" direkt nach dem Öffnen aufblitzen, obwohl die
@@ -456,6 +450,57 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             and self._absolute_humidity(outdoor_temp, outdoor_humidity)
             < self._absolute_humidity(indoor_temp, humidity)
         )
+
+        # Öffnen-Gründe nur, wenn auch das Backend sie als Öffnen-Grund
+        # wertet (Außenluft-Gates aus _evaluate(): ohne konfigurierten
+        # Außensensor permissiv, sonst nur bei bestätigtem Vorteil) - sonst
+        # zeigt die Karte einen Auslöser, der die Empfehlung gar nicht
+        # auslöst (siehe CLAUDE.md Lektion 67).
+        outdoor_temp_configured = bool(self._effective(CONF_OUTDOOR_TEMP_ENTITY, None))
+        outdoor_humidity_configured = bool(
+            self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None)
+        )
+        open_reasons: list[str] = []
+        if (
+            indoor_temp is not None
+            and indoor_temp > temp_open
+            and (not outdoor_temp_configured or outdoor_cooler_enough_live)
+        ):
+            open_reasons.append("temp")
+
+        hum_open = hum_close = None
+        if self._config.get(CONF_HUMIDITY_ENTITY):
+            hum_open = self._effective(
+                CONF_HUMIDITY_THRESHOLD_OPEN, DEFAULT_HUMIDITY_THRESHOLD_OPEN
+            )
+            hum_close = self._effective(
+                CONF_HUMIDITY_THRESHOLD_CLOSE, DEFAULT_HUMIDITY_THRESHOLD_CLOSE
+            )
+            if (
+                humidity is not None
+                and humidity > hum_open
+                and (not outdoor_humidity_configured or outdoor_drier_enough_live)
+            ):
+                open_reasons.append("humidity")
+
+        co2_close = None
+        if self._config.get(CONF_CO2_ENTITY):
+            co2_open = self._effective(CONF_CO2_THRESHOLD_OPEN, DEFAULT_CO2_THRESHOLD_OPEN)
+            co2_close = self._effective(CONF_CO2_THRESHOLD_CLOSE, DEFAULT_CO2_THRESHOLD_CLOSE)
+            if (
+                co2 is not None
+                and co2 > co2_open
+                and not self._co2_blocked_by_warm_outdoor(
+                    co2, co2_open, outdoor_temp, temp_open
+                )
+            ):
+                open_reasons.append("co2")
+
+        frost_temp = self._effective(CONF_FROST_PROTECTION_TEMP, DEFAULT_FROST_PROTECTION_TEMP)
+        heat_temp = self._effective(CONF_HEAT_PROTECTION_TEMP, DEFAULT_HEAT_PROTECTION_TEMP)
+        frost_live = outdoor_temp is not None and outdoor_temp <= frost_temp
+        heat_live = outdoor_temp is not None and outdoor_temp >= heat_temp
+        no_close_rec = self._config.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False)
 
         close_reason = ""
         if frost_live:
@@ -1731,10 +1776,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             humidity_needs_open and outdoor_drier_enough and not self._showering
         )
         # CO2 braucht - anders als Temperatur/Luftfeuchtigkeit - keinen
-        # Außenluft-Vergleich: Außenluft liegt praktisch immer bei ~420 ppm,
-        # also weit unter jeder sinnvollen Innenschwelle - Lüften hilft hier
-        # immer.
-        open_by_co2 = co2_needs_open
+        # Außenluft-Vergleich der Luftqualität selbst: Außenluft liegt
+        # praktisch immer bei ~420 ppm, also weit unter jeder sinnvollen
+        # Innenschwelle. Lüften kann aber den Raum aufheizen: liegt die
+        # Außentemperatur über der Temperatur-Obergrenze, öffnet CO2 nur bei
+        # deutlich erhöhtem Wert (siehe _co2_blocked_by_warm_outdoor).
+        open_by_co2 = co2_needs_open and not self._co2_blocked_by_warm_outdoor(
+            co2, co2_open, outdoor_temp, temp_open
+        )
 
         # --- Schutz vor Schließen aus einem anderen Grund: bleibt für jede
         # der drei Größen (Temperatur, Luftfeuchtigkeit, CO2) aktiv, solange

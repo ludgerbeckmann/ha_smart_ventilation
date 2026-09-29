@@ -131,8 +131,9 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        unter "Logik im Detail". Die zugehörige Anstiegs-Schwelle findet
        sich im Abschnitt "Erweitert" weiter unten
      - Optional: CO2 (`sensor`-Entität mit ppm-Wert) – ohne Außenluft-
-       Vergleich, da Außenluft praktisch immer weit unter jeder sinnvollen
-       Innenschwelle liegt
+       Vergleich der Luftqualität, da Außenluft praktisch immer weit unter
+       jeder sinnvollen Innenschwelle liegt (nur bei Außentemperatur über der
+       Temperatur-Obergrenze öffnet CO2 erst ab dem 1,5-Fachen der Schwelle)
      - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
        werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
        z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter,
@@ -563,9 +564,15 @@ mit darüber, wann die Außenluft selbst als "nicht mehr hilfreich" gilt
   Luftfeuchtigkeitssensor hinterlegt **oder** es draußen **absolut**
   betrachtet trockener ist als drinnen – siehe "Absolute vs. relative
   Luftfeuchtigkeit" unten), **oder**
-- CO2 ≥ "CO2-Schwelle zum Öffnen" – **ohne** Außenluft-Vergleich, da
-  Außenluft praktisch immer bei ~420 ppm liegt und Lüften bei hohem CO2
-  immer hilft
+- CO2 ≥ "CO2-Schwelle zum Öffnen" – **ohne** Außenluft-Vergleich der
+  Luftqualität selbst, da Außenluft praktisch immer bei ~420 ppm liegt.
+  Ist die Außentemperatur allerdings höher als die Temperatur-Obergrenze
+  ("Schwelle zum Öffnen"), würde Lüften den Raum aufheizen: dann öffnet CO2
+  nur noch, wenn der Wert die CO2-Schwelle um mehr als das **1,5-Fache**
+  überschreitet (bei 1000 ppm also über 1500 ppm; Faktor fest, keine
+  Einstellung). Ohne verfügbaren Außentemperaturwert entfällt diese
+  Einschränkung - die Luftqualität soll nicht von einem Sensorausfall
+  abhängen
 
 **Schließen** wird empfohlen, wenn:
 - Innentemperatur ≤ "Schwelle zum Schließen" – *außer* es wird gerade noch
@@ -961,7 +968,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `schwelle_temperatur_oeffnen` / `_schliessen` | aktuell wirksame Schwellenwerte (inkl. Raum-Override/globaler Fallback) |
 | `luftfeuchtigkeit`, `schwelle_feuchtigkeit_oeffnen` / `_schliessen` | nur vorhanden, falls ein Luftfeuchtigkeits-Sensor hinterlegt ist |
 | `co2`, `schwelle_co2_oeffnen` / `_schliessen` | nur vorhanden, falls ein CO2-Sensor hinterlegt ist |
-| `offene_gruende` | Liste der aktuell live zutreffenden Öffnen-Gründe (`temp`/`humidity`/`co2`, auch mehrere gleichzeitig möglich) - reiner "liegt der Messwert gerade außerhalb des Normalbereichs"-Vergleich, unabhängig vom tatsächlichen `should_open` (das zusätzlich Außenluft-Vergleich/Frost-/Hitzeschutz/Hysterese berücksichtigt). Dient der Dashboard-Karte für den Fenster-Mismatch-Abgleich, ohne die Vergleichslogik selbst nachbauen zu müssen |
+| `offene_gruende` | Liste der aktuell live zutreffenden Öffnen-Gründe (`temp`/`humidity`/`co2`, auch mehrere gleichzeitig möglich) - "liegt der Messwert gerade außerhalb des Normalbereichs" **und** die Außenluft-Prüfung des jeweiligen Grunds (Temperatur: Außen kühler, Luftfeuchtigkeit: Außen absolut trockener, CO2: nicht bei zu warmer Außenluft, außer deutlich erhöht), damit die Karte keinen Auslöser zeigt, der die Empfehlung gar nicht auslöst. Unabhängig vom tatsächlichen `should_open` (das zusätzlich Frost-/Hitzeschutz/Hysterese/Duscherkennung berücksichtigt). Dient der Dashboard-Karte für den Fenster-Mismatch-Abgleich, ohne die Vergleichslogik selbst nachbauen zu müssen |
 | `schliessgrund_live` | wie `offene_gruende`, aber für die Schließen-Seite (dort kann strukturell nur ein Grund gewinnen): `temp`/`humidity`/`co2`/`frost`/`heat`/`outdoor_warmer`/`outdoor_wetter`/`duration`, leerer String falls keiner zutrifft. Berücksichtigt bereits "Schließempfehlung deaktivieren" (reine Komfort-Gründe entfallen dann, Frost-/Hitzeschutz bleiben unberührt) |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
