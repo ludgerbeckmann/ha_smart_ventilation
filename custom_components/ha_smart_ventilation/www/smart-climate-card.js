@@ -494,13 +494,12 @@ class SmartClimateCard extends HTMLElement {
 
   static _css() {
     return `
-      .smart-climate-card-content { padding: 12px 16px 16px; }
+      .smart-climate-card-content { padding: 12px 10px 14px; }
 
       .overview-wrap { margin-bottom: 16px; }
 
       table.overview, table.values {
         width: 100%;
-        table-layout: fixed;
         border-collapse: separate;
         border-spacing: 0;
         border-radius: 10px;
@@ -510,11 +509,11 @@ class SmartClimateCard extends HTMLElement {
       }
       table.overview th, table.overview td,
       table.values th, table.values td {
-        padding: 7px 10px;
+        padding: 6px 7px;
         text-align: left;
         font-size: 0.92em;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
+        overflow-wrap: anywhere;
+        hyphens: auto;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
         border-right: 1px solid var(--divider-color, #e0e0e0);
       }
@@ -527,9 +526,9 @@ class SmartClimateCard extends HTMLElement {
       table.overview th, table.values th {
         background: var(--secondary-background-color, rgba(127, 127, 127, 0.08));
         font-weight: 600;
-        font-size: 0.82em;
+        font-size: 0.66em;
         text-transform: uppercase;
-        letter-spacing: 0.02em;
+        letter-spacing: 0;
         opacity: 0.8;
       }
       table.overview th, table.overview td { text-align: center; }
@@ -550,7 +549,7 @@ class SmartClimateCard extends HTMLElement {
         border: 1px solid var(--divider-color, #e0e0e0);
         border-left: 4px solid var(--divider-color, #e0e0e0);
         background: var(--card-background-color, transparent);
-        padding: 10px 14px 14px;
+        padding: 10px 8px 12px;
         margin-bottom: 14px;
       }
       details.room:not([open]) { padding-bottom: 10px; }
@@ -592,7 +591,7 @@ class SmartClimateCard extends HTMLElement {
       .notify-details {
         border-radius: 10px;
         border: 1px solid var(--divider-color, #e0e0e0);
-        padding: 2px 10px;
+        padding: 2px 6px;
         margin-top: 4px;
       }
       .notify-details table.values { margin-top: 8px; margin-bottom: 4px; }
@@ -662,9 +661,9 @@ class SmartClimateCardEditor extends HTMLElement {
         .sc-editor-field { padding: 12px 0; }
         .sc-editor-field label {
           display: block;
-          font-size: 0.85em;
-          opacity: 0.8;
-          margin-bottom: 4px;
+          font-size: 1em;
+          font-weight: 700;
+          margin-bottom: 6px;
         }
         .sc-editor-field input {
           width: 100%;
