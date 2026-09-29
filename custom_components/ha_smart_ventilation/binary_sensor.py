@@ -3018,7 +3018,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # wird (siehe _maybe_clear_notifications()).
         if await self._push_to_targets(
             message,
-            title="Lüften",
+            title=self._notification_title("Lüften"),
             log_label=(
                 "Erinnerung"
                 if reason == "reminder"
@@ -3038,7 +3038,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     "create",
                     {
                         "notification_id": notification_id,
-                        "title": "Lüften",
+                        "title": self._notification_title("Lüften"),
                         "message": message,
                     },
                     blocking=False,
@@ -3054,6 +3054,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     blocking=False,
                 )
                 self._persistent_notification_active = False
+
+    def _notification_title(self, base: str) -> str:
+        """Titel für Push und persistente Benachrichtigung: Raumname zuerst,
+        dann die eigentliche Überschrift ("Wohnzimmer – Lüften"), damit der
+        Raum auch in der Push-Vorschau sofort erkennbar ist."""
+        return f"{self._config[CONF_ROOM_NAME]} – {base}"
 
     def _notification_id(self) -> str:
         """Fester, raumeindeutiger Bezeichner - als notification_id für die
@@ -3272,7 +3278,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             error = await self._send_mobile_push(
                 entity_id,
                 f"Test-Push aus Raum {room}",
-                title="Smart Climate Test",
+                title=self._notification_title("Smart Climate Test"),
                 tag=f"{self._notification_id()}_test",
             )
             if error is not None:
@@ -3397,7 +3403,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         if await self._push_to_targets(
             message,
-            title="Wassertank",
+            title=self._notification_title("Wassertank"),
             log_label="Wassertank voll",
             tag=self._tank_notification_id(),
         ):
@@ -3409,7 +3415,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "create",
                 {
                     "notification_id": self._tank_notification_id(),
-                    "title": "Wassertank",
+                    "title": self._notification_title("Wassertank"),
                     "message": message,
                 },
                 blocking=False,
@@ -3554,7 +3560,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         if await self._push_to_targets(
             message,
-            title="Fenster schließen",
+            title=self._notification_title("Fenster schließen"),
             log_label=f"Fenster-Konflikt {device_label}",
             tag=notification_id,
         ):
@@ -3566,7 +3572,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "create",
                 {
                     "notification_id": notification_id,
-                    "title": "Fenster schließen",
+                    "title": self._notification_title("Fenster schließen"),
                     "message": message,
                 },
                 blocking=False,
