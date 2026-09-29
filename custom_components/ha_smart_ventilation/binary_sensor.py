@@ -15,7 +15,10 @@ from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddEntitiesCallback,
+    async_get_current_platform,
+)
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
@@ -182,6 +185,11 @@ _LOGGER = logging.getLogger(__name__)
 # eine mögliche Erinnerung erneut geprüft werden.
 _TICK_INTERVAL = timedelta(minutes=5)
 
+# Anzahl der Einträge im Attribut `push_verlauf` (neueste zuerst).
+_PUSH_LOG_SIZE = 8
+
+SERVICE_SEND_TEST_PUSH = "send_test_push"
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -198,6 +206,13 @@ async def async_setup_entry(
         room_sensor.attach_shower_sensor(shower_sensor)
         entities.append(shower_sensor)
     async_add_entities(entities)
+
+    # Entity-Dienst zum Debuggen der Push-Zustellung (siehe
+    # SmartVentilationBinarySensor.async_send_test_push). Mehrfaches
+    # Registrieren (je Raum-Eintrag) ist bei Entity-Diensten üblich.
+    async_get_current_platform().async_register_entity_service(
+        SERVICE_SEND_TEST_PUSH, {}, "async_send_test_push"
+    )
 
 
 class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
@@ -242,6 +257,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         self._open_since = None
         self._last_notified_at = None
+        # Kurzprotokoll der letzten Push-Versuche/-Entscheidungen (neueste
+        # zuerst), als Attribut `push_verlauf` sichtbar - nicht über
+        # Neustarts hinweg wiederhergestellt (reine Debug-Hilfe).
+        self._push_log: deque[str] = deque(maxlen=_PUSH_LOG_SIZE)
         self._last_reason: str | None = None
         # Zeitpunkt des letzten ECHTEN Empfehlungswechsels - anders als
         # last_changed der Entität selbst (das Home Assistant bei jedem
@@ -577,6 +596,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["letzter_wechsel"] = self._last_state_change_at.isoformat()
         if self._last_notified_at is not None:
             attrs["letzte_benachrichtigung"] = self._last_notified_at.isoformat()
+        if self._push_log:
+            attrs["push_verlauf"] = list(self._push_log)
         if self._last_reason is not None:
             attrs["letzter_grund"] = self._last_reason
         if self._config.get(
@@ -2015,6 +2036,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self.async_write_ha_state()
             if silent_frost_close or silent_co2_close:
                 self._last_notified_at = None
+                self._log_push(
+                    "keine Benachrichtigung (bewusst still: "
+                    + (
+                        "Frostschutz-Sensor fehlt"
+                        if silent_frost_close
+                        else "CO2 wieder im Normalbereich"
+                    )
+                    + ")"
+                )
             elif self._window_action_needed(new_state):
                 self._last_notified_at = dt_util.utcnow()
                 await self._notify(new_state, reason)
@@ -2022,6 +2052,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 # Fensterkontakt zeigt bereits den gewünschten Zustand
                 # (offen/geschlossen) - keine Benachrichtigung nötig.
                 self._last_notified_at = None
+                self._log_push(
+                    "keine Benachrichtigung: Fensterkontakt zeigt bereits den "
+                    f"Zielzustand ({'Öffnen' if new_state else 'Schließen'})"
+                )
             await self._maybe_clear_notifications()
             await self._update_devices(
                 temp_needs_open=temp_needs_open,
@@ -2900,7 +2934,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Lautsprecher ausgewählt hat - kein eigener Ja/Nein-Schalter mehr,
         # keine globale Einstellung.
         sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
-        mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
         persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
 
         if sonos_entities:
@@ -2926,35 +2959,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     room,
                 )
 
-        if mobile_enabled:
-            targets = self._get_mobile_targets()
-            if not targets:
-                _LOGGER.warning(
-                    "Keine notify-Entität für Raum %s konfiguriert", room
-                )
-            else:
-                # Fester tag pro Raum: eine neue Benachrichtigung ersetzt auf
-                # dem Gerät automatisch eine ggf. noch angezeigte ältere
-                # (z. B. "bitte öffnen" -> "bitte schließen"), und markiert,
-                # dass hier ggf. noch eine "clean notification" fällig wird
-                # (siehe _maybe_clear_notifications()).
-                self._mobile_notification_active = True
-                for target in targets:
-                    entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
-                    if not entity_id:
-                        continue
-                    presence_entity = target.get(CONF_PRESENCE_ENTITY)
-                    if self._is_present(presence_entity):
-                        await self._send_mobile_push(
-                            entity_id, message, title="Lüften"
-                        )
-                    else:
-                        _LOGGER.debug(
-                            "Push an %s in Raum %s übersprungen - "
-                            "Person/Gerät nicht zuhause",
-                            entity_id,
-                            room,
-                        )
+        # Fester tag pro Raum (Standard von _send_mobile_push): eine neue
+        # Benachrichtigung ersetzt auf dem Gerät automatisch eine ggf. noch
+        # angezeigte ältere (z. B. "bitte öffnen" -> "bitte schließen"), und
+        # markiert, dass hier ggf. noch eine "clean notification" fällig
+        # wird (siehe _maybe_clear_notifications()).
+        if await self._push_to_targets(
+            message,
+            title="Lüften",
+            log_label=(
+                "Erinnerung"
+                if reason == "reminder"
+                else ("Öffnen" if should_ventilate else "Schließen")
+            ),
+        ):
+            self._mobile_notification_active = True
 
         if persistent_enabled:
             notification_id = self._notification_id()
@@ -3008,7 +3027,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         *,
         title: str | None = None,
         tag: str | None = None,
-    ) -> None:
+    ) -> str | None:
         """Verschickt eine App-Push-Nachricht an eine einzelne notify-
         Entität, inkl. `tag` im `data`-Feld für das "clean notification"-
         Muster (siehe _notify()/_clear_mobile_notification(), Lektion 18).
@@ -3035,7 +3054,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         abzufangen, nicht nur synchron zu machen) wurde dadurch verfehlt,
         ohne dass das bis zu einem tatsächlichen Log-Beleg auffiel. Der
         try-Block enthält ausschließlich diesen einen Service-Aufruf, ein
-        bewusst breiter Except-Typ maskiert hier keine anderen Fehler."""
+        bewusst breiter Except-Typ maskiert hier keine anderen Fehler.
+
+        Liefert None bei Erfolg (aus Sicht von Home Assistant - ob das
+        Gerät die Nachricht tatsächlich anzeigt, ist damit nicht belegt),
+        sonst den Fehlertext. Jeder Versuch landet im `push_verlauf`; das
+        reine Auflösen ("clear_notification") nur im Fehlerfall, um den
+        Verlauf nicht mit Routine-Einträgen zu füllen."""
         data = {
             "entity_id": entity_id,
             "message": message,
@@ -3047,13 +3072,127 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             await self.hass.services.async_call(
                 "notify", "send_message", data, blocking=True
             )
-        except Exception:  # noqa: BLE001 - siehe Docstring oben
-            _LOGGER.warning(
-                "Konnte Push-Benachrichtigung an %s nicht senden (Raum %s) "
-                "- unterstützt diese notify-Entität ein `data`-Feld mit "
-                "`tag` (z. B. eine Companion-App-Entität)?",
+        except Exception as err:  # noqa: BLE001 - siehe Docstring oben
+            error = f"{type(err).__name__}: {err}"
+            self._log_push(
+                f"FEHLER beim Senden an {entity_id}: {error} - unterstützt "
+                "diese notify-Entität ein `data`-Feld mit `tag` (z. B. eine "
+                "Companion-App-Entität)?",
+                level=logging.WARNING,
+            )
+            return error
+        if message != "clear_notification":
+            self._log_push(f"gesendet an {entity_id} ({title or 'ohne Titel'})")
+        return None
+
+    def _log_push(self, text: str, *, level: int = logging.INFO) -> None:
+        """Hängt einen Eintrag (neueste zuerst) an den `push_verlauf` an,
+        schreibt ihn ins Log und aktualisiert den Zustand, damit das
+        Attribut sofort sichtbar ist."""
+        stamp = dt_util.as_local(dt_util.utcnow()).strftime("%d.%m. %H:%M:%S")
+        self._push_log.appendleft(f"{stamp} {text}")
+        _LOGGER.log(level, "Push (%s): %s", self._config[CONF_ROOM_NAME], text)
+        if self.hass is not None and self.entity_id is not None:
+            self.async_write_ha_state()
+
+    async def _push_to_targets(
+        self,
+        message: str,
+        *,
+        title: str,
+        log_label: str,
+        tag: str | None = None,
+    ) -> bool:
+        """Sendet `message` an alle konfigurierten App-Push-Ziele des Raums
+        (Raum-Override bzw. globale Liste) und protokolliert jede
+        Entscheidung im `push_verlauf` - auch die, NICHT zu senden (Push
+        wirksam deaktiviert, kein Ziel konfiguriert, Anwesenheits-Entität
+        steht nicht auf "home"), die früher still übergangen wurden.
+
+        Liefert True, wenn Push aktiv ist und mindestens ein Ziel
+        konfiguriert war (damit der Aufrufer eine spätere "clean
+        notification" einplanen kann), unabhängig davon, ob die
+        Anwesenheitsprüfung einzelne Ziele übersprungen hat."""
+        if not self._effective(CONF_MOBILE_ENABLED, False):
+            self._log_push(
+                f"nicht gesendet ({log_label}): App-Push ist wirksam "
+                "deaktiviert (weder im Raum noch global aktiviert)"
+            )
+            return False
+        targets = [
+            t for t in self._get_mobile_targets() if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+        ]
+        if not targets:
+            self._log_push(
+                f"nicht gesendet ({log_label}): keine notify-Entität "
+                "konfiguriert",
+                level=logging.WARNING,
+            )
+            return False
+        for target in targets:
+            entity_id = target[CONF_MOBILE_NOTIFY_ENTITY]
+            presence_entity = target.get(CONF_PRESENCE_ENTITY)
+            if self._is_present(presence_entity):
+                await self._send_mobile_push(
+                    entity_id, message, title=title, tag=tag
+                )
+            else:
+                presence_state = self.hass.states.get(presence_entity)
+                self._log_push(
+                    f"übersprungen ({log_label}): {entity_id} - "
+                    "Anwesenheits-Entität steht auf "
+                    f"'{presence_state.state if presence_state else 'unbekannt'}'"
+                    ", nicht auf 'home'"
+                )
+        return True
+
+    async def async_send_test_push(self) -> None:
+        """Entity-Dienst `send_test_push`: schickt eine Test-Nachricht über
+        exakt denselben Sendeweg (`_send_mobile_push`) an alle App-Push-
+        Ziele des Raums - unabhängig davon, ob Push für den Raum aktiv ist
+        oder die Person gerade zuhause ist - und protokolliert zusätzlich
+        je Ziel, ob eine ECHTE Benachrichtigung jetzt gesendet würde. Ein
+        Sendefehler wird dem Aufrufer als Fehler gemeldet (sichtbar in den
+        Entwicklerwerkzeugen)."""
+        room = self._config[CONF_ROOM_NAME]
+        targets = [
+            t for t in self._get_mobile_targets() if t.get(CONF_MOBILE_NOTIFY_ENTITY)
+        ]
+        if not targets:
+            self._log_push(
+                "Test: keine notify-Entität konfiguriert (weder im Raum noch "
+                "global)",
+                level=logging.WARNING,
+            )
+            raise HomeAssistantError(
+                f"Raum {room}: keine notify-Entität für App-Push konfiguriert"
+            )
+        enabled = self._effective(CONF_MOBILE_ENABLED, False)
+        failures: list[str] = []
+        for target in targets:
+            entity_id = target[CONF_MOBILE_NOTIFY_ENTITY]
+            error = await self._send_mobile_push(
                 entity_id,
-                self._config[CONF_ROOM_NAME],
+                f"Test-Push aus Raum {room}",
+                title="Smart Climate Test",
+                tag=f"{self._notification_id()}_test",
+            )
+            if error is not None:
+                failures.append(f"{entity_id}: {error}")
+                continue
+            if not enabled:
+                verdict = "NICHT gesendet: App-Push ist wirksam deaktiviert"
+            elif not self._is_present(target.get(CONF_PRESENCE_ENTITY)):
+                verdict = "NICHT gesendet: Anwesenheits-Entität steht nicht auf 'home'"
+            else:
+                verdict = "würde gesendet"
+            self._log_push(
+                f"Test an {entity_id} von Home Assistant angenommen - echte "
+                f"Benachrichtigung {verdict}"
+            )
+        if failures:
+            raise HomeAssistantError(
+                "Test-Push fehlgeschlagen: " + "; ".join(failures)
             )
 
     async def _clear_mobile_notification(self) -> None:
@@ -3114,7 +3253,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         eigentlichen Lüftungsempfehlung."""
         room = self._config[CONF_ROOM_NAME]
         sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
-        mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
         persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
 
         if not tank_full:
@@ -3159,18 +3297,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             ):
                 await self._play_tts(sonos_entities, tts_entity, message)
 
-        if mobile_enabled:
-            for target in self._get_mobile_targets():
-                entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
-                if not entity_id:
-                    continue
-                if self._is_present(target.get(CONF_PRESENCE_ENTITY)):
-                    await self._send_mobile_push(
-                        entity_id,
-                        message,
-                        title="Wassertank",
-                        tag=self._tank_notification_id(),
-                    )
+        if await self._push_to_targets(
+            message,
+            title="Wassertank",
+            log_label="Wassertank voll",
+            tag=self._tank_notification_id(),
+        ):
             self._tank_mobile_notification_active = True
 
         if persistent_enabled:
@@ -3277,7 +3409,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         mehr besteht."""
         room = self._config[CONF_ROOM_NAME]
         sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
-        mobile_enabled = self._effective(CONF_MOBILE_ENABLED, False)
         persistent_enabled = self._effective(CONF_PERSISTENT_ENABLED, False)
 
         if not conflict:
@@ -3323,18 +3454,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             ):
                 await self._play_tts(sonos_entities, tts_entity, message)
 
-        if mobile_enabled:
-            for target in self._get_mobile_targets():
-                entity_id = target.get(CONF_MOBILE_NOTIFY_ENTITY)
-                if not entity_id:
-                    continue
-                if self._is_present(target.get(CONF_PRESENCE_ENTITY)):
-                    await self._send_mobile_push(
-                        entity_id,
-                        message,
-                        title="Fenster schließen",
-                        tag=notification_id,
-                    )
+        if await self._push_to_targets(
+            message,
+            title="Fenster schließen",
+            log_label=f"Fenster-Konflikt {device_label}",
+            tag=notification_id,
+        ):
             setattr(self, mobile_active_attr, True)
 
         if persistent_enabled:

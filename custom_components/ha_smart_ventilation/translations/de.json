@@ -515,5 +515,11 @@
         }
       }
     }
+  },
+  "services": {
+    "send_test_push": {
+      "name": "Test-Push senden",
+      "description": "Sendet eine Test-Push-Nachricht über denselben Sendeweg wie die echten Benachrichtigungen an alle App-Push-Ziele des gewählten Raums - auch wenn Push für den Raum deaktiviert oder die Person gerade nicht zuhause ist. Das Ergebnis (inkl. der Frage, ob eine echte Benachrichtigung jetzt gesendet würde) steht im Attribut push_verlauf der Lüftungsempfehlung; ein Sendefehler wird als Fehlermeldung zurückgegeben."
+    }
   }
 }
