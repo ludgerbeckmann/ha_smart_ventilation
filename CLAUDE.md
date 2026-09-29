@@ -3474,6 +3474,23 @@ Einheit, Zustände, Gerätenamen); Platz bekommen so die Textspalten
 für kurze Spalten sein - kurze Inhalte gehören auf `nowrap`, damit der
 Browser den Restplatz an die langen Spalten verteilt.
 
+**69. Markdown-Karte: Räume und Gesamtliste einklappbar über verschachtelte `<details>` (Karten-Version 35, kein Versionsbump).**
+Nutzerwunsch: Räume einklappbar, rote Räume standardmäßig offen, die ganze
+Raumliste (außer der Übersichts-Tabelle) als ein Abschnitt, standardmäßig
+eingeklappt (der Nutzer entschied sich bewusst gegen "aufgeklappt"). Umsetzung:
+jeder Raum-Block ist `<details[ open]><summary><strong>Icon Raum</strong></summary>`
+(`open` nur bei 🔴), alle Blöcke liegen in einem äußeren `<details>` "Räume".
+Die Tabellen brauchen Leerzeilen um die HTML-Tags (wie bei der bestehenden
+Benachrichtigungs-Aufklappung), sonst rendert die Markdown-Karte sie nicht.
+`sep_line` entfiel (nirgends mehr verwendet). Grenze: Home Assistant
+zeichnet die Markdown-Karte bei jeder Statusänderung neu, ein von Hand
+geänderter Auf-/Zuklapp-Zustand geht dabei verloren - anders als bei der
+JS-Karte lässt sich das mit einer reinen Vorlage nicht lösen. Lokal in der
+Jinja-Sandbox (`StrictUndefined`) geprüft (Struktur, `open` nur bei Rot,
+Klammer-Balance der `<details>`); das echte Markdown-Rendering von
+verschachteltem `<details>` konnte ohne Home-Assistant-Instanz nicht
+gesehen werden.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
