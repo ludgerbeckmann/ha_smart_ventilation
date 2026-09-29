@@ -3458,6 +3458,22 @@ dieselbe Grenze (`temp_open`), keine Schleife. Lektion: Eine Karten-Liste,
 die "Gründe" anzeigt, muss dieselben Gates wie die Entscheidungslogik
 anwenden, sonst zeigt sie Gründe, die nie wirksam waren.
 
+**68. JS-Karten-Tabellen: Kopfzeilen gleich groß, keine Silbentrennung, `nowrap` für kurze Spalten (0.80.1).**
+Nutzer-Feedback (Handy-Screenshot): Kopfzeilen kleiner als Datenzeilen,
+Wörter mitten im Wort getrennt ("Hei-zung", "Tempera-tur"), Uhrzeit bricht
+als "18:4 / 8". Ursache war meine frühere Notlösung gegen Überlauf
+(`overflow-wrap: anywhere` + `hyphens: auto` + kleine Kopfzeilen), die bei
+`table-layout: auto` jede Spalte gleichermaßen zerlegt. Fix: Kopfzeilen 0,92 em
+wie die Daten (fett, keine Großschreibung), `hyphens: none`, `white-space:
+nowrap` für Kopfzeilen und kurze Zellen (Klasse `.nw`: Zeiten, Werte mit
+Einheit, Zustände, Gerätenamen); Platz bekommen so die Textspalten
+(Auslöser/Grund). Lange Entity-IDs brechen über `<wbr>` nach `.`/`_`
+(`breakable()`). Ein `@media (max-width: 340px)` lockert `nowrap` als
+Überlauf-Sicherung. Geprüft in Chromium (Playwright) bei 300-430 px ohne
+Überlauf. Lektion: Ein Notfall-Umbruch (`anywhere`) darf nie der Normalfall
+für kurze Spalten sein - kurze Inhalte gehören auf `nowrap`, damit der
+Browser den Restplatz an die langen Spalten verteilt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
