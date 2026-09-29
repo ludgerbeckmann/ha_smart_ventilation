@@ -372,6 +372,12 @@ DEFAULT_HUMIDITY_THRESHOLD_CLOSE = 50.0
 DEFAULT_CO2_THRESHOLD_OPEN = 1000.0
 DEFAULT_CO2_THRESHOLD_CLOSE = 800.0
 
+# CO2 öffnet nicht, solange die Außentemperatur über der Temperatur-
+# Öffnen-Schwelle liegt (Lüften würde den Raum aufheizen) - es sei denn, der
+# CO2-Wert überschreitet die CO2-Öffnen-Schwelle um mehr als diesen Faktor
+# (dann hat die Luftqualität Vorrang). Bewusst fest, keine Einstellung.
+CO2_WARM_OUTDOOR_OVERRIDE_FACTOR = 1.5
+
 # Toleranz-Marge (°C) bei allen Außen-/Innentemperatur-Vergleichen, um
 # Flackern der Empfehlung bei Werten nahe der Schwelle zu vermeiden.
 DEFAULT_TEMP_MARGIN = 1.0

@@ -3436,6 +3436,28 @@ vermutet, sollte zuerst Beobachtbarkeit (Verlauf, Test-Auslöser mit echter
 Fehlermeldung) bauen statt weiter zu raten; der Test-Dienst hat hier in
 einem einzigen Aufruf geleistet, was Wochen der Ferndiagnose nicht schafften.
 
+**67. Die Karte zeigte Öffnen-Auslöser, die das Backend gar nicht wertete, und CO2 öffnete auch bei zu warmer Außenluft (0.80.0).**
+Nutzer-Frage (Screenshot, Wohnzimmer: innen 22,5 °C/außen 24,4 °C, Feuchte
+64 %/65 % relativ, aber 12,8 vs. 14,4 g/m³ absolut, CO2 1077 ppm): Karte
+zeigte "Öffnen, Auslöser Luftfeuchtigkeit, CO2". Tatsächlich zählte im
+Backend nur CO2 (`outdoor_drier_enough` blockierte die Feuchtigkeit) - die
+Karte-Liste `offene_gruende` (`_live_reasons()`, Lektion 63) war ein reiner
+Messwert-Vergleich ohne Außenluft-Gates und damit inkonsistent zum Backend
+(Lektion 22 in neuer Form). Fix 1: `_live_reasons()` wendet dieselben Gates
+an (Temperatur: `outdoor_cooler_enough`, Feuchtigkeit: `outdoor_drier_enough`;
+ohne konfigurierten Außensensor permissiv, mit Sensor ohne Wert
+konservativ wie im Backend). Fix 2 (Abwägung Luftqualität vs. Wärme):
+`_co2_blocked_by_warm_outdoor()` - CO2 öffnet nicht, solange die
+Außentemperatur über der Temperatur-Öffnen-Schwelle liegt, außer der Wert
+liegt über dem 1,5-Fachen der CO2-Schwelle (`CO2_WARM_OUTDOOR_OVERRIDE_FACTOR`,
+fest). Ohne Außentemperaturwert kein Block (Luftqualität soll nicht von
+einem Sensorausfall abhängen - bewusst anders als bei Temperatur/Feuchte).
+Da `open_by_co2` dadurch bei warmer Außenluft `False` wird, greift
+`close_by_summer_outdoor` wieder; Öffnen-Gate und Schließen-Auslöser nutzen
+dieselbe Grenze (`temp_open`), keine Schleife. Lektion: Eine Karten-Liste,
+die "Gründe" anzeigt, muss dieselben Gates wie die Entscheidungslogik
+anwenden, sonst zeigt sie Gründe, die nie wirksam waren.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
