@@ -41,6 +41,12 @@ function esc(value) {
     .replace(/"/g, "&quot;");
 }
 
+// Erlaubt Zeilenumbrüche in langen Entity-IDs nach "." und "_" statt mitten
+// im Wort (erwartet bereits escapten Text).
+function breakable(escaped) {
+  return escaped.replace(/([._])/g, "$1<wbr>");
+}
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -307,7 +313,7 @@ class SmartClimateCard extends HTMLElement {
         );
         const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
         const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
-        humRow = `<tr><td>Luftfeuchtigkeit</td><td>${humVal}</td><td>${outdoorHumVal} %</td><td>${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
+        humRow = `<tr><td>Luftfeuchtigkeit</td><td class="nw">${humVal}</td><td class="nw">${outdoorHumVal} %</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
       }
 
       let co2Row = "";
@@ -315,7 +321,7 @@ class SmartClimateCard extends HTMLElement {
         const co2Val = wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : "–", highlightCo2);
         const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
-        co2Row = `<tr><td>CO2</td><td>${co2Val}</td><td>–</td><td>${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
+        co2Row = `<tr><td>CO2</td><td class="nw">${co2Val}</td><td class="nw">–</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
       }
 
       let absRow = "";
@@ -329,7 +335,7 @@ class SmartClimateCard extends HTMLElement {
             ? `${a.aussen_absolute_luftfeuchtigkeit} g/m³`
             : "–";
         absOut = wrap(absOut, highlightCode === "outdoor_wetter");
-        absRow = `<tr><td>Abs. Luftfeuchtigkeit</td><td>${absIn}</td><td>${absOut}</td><td>–</td></tr>`;
+        absRow = `<tr><td>Abs. Luftfeuchtigkeit</td><td class="nw">${absIn}</td><td class="nw">${absOut}</td><td class="nw">–</td></tr>`;
       }
 
       // Geräte-Tabelle
@@ -346,7 +352,7 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.luftentfeuchter_letzte_laufzeit);
         }
         const grund = has(a, "luftentfeuchter_grund") ? esc(a.luftentfeuchter_grund) : "–";
-        deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "klimaanlage_an")) {
         const name = `${a.klimaanlage_an ? "🔴" : "⚫"} Klimaanlage`;
@@ -357,7 +363,7 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.klimaanlage_letzte_laufzeit);
         }
         const grund = has(a, "klimaanlage_grund") ? esc(a.klimaanlage_grund) : "–";
-        deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "heizung_an")) {
         let name = `${a.heizung_an ? "🔴" : "⚫"} Heizung`;
@@ -373,7 +379,7 @@ class SmartClimateCard extends HTMLElement {
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
           grund += ` (${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
-        deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "duschen_erkannt")) {
         const name = `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`;
@@ -384,7 +390,7 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.dusche_letzte_laufzeit);
         }
         const grund = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "–";
-        deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       const deviceTable = deviceRows
         ? `<table class="values"><thead><tr><th>Gerät</th><th>Laufzeit</th><th>Grund</th></tr></thead><tbody>${deviceRows}</tbody></table>`
@@ -403,9 +409,9 @@ class SmartClimateCard extends HTMLElement {
       if (!noWindow) {
         empfTable =
           `<table class="values"><thead><tr><th>Fenster</th><th>Empfehlung</th><th>Auslöser</th><th>Uhrzeit</th></tr></thead><tbody>` +
-          `<tr><td>${windowStateText}</td><td>–</td><td>–</td><td>${windowChangedTime}</td></tr>`;
+          `<tr><td class="nw">${windowStateText}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
         if (hasLiveReason) {
-          empfTable += `<tr><td>–</td><td>${empfehlungText}</td><td>${esc(grundLabel)}</td><td>${changedTime}</td></tr>`;
+          empfTable += `<tr><td class="nw">–</td><td class="nw">${empfehlungText}</td><td>${esc(grundLabel)}</td><td class="nw">${changedTime}</td></tr>`;
         }
         empfTable += "</tbody></table>";
       }
@@ -414,21 +420,21 @@ class SmartClimateCard extends HTMLElement {
       const tempHi = Math.max(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const valuesTable =
         `<table class="values"><thead><tr><th>Messwert</th><th>Innen</th><th>Außen</th><th>Normalbereich</th></tr></thead><tbody>` +
-        `<tr><td>Temperatur</td><td>${tempVal}</td><td>${outdoorTempVal}</td><td>${tempLo} - ${tempHi} °C</td></tr>` +
+        `<tr><td>Temperatur</td><td class="nw">${tempVal}</td><td class="nw">${outdoorTempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
         `${humRow}${absRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
-      const n1Ziel = has(a, "sprachausgabe_lautsprecher") ? esc(a.sprachausgabe_lautsprecher.join(", ")) : "–";
+      const n1Ziel = has(a, "sprachausgabe_lautsprecher") ? breakable(esc(a.sprachausgabe_lautsprecher.join(", "))) : "–";
       const n2Status = has(a, "app_aktiv") ? "🟢" : "⚫";
-      const n2Ziel = has(a, "app_ziele") ? esc(a.app_ziele.join(", ")) : "–";
+      const n2Ziel = has(a, "app_ziele") ? breakable(esc(a.app_ziele.join(", "))) : "–";
       const n3Status = has(a, "persistent_aktiv") ? "🟢" : "⚫";
       const notifyOpen = this._notifyOpenState.get(a.raum) || false;
       const notifyTable =
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Status</th><th>Ziel(e)</th></tr></thead><tbody>` +
-        `<tr><td>Sprachausgabe</td><td class="center">${n1Status}</td><td>${n1Ziel}</td></tr>` +
-        `<tr><td>App-Benachrichtigung</td><td class="center">${n2Status}</td><td>${n2Ziel}</td></tr>` +
-        `<tr><td>Persistente Benachrichtigung</td><td class="center">${n3Status}</td><td>–</td></tr>` +
+        `<tr><td>Sprachausgabe</td><td class="center nw">${n1Status}</td><td>${n1Ziel}</td></tr>` +
+        `<tr><td>App-Benachrichtigung</td><td class="center nw">${n2Status}</td><td>${n2Ziel}</td></tr>` +
+        `<tr><td>Persistente Benachrichtigung</td><td class="center nw">${n3Status}</td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
       const statusClass =
@@ -494,7 +500,7 @@ class SmartClimateCard extends HTMLElement {
 
   static _css() {
     return `
-      .smart-climate-card-content { padding: 12px 10px 14px; }
+      .smart-climate-card-content { padding: 12px 6px 14px; }
 
       .overview-wrap { margin-bottom: 16px; }
 
@@ -509,11 +515,14 @@ class SmartClimateCard extends HTMLElement {
       }
       table.overview th, table.overview td,
       table.values th, table.values td {
-        padding: 6px 7px;
+        padding: 6px 6px;
         text-align: left;
         font-size: 0.92em;
+        /* Nur zwischen Wörtern umbrechen, keine Silbentrennung; ein Wort
+           bricht nur im Notfall (lange Entity-IDs). Kurze Spalten (Zeiten,
+           Werte, Zustände) tragen zusätzlich die Klasse .nw. */
         overflow-wrap: anywhere;
-        hyphens: auto;
+        hyphens: none;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
         border-right: 1px solid var(--divider-color, #e0e0e0);
       }
@@ -526,10 +535,13 @@ class SmartClimateCard extends HTMLElement {
       table.overview th, table.values th {
         background: var(--secondary-background-color, rgba(127, 127, 127, 0.08));
         font-weight: 600;
-        font-size: 0.66em;
-        text-transform: uppercase;
-        letter-spacing: 0;
-        opacity: 0.8;
+        opacity: 0.85;
+        white-space: nowrap;
+      }
+      table.overview td.nw, table.values td.nw { white-space: nowrap; }
+      /* Sehr schmale Bildschirme: Nowrap lockern, damit nichts überläuft */
+      @media (max-width: 340px) {
+        table.overview td.nw, table.values td.nw, table.values th { white-space: normal; }
       }
       table.overview th, table.overview td { text-align: center; }
       table.overview th.ov-green, table.overview td.ov-green {
@@ -549,7 +561,7 @@ class SmartClimateCard extends HTMLElement {
         border: 1px solid var(--divider-color, #e0e0e0);
         border-left: 4px solid var(--divider-color, #e0e0e0);
         background: var(--card-background-color, transparent);
-        padding: 10px 8px 12px;
+        padding: 10px 6px 12px;
         margin-bottom: 14px;
       }
       details.room:not([open]) { padding-bottom: 10px; }
