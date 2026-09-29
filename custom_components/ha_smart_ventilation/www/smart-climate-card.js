@@ -335,9 +335,9 @@ class SmartClimateCard extends HTMLElement {
       // Geräte-Tabelle
       let deviceRows = "";
       if (has(a, "luftentfeuchter_an")) {
-        let name = `${a.luftentfeuchter_an ? "🔴" : "⚫"}&nbsp;Luftentfeuchter`;
+        let name = `${a.luftentfeuchter_an ? "🔴" : "⚫"} Luftentfeuchter`;
         if (has(a, "luftentfeuchter_tank_fehler")) {
-          name += `<br>${a.luftentfeuchter_tank_fehler ? "🔴" : "🟢"}&nbsp;Wassertank`;
+          name += `<br>${a.luftentfeuchter_tank_fehler ? "🔴" : "🟢"} Wassertank`;
         }
         let laufzeit = "–";
         if (a.luftentfeuchter_an && a.luftentfeuchter_seit) {
@@ -349,7 +349,7 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "klimaanlage_an")) {
-        const name = `${a.klimaanlage_an ? "🔴" : "⚫"}&nbsp;Klimaanlage`;
+        const name = `${a.klimaanlage_an ? "🔴" : "⚫"} Klimaanlage`;
         let laufzeit = "–";
         if (a.klimaanlage_an && a.klimaanlage_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.klimaanlage_seit).getTime()) / 60000);
@@ -360,9 +360,9 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "heizung_an")) {
-        let name = `${a.heizung_an ? "🔴" : "⚫"}&nbsp;Heizung`;
+        let name = `${a.heizung_an ? "🔴" : "⚫"} Heizung`;
         const modeInfo = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
-        if (modeInfo) name += `<br>${modeInfo.icon}&nbsp;${modeInfo.text}`;
+        if (modeInfo) name += `<br>${modeInfo.icon} ${modeInfo.text}`;
         let laufzeit = "–";
         if (a.heizung_an && a.heizung_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.heizung_seit).getTime()) / 60000);
@@ -376,7 +376,7 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "duschen_erkannt")) {
-        const name = `${a.duschen_erkannt ? "🟢" : "⚫"}&nbsp;Dusche`;
+        const name = `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`;
         let laufzeit = "–";
         if (a.duschen_erkannt && a.dusche_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.dusche_seit).getTime()) / 60000);
@@ -649,10 +649,40 @@ class SmartClimateCardEditor extends HTMLElement {
   _build() {
     if (this._built) return;
     this._built = true;
+    // Bewusst ein natives <input> statt Home Assistants ha-textfield: Diese
+    // interne Komponente wird vom Frontend nur bei Bedarf nachgeladen - wird
+    // unser Editor als einer der ersten/einzigen Nutzer aufgerufen, könnte
+    // sie zu dem Zeitpunkt noch nicht registriert sein, wodurch ein
+    // unsichtbares, funktionsloses Element statt eines echten Eingabefelds
+    // entsteht. Ein natives <input> ist dagegen immer sofort verfügbar,
+    // unabhängig vom Ladezeitpunkt interner HA-Komponenten.
     const wrapper = document.createElement("div");
-    wrapper.style.padding = "12px 0";
-    this._field = document.createElement("ha-textfield");
-    this._field.label = "Titel (optional)";
+    wrapper.innerHTML = `
+      <style>
+        .sc-editor-field { padding: 12px 0; }
+        .sc-editor-field label {
+          display: block;
+          font-size: 0.85em;
+          opacity: 0.8;
+          margin-bottom: 4px;
+        }
+        .sc-editor-field input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 8px 10px;
+          font-size: 1em;
+          border-radius: 4px;
+          border: 1px solid var(--divider-color, #e0e0e0);
+          background: var(--card-background-color, transparent);
+          color: var(--primary-text-color, inherit);
+        }
+      </style>
+      <div class="sc-editor-field">
+        <label for="sc-title-input">Titel (optional)</label>
+        <input id="sc-title-input" type="text" />
+      </div>
+    `;
+    this._field = wrapper.querySelector("input");
     this._field.addEventListener("input", (ev) => {
       const value = ev.target.value;
       const newConfig = { ...this._config };
@@ -670,7 +700,6 @@ class SmartClimateCardEditor extends HTMLElement {
         })
       );
     });
-    wrapper.appendChild(this._field);
     this.appendChild(wrapper);
     this._syncField();
   }
