@@ -1670,6 +1670,13 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   Sprachausgabe unterdrückt wird - App-Push und persistente Benachrichtigung
   werden davon nicht beeinflusst. Betrifft auch die Tank-voll-Benachrichtigung
   (siehe unten).
+- **Titel der Benachrichtigungen** (seit 0.80.2): App-Push und persistente
+  Web-Benachrichtigung tragen den Raumnamen zuerst im Titel, danach die
+  eigentliche Überschrift - z. B. "Wohnzimmer – Lüften",
+  "Wohnzimmer – Wassertank", "Wohnzimmer – Fenster schließen" (Test-Push:
+  "Wohnzimmer – Smart Climate Test"). So ist der Raum auch in der
+  Push-Vorschau sofort erkennbar. Die Titel sind fest, nur der Nachrichtentext
+  ist anpassbar. Die Sprachausgabe hat keinen Titel.
 - **Sendeweg der App-Benachrichtigungen:** Der Home-Assistant-Dienst
   `notify.send_message` akzeptiert nur `message` und `title` - kein
   `data`-Feld mit `tag`. Die Integration ermittelt deshalb zum gewählten

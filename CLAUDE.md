@@ -3491,6 +3491,21 @@ Klammer-Balance der `<details>`); das echte Markdown-Rendering von
 verschachteltem `<details>` konnte ohne Home-Assistant-Instanz nicht
 gesehen werden.
 
+**70. Push-/Web-Benachrichtigungen zeigten nur die feste Überschrift "Lüften" - der Raum stand nur im Nachrichtentext (0.80.2).**
+Nutzer-Feedback: In der Benachrichtigung sei nur die Überschrift "Lüften" zu
+sehen, sinnvoll wäre zumindest der Raumname; auf Vorschlag "‹Überschrift› –
+‹Raum›" wünschte der Nutzer die umgekehrte Reihenfolge (Raum zuerst). Die
+Nachrichtentexte enthalten `{raum}` längst, die Titel (Lüften, Wassertank,
+Fenster schließen, Test-Push) waren aber feste Strings - in der Push-Vorschau
+sieht man oft nur den Titel. Fix: `_notification_title(base)` liefert
+"‹Raum› – ‹Überschrift›" und wird an allen sieben Stellen benutzt (Push und
+`persistent_notification.create`, je Lüften/Wassertank/Fenster-Konflikt, dazu
+der Test-Push). Der `tag`/`notification_id` bleibt unverändert, Ersetzen und
+Auflösen funktionieren wie zuvor. Sprachausgabe hat keinen Titel. Bewusst
+keine Einstellung für die Titel angelegt. Lektion: Wenn ein Text pro Anlass
+(Raum) mehrfach vorkommen kann, gehört das unterscheidende Merkmal (Raum) in
+das, was der Nutzer zuerst sieht (Titel/Vorschau), nicht nur in den Fließtext.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
