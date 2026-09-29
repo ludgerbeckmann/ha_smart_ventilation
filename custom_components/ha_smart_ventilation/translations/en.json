@@ -515,5 +515,11 @@
         }
       }
     }
+  },
+  "services": {
+    "send_test_push": {
+      "name": "Send test push",
+      "description": "Sends a test push message through the same path as the real notifications to all app push targets of the selected room - even if push is disabled for the room or the person is currently not home. The result (including whether a real notification would be sent right now) is listed in the push_verlauf attribute of the ventilation recommendation; a send error is returned as an error message."
+    }
   }
 }

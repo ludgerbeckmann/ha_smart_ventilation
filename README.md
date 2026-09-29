@@ -1520,7 +1520,7 @@ bis zu einer Rückmeldung aus der echten Oberfläche ungewiss.
 
 ## Fehlersuche / Diagnose
 
-Zwei Bordmittel helfen bei der Fehlersuche, ohne dass Werte oder
+Drei Bordmittel helfen bei der Fehlersuche, ohne dass Werte oder
 Log-Zeilen von Hand abgeschrieben werden müssen:
 
 - **Diagnose herunterladen**: Bei jedem Eintrag (ein Raum oder
@@ -1552,6 +1552,29 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   Hilfreich vor allem bei Flacker-artigen Problemen (wiederholtes
   Öffnen/Schließen), bei denen ein einzelner Diagnose-Snapshot nicht
   ausreicht.
+- **Push-Verlauf und Test-Push** (bei "Ich bekomme keine Push-
+  Benachrichtigung"): Jede Lüftungsempfehlung-Entität hat das Attribut
+  `push_verlauf` (Entwicklerwerkzeuge → Zustände, sowie in der
+  Diagnose-Datei) mit den letzten acht Push-Entscheidungen, neueste
+  zuerst, jeweils mit Uhrzeit: `gesendet an notify.…`, `FEHLER beim
+  Senden an …` (mit der echten Fehlermeldung), `übersprungen …:
+  Anwesenheits-Entität steht auf 'not_home'`, `nicht gesendet: App-Push
+  ist wirksam deaktiviert`, `nicht gesendet: keine notify-Entität
+  konfiguriert` sowie `keine Benachrichtigung: Fensterkontakt zeigt
+  bereits den Zielzustand` bzw. `bewusst still` - also genau die Fälle,
+  in denen früher stillschweigend nichts passiert ist. Dieselben
+  Einträge stehen auch im normalen Log (Level `info`, bei Fehlern
+  `warning`). Der Verlauf wird nicht über einen Neustart hinweg gespeichert.
+  Mit der Aktion **Smart Climate: Test-Push senden**
+  (`ha_smart_ventilation.send_test_push`, Ziel: die Lüftungsempfehlung
+  des Raums) lässt sich außerdem jederzeit eine Test-Nachricht über
+  exakt denselben Sendeweg an alle App-Push-Ziele des Raums schicken -
+  auch wenn Push für den Raum deaktiviert oder die Person nicht zuhause
+  ist. Der Verlauf nennt dann zusätzlich, ob eine **echte**
+  Benachrichtigung jetzt gesendet würde; ein Sendefehler kommt als
+  Fehlermeldung direkt zurück. Kommt der Test-Push an, eine echte
+  Benachrichtigung aber nie, liegt es an einer der im Verlauf genannten
+  Bedingungen (nicht am Zustellweg).
 
 ## Hinweise
 

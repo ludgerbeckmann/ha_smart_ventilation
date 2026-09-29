@@ -1,0 +1,6 @@
+send_test_push:
+  target:
+    entity:
+      integration: ha_smart_ventilation
+      domain: binary_sensor
+      device_class: opening
