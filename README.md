@@ -1006,7 +1006,7 @@ Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
 mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
 ohne zusätzliche Custom Cards.
 
-**Aktuelle Karten-Version: 34** – anders als der Integrations-Code wird
+**Aktuelle Karten-Version: 35** – anders als der Integrations-Code wird
 diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
 inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
 Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
@@ -1019,9 +1019,8 @@ veraltet und du solltest den Block unten erneut komplett einfügen.
 type: markdown
 title: Lüftungsübersicht
 content: >
-  {% set card_version = 34 %}
+  {% set card_version = 35 %}
   {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
-  {% set sep_line = '━━━━━━━━━━━━━━━━━━━━' %}
   {% set today_str = now().strftime('%Y-%m-%d') %}
   {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none, window_times=[]) %}
   {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') %}
@@ -1174,7 +1173,7 @@ content: >
   {% endif %}
   {% set device_table = ('| Gerät | Laufzeit | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
   {% set grund_label = (room_ns.open_label if room_ns.open_label else '–') if s.state == 'on' else (grund_text.get(highlight_code, highlight_code) if highlight_code else '–') %}
-  {% set header = '### ' ~ match_icon ~ a.raum %}
+  {% set header = '<details' ~ (' open' if match_icon == '🔴 ' else '') ~ '>\n<summary><strong>' ~ match_icon ~ a.raum ~ '</strong></summary>' %}
   {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
   {% set uhrzeit_val = changed_time %}
   {% set empf_table = '' %}
@@ -1202,10 +1201,10 @@ content: >
   {% set body = body ~ spacer ~ notify_table %}
   {% set color_rank = '0' if match_icon == '🔴 ' else ('1' if match_icon == '🟠 ' else '2') %}
   {% set sort_key = color_rank ~ a.raum %}
-  {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body}] %}
+  {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body ~ '\n\n</details>'}] %}
   {% endfor %}
   {% for entry in ns.entries | sort(attribute='key') %}
-  {% set sep_before = '\n\n' ~ sep_line ~ '\n\n' if not loop.first else '' %}
+  {% set sep_before = '\n\n' if not loop.first else '' %}
   {% set ns.rooms = ns.rooms ~ sep_before ~ entry.block %}
   {% endfor %}
   {% set summer_header = ' Modus |' if ns.summer_mode is not none else '' %}
@@ -1215,7 +1214,7 @@ content: >
   {% set version_sep = (':---:|' if ns.version is not none else '') ~ ':---:|' %}
   {% set version_cell = (' ' ~ ns.version ~ ' |' if ns.version is not none else '') ~ ' ' ~ card_version ~ ' |' %}
   {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ summer_header ~ version_header ~ '\n|:---:|:---:|:---:|' ~ summer_sep ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ summer_cell ~ version_cell %}
-  {{ overview ~ '\n\n' ~ sep_line ~ '\n\n' ~ ns.rooms }}
+  {{ overview ~ '\n\n<details>\n<summary><strong>Räume</strong></summary>\n\n' ~ ns.rooms ~ '\n\n</details>' }}
 ```
 
 Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
@@ -1232,10 +1231,16 @@ Version verzichtet komplett auf `style`-Attribute:
 - **Abstand zwischen Tabellen**: `<small><small><small>&nbsp;</small></small></small>` -
   ein eigenständiger Absatz, durch dreifaches `<small>` möglichst kompakt
   gehalten, ohne jedes Style-Attribut
-- **Trennlinie zwischen Räumen**: schlichtes `<hr>` (Standard-Tag ohne
-  Style-Attribut) - ein Versuch, die Linie über Text-Zeichen dicker/dunkler
-  zu gestalten, führte je nach Bildschirmbreite zu Zeilenumbrüchen; das
-  Standard-`<hr>` ist dafür zuverlässig über die volle Kartenbreite
+- **Einklappbare Bereiche** (seit Karten-Version 35): Die Übersichts-
+  Tabelle (🟢/🟠/🔴, Modus, Version) steht immer sichtbar ganz oben. Darunter
+  liegen alle Räume in einem äußeren `<details>`-Abschnitt "Räume"
+  (standardmäßig **eingeklappt**). Jeder Raum ist ein eigenes `<details>`
+  mit Icon und Raumname als `<summary>`; Räume mit 🔴 sind standardmäßig
+  **aufgeklappt** (`open`), 🟢/🟠 eingeklappt. Das ersetzt die frühere
+  Trennlinie zwischen den Räumen. Wichtig: Home Assistant zeichnet die
+  Markdown-Karte bei jeder Statusänderung neu - ein von Hand geänderter
+  Auf-/Zuklapp-Zustand geht dabei verloren (die JS-Karte merkt sich ihn
+  dagegen)
 - **Hervorhebung des ausschlaggebenden Werts**: `<font color="red"><strong>`
   bzw. `<font color="green"><strong>` statt `<span style="...">` - das
   `style`-Attribut wird gefiltert (siehe oben), das ältere, rein
