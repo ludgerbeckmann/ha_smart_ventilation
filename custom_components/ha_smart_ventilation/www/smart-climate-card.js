@@ -649,10 +649,40 @@ class SmartClimateCardEditor extends HTMLElement {
   _build() {
     if (this._built) return;
     this._built = true;
+    // Bewusst ein natives <input> statt Home Assistants ha-textfield: Diese
+    // interne Komponente wird vom Frontend nur bei Bedarf nachgeladen - wird
+    // unser Editor als einer der ersten/einzigen Nutzer aufgerufen, könnte
+    // sie zu dem Zeitpunkt noch nicht registriert sein, wodurch ein
+    // unsichtbares, funktionsloses Element statt eines echten Eingabefelds
+    // entsteht. Ein natives <input> ist dagegen immer sofort verfügbar,
+    // unabhängig vom Ladezeitpunkt interner HA-Komponenten.
     const wrapper = document.createElement("div");
-    wrapper.style.padding = "12px 0";
-    this._field = document.createElement("ha-textfield");
-    this._field.label = "Titel (optional)";
+    wrapper.innerHTML = `
+      <style>
+        .sc-editor-field { padding: 12px 0; }
+        .sc-editor-field label {
+          display: block;
+          font-size: 0.85em;
+          opacity: 0.8;
+          margin-bottom: 4px;
+        }
+        .sc-editor-field input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 8px 10px;
+          font-size: 1em;
+          border-radius: 4px;
+          border: 1px solid var(--divider-color, #e0e0e0);
+          background: var(--card-background-color, transparent);
+          color: var(--primary-text-color, inherit);
+        }
+      </style>
+      <div class="sc-editor-field">
+        <label for="sc-title-input">Titel (optional)</label>
+        <input id="sc-title-input" type="text" />
+      </div>
+    `;
+    this._field = wrapper.querySelector("input");
     this._field.addEventListener("input", (ev) => {
       const value = ev.target.value;
       const newConfig = { ...this._config };
@@ -670,7 +700,6 @@ class SmartClimateCardEditor extends HTMLElement {
         })
       );
     });
-    wrapper.appendChild(this._field);
     this.appendChild(wrapper);
     this._syncField();
   }
