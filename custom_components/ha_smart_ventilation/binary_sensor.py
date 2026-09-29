@@ -15,6 +15,8 @@ from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import (
     AddEntitiesCallback,
     async_get_current_platform,
@@ -25,6 +27,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
 from .const import (
     CONF_AC_ENTITY,
@@ -3028,61 +3031,107 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         title: str | None = None,
         tag: str | None = None,
     ) -> str | None:
-        """Verschickt eine App-Push-Nachricht an eine einzelne notify-
-        Entität, inkl. `tag` im `data`-Feld für das "clean notification"-
-        Muster (siehe _notify()/_clear_mobile_notification(), Lektion 18).
+        """Verschickt eine App-Push-Nachricht an ein einzelnes notify-Ziel.
+
+        WICHTIG (CLAUDE.md Lektion 66): Der Entity-Dienst `notify.send_message`
+        akzeptiert ausschließlich `message` und `title` - ein `data`-Feld
+        (und damit `tag`/`clear_notification` der Companion-App) wird von
+        Home Assistant mit "not a valid option at 'data'" abgelehnt. Genau
+        das ließ bis 0.79.0 JEDEN Push scheitern. Ersetzen/Auflösen einer
+        Benachrichtigung (`tag`, "clean notification", Lektion 18) kennt nur
+        der klassische Companion-Dienst `notify.mobile_app_<gerät>`. Deshalb:
+
+        1. Existiert für das Ziel ein passender `notify.mobile_app_*`-Dienst
+           (siehe _mobile_app_service_name()), wird er mit `data.tag`
+           aufgerufen - volle Funktion inkl. Ersetzen und Auflösen.
+        2. Sonst geht die Nachricht über `notify.send_message` OHNE `data`
+           raus: sie kommt an, lässt sich aber nicht ersetzen/auflösen. Ein
+           "clear_notification" wird dann gar nicht gesendet (es würde als
+           Klartext-Nachricht angezeigt).
 
         Bewusst `blocking=True`, obwohl der Rest dieser Integration
         Geräte-Steuerbefehle üblicherweise mit `blocking=False` abfeuert:
-        Nicht jede notify-Entität unterstützt ein `data`-Feld (nur echte
-        Companion-App-Entitäten tun das zuverlässig) - lehnt die
-        Ziel-Entität es per Schema ab, muss der Fehler synchron in diesem
-        `await` ankommen, um ihn hier abzufangen. Mit `blocking=False`
-        passiert die Schema-Validierung dagegen in einem intern erzeugten,
-        von uns nicht beobachteten Task - ein solcher Fehler landet dann
-        unabhängig von jedem try/except als "Task exception was never
-        retrieved" im Log, wiederholt bei jeder Neubewertung (siehe
-        Lektion 35).
-
-        Nachtrag zu Lektion 35 (0.64.x): `except Exception` statt nur
-        `except HomeAssistantError` - genau dieser Schema-Validierungsfehler
-        (`probatio.error.MultipleInvalid: not a valid option at 'data'`,
-        unverändert aus homeassistant/core.py durchgereicht) ist KEINE
-        HomeAssistantError-Unterklasse. `except HomeAssistantError` allein
-        ließ ihn trotz `blocking=True` weiterhin bis zum unbeobachteten Task
-        durchreichen - Lektion 35s eigentliches Ziel (den Fehler HIER
-        abzufangen, nicht nur synchron zu machen) wurde dadurch verfehlt,
-        ohne dass das bis zu einem tatsächlichen Log-Beleg auffiel. Der
-        try-Block enthält ausschließlich diesen einen Service-Aufruf, ein
-        bewusst breiter Except-Typ maskiert hier keine anderen Fehler.
+        Ein Schema-Fehler muss synchron in diesem `await` ankommen, um hier
+        abgefangen zu werden (Lektion 35). `except Exception` statt nur
+        `except HomeAssistantError`: die Schema-Validierung wirft
+        `MultipleInvalid`, keine HomeAssistantError-Unterklasse (Lektion 35,
+        Nachtrag). Der try-Block enthält ausschließlich den einen
+        Service-Aufruf, ein breiter Except-Typ maskiert hier nichts anderes.
 
         Liefert None bei Erfolg (aus Sicht von Home Assistant - ob das
         Gerät die Nachricht tatsächlich anzeigt, ist damit nicht belegt),
-        sonst den Fehlertext. Jeder Versuch landet im `push_verlauf`; das
-        reine Auflösen ("clear_notification") nur im Fehlerfall, um den
-        Verlauf nicht mit Routine-Einträgen zu füllen."""
-        data = {
-            "entity_id": entity_id,
-            "message": message,
-            "data": {"tag": tag or self._notification_id()},
-        }
+        sonst den Fehlertext. Jeder Versuch landet im `push_verlauf` (mit
+        dem genutzten Weg); das reine Auflösen ("clear_notification") nur
+        im Fehlerfall, um den Verlauf nicht mit Routine-Einträgen zu
+        füllen."""
+        is_clear = message == "clear_notification"
+        service = self._mobile_app_service_name(entity_id)
+        if service is not None:
+            call_domain, call_service = "notify", service
+            data: dict = {
+                "message": message,
+                "data": {"tag": tag or self._notification_id()},
+            }
+            via = f"über notify.{service}"
+        else:
+            if is_clear:
+                _LOGGER.debug(
+                    "Auflösen für %s übersprungen: kein notify.mobile_app_*-"
+                    "Dienst gefunden, ohne tag nicht möglich",
+                    entity_id,
+                )
+                return None
+            call_domain, call_service = "notify", "send_message"
+            data = {"entity_id": entity_id, "message": message}
+            via = (
+                "ohne tag (kein notify.mobile_app_*-Dienst zu diesem Ziel "
+                "gefunden - Ersetzen/Auflösen nicht möglich)"
+            )
         if title is not None:
             data["title"] = title
         try:
             await self.hass.services.async_call(
-                "notify", "send_message", data, blocking=True
+                call_domain, call_service, data, blocking=True
             )
         except Exception as err:  # noqa: BLE001 - siehe Docstring oben
             error = f"{type(err).__name__}: {err}"
             self._log_push(
-                f"FEHLER beim Senden an {entity_id}: {error} - unterstützt "
-                "diese notify-Entität ein `data`-Feld mit `tag` (z. B. eine "
-                "Companion-App-Entität)?",
+                f"FEHLER beim Senden an {entity_id} {via}: {error}",
                 level=logging.WARNING,
             )
             return error
-        if message != "clear_notification":
-            self._log_push(f"gesendet an {entity_id} ({title or 'ohne Titel'})")
+        if not is_clear:
+            self._log_push(
+                f"gesendet an {entity_id} {via} ({title or 'ohne Titel'})"
+            )
+        return None
+
+    def _mobile_app_service_name(self, entity_id: str) -> str | None:
+        """Ermittelt zu einem notify-Ziel (Entität der Companion App) den
+        klassischen Dienstnamen `mobile_app_<gerät>` unter der `notify`-
+        Domain, falls dieser existiert - nur er unterstützt `data`
+        (`tag`, `clear_notification`), siehe _send_mobile_push().
+
+        Kandidaten: der aus dem Gerätenamen (Geräteregister) abgeleitete
+        Slug, danach der Objekt-Teil der Entity-ID selbst (bei Companion-App-
+        Entitäten stimmt beides in aller Regel überein). Gilt nur, wenn der
+        Dienst tatsächlich registriert ist."""
+        candidates: list[str] = []
+        try:
+            entry = er.async_get(self.hass).async_get(entity_id)
+            if entry is not None and entry.device_id:
+                device = dr.async_get(self.hass).async_get(entry.device_id)
+                if device is not None:
+                    for name in (device.name, device.name_by_user):
+                        if name:
+                            candidates.append(slugify(name))
+        except Exception:  # noqa: BLE001 - reine Komfort-Ermittlung
+            _LOGGER.debug("Geräteregister-Abfrage für %s fehlgeschlagen", entity_id)
+        candidates.append(entity_id.split(".", 1)[-1])
+        for candidate in candidates:
+            service = f"mobile_app_{candidate}"
+            if self.hass.services.has_service("notify", service):
+                return service
         return None
 
     def _log_push(self, text: str, *, level: int = logging.INFO) -> None:

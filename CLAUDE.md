@@ -3397,6 +3397,45 @@ bereits bestehender, verwandter Vergleich (hier: das entsprechende
 zwischen beiden fällt oft erst auf, wenn die Werte tatsächlich in die
 schmale Übergangszone fallen, nicht beim ursprünglichen Fix selbst.
 
+**66. `notify.send_message` kennt kein `data`-Feld - bis 0.79.0 scheiterte
+dadurch JEDER App-Push, ohne dass es je aufgefallen war (0.79.1).**
+Nutzer-Meldung über mehrere Sessions: "Ich bekomme generell keine
+Push-Mitteilung dieser Integration", obwohl andere Benachrichtigungen
+ankommen und ein manueller `notify.send_message`-Test (Lektion 57)
+funktionierte - der Test enthielt aber vermutlich kein `data`. Der Fehler
+war von außen nicht eingrenzbar, weil der Sendepfad an mehreren Stellen
+still ausfiel (Push wirksam deaktiviert: kein Log; Person nicht `home`: nur
+Debug; Sendefehler: Warnung ohne Exception-Text). Deshalb wurde in 0.79.0
+zuerst Beobachtbarkeit gebaut: Attribut `push_verlauf` (letzte 8 Einträge),
+Skip-Gründe auf Info-Level, echte Exception im Log und ein Entity-Dienst
+`send_test_push`. Dessen erster Aufruf auf der echten Instanz lieferte
+sofort die Ursache: `MultipleInvalid: not a valid option at 'data'` für
+alle Ziele. Der Entity-Dienst `notify.send_message` akzeptiert (Stand 2026)
+nur `message` und `title` (bestätigt in der HA-Doku); `tag`/
+`clear_notification` der Companion-App - und damit das gesamte "Clean
+Notification"-Muster aus Lektion 18/43 - gibt es nur über den klassischen
+Dienst `notify.mobile_app_<gerät>`. Lektion 35/36 hatten das Symptom
+(Schema-Fehler bei `data`) bereits gesehen, aber als "ungeeignete notify-
+Entität ausgewählt" fehldiagnostiziert und nur den Fehlerumgang gehärtet
+(Except-Typ, `blocking=True`, Selector-Filter `integration="mobile_app"`),
+nicht den Sendeweg selbst hinterfragt.
+
+Fix: `_send_mobile_push()` ermittelt über `_mobile_app_service_name()` den
+Dienst `notify.mobile_app_<slug>` (Kandidaten: Gerätename aus dem
+Geräteregister, dann Objektteil der Entity-ID; nur wenn der Dienst wirklich
+registriert ist) und ruft ihn mit `data.tag` auf. Ohne solchen Dienst geht
+die Nachricht über `notify.send_message` ohne `data` raus (kommt an, aber
+kein Ersetzen/Auflösen); ein `clear_notification` wird in diesem Fall NICHT
+gesendet, da es sonst als Klartext-Nachricht erschiene. Der genutzte Weg
+steht im `push_verlauf`. Nicht gegen eine echte Instanz verifizierbar war
+die Zuordnung Entität -> Dienstname (Stub-Tests + Debug-Test-Dienst).
+Lektion: Ein Fehler, der trotz mehrfacher "Härtung" derselben Fehlerklasse
+wiederkehrt (hier Lektion 35, 36, 57), ist ein Signal, die ANNAHME zu
+prüfen, nicht den Fehlerumgang - und wer einen stillen Ausfallpfad
+vermutet, sollte zuerst Beobachtbarkeit (Verlauf, Test-Auslöser mit echter
+Fehlermeldung) bauen statt weiter zu raten; der Test-Dienst hat hier in
+einem einzigen Aufruf geleistet, was Wochen der Ferndiagnose nicht schafften.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

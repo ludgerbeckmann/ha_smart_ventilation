@@ -1658,8 +1658,20 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   Sprachausgabe unterdrückt wird - App-Push und persistente Benachrichtigung
   werden davon nicht beeinflusst. Betrifft auch die Tank-voll-Benachrichtigung
   (siehe unten).
-- Für App-Benachrichtigungen wird `notify.send_message` auf die gewählte
-  notify-Entität aufgerufen (benötigt Home Assistant 2024.9 oder neuer).
+- **Sendeweg der App-Benachrichtigungen:** Der Home-Assistant-Dienst
+  `notify.send_message` akzeptiert nur `message` und `title` - kein
+  `data`-Feld mit `tag`. Die Integration ermittelt deshalb zum gewählten
+  Companion-App-Ziel den klassischen Dienst `notify.mobile_app_<gerät>`
+  (aus dem Gerätenamen bzw. dem Namen der notify-Entität) und ruft, wenn er
+  existiert, diesen mit `tag` auf - nur so funktionieren Ersetzen und
+  Auflösen ("Clean Notification", siehe unten). Findet sich kein solcher
+  Dienst, geht die Nachricht über `notify.send_message` **ohne** `tag` raus:
+  sie kommt an, wird aber nicht ersetzt/aufgelöst (ein Auflösen wird dann
+  gar nicht erst gesendet). Welcher Weg genutzt wurde, steht im Attribut
+  `push_verlauf` (siehe "Fehlersuche / Diagnose"). Vor Version 0.79.1 wurde
+  fälschlich immer `notify.send_message` mit `tag` aufgerufen - Home
+  Assistant lehnte das mit `not a valid option at 'data'` ab, sodass gar
+  kein Push ankam.
 - **"Clean Notification"**: Erledigt sich eine Lüften-Empfehlung (Fenster
   wurde geöffnet/geschlossen und/oder die Werte haben sich normalisiert),
   wird eine zuvor gesendete Push-Benachrichtigung automatisch auf dem
@@ -1672,14 +1684,12 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   geöffnet/geschlossen hat, bevor sich die zugrunde liegenden Werte
   normalisiert haben - dafür ist kein vollständiger Zustandswechsel der
   Empfehlung nötig, es reicht, dass der konfigurierte Fensterkontakt den
-  gewünschten Zustand erreicht. Das erfordert eine notify-Entität, die ein
-  `data`-Feld mit `tag` unterstützt - deshalb ist die Auswahl beim
-  App-Benachrichtigungsziel auf Companion-App-Entitäten eingeschränkt
-  (siehe oben). Wird trotzdem eine andere notify-Entität konfiguriert
-  (z. B. nachträglich über die Home-Assistant-eigene YAML-Konfiguration)
-  und lehnt diese `data` per Schema ab, wird nur eine Warnung geloggt
-  ("Konnte Push-Benachrichtigung an ... nicht senden"), statt die
-  Neubewertung fehlschlagen zu lassen.
+  gewünschten Zustand erreicht. Das erfordert den Companion-App-Dienst
+  `notify.mobile_app_<gerät>` (siehe "Sendeweg" oben) - deshalb ist die
+  Auswahl beim App-Benachrichtigungsziel auf Companion-App-Entitäten
+  eingeschränkt. Ein Sendefehler wird im `push_verlauf` und als Warnung
+  mit der echten Fehlermeldung protokolliert, statt die Neubewertung
+  fehlschlagen zu lassen.
 - **Benachrichtigung bei vollem Wassertank**: Ist für einen Raum ein
   Tankstatus-Sensor konfiguriert UND die zugehörige Benachrichtigung
   aktiviert, löst ein Vollwerden des Tanks eine eigene Benachrichtigung über
