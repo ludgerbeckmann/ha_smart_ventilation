@@ -335,9 +335,9 @@ class SmartClimateCard extends HTMLElement {
       // Geräte-Tabelle
       let deviceRows = "";
       if (has(a, "luftentfeuchter_an")) {
-        let name = `${a.luftentfeuchter_an ? "🔴" : "⚫"}&nbsp;Luftentfeuchter`;
+        let name = `${a.luftentfeuchter_an ? "🔴" : "⚫"} Luftentfeuchter`;
         if (has(a, "luftentfeuchter_tank_fehler")) {
-          name += `<br>${a.luftentfeuchter_tank_fehler ? "🔴" : "🟢"}&nbsp;Wassertank`;
+          name += `<br>${a.luftentfeuchter_tank_fehler ? "🔴" : "🟢"} Wassertank`;
         }
         let laufzeit = "–";
         if (a.luftentfeuchter_an && a.luftentfeuchter_seit) {
@@ -349,7 +349,7 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "klimaanlage_an")) {
-        const name = `${a.klimaanlage_an ? "🔴" : "⚫"}&nbsp;Klimaanlage`;
+        const name = `${a.klimaanlage_an ? "🔴" : "⚫"} Klimaanlage`;
         let laufzeit = "–";
         if (a.klimaanlage_an && a.klimaanlage_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.klimaanlage_seit).getTime()) / 60000);
@@ -360,9 +360,9 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "heizung_an")) {
-        let name = `${a.heizung_an ? "🔴" : "⚫"}&nbsp;Heizung`;
+        let name = `${a.heizung_an ? "🔴" : "⚫"} Heizung`;
         const modeInfo = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
-        if (modeInfo) name += `<br>${modeInfo.icon}&nbsp;${modeInfo.text}`;
+        if (modeInfo) name += `<br>${modeInfo.icon} ${modeInfo.text}`;
         let laufzeit = "–";
         if (a.heizung_an && a.heizung_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.heizung_seit).getTime()) / 60000);
@@ -376,7 +376,7 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td>${name}</td><td class="center">${laufzeit}</td><td>${grund}</td></tr>`;
       }
       if (has(a, "duschen_erkannt")) {
-        const name = `${a.duschen_erkannt ? "🟢" : "⚫"}&nbsp;Dusche`;
+        const name = `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`;
         let laufzeit = "–";
         if (a.duschen_erkannt && a.dusche_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.dusche_seit).getTime()) / 60000);
