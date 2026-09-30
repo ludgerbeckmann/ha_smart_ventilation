@@ -244,7 +244,7 @@ class SmartClimateCard extends HTMLElement {
     let summerMode = null;
     // Außenwerte sind für alle Räume gleich und stehen oben unter der
     // Statuszeile - hier der jeweils erste Raum mit einem Wert.
-    const outdoor = { temp: null, hum: null, abs: null, tempEnt: "", humEnt: "", absEnt: "" };
+    const outdoor = { temp: null, hum: null, abs: null, dew: null, tempEnt: "", humEnt: "", absEnt: "", dewEnt: "" };
     let summerModeEntity = "";
     const entries = [];
 
@@ -328,6 +328,10 @@ class SmartClimateCard extends HTMLElement {
         outdoor.abs = a.aussen_absolute_luftfeuchtigkeit;
         outdoor.absEnt = ents.aussen_absolute_luftfeuchtigkeit || "";
       }
+      if (outdoor.dew === null && has(a, "aussen_taupunkt") && a.aussen_taupunkt !== null) {
+        outdoor.dew = a.aussen_taupunkt;
+        outdoor.dewEnt = ents.aussen_taupunkt || "";
+      }
 
       if (matchIcon === "🟢") green += 1;
       else if (matchIcon === "🟠") orange += 1;
@@ -393,6 +397,11 @@ class SmartClimateCard extends HTMLElement {
           s.state === "on" && openReasons.includes("humidity") && absIn !== "–" && absOutAvailable;
         absIn = wrap(absIn, absOpenGate);
         absRow = `<tr><td>${ent(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit")}</td><td class="nw">${absIn}</td><td class="nw">–</td></tr>`;
+      }
+
+      let dewRow = "";
+      if (has(a, "luftfeuchtigkeit") && has(a, "taupunkt") && a.taupunkt !== null) {
+        dewRow = `<tr><td>${ent(ents.taupunkt, "Taupunkt")}</td><td class="nw">${roundStr(a.taupunkt, 1)} °C</td><td class="nw">–</td></tr>`;
       }
 
       // Geräte-Tabelle
@@ -478,7 +487,7 @@ class SmartClimateCard extends HTMLElement {
       const valuesTable =
         `<table class="values"><thead><tr><th colspan="2">Messwert</th><th>Normalbereich</th></tr></thead><tbody>` +
         `<tr><td>${ent(ents.innentemperatur || a.temperatur_quelle, "Temperatur")}</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
-        `${humRow}${absRow}${co2Row}</tbody></table>`;
+        `${humRow}${absRow}${dewRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
       const n1Ziel = has(a, "sprachausgabe_lautsprecher")
@@ -555,7 +564,7 @@ class SmartClimateCard extends HTMLElement {
         .join("")}</tr></tbody></table>`;
 
     let outdoorTable = "";
-    if (outdoor.temp !== null || outdoor.hum !== null || outdoor.abs !== null) {
+    if (outdoor.temp !== null || outdoor.hum !== null || outdoor.abs !== null || outdoor.dew !== null) {
       const row = (label, valueHtml) =>
         `<tr><td>${label}</td><td class="nw">${valueHtml}</td></tr>`;
       outdoorTable =
@@ -563,6 +572,7 @@ class SmartClimateCard extends HTMLElement {
         row(ent(outdoor.tempEnt, "Temperatur"), outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : "–") +
         row(ent(outdoor.humEnt, "Luftfeuchtigkeit"), outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : "–") +
         row(ent(outdoor.absEnt, "Abs. Luftfeuchtigkeit"), outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–") +
+        row(ent(outdoor.dewEnt, "Taupunkt"), outdoor.dew !== null ? `${roundStr(outdoor.dew, 1)} °C` : "–") +
         `</tbody></table>`;
     }
 

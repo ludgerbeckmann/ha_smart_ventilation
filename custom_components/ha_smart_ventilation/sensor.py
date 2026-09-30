@@ -1,4 +1,4 @@
-"""Sensor Plattform: absolute Luftfeuchtigkeit (g/m³) pro Raum und außen.
+"""Sensor Plattform: absolute Luftfeuchtigkeit (g/m³) und Taupunkt (°C) pro Raum und außen.
 
 Die absolute Luftfeuchtigkeit wird - wie schon für die Lüftungsentscheidung
 und die Dashboard-Karte - aus Temperatur und relativer Luftfeuchtigkeit über
@@ -10,15 +10,22 @@ Karte) und Automationen zur Verfügung.
 - Pro Raum: "‹Raum› Absolute Luftfeuchtigkeit", nur wenn für den Raum ein
   Luftfeuchtigkeitssensor konfiguriert ist (Innentemperatur/Feuchte aus den
   Raum-Einstellungen).
+- Pro Raum: "‹Raum› Taupunkt" (Magnus-Formel, gleiche Eingangswerte wie
+  die absolute Luftfeuchtigkeit).
 - Außen: "Außen Absolute Luftfeuchtigkeit", hängt am Eintrag "Smart Climate
   Optionen" und nutzt den dort konfigurierten Außentemperatur-/
-  Außenluftfeuchtigkeitssensor.
+  Außenluftfeuchtigkeitssensor; ebenso "Außen Taupunkt".
 """
 from __future__ import annotations
 
 from datetime import timedelta
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.const import UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -89,6 +96,13 @@ def absolute_humidity(temp_c: float | None, rh_percent: float | None) -> float |
     return round(SmartVentilationBinarySensor._absolute_humidity(temp_c, rh_percent), 1)
 
 
+def dew_point(temp_c: float | None, rh_percent: float | None) -> float | None:
+    if temp_c is None or rh_percent is None:
+        return None
+    value = SmartVentilationBinarySensor._dew_point(temp_c, rh_percent)
+    return None if value is None else round(value, 1)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -97,9 +111,11 @@ async def async_setup_entry(
     """Legt je Raum (mit Luftfeuchtigkeitssensor) bzw. für die allgemeinen
     Einstellungen (Außen) den Sensor für die absolute Luftfeuchtigkeit an."""
     if entry.data.get(CONF_IS_GLOBAL):
-        async_add_entities([OutdoorAbsoluteHumiditySensor(hass, entry)])
+        async_add_entities(
+            [OutdoorAbsoluteHumiditySensor(hass, entry), OutdoorDewPointSensor(hass, entry)]
+        )
     elif entry.data.get(CONF_HUMIDITY_ENTITY):
-        async_add_entities([RoomAbsoluteHumiditySensor(entry)])
+        async_add_entities([RoomAbsoluteHumiditySensor(entry), RoomDewPointSensor(entry)])
 
 
 class _AbsoluteHumiditySensor(SensorEntity):
@@ -107,6 +123,12 @@ class _AbsoluteHumiditySensor(SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_suggested_display_precision = 1
     _attr_icon = "mdi:water-percent"
+    _NAME_SUFFIX = "Absolute Luftfeuchtigkeit"
+    _UID_SUFFIX = "absolute_luftfeuchtigkeit"
+
+    @staticmethod
+    def _compute(temp_c: float | None, rh_percent: float | None) -> float | None:
+        return absolute_humidity(temp_c, rh_percent)
 
     def _source_entities(self) -> list[str]:
         raise NotImplementedError
@@ -149,8 +171,8 @@ class RoomAbsoluteHumiditySensor(_AbsoluteHumiditySensor):
 
     def __init__(self, entry: ConfigEntry) -> None:
         self._config = entry.data
-        self._attr_name = f"{entry.data[CONF_ROOM_NAME]} Absolute Luftfeuchtigkeit"
-        self._attr_unique_id = f"{entry.entry_id}_absolute_luftfeuchtigkeit"
+        self._attr_name = f"{entry.data[CONF_ROOM_NAME]} {self._NAME_SUFFIX}"
+        self._attr_unique_id = f"{entry.entry_id}_{self._UID_SUFFIX}"
 
     def _source_entities(self) -> list[str]:
         return [
@@ -160,7 +182,7 @@ class RoomAbsoluteHumiditySensor(_AbsoluteHumiditySensor):
 
     @property
     def native_value(self) -> float | None:
-        return absolute_humidity(
+        return self._compute(
             read_temperature(
                 self.hass,
                 self._config.get(CONF_TEMP_SOURCE_ENTITY),
@@ -177,8 +199,8 @@ class OutdoorAbsoluteHumiditySensor(_AbsoluteHumiditySensor):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self._entry_id = entry.entry_id
-        self._attr_name = "Außen Absolute Luftfeuchtigkeit"
-        self._attr_unique_id = f"{entry.entry_id}_aussen_absolute_luftfeuchtigkeit"
+        self._attr_name = f"Außen {self._NAME_SUFFIX}"
+        self._attr_unique_id = f"{entry.entry_id}_aussen_{self._UID_SUFFIX}"
 
     def _global_config(self) -> dict:
         domain_data = self.hass.data.get(DOMAIN, {})
@@ -195,7 +217,29 @@ class OutdoorAbsoluteHumiditySensor(_AbsoluteHumiditySensor):
     @property
     def native_value(self) -> float | None:
         config = self._global_config()
-        return absolute_humidity(
+        return self._compute(
             read_temperature(self.hass, config.get(CONF_OUTDOOR_TEMP_ENTITY), None),
             read_float(self.hass, config.get(CONF_OUTDOOR_HUMIDITY_ENTITY), 0),
         )
+
+
+class _DewPointMixin:
+    """Taupunkt (°C) statt absoluter Luftfeuchtigkeit - gleiche Quellen."""
+
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_icon = "mdi:thermometer-water"
+    _NAME_SUFFIX = "Taupunkt"
+    _UID_SUFFIX = "taupunkt"
+
+    @staticmethod
+    def _compute(temp_c: float | None, rh_percent: float | None) -> float | None:
+        return dew_point(temp_c, rh_percent)
+
+
+class RoomDewPointSensor(_DewPointMixin, RoomAbsoluteHumiditySensor):
+    """Taupunkt eines Raums."""
+
+
+class OutdoorDewPointSensor(_DewPointMixin, OutdoorAbsoluteHumiditySensor):
+    """Taupunkt außen."""

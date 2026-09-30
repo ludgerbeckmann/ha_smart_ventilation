@@ -789,20 +789,27 @@ Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
 Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
 nutzt die berechnete absolute Feuchte.
 
-## Absolute Luftfeuchtigkeit als Sensor
+## Absolute Luftfeuchtigkeit und Taupunkt als Sensoren
 
 Die Integration legt die absolute Luftfeuchtigkeit (g/m³, Magnus-Formel wie in
-der Lüftungslogik) zusätzlich als eigene `sensor`-Entitäten an:
+der Lüftungslogik) und den Taupunkt (°C, ebenfalls Magnus-Formel) zusätzlich
+als eigene `sensor`-Entitäten an:
 
 - `sensor.<raum>_absolute_luftfeuchtigkeit` - je Raum mit konfiguriertem
   Feuchtigkeitssensor (Temperatur und Feuchte des Raums).
 - `sensor.aussen_absolute_luftfeuchtigkeit` - einmal, aus den in den globalen
   Einstellungen gewählten Außensensoren.
+- `sensor.<raum>_taupunkt` und `sensor.aussen_taupunkt` - dieselben
+  Quellen, Ergebnis in °C (Temperatur, bei 0 % Luftfeuchtigkeit "nicht
+  verfügbar"). Der Taupunkt ist die Temperatur, auf die Luft abkühlen muss,
+  damit Feuchtigkeit kondensiert - kältere Oberflächen (Fenster, Außenwand-
+  ecken) beschlagen bzw. schimmeln. Ist der Außentaupunkt niedriger als der
+  Innentaupunkt, ist die Außenluft absolut trockener (Lüften entfeuchtet).
 
-Beide sind normale Sensoren (Verlauf, Diagramme, Automationen) und liefern
+Alle sind normale Sensoren (Verlauf, Diagramme, Automationen) und liefern
 "nicht verfügbar", solange ein Eingangswert fehlt. Der Raum-Sensor reagiert auf
 Änderungen der Quell-Sensoren, der Außen-Sensor zusätzlich alle 5 Minuten. Die
-JS-Karte öffnet sie per Klick auf "Abs. Luftfeuchtigkeit". Nach dem Update ist
+JS-Karte zeigt den Taupunkt als eigene Zeile (Raum- und Außen-Tabelle) und öffnet die Sensoren per Klick auf "Abs. Luftfeuchtigkeit" bzw. "Taupunkt". Nach dem Update ist
 ein Neustart von Home Assistant nötig (neue Plattform).
 
 ## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung/Sommer-/Winterbetrieb)
@@ -1013,6 +1020,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `offene_gruende` | Liste der aktuell live zutreffenden Öffnen-Gründe (`temp`/`humidity`/`co2`, auch mehrere gleichzeitig möglich) - "liegt der Messwert gerade außerhalb des Normalbereichs" **und** die Außenluft-Prüfung des jeweiligen Grunds (Temperatur: Außen kühler, Luftfeuchtigkeit: Außen absolut trockener, CO2: nicht bei zu warmer Außenluft, außer deutlich erhöht), damit die Karte keinen Auslöser zeigt, der die Empfehlung gar nicht auslöst. Unabhängig vom tatsächlichen `should_open` (das zusätzlich Frost-/Hitzeschutz/Hysterese/Duscherkennung berücksichtigt). Dient der Dashboard-Karte für den Fenster-Mismatch-Abgleich, ohne die Vergleichslogik selbst nachbauen zu müssen |
 | `schliessgrund_live` | wie `offene_gruende`, aber für die Schließen-Seite (dort kann strukturell nur ein Grund gewinnen): `temp`/`humidity`/`co2`/`frost`/`heat`/`outdoor_warmer`/`outdoor_wetter`/`duration`, leerer String falls keiner zutrifft. Berücksichtigt bereits "Schließempfehlung deaktivieren" (reine Komfort-Gründe entfallen dann, Frost-/Hitzeschutz bleiben unberührt) |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
+| `taupunkt` / `aussen_taupunkt` | Taupunkt in °C (Magnus-Formel), nur wenn Temperatur und Feuchte vorliegen und die Feuchte > 0 % ist - nur für die Anzeige in der JS-Karte |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
 | `letzter_wechsel` | Zeitpunkt des letzten ECHTEN Empfehlungswechsels (nur bei tatsächlichem Zustandswechsel neu gesetzt, über Neustarts hinweg korrekt erhalten) - anders als `last_changed` der Entität selbst, das Home Assistant bei jedem Neustart auf den Neustart-Zeitpunkt zurücksetzt. Von der Dashboard-Karte für die "Uhrzeit"-Spalte der Empfehlung verwendet, statt sich auf das irreführende `last_changed` zu verlassen |
@@ -1037,7 +1045,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 | `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
-| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `sommermodus`, `dusche`, `absolute_luftfeuchtigkeit`, `aussen_absolute_luftfeuchtigkeit`) - nur die konfigurierten bzw. vorhandenen. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
+| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `sommermodus`, `dusche`, `absolute_luftfeuchtigkeit`, `aussen_absolute_luftfeuchtigkeit`, `taupunkt`, `aussen_taupunkt`) - nur die konfigurierten bzw. vorhandenen. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
 | `integration_version` | aktuell installierte Version der Integration (aus `manifest.json`) - identisch für jeden Raum, dient nur der Dashboard-Karte zur Anzeige der Versionsnummer |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
@@ -1587,14 +1595,14 @@ Verlauf/Logbuch) der jeweiligen Entität: "Temperatur", "Luftfeuchtigkeit" und
 Statuszeile (globaler Sommer-/Winterschalter) sowie die Ziele der
 Benachrichtigungen. Die Werte selbst (z. B. "22,3 °C", "geöffnet") sind nicht
 klickbar; klickbare Elemente zeigen nur den Mauszeiger, keine Unterstreichung.
-Auch "Abs. Luftfeuchtigkeit" ist klickbar (eigene Sensoren, siehe "Absolute Luftfeuchtigkeit als Sensor").
+Auch "Abs. Luftfeuchtigkeit" und "Taupunkt" sind klickbar (eigene Sensoren, siehe "Absolute Luftfeuchtigkeit als Sensor").
 Die Entity-IDs liefert das Attribut `entitaeten` (nur die tatsächlich
 konfigurierten). Die Markdown-Karte kann das nicht.
 
 **Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
 JS-Karte sie einmal ganz oben unter der Statuszeile in einer eigenen Tabelle
-(Titel "Außen-Messwerte": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit;
-Temperatur, Luftfeuchtigkeit und absolute Luftfeuchtigkeit sind antippbar und öffnen die Detailansicht
+(Titel "Außen-Messwerte": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit, Taupunkt;
+alle vier sind antippbar und öffnen die Detailansicht
 des jeweiligen Sensors). Die Messwert-Tabellen der einzelnen Räume haben dadurch
 keine Spalte "Außen" mehr (Kopfzeile nur noch "Messwert" über Bezeichnung und Wert sowie "Normalbereich"; die Überschrift "Innen" entfällt, da klar ist, dass es der Innenwert ist) - die
 Hervorhebung der Außenzelle bei "Außen wärmer/feuchter", Frost und Hitze

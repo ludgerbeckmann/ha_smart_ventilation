@@ -627,6 +627,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["aussen_absolute_luftfeuchtigkeit"] = round(
                 self._absolute_humidity(outdoor_temp, outdoor_humidity), 1
             )
+        if humidity is not None and indoor_temp is not None:
+            dew = self._dew_point(indoor_temp, humidity)
+            if dew is not None:
+                attrs["taupunkt"] = round(dew, 1)
+        if outdoor_humidity is not None and outdoor_temp is not None:
+            dew = self._dew_point(outdoor_temp, outdoor_humidity)
+            if dew is not None:
+                attrs["aussen_taupunkt"] = round(dew, 1)
         if self._config.get(CONF_TEMP_ATTRIBUTE):
             attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
         if self._config.get(CONF_WINDOW_ENTITY):
@@ -651,6 +659,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             "aussen_absolute_luftfeuchtigkeit": self._sensor_entity_id(
                 self.hass.data.get(DOMAIN, {}).get(GLOBAL_ENTRY_ID_KEY),
                 "aussen_absolute_luftfeuchtigkeit",
+            ),
+            "taupunkt": self._sensor_entity_id(self._entry.entry_id, "taupunkt"),
+            "aussen_taupunkt": self._sensor_entity_id(
+                self.hass.data.get(DOMAIN, {}).get(GLOBAL_ENTRY_ID_KEY),
+                "aussen_taupunkt",
             ),
             "dusche": (
                 self._shower_sensor.entity_id if self._shower_sensor is not None else None
@@ -993,6 +1006,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         vapor_pressure = (rh_percent / 100) * saturation_vapor_pressure
         return 216.7 * vapor_pressure / (273.15 + temp_c)
+
+    @staticmethod
+    def _dew_point(temp_c: float, rh_percent: float) -> float | None:
+        """Taupunkt (°C) aus Temperatur (°C) und relativer Luftfeuchtigkeit (%)
+        über die Magnus-Formel (dieselben Konstanten wie _absolute_humidity).
+        None bei 0 % Luftfeuchtigkeit (Taupunkt nicht definiert)."""
+        if rh_percent <= 0:
+            return None
+        gamma = math.log(rh_percent / 100) + (17.62 * temp_c) / (243.12 + temp_c)
+        return 243.12 * gamma / (17.62 - gamma)
 
     def _update_shower_detection(self, humidity: float | None, now) -> bool:
         """Erkennt ein laufendes Duschen rein anhand des Anstiegs der
