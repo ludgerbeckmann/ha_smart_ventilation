@@ -3706,6 +3706,24 @@ eine Hintergrund-Ebene wird dagegen von `border-radius` beschnitten; und Screens
 Skripte schreiben relativ zum Arbeitsverzeichnis - vor dem Ansehen den Zeitstempel
 der PNG prüfen (ich sah zuerst ein veraltetes Bild).
 
+**88. JS-Karte: Empfehlungs-Tabelle umgebaut - Zeilen statt Spalten, Bezeichnung wie Wert eingefärbt (0.89.4).**
+Nutzerwunsch (Screenshot Flur OG): Die Begriffe "Fenster" und "Empfehlung" stehen
+untereinander in der ersten Spalte, die Spalten heißen "Status" und "Uhrzeit", die
+Kopfzelle der ersten Spalte bleibt leer - der Auslöser ergibt sich aus der
+Werte-Tabelle darunter, in der die Bezeichnung (Temperatur/Luftfeuchtigkeit/CO2/Abs.
+Luftfeuchtigkeit) wie der Wert eingefärbt wird (`wrapLabel`, gleiche Farbklasse wie die
+Wert-Zelle; ein fehlender Messwert färbt auch die Bezeichnung orange). Zuerst als
+Vorschau (Screenshot aus einer Kopie) gezeigt; meine erste Lesart "Kopfzelle zeigt den
+Auslöser" war falsch - erst die Rückfrage brachte "leer lassen". Die eigene
+Auslöser-Spalte entfällt, damit auch `grundLabel`/`openLabel`. Nebenwirkung, die vorab
+benannt wurde: Gründe ohne eigene Messwert-Zeile (Frost, Hitze, Außen wärmer/feuchter,
+Winter-Höchstdauer) wären sonst nirgends mehr sichtbar - sie stehen als Text unter dem
+Status ("Schließen / Frostschutz"). Die Zeile "Empfehlung" bleibt ohne Auslöser sichtbar
+("–"/"–"), früher entfiel sie. jsdom-Test `test-emptable.js`, Chromium-Sweep 280-900 px.
+Lektion: Wer eine Spalte entfernt, muss prüfen, welche Information nur dort stand
+(hier: Gründe ohne Messwert-Zeile), und sie an anderer Stelle erhalten oder den
+Nutzer vorab entscheiden lassen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

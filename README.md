@@ -1177,12 +1177,12 @@ Werte noch außerhalb der Norm, oder Raum ohne Fenster), zuletzt alle
 innerhalb jeder der drei
 Gruppen jeweils alphabetisch. Räume mit dem größten Handlungsbedarf
 stehen so immer ganz oben, unabhängig vom Raumnamen. Pro Raum dann: Raumname →
-**Empfehlungs-Tabelle** (Fenster/Empfehlung/
-Auslöser/Uhrzeit - nur für Räume mit Fenster, zwei Zeilen: die erste
+**Empfehlungs-Tabelle** (Spalten: leer | Status |
+Uhrzeit, darunter die beiden Zeilen "Fenster" und "Empfehlung" - nur für Räume mit Fenster; die erste
 zeigt ausschließlich den Fensterzustand mit dem Zeitpunkt seiner letzten
 tatsächlichen Änderung (`last_changed` des Fensterkontakt-Sensors selbst,
 "–" ohne konfigurierten Fensterkontakt), die zweite ausschließlich
-Empfehlung/Auslöser mit dem Zeitpunkt des letzten ECHTEN Empfehlungswechsels
+die Empfehlung mit dem Zeitpunkt des letzten ECHTEN Empfehlungswechsels
 (`letzter_wechsel`-Attribut, siehe "Attribute für eine Statusübersicht" -
 bewusst nicht `last_changed` der Sensor-Entität selbst, das Home Assistant
 bei jedem Neustart auf den Neustart-Zeitpunkt zurücksetzt) -
@@ -1195,13 +1195,19 @@ Fällt bei mindestens drei Räumen zeitgleich (auf die Minute gerundet)
 derselbe Fenster-Zeitstempel auf - ein zuverlässiges Anzeichen für einen
 gemeinsamen Neustart-Reset des jeweiligen Fensterkontakt-Integrations
 statt einer echten, zufällig zeitgleichen Fensteraktion in mehreren Räumen
-- wird "–" statt dieses irreführenden Zeitstempels angezeigt. Auslöser
-wird live aus den aktuellen Werten/Schwellen berechnet (siehe "Hervorhebung
-des ausschlaggebenden Werts" oben). Solange dabei ein Auslöser vorliegt,
-zeigt Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand;
+- wird "–" statt dieses irreführenden Zeitstempels angezeigt. Eine eigene
+Auslöser-Spalte gibt es nicht mehr: Der Auslöser ergibt sich aus der
+Werte-Tabelle darunter - bei Temperatur, Luftfeuchtigkeit und CO2 sind dort
+**Bezeichnung und Wert** des auslösenden Eintrags gleich eingefärbt (siehe
+"Hervorhebung des ausschlaggebenden Werts" oben; auch ein fehlender Messwert
+färbt Bezeichnung und "–" orange). Nur Gründe ohne eigene Zeile dort (Frostschutz,
+Hitzeschutz, Außen wärmer/feuchter, Winter-Höchstdauer) stehen als Text unter dem
+Status der Empfehlung. Der Auslöser wird live aus den aktuellen Werten/Schwellen
+berechnet. Solange dabei ein Auslöser vorliegt,
+zeigt die Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand;
 liegt aktuell **kein** Auslöser vor ("Totzone", siehe
-oben), wird die zweite Zeile komplett ausgeblendet statt einer sonst
-nicht mehr begründbaren Empfehlung mit lauter "–". Das Icon am Raumnamen richtet sich danach, ob aktuell ein
+oben), zeigt die Zeile "Empfehlung" in Status und Uhrzeit "–" statt einer sonst
+nicht mehr begründbaren Empfehlung. Das Icon am Raumnamen richtet sich danach, ob aktuell ein
 Auslöser vorliegt und, falls ja, ob das Fenster bereits entsprechend
 steht (🔴 bei echtem Fenster-Mismatch, 🟠 wenn das Fenster schon korrekt
 steht, aber die Werte noch außerhalb der Norm liegen, 🟢 bei einem
