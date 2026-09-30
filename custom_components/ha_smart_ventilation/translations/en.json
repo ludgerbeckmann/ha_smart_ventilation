@@ -430,11 +430,11 @@
               "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",
               "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above in the \"Sensors & Devices\" section",
-              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. ",
-              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut. ",
-              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. ",
-              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut. ",
-              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut. "
+              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded.",
+              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
+              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded.",
+              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
+              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut."
             }
           },
           "advanced": {

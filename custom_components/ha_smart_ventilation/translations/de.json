@@ -430,11 +430,11 @@
               "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt).",
               "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand (wird gesetzt, solange ein Fenster bestätigt offen ist). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet.",
               "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben im Abschnitt \"Sensoren & Geräte\" sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind",
-              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. ",
-              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. ",
-              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. ",
-              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. ",
-              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. "
+              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen.",
+              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
+              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen.",
+              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
+              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen."
             }
           },
           "advanced": {
