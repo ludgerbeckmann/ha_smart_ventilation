@@ -3670,6 +3670,9 @@ etwas Bekanntes nachbildet (Home Assistant: Name anklicken), zuerst dessen
 Konvention übernehmen, statt eine eigene Darstellung (unterstrichene Werte)
 zu erfinden.
 
+**79. Absolute Luftfeuchtigkeit als eigene `sensor`-Entitäten; der globale Eintrag bekommt erstmals eine Plattform (0.85.0).**
+Nutzerwunsch: Die absolute Luftfeuchtigkeit soll ein eigener, anklickbarer Sensor sein (statt nur ein Attribut). Neue `sensor.py`: je Raum mit Feuchtesensor `<Raum> Absolute Luftfeuchtigkeit`, einmal `Außen Absolute Luftfeuchtigkeit` am globalen Eintrag - der bis dahin plattformlos war (`GLOBAL_PLATFORMS = ["sensor"]`, eigenes `async_forward_entry_setups`/`async_unload_platforms`, hass.data erst nach erfolgreichem Unload entfernen). Die Sensoren rechnen selbst (`SmartVentilationBinarySensor._absolute_humidity`, Eingaben wie in der Entscheidungslogik gerundet: Feuchte 0, Temperatur 1 Nachkommastelle), ohne Objektverweis auf den Binärsensor (Lektion 25/45). Der Raum-Sensor abonniert Temperatur-/Feuchte-Entität; der Außen-Sensor liest die global gewählten Entitäten, abonniert sie und pollt zusätzlich alle 5 Minuten, damit eine geänderte globale Auswahl ohne Reload greift (Abo wird bei geänderter Quelle neu gesetzt). Die Karte bekommt die Entity-IDs über `entitaeten` (Entity-Registry-Lookup per fester unique_id-Konvention, `_sensor_entity_id()`). Begleitend besprochen: Thermal-Comfort-Sensoren - absolute Luftfeuchtigkeit ist relevant, Taupunkt wäre nützlich (Oberflächen-/Schimmelvergleich, gleiche Formel), der Rest (Enthalpie, gefühlte Indizes) nicht; Taupunkt-Sensor bislang NICHT umgesetzt (Nutzerentscheidung offen). Lektion: Eine Erklärung, die nur in einem Zwischenschritt statt in der Antwort steht, kommt beim Nutzer nicht an - Erklärungen immer in den Antworttext.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

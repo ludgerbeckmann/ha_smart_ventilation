@@ -789,6 +789,22 @@ Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
 Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
 nutzt die berechnete absolute Feuchte.
 
+## Absolute Luftfeuchtigkeit als Sensor
+
+Die Integration legt die absolute Luftfeuchtigkeit (g/m³, Magnus-Formel wie in
+der Lüftungslogik) zusätzlich als eigene `sensor`-Entitäten an:
+
+- `sensor.<raum>_absolute_luftfeuchtigkeit` - je Raum mit konfiguriertem
+  Feuchtigkeitssensor (Temperatur und Feuchte des Raums).
+- `sensor.aussen_absolute_luftfeuchtigkeit` - einmal, aus den in den globalen
+  Einstellungen gewählten Außensensoren.
+
+Beide sind normale Sensoren (Verlauf, Diagramme, Automationen) und liefern
+"nicht verfügbar", solange ein Eingangswert fehlt. Der Raum-Sensor reagiert auf
+Änderungen der Quell-Sensoren, der Außen-Sensor zusätzlich alle 5 Minuten. Die
+JS-Karte öffnet sie per Klick auf "Abs. Luftfeuchtigkeit". Nach dem Update ist
+ein Neustart von Home Assistant nötig (neue Plattform).
+
 ## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung/Sommer-/Winterbetrieb)
 
 Optional kann pro Raum ein Luftentfeuchter, eine Klimaanlage und/oder eine
@@ -1021,7 +1037,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 | `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
-| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `sommermodus`, `dusche`) - nur die konfigurierten. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
+| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `sommermodus`, `dusche`, `absolute_luftfeuchtigkeit`, `aussen_absolute_luftfeuchtigkeit`) - nur die konfigurierten bzw. vorhandenen. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
 | `integration_version` | aktuell installierte Version der Integration (aus `manifest.json`) - identisch für jeden Raum, dient nur der Dashboard-Karte zur Anzeige der Versionsnummer |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
@@ -1571,15 +1587,15 @@ Verlauf/Logbuch) der jeweiligen Entität: "Temperatur", "Luftfeuchtigkeit" und
 Statuszeile (globaler Sommer-/Winterschalter) sowie die Ziele der
 Benachrichtigungen. Die Werte selbst (z. B. "22,3 °C", "geöffnet") sind nicht
 klickbar; klickbare Elemente zeigen nur den Mauszeiger, keine Unterstreichung.
-Nicht klickbar ist "Abs. Luftfeuchtigkeit" (berechnet, keine eigene Entität).
+Auch "Abs. Luftfeuchtigkeit" ist klickbar (eigene Sensoren, siehe "Absolute Luftfeuchtigkeit als Sensor").
 Die Entity-IDs liefert das Attribut `entitaeten` (nur die tatsächlich
 konfigurierten). Die Markdown-Karte kann das nicht.
 
 **Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
 JS-Karte sie einmal ganz oben unter der Statuszeile in einer eigenen Tabelle
 (Titel "Außen-Messwerte": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit;
-Temperatur und Luftfeuchtigkeit sind antippbar und öffnen die Detailansicht
-des Außensensors). Die Messwert-Tabellen der einzelnen Räume haben dadurch
+Temperatur, Luftfeuchtigkeit und absolute Luftfeuchtigkeit sind antippbar und öffnen die Detailansicht
+des jeweiligen Sensors). Die Messwert-Tabellen der einzelnen Räume haben dadurch
 keine Spalte "Außen" mehr (Kopfzeile nur noch "Messwert" über Bezeichnung und Wert sowie "Normalbereich"; die Überschrift "Innen" entfällt, da klar ist, dass es der Innenwert ist) - die
 Hervorhebung der Außenzelle bei "Außen wärmer/feuchter", Frost und Hitze
 entfällt dort, der Auslöser steht weiter in der Empfehlungs-Zeile.
