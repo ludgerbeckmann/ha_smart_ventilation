@@ -1528,6 +1528,12 @@ den Text klappt ihn vollständig auf (nochmal tippen: wieder zu), am
 Desktop zeigt zusätzlich ein Tooltip den ganzen Text. Der aufgeklappte
 Zustand bleibt beim automatischen Aktualisieren der Karte erhalten.
 
+**Absolute Luftfeuchtigkeit:** Ist „Luftfeuchtigkeit“ der Öffnen-Grund, wird
+in der JS-Karte zusätzlich die Zeile „Abs. Luftfeuchtigkeit“ (innen und
+außen) genauso hervorgehoben wie der Auslöser - der Vergleich der absoluten
+Werte (Außenluft trockener) ist es, der das Öffnen freigibt. Fehlt ein
+Wert, bleibt die Zeile unauffällig.
+
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
 simulierte DOM-Umgebung (jsdom) mit Beispieldaten gegen die dokumentierten

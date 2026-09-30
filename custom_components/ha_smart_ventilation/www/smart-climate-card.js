@@ -349,7 +349,7 @@ class SmartClimateCard extends HTMLElement {
 
       let absRow = "";
       if (has(a, "luftfeuchtigkeit")) {
-        const absIn =
+        let absIn =
           has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null
             ? `${a.absolute_luftfeuchtigkeit} g/m³`
             : "–";
@@ -357,7 +357,13 @@ class SmartClimateCard extends HTMLElement {
           has(a, "aussen_absolute_luftfeuchtigkeit") && a.aussen_absolute_luftfeuchtigkeit !== null
             ? `${a.aussen_absolute_luftfeuchtigkeit} g/m³`
             : "–";
-        absOut = wrap(absOut, highlightCode === "outdoor_wetter");
+        // Öffnen wegen Luftfeuchtigkeit: die absolute Luftfeuchtigkeit gibt das
+        // Öffnen frei (Außenluft trockener) und wird wie der Auslöser
+        // hervorgehoben - innen und außen, sofern beide Werte vorliegen.
+        const absOpenGate =
+          s.state === "on" && openReasons.includes("humidity") && absIn !== "–" && absOut !== "–";
+        absIn = wrap(absIn, absOpenGate);
+        absOut = wrap(absOut, absOpenGate || highlightCode === "outdoor_wetter");
         absRow = `<tr><td>Abs. Luftfeuchtigkeit</td><td class="nw">${absIn}</td><td class="nw">${absOut}</td><td class="nw">–</td></tr>`;
       }
 

@@ -3532,6 +3532,20 @@ Cache, die Versionsanzeige in der Übersicht verrät es), und Schwellen für
 neue "Kürzungs"-Funktionen so wählen, dass bereits akzeptable Darstellungen
 nicht verändert werden.
 
+**72. JS-Karte: Auslöser UND Freigabe gleich hervorheben (0.80.4).**
+Nutzer-Rückfrage (Screenshot, Wohnzimmer: 61 % > 60 %, aber außen absolut
+trockener 11,7 gegen 12 g/m³): Sollte nicht auch der absolute Wert als Auslöser
+farbig sein? Fachlich ist er nur die Freigabe (`outdoor_drier_enough`), nicht
+die Schwelle - der Nutzer wollte Auslöser und Freigabe trotzdem identisch
+dargestellt haben, damit man sieht, WARUM geöffnet werden darf. Umsetzung nur
+in der JS-Karte: bei Öffnen-Grund "humidity" werden abs. Innen- und
+Außenwert wie der Auslöser eingefärbt (nur wenn beide Werte vorliegen);
+"Außen feuchter" (Schließen) bleibt unverändert nur die Außenzelle. Temperatur
+unverändert (Vergleich dort ohnehin direkt sichtbar). Markdown-Karte
+unverändert (Auslaufmodell). Lektion: Ein Auslöser und eine Freigabe sind
+technisch verschieden, für den Nutzer aber beides "der Grund" - die Anzeige
+sollte beide zeigen, wenn erst beide zusammen die Empfehlung erklären.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
