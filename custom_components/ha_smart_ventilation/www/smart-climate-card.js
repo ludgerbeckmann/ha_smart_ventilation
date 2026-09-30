@@ -230,13 +230,13 @@ class SmartClimateCard extends HTMLElement {
     }
 
     // Pass 1: Fenster-Zeitstempel sammeln (für den "Massen-Reset"-Filter,
-    // siehe README/Jinja-Karte - erkennt einen Home-Assistant-Neustart, bei
+    // siehe README - erkennt einen Home-Assistant-Neustart, bei
     // dem mehrere Fensterkontakte gleichzeitig neu registriert wurden).
     const windowTimes = [];
     for (const id of entityIds) {
       const s = states[id];
       const a = s.attributes;
-      const windowEntity = a.fensterkontakt_entity;
+      const windowEntity = (a.entitaeten || {}).fenster;
       if (windowEntity && states[windowEntity]) {
         const w = states[windowEntity].state;
         if (w === "on" || w === "off") {
@@ -291,7 +291,7 @@ class SmartClimateCard extends HTMLElement {
       const highlightCode = s.state === "on" ? liveGrundOpen : liveGrundClose;
       const hasLiveReason = highlightCode !== "";
 
-      const windowEntity = a.fensterkontakt_entity || "";
+      const windowEntity = ents.fenster || "";
       let windowStateText = "–";
       let windowChangedTime = "–";
       const co2CloseException = s.state === "off" && highlightCode === "co2";
@@ -496,7 +496,7 @@ class SmartClimateCard extends HTMLElement {
       const tempHi = Math.max(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const valuesTable =
         `<table class="values"><thead><tr><th colspan="2">Messwert</th><th>Normalbereich</th></tr></thead><tbody>` +
-        `<tr><td>${ent(ents.innentemperatur || a.temperatur_quelle, "Temperatur")}</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
+        `<tr><td>${ent(ents.innentemperatur, "Temperatur")}</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
         `${humRow}${absRow}${dewRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
