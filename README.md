@@ -1600,13 +1600,26 @@ Die Entity-IDs liefert das Attribut `entitaeten` (nur die tatsächlich
 konfigurierten). Die Markdown-Karte kann das nicht.
 
 **Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
-JS-Karte sie einmal ganz oben unter der Statuszeile in einer eigenen Tabelle
+JS-Karte sie einmal ganz oben unter der Statuszeile als vier Kacheln
 (Titel "Außen-Messwerte": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit, Taupunkt;
-alle vier sind antippbar und öffnen die Detailansicht
-des jeweiligen Sensors). Die Messwert-Tabellen der einzelnen Räume haben dadurch
+Bezeichnung klein oben, Wert darunter; die Bezeichnungen sind antippbar und öffnen die
+Detailansicht des jeweiligen Sensors). Die Kacheln ordnen sich nach der
+verfügbaren Breite an: auf dem Handy 2 × 2, auf breiten Karten alle vier in
+einer Zeile, nur bei sehr schmalen Karten untereinander. Die Messwert-Tabellen der einzelnen Räume haben dadurch
 keine Spalte "Außen" mehr (Kopfzeile nur noch "Messwert" über Bezeichnung und Wert sowie "Normalbereich"; die Überschrift "Innen" entfällt, da klar ist, dass es der Innenwert ist) - die
 Hervorhebung der Außenzelle bei "Außen wärmer/feuchter", Frost und Hitze
 entfällt dort, der Auslöser steht weiter in der Empfehlungs-Zeile.
+
+**Schriftgröße:** Die Tabellen verwenden die normale Kartenschriftgröße (`1 em`,
+wie die Standardkarten von Home Assistant); nur der Raumname und die Statuszeile
+sind etwas größer.
+
+**Karten-Editor:** Neben dem Titel gibt es die Option "Räume mit Handlungsbedarf
+(🟠/🔴) aufgeklappt anzeigen" (YAML: `expand_attention_rooms`, Standard `true`).
+Ist sie aus (`expand_attention_rooms: false`), starten alle Räume eingeklappt;
+grüne Räume sind ohnehin eingeklappt. Ein von Hand geänderter Zustand bleibt
+erhalten, solange sich der Status des Raums nicht ändert; wird die Option
+umgeschaltet, gilt sie sofort für alle Räume.
 
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine

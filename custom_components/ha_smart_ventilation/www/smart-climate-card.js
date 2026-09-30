@@ -85,7 +85,17 @@ function has(attrs, key) {
 
 class SmartClimateCard extends HTMLElement {
   setConfig(config) {
+    const previous = this._config || {};
     this._config = config || {};
+    // Wird die Ausklapp-Option im Editor umgeschaltet, gilt sie sofort für alle
+    // Räume - der gemerkte Ein/Ausklapp-Zustand (roomOpenState) würde sonst den
+    // alten Standard bis zum nächsten Statuswechsel festhalten.
+    if (
+      this._roomOpenState &&
+      (previous.expand_attention_rooms !== false) !== (this._config.expand_attention_rooms !== false)
+    ) {
+      this._roomOpenState.clear();
+    }
     // Direktes Re-Rendern schon hier (nicht erst beim nächsten hass-Tick) -
     // damit eine Titel-Änderung im Editor sofort in der Vorschau sichtbar
     // wird, auch wenn hass sich zwischen zwei Ticks nicht ändert.
@@ -510,14 +520,17 @@ class SmartClimateCard extends HTMLElement {
       const statusClass =
         matchIcon === "🔴" ? "status-red" : matchIcon === "🟠" ? "status-orange" : "status-green";
 
-      // Standard: 🟢 eingeklappt, 🟠/🔴 aufgeklappt - manuelles Auf-/
+      // Standard: 🟢 eingeklappt, 🟠/🔴 aufgeklappt (abschaltbar) - manuelles Auf-/
       // Zuklappen bleibt erhalten, SOLANGE sich der Status dieses Raums
       // nicht ändert (siehe Zusammenfassung im Chat); ändert er sich,
       // wird die alte Einstellung verworfen und der Standard für den
       // neuen Status greift wieder - verhindert, dass ein Raum, der
       // gerade neu Aufmerksamkeit braucht, dauerhaft eingeklappt bleibt,
       // nur weil er vorher mal grün und manuell eingeklappt wurde.
-      const defaultOpen = statusClass !== "status-green";
+      // Option expand_attention_rooms (Editor, Standard true): false = auch
+      // 🟠/🔴 starten eingeklappt.
+      const defaultOpen =
+        statusClass !== "status-green" && this._config.expand_attention_rooms !== false;
       const storedRoomState = this._roomOpenState.get(a.raum);
       const isOpen =
         storedRoomState && storedRoomState.statusClass === statusClass
@@ -565,15 +578,15 @@ class SmartClimateCard extends HTMLElement {
 
     let outdoorTable = "";
     if (outdoor.temp !== null || outdoor.hum !== null || outdoor.abs !== null || outdoor.dew !== null) {
-      const row = (label, valueHtml) =>
-        `<tr><td>${label}</td><td class="nw">${valueHtml}</td></tr>`;
+      const tile = (label, valueHtml) =>
+        `<div class="otile"><div class="olabel">${label}</div><div class="ovalue">${valueHtml}</div></div>`;
       outdoorTable =
-        `<table class="values outdoor"><thead><tr><th colspan="2">Außen-Messwerte</th></tr></thead><tbody>` +
-        row(ent(outdoor.tempEnt, "Temperatur"), outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : "–") +
-        row(ent(outdoor.humEnt, "Luftfeuchtigkeit"), outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : "–") +
-        row(ent(outdoor.absEnt, "Abs. Luftfeuchtigkeit"), outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–") +
-        row(ent(outdoor.dewEnt, "Taupunkt"), outdoor.dew !== null ? `${roundStr(outdoor.dew, 1)} °C` : "–") +
-        `</tbody></table>`;
+        `<div class="outdoor-box"><div class="outdoor-title">Außen-Messwerte</div><div class="outdoor-tiles">` +
+        tile(ent(outdoor.tempEnt, "Temperatur"), outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : "–") +
+        tile(ent(outdoor.humEnt, "Luftfeuchtigkeit"), outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : "–") +
+        tile(ent(outdoor.absEnt, "Abs. Luftfeuchtigkeit"), outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–") +
+        tile(ent(outdoor.dewEnt, "Taupunkt"), outdoor.dew !== null ? `${roundStr(outdoor.dew, 1)} °C` : "–") +
+        `</div></div>`;
     }
 
     const roomsHtml = entries.map((e) => e.html).join("");
@@ -598,9 +611,9 @@ class SmartClimateCard extends HTMLElement {
       }
       table.overview th, table.overview td,
       table.values th, table.values td {
-        padding: 6px 6px;
+        padding: 6px 5px;
         text-align: left;
-        font-size: 0.92em;
+        font-size: 1em;
         /* Nur zwischen Wörtern umbrechen, keine Silbentrennung; ein Wort
            bricht nur im Notfall (lange Entity-IDs). Kurze Spalten (Zeiten,
            Werte, Zustände) tragen zusätzlich die Klasse .nw. */
@@ -640,7 +653,7 @@ class SmartClimateCard extends HTMLElement {
         overflow: visible;
       }
       /* Sehr schmale Bildschirme: Nowrap lockern, damit nichts überläuft */
-      @media (max-width: 340px) {
+      @media (max-width: 380px) {
         table.overview td.nw, table.values td.nw, table.values th { white-space: normal; }
       }
       table.overview th, table.overview td { text-align: center; }
@@ -712,10 +725,16 @@ class SmartClimateCard extends HTMLElement {
       .notify-details summary {
         cursor: pointer;
         padding: 6px 0;
-        font-size: 0.9em;
+        font-size: 1em;
         opacity: 0.85;
       }
 
+      .outdoor-box { border: 1px solid var(--divider-color, #e0e0e0); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+      .outdoor-title { padding: 6px 8px; font-weight: 600; opacity: 0.85; background: var(--secondary-background-color, rgba(127,127,127,0.08)); border-bottom: 1px solid var(--divider-color, #e0e0e0); }
+      .outdoor-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+      .otile { padding: 6px 8px; border-right: 1px solid var(--divider-color, #e0e0e0); border-bottom: 1px solid var(--divider-color, #e0e0e0); margin: 0 -1px -1px 0; }
+      .olabel { font-size: 0.85em; opacity: 0.85; }
+      .ovalue { font-weight: 600; white-space: nowrap; }
       .empty { padding: 8px; opacity: 0.7; }
     `;
   }
@@ -728,7 +747,8 @@ class SmartClimateCard extends HTMLElement {
 customElements.define("smart-climate-card", SmartClimateCard);
 
 /*
- * Minimaler visueller Editor - ausschließlich für das optionale title-Feld.
+ * Minimaler visueller Editor - optionales title-Feld und die Option
+ * expand_attention_rooms (Räume mit Handlungsbedarf aufgeklappt).
  * Ohne diesen Editor (static getConfigElement() auf der Haupt-Karte) zeigt
  * Home Assistants Karten-Editor-Dialog generell den Hinweis "Visueller
  * Editor wird nicht unterstützt" für JEDE Custom-Card ohne eigenen Editor,
@@ -779,6 +799,9 @@ class SmartClimateCardEditor extends HTMLElement {
           font-weight: 700;
           margin-bottom: 6px;
         }
+        .sc-editor-check { padding: 4px 0 12px; }
+        .sc-editor-check label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+        .sc-editor-check input { width: auto; margin: 0; }
         .sc-editor-field input {
           width: 100%;
           box-sizing: border-box;
@@ -794,16 +817,16 @@ class SmartClimateCardEditor extends HTMLElement {
         <label for="sc-title-input">Titel (optional)</label>
         <input id="sc-title-input" type="text" />
       </div>
+      <div class="sc-editor-check">
+        <label>
+          <input id="sc-expand-input" type="checkbox" />
+          Räume mit Handlungsbedarf (🟠/🔴) aufgeklappt anzeigen
+        </label>
+      </div>
     `;
-    this._field = wrapper.querySelector("input");
-    this._field.addEventListener("input", (ev) => {
-      const value = ev.target.value;
-      const newConfig = { ...this._config };
-      if (value) {
-        newConfig.title = value;
-      } else {
-        delete newConfig.title;
-      }
+    this._field = wrapper.querySelector("#sc-title-input");
+    this._expand = wrapper.querySelector("#sc-expand-input");
+    const emit = (newConfig) => {
       this._config = newConfig;
       this.dispatchEvent(
         new CustomEvent("config-changed", {
@@ -812,6 +835,26 @@ class SmartClimateCardEditor extends HTMLElement {
           composed: true,
         })
       );
+    };
+    this._field.addEventListener("input", (ev) => {
+      const value = ev.target.value;
+      const newConfig = { ...this._config };
+      if (value) {
+        newConfig.title = value;
+      } else {
+        delete newConfig.title;
+      }
+      emit(newConfig);
+    });
+    this._expand.addEventListener("change", (ev) => {
+      const newConfig = { ...this._config };
+      // Standard ist "aufgeklappt" - nur die Abweichung wird gespeichert.
+      if (ev.target.checked) {
+        delete newConfig.expand_attention_rooms;
+      } else {
+        newConfig.expand_attention_rooms = false;
+      }
+      emit(newConfig);
     });
     this.appendChild(wrapper);
     this._syncField();
@@ -819,6 +862,7 @@ class SmartClimateCardEditor extends HTMLElement {
 
   _syncField() {
     if (this._field) this._field.value = this._config.title || "";
+    if (this._expand) this._expand.checked = this._config.expand_attention_rooms !== false;
   }
 }
 
