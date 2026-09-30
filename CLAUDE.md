@@ -3506,6 +3506,32 @@ keine Einstellung für die Titel angelegt. Lektion: Wenn ein Text pro Anlass
 (Raum) mehrfach vorkommen kann, gehört das unterscheidende Merkmal (Raum) in
 das, was der Nutzer zuerst sieht (Titel/Vorschau), nicht nur in den Fließtext.
 
+**71. JS-Karte: lange Texte mit "…" kürzen, ohne Spaltenbreiten anzufassen (0.80.3).**
+Nutzerwunsch (iPhone-Screenshot): bei zu langen Texten automatisch "…"
+statt Umbruch; ausdrücklich Wörter NICHT kürzen/umbenennen und die
+Markdown-Karte unverändert lassen ("Auslaufmodell"). Der Nutzer stellte
+nach Neuladen der App fest, dass das Layout schon passte (die vorherigen
+Screenshots zeigten die alte, im Companion-App-Cache gehaltene Karte) -
+die Kürzung sollte trotzdem als Absicherung kommen und auf dem
+vorhandenen Screenshot KEINE Änderung bewirken. Deshalb: CSS `line-clamp`
+mit 4 Zeilen (ein vierzeiliger "pausiert: ..."-Grund bleibt vollständig
+sichtbar; erst darüber greift "…"), nur auf den Textspalten
+(Auslöser, Grund, Ziele) über einen inneren `div.clamp` in der Zelle.
+Bewusst KEIN `max-width:0`/`table-layout:fixed`-Trick (der hätte die
+Spaltenverteilung der `auto`-Tabellen verändert); die `td`s bleiben
+unverändert. Tippen klappt auf (`.expanded`), Zustand in `_expandedCells`
+(Set, Schlüssel `Raum|Spalte`), damit er das komplette Neuzeichnen bei
+jedem hass-Update übersteht; ein einziger delegierter click-Listener auf
+`_content`. Der volle Text steht zusätzlich im `title` (Tooltip am
+Desktop), aus dem bereits escapten HTML per Tag-Entfernung gewonnen.
+Geprüft in Chromium (300-430 px kein Überlauf, `sh > h` bei langem Text,
+Auf-/Zuklappen) und jsdom (Zustand übersteht Neuzeichnen, Raumname mit
+Anführungszeichen). Lektion: Vor dem Umbau nach einem Screenshot prüfen,
+ob er den aktuellen Stand zeigt (Companion-App lädt die Karte aus dem
+Cache, die Versionsanzeige in der Übersicht verrät es), und Schwellen für
+neue "Kürzungs"-Funktionen so wählen, dass bereits akzeptable Darstellungen
+nicht verändert werden.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

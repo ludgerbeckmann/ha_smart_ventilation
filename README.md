@@ -1521,6 +1521,13 @@ JS-Karte keine eigene Versionsanzeige - sie wird automatisch als
 Lovelace-Ressource von der Integration selbst bereitgestellt und ist
 dadurch immer auf demselben Stand wie die installierte Integration.
 
+**Lange Texte:** Sehr lange Texte in den Tabellen (Auslöser, Grund der
+Geräte, Ziele der Benachrichtigungen) werden nach vier Zeilen automatisch
+mit „…“ gekürzt - die Wörter selbst bleiben unverändert. Ein Tippen auf
+den Text klappt ihn vollständig auf (nochmal tippen: wieder zu), am
+Desktop zeigt zusätzlich ein Tooltip den ganzen Text. Der aufgeklappte
+Zustand bleibt beim automatischen Aktualisieren der Karte erhalten.
+
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
 simulierte DOM-Umgebung (jsdom) mit Beispieldaten gegen die dokumentierten

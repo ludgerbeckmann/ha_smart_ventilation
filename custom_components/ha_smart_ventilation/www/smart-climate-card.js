@@ -229,11 +229,14 @@ class SmartClimateCard extends HTMLElement {
     let summerMode = null;
     const entries = [];
 
-    // Textzellen mit automatischer Kürzung ("..."): "clamp" = bis zu 2 Zeilen,
-    // "ell" = eine Zeile. Der volle Text steht im title (Tooltip am Desktop),
-    // ein Tippen klappt die Zelle auf (siehe click-Listener oben).
-    const cellDiv = (kind, key, html, plain) =>
-      `<div class="${kind}${this._expandedCells.has(key) ? " expanded" : ""}" data-cell="${key}" title="${plain}">${html}</div>`;
+    // Lange Texte (Grund, Auslöser, Ziele) werden nach 4 Zeilen automatisch mit
+    // "…" gekürzt (CSS line-clamp, Wörter bleiben unverändert). Der volle Text
+    // steht im title (Tooltip am Desktop); ein Tippen klappt die Zelle auf
+    // (click-Listener oben, Zustand in _expandedCells, überlebt Neuzeichnen).
+    const cellDiv = (key, html) => {
+      const plain = String(html).replace(/<[^>]*>/g, "");
+      return `<div class="clamp${this._expandedCells.has(key) ? " expanded" : ""}" data-cell="${esc(key)}" title="${plain}">${html}</div>`;
+    };
 
     const sorted = [...entityIds].sort((idA, idB) =>
       String(states[idA].attributes.raum).localeCompare(
@@ -372,7 +375,7 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.luftentfeuchter_letzte_laufzeit);
         }
         const grund = has(a, "luftentfeuchter_grund") ? esc(a.luftentfeuchter_grund) : "–";
-        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|dehum`, grund)}</td></tr>`;
       }
       if (has(a, "klimaanlage_an")) {
         const name = `${a.klimaanlage_an ? "🔴" : "⚫"} Klimaanlage`;
@@ -383,7 +386,7 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.klimaanlage_letzte_laufzeit);
         }
         const grund = has(a, "klimaanlage_grund") ? esc(a.klimaanlage_grund) : "–";
-        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|ac`, grund)}</td></tr>`;
       }
       if (has(a, "heizung_an")) {
         let name = `${a.heizung_an ? "🔴" : "⚫"} Heizung`;
@@ -399,7 +402,7 @@ class SmartClimateCard extends HTMLElement {
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
           grund += ` (${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
-        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|heat`, grund)}</td></tr>`;
       }
       if (has(a, "duschen_erkannt")) {
         const name = `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`;
@@ -410,7 +413,7 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.dusche_letzte_laufzeit);
         }
         const grund = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "–";
-        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${grund}</td></tr>`;
+        deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|shower`, grund)}</td></tr>`;
       }
       const deviceTable = deviceRows
         ? `<table class="values"><thead><tr><th>Gerät</th><th>Laufzeit</th><th>Grund</th></tr></thead><tbody>${deviceRows}</tbody></table>`
@@ -431,7 +434,7 @@ class SmartClimateCard extends HTMLElement {
           `<table class="values"><thead><tr><th>Fenster</th><th>Empfehlung</th><th>Auslöser</th><th>Uhrzeit</th></tr></thead><tbody>` +
           `<tr><td class="nw">${windowStateText}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
         if (hasLiveReason) {
-          empfTable += `<tr><td class="nw">–</td><td class="nw">${empfehlungText}</td><td>${esc(grundLabel)}</td><td class="nw">${changedTime}</td></tr>`;
+          empfTable += `<tr><td class="nw">–</td><td class="nw">${empfehlungText}</td><td>${cellDiv(`${a.raum}|trigger`, esc(grundLabel))}</td><td class="nw">${changedTime}</td></tr>`;
         }
         empfTable += "</tbody></table>";
       }
@@ -452,8 +455,8 @@ class SmartClimateCard extends HTMLElement {
       const notifyTable =
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Status</th><th>Ziel(e)</th></tr></thead><tbody>` +
-        `<tr><td>Sprachausgabe</td><td class="center nw">${n1Status}</td><td>${n1Ziel}</td></tr>` +
-        `<tr><td>App-Benachrichtigung</td><td class="center nw">${n2Status}</td><td>${n2Ziel}</td></tr>` +
+        `<tr><td>Sprachausgabe</td><td class="center nw">${n1Status}</td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
+        `<tr><td>App-Benachrichtigung</td><td class="center nw">${n2Status}</td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
         `<tr><td>Persistente Benachrichtigung</td><td class="center nw">${n3Status}</td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
@@ -559,6 +562,21 @@ class SmartClimateCard extends HTMLElement {
         white-space: nowrap;
       }
       table.overview td.nw, table.values td.nw { white-space: nowrap; }
+      /* Automatische Kürzung mit "…" nach 4 Zeilen; Tippen klappt auf. */
+      table.values .clamp {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 4;
+        line-clamp: 4;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      table.values .clamp.expanded {
+        display: block;
+        -webkit-line-clamp: unset;
+        line-clamp: unset;
+        overflow: visible;
+      }
       /* Sehr schmale Bildschirme: Nowrap lockern, damit nichts überläuft */
       @media (max-width: 340px) {
         table.overview td.nw, table.values td.nw, table.values th { white-space: normal; }
