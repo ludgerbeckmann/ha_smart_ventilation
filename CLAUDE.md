@@ -3739,6 +3739,19 @@ an einer Stelle, die in mehreren strukturell gleichen Zeilen vorkommt (hier drei
 Geräte), vor dem Umsetzen fragen oder gleich alle prüfen; und beim Nachziehen der README
 den ganzen Absatz lesen - ein älterer Anzeige-Fix (0.89.2) war dort nicht nachgezogen.
 
+**90. JS-Karte: Benachrichtigungs-Ziele untereinander statt kommagetrennt, Überschrift "Ziele" (0.89.6).**
+Nutzerwunsch (Screenshot): Mehrere Ziele jeweils in einer eigenen Zeile ohne Komma
+(`notify.iphone_ludger, notify.ipad_` / `ludger` brach mitten im Namen um), und "Ziel(e)" ->
+"Ziele". Umsetzung: jedes Ziel ein eigener `div.tgt` (Abstand 4 px, einzeln antippbar
+über `ent()`), gilt für Sprachausgabe-Lautsprecher und App-Ziele gleichermaßen; die
+4-Zeilen-Kürzung (Lektion 71) bleibt. Zuerst mit `<br>` versucht - im Screenshot bei 320 px
+wurde die Ziele-Spalte zu schmal (Namen brachen mehrfach, das zweite Ziel wurde
+abgeschnitten), weil die Spaltenbreite der auto-Tabelle vorher vom langen kommagetrennten
+Text bestimmt wurde. Fix: `width: 62%` für die zweite Spalte, die Methodennamen brechen
+dafür an Leerzeichen um. Bei 280 px bleibt es bei 4 Zeilen mit "…" (Antippen klappt auf).
+Lektion: Wer den Inhalt einer auto-Tabellenspalte verkürzt (Komma-Liste -> Zeilen), ändert
+ihre Breitenverteilung - danach bei 280/320/380 px im Screenshot prüfen, nicht nur im Sweep.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
