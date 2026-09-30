@@ -285,7 +285,6 @@ class SmartClimateCard extends HTMLElement {
       const ents = a.entitaeten || {};
       const noWindow = has(a, "hat_fenster") && a.hat_fenster === false;
       const openReasons = a.offene_gruende || [];
-      const openLabel = openReasons.map((c) => GRUND_TEXT[c] || c).join(", ");
       const liveGrundOpen = openReasons.length ? openReasons[0] : "";
       const liveGrundClose = a.schliessgrund_live || "";
       const highlightCode = s.state === "on" ? liveGrundOpen : liveGrundClose;
@@ -380,6 +379,9 @@ class SmartClimateCard extends HTMLElement {
 
       const wrap = (text, on) => (on ? `<span class="${highlightClass}">${text}</span>` : text);
       const missingCell = '<span class="hl-orange">–</span>';
+      // Bezeichnung wie der zugehörige Wert einfärben (Hervorhebung bzw. fehlender Wert).
+      const wrapLabel = (html, on, missing) =>
+        on ? `<span class="${highlightClass}">${html}</span>` : missing ? `<span class="hl-orange">${html}</span>` : html;
 
       const tempVal = wrap(
         a.innentemperatur !== undefined && a.innentemperatur !== null
@@ -396,7 +398,7 @@ class SmartClimateCard extends HTMLElement {
         );
         const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
         const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
-        humRow = `<tr><td>${ent(ents.luftfeuchtigkeit, "Luftfeuchtigkeit")}</td><td class="nw">${humVal}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
+        humRow = `<tr><td>${wrapLabel(ent(ents.luftfeuchtigkeit, "Luftfeuchtigkeit"), highlightHum, a.luftfeuchtigkeit === null)}</td><td class="nw">${humVal}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
       }
 
       let co2Row = "";
@@ -404,7 +406,7 @@ class SmartClimateCard extends HTMLElement {
         const co2Val = wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : missingCell, highlightCo2);
         const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
-        co2Row = `<tr><td>${ent(ents.co2, "CO2")}</td><td class="nw">${co2Val}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
+        co2Row = `<tr><td>${wrapLabel(ent(ents.co2, "CO2"), highlightCo2, a.co2 === null)}</td><td class="nw">${co2Val}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
       }
 
       let absRow = "";
@@ -421,7 +423,7 @@ class SmartClimateCard extends HTMLElement {
         const absOpenGate =
           s.state === "on" && openReasons.includes("humidity") && absIn !== "–" && absOutAvailable;
         absIn = wrap(absIn, absOpenGate);
-        absRow = `<tr><td>${ent(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit")}</td><td class="nw">${absIn}</td><td class="nw">–</td></tr>`;
+        absRow = `<tr><td>${wrapLabel(ent(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit"), absOpenGate, false)}</td><td class="nw">${absIn}</td><td class="nw">–</td></tr>`;
       }
 
       let dewRow = "";
@@ -487,31 +489,28 @@ class SmartClimateCard extends HTMLElement {
         ? `<table class="values"><thead><tr><th>Gerät</th><th>Laufzeit</th><th>Grund</th></tr></thead><tbody>${deviceRows}</tbody></table>`
         : "";
 
-      const grundLabel =
-        s.state === "on"
-          ? openLabel || "–"
-          : highlightCode
-          ? GRUND_TEXT[highlightCode] || highlightCode
-          : "–";
-
       const empfehlungText = hasLiveReason ? wrap(statusText, true) : statusText;
+      // Gründe ohne eigene Zeile in der Messwert-Tabelle (Frost, Hitze, Außenluft,
+      // Winter-Höchstdauer) stehen weiterhin als Text unter dem Status.
+      const extraReason =
+        hasLiveReason && s.state !== "on" && !["temp", "humidity", "co2"].includes(highlightCode)
+          ? `<br>${esc(GRUND_TEXT[highlightCode] || highlightCode)}`
+          : "";
 
       let empfTable = "";
       if (!noWindow) {
         empfTable =
-          `<table class="values"><thead><tr><th>${ent(windowEntity, "Fenster")}</th><th>${ent(id, "Empfehlung")}</th><th>Auslöser</th><th>Uhrzeit</th></tr></thead><tbody>` +
-          `<tr><td class="nw">${windowStateText}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
-        if (hasLiveReason) {
-          empfTable += `<tr><td class="nw">–</td><td class="nw">${empfehlungText}</td><td>${cellDiv(`${a.raum}|trigger`, esc(grundLabel))}</td><td class="nw">${changedTime}</td></tr>`;
-        }
-        empfTable += "</tbody></table>";
+          `<table class="values"><thead><tr><th></th><th>Status</th><th>Uhrzeit</th></tr></thead><tbody>` +
+          `<tr><td>${ent(windowEntity, "Fenster")}</td><td class="nw">${windowStateText}</td><td class="nw">${windowChangedTime}</td></tr>` +
+          `<tr><td>${ent(id, "Empfehlung")}</td><td class="nw">${hasLiveReason ? empfehlungText + extraReason : "–"}</td><td class="nw">${hasLiveReason ? changedTime : "–"}</td></tr>` +
+          "</tbody></table>";
       }
 
       const tempLo = Math.min(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const tempHi = Math.max(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const valuesTable =
         `<table class="values"><thead><tr><th colspan="2">Messwert</th><th>Normalbereich</th></tr></thead><tbody>` +
-        `<tr><td>${ent(ents.innentemperatur, "Temperatur")}</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
+        `<tr><td>${wrapLabel(ent(ents.innentemperatur, "Temperatur"), highlightTemp, a.innentemperatur === undefined || a.innentemperatur === null)}</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
         `${humRow}${absRow}${dewRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
