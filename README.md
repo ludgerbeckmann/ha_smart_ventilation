@@ -1228,11 +1228,12 @@ live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`heizung_seit`/
 Klimaanlage/Heizung eine rein informative, live bei jeder Neubewertung
 berechnete Kurzbeschreibung, warum das Gerät gerade an/aus (bzw. bei der
 Heizung: Comfort/Standby/Nacht bzw. "Zeitfenster: …" bei aktiviertem
-Heizungs-Zeitplan) ist bzw. pausiert (u. a. auch "pausiert: Sommerbetrieb
-aktiv"), ohne selbst Einfluss auf die Steuerung zu haben - siehe
-`binary_sensor.py`; bei der Heizung ergänzt um den aktuellen Sollwert in
-Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (21.0 °C)" oder
-"Zeitfenster: Nacht (16.0 °C)"); bei Dusche entsprechend, ob und warum die
+Heizungs-Zeitplan) ist bzw. pausiert (u. a. auch "Sommerbetrieb aktiv" - der Vorsatz
+"pausiert: " des Attributs wird in der Karte weggelassen, das Status-Icon zeigt
+es bereits), ohne selbst Einfluss auf die Steuerung zu haben - siehe
+`binary_sensor.py`; bei der Heizung ergänzt um die aktuelle Sollstellung in
+Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (Sollstellung: 21.0 °C)" oder
+"Zeitfenster: Nacht (Sollstellung: 16.0 °C)"); bei Dusche entsprechend, ob und warum die
 Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
 Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziel(e)", das Status-Icon
