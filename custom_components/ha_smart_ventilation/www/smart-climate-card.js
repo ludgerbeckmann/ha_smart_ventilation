@@ -527,9 +527,9 @@ class SmartClimateCard extends HTMLElement {
       const notifyTable =
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Ziel(e)</th></tr></thead><tbody>` +
-        `<tr><td>${n1Status}&nbsp;Sprachausgabe</td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
-        `<tr><td>${n2Status}&nbsp;App-Benachrichtigung</td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
-        `<tr><td>${n3Status}&nbsp;Persistente Benachrichtigung</td><td>–</td></tr>` +
+        `<tr><td><div class="nrow"><span class="ni">${n1Status}</span><span>Sprachausgabe</span></div></td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
+        `<tr><td><div class="nrow"><span class="ni">${n2Status}</span><span>App-Benachrichtigung</span></div></td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
+        `<tr><td><div class="nrow"><span class="ni">${n3Status}</span><span>Persistente Benachrichtigung</span></div></td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
       const statusClass =
@@ -687,28 +687,24 @@ class SmartClimateCard extends HTMLElement {
       table.values td.center { text-align: center; }
 
       details.room {
-        /* Rahmen bleibt abgerundet; der Farbstreifen (::before) läuft gerade durch. */
-        position: relative;
+        /* Der Farbstreifen ist eine Hintergrund-Ebene (border-box): er reicht bis an den
+           äußeren Rand und wird von den runden Ecken des Rahmens abgeschnitten, läuft also
+           hinter den Ecken statt darüber hinaus. Die linke Rahmenlinie ist transparent,
+           damit der Streifen dort sichtbar ist. */
+        --stripe: var(--divider-color, #e0e0e0);
         border-radius: 10px;
         border: 1px solid var(--divider-color, #e0e0e0);
-        background: var(--card-background-color, transparent);
+        border-left-color: transparent;
+        background:
+          linear-gradient(var(--stripe), var(--stripe)) left top / 4px 100% no-repeat border-box,
+          var(--card-background-color, transparent);
         padding: 10px 6px 12px 9px;
         margin-bottom: 14px;
       }
-      details.room::before {
-        content: "";
-        position: absolute;
-        left: -1px;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        border-radius: 0;
-        background: var(--divider-color, #e0e0e0);
-      }
       details.room:not([open]) { padding-bottom: 10px; }
-      .room.status-green::before { background: var(--success-color, #4caf50); }
-      .room.status-orange::before { background: var(--warning-color, #ff9800); }
-      .room.status-red::before { background: var(--error-color, #f44336); }
+      .room.status-green { --stripe: var(--success-color, #4caf50); }
+      .room.status-orange { --stripe: var(--warning-color, #ff9800); }
+      .room.status-red { --stripe: var(--error-color, #f44336); }
 
       .room-header {
         display: flex;
@@ -752,6 +748,10 @@ class SmartClimateCard extends HTMLElement {
          die Ziele-Spalte bricht dagegen an . und _ (siehe breakable()). */
       .notify-details table.values th:first-child,
       .notify-details table.values td:first-child { overflow-wrap: normal; word-break: normal; }
+      /* Icon links, Name rechts daneben - ein Umbruch des Namens beginnt unter dem
+         Namen, nicht unter dem Icon (Hängeeinzug). */
+      .notify-details .nrow { display: flex; align-items: baseline; gap: 0.4em; }
+      .notify-details .ni { flex: none; }
       .notify-details summary {
         cursor: pointer;
         padding: 6px 0;

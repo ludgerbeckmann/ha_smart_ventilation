@@ -3690,6 +3690,22 @@ Chromium-Sweep 280-900 px mit der Heizungszeile ohne Überlauf. Lektion: Eine
 nackte Zahl in Klammern braucht eine Bezeichnung - bei einem Zusatzwert im
 Text immer benennen, was er misst.
 
+**87. JS-Karte: Hängeeinzug in der Benachrichtigungs-Tabelle und Farbstreifen als Hintergrund-Ebene (0.89.3).**
+Zwei Nutzerwünsche (Fotos): (1) Bricht "Persistente Benachrichtigung" um, stand
+die zweite Zeile unter dem Icon - gewünscht: unter "Persistente". Umsetzung: Icon
+und Name sind getrennte Flex-Kinder (`.nrow > .ni + span`, `display: flex`,
+`align-items: baseline`), der Name bricht in seiner eigenen Box um; das Festleerzeichen
+entfällt (Test `test-notify.js` prüft die Struktur statt `&nbsp;`). (2) Der Farbstreifen
+(Lektion 83, `::before`) lief sichtbar durch die runden Ecken. Jetzt eine
+Hintergrund-Ebene (`linear-gradient(var(--stripe), var(--stripe)) left top / 4px 100% no-repeat
+border-box`, linker Rahmen transparent, Farbe je Status über `--stripe`) - der
+Hintergrund wird von `border-radius` beschnitten, der Streifen endet also in den Ecken.
+Chromium-Sweep 280-900 px ohne Überlauf, Screenshots (Hell/Dunkel, 320 px) angesehen.
+Lektion: Ein Pseudo-Element mit `position: absolute` ragt über die Rundung hinaus,
+eine Hintergrund-Ebene wird dagegen von `border-radius` beschnitten; und Screenshot-
+Skripte schreiben relativ zum Arbeitsverzeichnis - vor dem Ansehen den Zeitstempel
+der PNG prüfen (ich sah zuerst ein veraltetes Bild).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

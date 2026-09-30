@@ -1367,8 +1367,8 @@ entfällt dort, der Auslöser steht weiter in der Empfehlungs-Zeile.
 **Schriftgröße:** Die Tabellen und die Bezeichnungen der Außen-Kacheln verwenden die
 normale Kartenschriftgröße (`1 em`, wie die Standardkarten von Home Assistant);
 nur der Raumname und die Statuszeile sind etwas größer. Der farbige Streifen
-links am Raum läuft gerade durch, ohne Bogen an den Enden (der Rahmen des Raums
-bleibt abgerundet).
+links am Raum liegt hinter dem abgerundeten Rahmen und endet dadurch in den
+runden Ecken.
 
 **Fehlende Messwerte:** Liefert einer der konfigurierten Sensoren eines Raums
 (Innentemperatur, Luftfeuchtigkeit, CO2) gerade keinen Wert (`nicht verfügbar`/
