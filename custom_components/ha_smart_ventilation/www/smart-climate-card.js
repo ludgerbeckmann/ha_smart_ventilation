@@ -166,7 +166,21 @@ class SmartClimateCard extends HTMLElement {
         },
         true
       );
+      // Tippen/Klicken auf eine gekürzte Zelle klappt sie auf bzw. wieder zu
+      // (auf dem Handy gibt es keinen Tooltip). Delegation auf _content, das
+      // beim Rendern nicht neu erzeugt wird.
+      this._content.addEventListener("click", (ev) => {
+        const el = ev.target && ev.target.closest && ev.target.closest("[data-cell]");
+        if (!el || !this._expandedCells) return;
+        const key = el.dataset.cell;
+        if (this._expandedCells.has(key)) this._expandedCells.delete(key);
+        else this._expandedCells.add(key);
+        el.classList.toggle("expanded", this._expandedCells.has(key));
+      });
     }
+    // Aufgeklappte (nicht mehr mit "..." gekürzte) Textzellen: Schlüssel
+    // "<Raum>|<Zelle>". Überlebt Renders wie roomOpenState.
+    if (!this._expandedCells) this._expandedCells = new Set();
     // Merkt sich je Raum den zuletzt gerenderten Status UND den aktuellen
     // Auf-/Zu-Zustand - siehe Verwendung weiter unten. Überlebt über
     // mehrere Renders hinweg (nicht Teil von innerHTML), aber nicht über
@@ -214,6 +228,12 @@ class SmartClimateCard extends HTMLElement {
     let version = null;
     let summerMode = null;
     const entries = [];
+
+    // Textzellen mit automatischer Kürzung ("..."): "clamp" = bis zu 2 Zeilen,
+    // "ell" = eine Zeile. Der volle Text steht im title (Tooltip am Desktop),
+    // ein Tippen klappt die Zelle auf (siehe click-Listener oben).
+    const cellDiv = (kind, key, html, plain) =>
+      `<div class="${kind}${this._expandedCells.has(key) ? " expanded" : ""}" data-cell="${key}" title="${plain}">${html}</div>`;
 
     const sorted = [...entityIds].sort((idA, idB) =>
       String(states[idA].attributes.raum).localeCompare(
