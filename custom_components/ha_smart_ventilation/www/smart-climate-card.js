@@ -300,6 +300,14 @@ class SmartClimateCard extends HTMLElement {
         ["humidity", "temp", "outdoor_warmer", "outdoor_wetter"].includes(highlightCode);
       const noWindowResolved = noWindow && comfortCloseResolvedException;
 
+      // Fehlende Messwerte: ein konfigurierter Sensor des Raums liefert gerade
+      // keinen Wert (Attribut vorhanden, aber null). Der Raum ist dann höchstens
+      // grün-nach-orange angehoben; ein echter Fenster-Mismatch (rot) bleibt rot.
+      const tempMissing = a.innentemperatur === undefined || a.innentemperatur === null;
+      const humMissing = has(a, "luftfeuchtigkeit") && a.luftfeuchtigkeit === null;
+      const co2Missing = has(a, "co2") && a.co2 === null;
+      const hasMissing = tempMissing || humMissing || co2Missing;
+
       let matchIcon = !hasLiveReason || co2CloseException || noWindowResolved
         ? "🟢"
         : noWindow
@@ -330,6 +338,10 @@ class SmartClimateCard extends HTMLElement {
         outdoor.temp = a.aussentemperatur;
         outdoor.tempEnt = ents.aussentemperatur || "";
       }
+      // Entity-IDs der konfigurierten Außensensoren auch ohne aktuellen Wert merken
+      // (fehlender Wert wird in der Kachel orange markiert).
+      if (!outdoor.tempEnt && ents.aussentemperatur) outdoor.tempEnt = ents.aussentemperatur;
+      if (!outdoor.humEnt && ents.aussen_luftfeuchtigkeit) outdoor.humEnt = ents.aussen_luftfeuchtigkeit;
       if (outdoor.hum === null && has(a, "aussen_luftfeuchtigkeit") && a.aussen_luftfeuchtigkeit !== null) {
         outdoor.hum = a.aussen_luftfeuchtigkeit;
         outdoor.humEnt = ents.aussen_luftfeuchtigkeit || "";
@@ -342,6 +354,8 @@ class SmartClimateCard extends HTMLElement {
         outdoor.dew = a.aussen_taupunkt;
         outdoor.dewEnt = ents.aussen_taupunkt || "";
       }
+
+      if (hasMissing && matchIcon === "🟢") matchIcon = "🟠";
 
       if (matchIcon === "🟢") green += 1;
       else if (matchIcon === "🟠") orange += 1;
@@ -365,18 +379,19 @@ class SmartClimateCard extends HTMLElement {
       const highlightCo2 = s.state === "on" ? openReasons.includes("co2") : highlightCode === "co2";
 
       const wrap = (text, on) => (on ? `<span class="${highlightClass}">${text}</span>` : text);
+      const missingCell = '<span class="hl-orange">–</span>';
 
       const tempVal = wrap(
         a.innentemperatur !== undefined && a.innentemperatur !== null
           ? `${roundStr(a.innentemperatur, 1)} °C`
-          : "–",
+          : missingCell,
         highlightTemp
       );
 
       let humRow = "";
       if (has(a, "luftfeuchtigkeit")) {
         const humVal = wrap(
-          a.luftfeuchtigkeit !== null ? `${roundStr(a.luftfeuchtigkeit, 0)} %` : "–",
+          a.luftfeuchtigkeit !== null ? `${roundStr(a.luftfeuchtigkeit, 0)} %` : missingCell,
           highlightHum
         );
         const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
@@ -386,7 +401,7 @@ class SmartClimateCard extends HTMLElement {
 
       let co2Row = "";
       if (has(a, "co2")) {
-        const co2Val = wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : "–", highlightCo2);
+        const co2Val = wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : missingCell, highlightCo2);
         const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         co2Row = `<tr><td>${ent(ents.co2, "CO2")}</td><td class="nw">${co2Val}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
@@ -577,13 +592,13 @@ class SmartClimateCard extends HTMLElement {
         .join("")}</tr></tbody></table>`;
 
     let outdoorTable = "";
-    if (outdoor.temp !== null || outdoor.hum !== null || outdoor.abs !== null || outdoor.dew !== null) {
+    if (outdoor.temp !== null || outdoor.hum !== null || outdoor.abs !== null || outdoor.dew !== null || outdoor.tempEnt || outdoor.humEnt) {
       const tile = (label, valueHtml) =>
         `<div class="otile"><div class="olabel">${label}</div><div class="ovalue">${valueHtml}</div></div>`;
       outdoorTable =
         `<div class="outdoor-box"><div class="outdoor-title">Außen-Messwerte</div><div class="outdoor-tiles">` +
-        tile(ent(outdoor.tempEnt, "Temperatur"), outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : "–") +
-        tile(ent(outdoor.humEnt, "Luftfeuchtigkeit"), outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : "–") +
+        tile(ent(outdoor.tempEnt, "Temperatur"), outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : outdoor.tempEnt ? '<span class="hl-orange">–</span>' : "–") +
+        tile(ent(outdoor.humEnt, "Luftfeuchtigkeit"), outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : outdoor.humEnt ? '<span class="hl-orange">–</span>' : "–") +
         tile(ent(outdoor.absEnt, "Abs. Luftfeuchtigkeit"), outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–") +
         tile(ent(outdoor.dewEnt, "Taupunkt"), outdoor.dew !== null ? `${roundStr(outdoor.dew, 1)} °C` : "–") +
         `</div></div>`;
@@ -672,7 +687,8 @@ class SmartClimateCard extends HTMLElement {
       table.values td.center { text-align: center; }
 
       details.room {
-        border-radius: 10px;
+        /* Linke Ecken eckig: der farbige Streifen läuft gerade durch, ohne Bogen an den Enden. */
+        border-radius: 0 10px 10px 0;
         border: 1px solid var(--divider-color, #e0e0e0);
         border-left: 4px solid var(--divider-color, #e0e0e0);
         background: var(--card-background-color, transparent);
@@ -729,11 +745,15 @@ class SmartClimateCard extends HTMLElement {
         opacity: 0.85;
       }
 
-      .outdoor-box { border: 1px solid var(--divider-color, #e0e0e0); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+      .outdoor-box { border: 1px solid var(--divider-color, #e0e0e0); border-radius: 10px; overflow: hidden; margin-bottom: 10px; container-type: inline-size; }
       .outdoor-title { padding: 6px 8px; font-weight: 600; opacity: 0.85; background: var(--secondary-background-color, rgba(127,127,127,0.08)); border-bottom: 1px solid var(--divider-color, #e0e0e0); }
-      .outdoor-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+      /* Immer zwei Kacheln pro Zeile; bei breiter Karte (Container, nicht Bildschirm) vier. */
+      .outdoor-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      @container (min-width: 620px) {
+        .outdoor-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      }
       .otile { padding: 6px 8px; border-right: 1px solid var(--divider-color, #e0e0e0); border-bottom: 1px solid var(--divider-color, #e0e0e0); margin: 0 -1px -1px 0; }
-      .olabel { font-size: 0.85em; opacity: 0.85; }
+      .olabel { font-size: 1em; opacity: 0.85; }
       .ovalue { font-weight: 600; white-space: nowrap; }
       .empty { padding: 8px; opacity: 0.7; }
     `;

@@ -1338,16 +1338,27 @@ konfigurierten).
 JS-Karte sie einmal ganz oben unter der Statuszeile als vier Kacheln
 (Titel "Außen-Messwerte": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit, Taupunkt;
 Bezeichnung klein oben, Wert darunter; die Bezeichnungen sind antippbar und öffnen die
-Detailansicht des jeweiligen Sensors). Die Kacheln ordnen sich nach der
-verfügbaren Breite an: auf dem Handy 2 × 2, auf breiten Karten alle vier in
-einer Zeile, nur bei sehr schmalen Karten untereinander. Die Messwert-Tabellen der einzelnen Räume haben dadurch
+Detailansicht des jeweiligen Sensors). Die Kacheln stehen immer zu zweit nebeneinander (2 × 2); ab einer Kartenbreite
+von etwa 620 px (bezogen auf die Karte selbst, nicht auf den Bildschirm) stehen
+alle vier in einer Zeile. Ein Außensensor, der konfiguriert ist, aber gerade
+keinen Wert liefert, zeigt ein oranges "–" (die Räume bleiben davon
+unberührt). Die Messwert-Tabellen der einzelnen Räume haben dadurch
 keine Spalte "Außen" mehr (Kopfzeile nur noch "Messwert" über Bezeichnung und Wert sowie "Normalbereich"; die Überschrift "Innen" entfällt, da klar ist, dass es der Innenwert ist) - die
 Hervorhebung der Außenzelle bei "Außen wärmer/feuchter", Frost und Hitze
 entfällt dort, der Auslöser steht weiter in der Empfehlungs-Zeile.
 
-**Schriftgröße:** Die Tabellen verwenden die normale Kartenschriftgröße (`1 em`,
-wie die Standardkarten von Home Assistant); nur der Raumname und die Statuszeile
-sind etwas größer.
+**Schriftgröße:** Die Tabellen und die Bezeichnungen der Außen-Kacheln verwenden die
+normale Kartenschriftgröße (`1 em`, wie die Standardkarten von Home Assistant);
+nur der Raumname und die Statuszeile sind etwas größer. Der farbige Streifen
+links am Raum läuft gerade durch (linke Ecken eckig, rechte Ecken abgerundet).
+
+**Fehlende Messwerte:** Liefert einer der konfigurierten Sensoren eines Raums
+(Innentemperatur, Luftfeuchtigkeit, CO2) gerade keinen Wert (`nicht verfügbar`/
+`unbekannt`), zeigt die Karte den Raum 🟠 (Rahmen orange, in der Übersicht bei
+Orange mitgezählt, standardmäßig aufgeklappt) und den fehlenden Wert als oranges
+"–". Ein 🔴-Raum (Fenster passt nicht zur Empfehlung) bleibt rot; das Orange
+hebt nur einen sonst grünen Raum an. Nach einem Neustart von Home Assistant
+kann ein Raum kurz orange erscheinen, solange seine Sensoren noch laden.
 
 **Karten-Editor:** Neben dem Titel gibt es die Option "Räume mit Handlungsbedarf
 (🟠/🔴) aufgeklappt anzeigen" (YAML: `expand_attention_rooms`, Standard `true`).
