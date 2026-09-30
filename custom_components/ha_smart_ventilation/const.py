@@ -534,6 +534,12 @@ DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION = True
 # globale Einstellung, da nur für Räume mit Dusche/Badewanne relevant.
 CONF_SHOWER_DETECTION_ENABLED = "shower_detection_enabled"
 CONF_SHOWER_RISE_THRESHOLD = "shower_rise_threshold"
+# Sprachansage, wenn die erkannte Dusche länger als diese Zeit (Minuten)
+# ununterbrochen läuft - einmal pro Dusche, nur über die media_player-
+# Lautsprecher des Raums (Sprachausgabe), nur mit aktivierter Duscherkennung.
+# Standard 0 = aus (bestehende Installationen ändern sich nicht).
+CONF_SHOWER_MAX_DURATION = "shower_max_duration_minutes"
+DEFAULT_SHOWER_MAX_DURATION = 0
 DEFAULT_SHOWER_DETECTION_ENABLED = False
 # %-Punkte relative Luftfeuchtigkeit pro Minute, oberhalb der ein laufendes
 # Duschen angenommen wird.
@@ -574,6 +580,7 @@ CONF_MSG_CLOSE_OUTDOOR_WETTER = "msg_close_outdoor_wetter"
 CONF_MSG_CLOSE_DEFAULT = "msg_close_default"
 CONF_MSG_REMINDER = "msg_reminder"
 CONF_MSG_TANK_FULL = "msg_tank_full"
+CONF_MSG_SHOWER_LONG = "msg_shower_long"
 CONF_MSG_DEVICE_WINDOW_CONFLICT = "msg_device_window_conflict"
 
 DEFAULT_MSG_OPEN_HUMIDITY = (
@@ -631,6 +638,9 @@ DEFAULT_MSG_REMINDER = (
 )
 DEFAULT_MSG_TANK_FULL = (
     "Der Wassertank des Luftentfeuchters im {raum} ist voll - bitte leeren."
+)
+DEFAULT_MSG_SHOWER_LONG = (
+    "Die Dusche im {raum} läuft schon seit {wert} Minuten."
 )
 DEFAULT_MSG_DEVICE_WINDOW_CONFLICT = (
     "Bitte das Fenster im {raum} schließen - {geraet} arbeitet sonst gegen "

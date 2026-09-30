@@ -22,6 +22,7 @@
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "tts_light_entity": "Light for voice announcements (optional)",
               "tts_volume": "Playback volume for voice announcements",
+              "shower_max_duration_minutes": "Shower announcement after (minutes)",
               "tts_quiet_hours_enabled": "Voice announcement quiet hours",
               "tts_quiet_start": "Quiet hours start",
               "tts_quiet_end": "Quiet hours end",
@@ -38,6 +39,7 @@
               "sonos_entity": "Empty = no voice announcement for this room",
               "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}",
               "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
               "tts_quiet_end": "Empty = use the value from the global settings. Currently global: {global_tts_quiet_end}",
@@ -197,6 +199,7 @@
               "sonos_entity": "Speaker(s) (media_player) – multiple selection possible",
               "tts_light_entity": "Light for voice announcements (optional)",
               "tts_volume": "Playback volume for voice announcements",
+              "shower_max_duration_minutes": "Shower announcement after (minutes)",
               "tts_quiet_hours_enabled": "Voice announcement quiet hours",
               "tts_quiet_start": "Quiet hours start",
               "tts_quiet_end": "Quiet hours end",
@@ -213,6 +216,7 @@
               "sonos_entity": "Empty = no voice announcement for this room",
               "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}",
               "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
               "tts_quiet_end": "Empty = use the value from the global settings. Currently global: {global_tts_quiet_end}",
@@ -470,6 +474,7 @@
             "data": {
               "tts_entity": "TTS entity",
               "tts_volume": "Playback volume for voice announcements",
+              "shower_max_duration_minutes": "Shower announcement after (minutes)",
               "tts_playback_mode": "Existing playback when announcing",
               "tts_quiet_hours_enabled": "Voice announcement quiet hours",
               "tts_quiet_start": "Quiet hours start",
@@ -491,11 +496,13 @@
               "msg_close_outdoor_wetter": "Close because it's more humid outside",
               "msg_reminder": "Reminder",
               "msg_tank_full": "Water tank full",
+              "msg_shower_long": "Shower too long",
               "msg_device_window_conflict": "Window/device conflict"
             },
             "data_description": {
               "tts_entity": "Used when a room doesn't set its own TTS entity",
               "tts_volume": "Volume the speakers are set to before the announcement - automatically restored to the previous value afterwards (see README)",
+              "shower_max_duration_minutes": "Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only for rooms with shower detection and speakers) - 0 = off. Default for all rooms without their own value.",
               "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
               "tts_quiet_hours_enabled": "When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected.",
               "tts_quiet_start": "Only effective if quiet hours above are enabled.",
@@ -515,6 +522,7 @@
               "msg_close_outdoor_wetter": "｛raum｝ = room name. ｛wert｝ = current absolute outdoor humidity, ｛schwelle｝ = current absolute indoor humidity (each incl. g/m³).",
               "msg_reminder": "｛raum｝ = room name. ｛wert｝/｛schwelle｝ = current value and open threshold of the original ventilation reason (temperature/humidity/CO2), each incl. its unit.",
               "msg_tank_full": "｛raum｝ = room name. No ｛wert｝/｛schwelle｝, since the tank status is purely binary (full/not full).",
+              "msg_shower_long": "｛raum｝ = room name, ｛wert｝ = shower duration so far in minutes. Voice output only.",
               "msg_device_window_conflict": "Sent once a dehumidifier or air conditioner is fighting unfavourable outdoor air through an open window (see the room option \"Notify on window/device conflict\"). Placeholders: ｛raum｝, ｛geraet｝ (\"Luftentfeuchter\"/\"Klimaanlage\")."
             }
           }

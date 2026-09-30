@@ -526,10 +526,10 @@ class SmartClimateCard extends HTMLElement {
       const notifyOpen = this._notifyOpenState.get(a.raum) || false;
       const notifyTable =
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
-        `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Status</th><th>Ziel(e)</th></tr></thead><tbody>` +
-        `<tr><td>Sprachausgabe</td><td class="center nw">${n1Status}</td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
-        `<tr><td>App-Benachrichtigung</td><td class="center nw">${n2Status}</td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
-        `<tr><td>Persistente Benachrichtigung</td><td class="center nw">${n3Status}</td><td>–</td></tr>` +
+        `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Ziel(e)</th></tr></thead><tbody>` +
+        `<tr><td class="nw">${n1Status} Sprachausgabe</td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
+        `<tr><td class="nw">${n2Status} App-Benachrichtigung</td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
+        `<tr><td class="nw">${n3Status} Persistente Benachrichtigung</td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
       const statusClass =

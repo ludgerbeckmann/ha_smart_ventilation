@@ -706,6 +706,23 @@ Entität "‹Raum› Dusche aktiv" (siehe "Was die Integration macht" oben).
 Rein temperatur- oder anders begründete Öffnen-Empfehlungen (siehe oben)
 sind von der Duscherkennung nicht betroffen.
 
+**Duschdauer-Ansage** (seit 0.89.0): Optional (Standard 0 = aus) kann eine
+Sprachansage ausgelöst werden, sobald die erkannte Dusche länger als die
+eingestellte Zeit ununterbrochen läuft. Einstellung "Duschdauer-Ansage ab
+(Minuten)" im Abschnitt "Benachrichtigungen" (global) bzw. "Benachrichtigungen
+& Anwesenheit" (Raum-Override); Dropdown mit 0 (aus)/8/10/12/15/20 Minuten,
+frei editierbar. Typische Duschen dauern etwa 5-10 Minuten - die gemessene
+Dauer ist die Zeit mit erhöhter Luftfeuchtigkeit, also etwas länger als das
+reine Duschen; einen Anhaltspunkt für den eigenen Wert liefert die Spalte
+"Laufzeit" der Dusche-Zeile in der Dashboard-Karte (letzter Lauf). Die Ansage
+läuft nur über die Sprachausgabe (media_player-Lautsprecher des Raums, TTS-Entität
+nötig), gilt nur für Räume mit aktivierter Duscherkennung, kommt einmal pro
+Dusche und beachtet Sprachausgabe-Nachtruhe und Licht-aus-Regel wie die
+Wassertank-Ansage (eine dadurch unterdrückte Ansage wird nicht später in
+derselben Dusche nachgeholt). Der Text ist global einstellbar
+(`msg_shower_long`, Platzhalter `{raum}`, `{wert}` = bisherige Dauer in Minuten,
+`{schwelle}`), Standard: "Die Dusche im {raum} läuft schon seit {wert} Minuten."
+
 Direkt nach einem Start oder Neuladen der Integration (bzw. nach einem
 Sensorausfall) ist der Feuchteverlauf noch leer - deshalb wird die Erkennung
 erst bewertet, wenn mindestens 3 Minuten Verlauf vorliegen. Sonst könnte ein
@@ -1213,7 +1230,8 @@ Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (21.0 °C)" oder
 "Zeitfenster: Nacht (16.0 °C)"); bei Dusche entsprechend, ob und warum die
 Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
-Abschnitt pro Raum).
+Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziel(e)", das Status-Icon
+🟢/⚫ steht links vor dem Namen der Methode).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
