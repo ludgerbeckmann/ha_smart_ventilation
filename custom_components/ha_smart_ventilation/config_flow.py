@@ -183,21 +183,20 @@ from .const import (
     TTS_PLAYBACK_MODE_PAUSE,
 )
 
-SECTION_NOTIFY = "notify"
-# Raum-Formular: EIN gemeinsamer Abschnitt für Sensoren UND optional
-# gesteuerte Geräte (siehe _build_room_schema) - eine climate-Entität kann
-# beide Rollen zugleich ausfüllen (Temperatur-Quelle und Heizung), getrennte
-# Abschnitte hätten sie zweimal zur Auswahl gezwungen. In der globalen
-# Formular (_build_global_edit_schema) bezeichnet dieselbe Konstante
-# weiterhin nur den dortigen, unabhängigen "Sensoren"-Abschnitt.
-SECTION_SENSORS = "sensors"
-SECTION_PARAMETERS = "parameters"
-SECTION_MESSAGES = "messages"
-# Selten geänderte Fein-Tuning-Werte (Debounce/Marge/Prioritäts-Tie-Break/
-# Temperatur-Attribut/Leistungssensor-Feinjustierung) - bewusst NICHT der
-# Heizungs-Zeitplan (Umschalter/Zeitfenster/Nachttemperatur) und NICHT der
-# TTS-Wiedergabemodus, beide bleiben an ihrer bisherigen Stelle.
-SECTION_ADVANCED = "advanced"
+# Formular-Abschnitte - identisch aufgebaut im Raum- und im globalen Formular
+# (in dieser Reihenfolge, wichtiges zuerst; ein Abschnitt, der in einem der
+# beiden Formulare keine Felder hätte, entfällt dort - z. B. die
+# Benachrichtigungstexte, die nur global existieren). Die Abschnitte sind
+# reine UI-Gruppierungen, _flatten_step_data() führt sie wieder zu einem
+# flachen Dict zusammen - JEDER neue Abschnitt muss dort in `section_keys`
+# stehen, sonst gehen seine Werte beim Speichern verloren (Lektion 49).
+SECTION_SENSORS = "sensors"  # Messwerte (Raum: Innen, global: Außen)
+SECTION_VENTILATION = "ventilation"  # Fenster & Lüften: Schwellen, Schutz, Logik
+SECTION_DEVICES = "devices"  # Luftentfeuchter, Klima & Dusche
+SECTION_HEATING = "heating"  # Heizung (Gerät, Sollwerte, Presets, Sommermodus)
+SECTION_HEATING_SCHEDULE = "heating_schedule"  # Heizungs-Zeitplan
+SECTION_NOTIFY = "notify"  # Benachrichtigungen (Sprache, Push, Web, Erinnerung)
+SECTION_MESSAGES = "messages"  # Benachrichtigungstexte (nur global)
 
 # Alle im Raum-Formular über _entity_marker(..., required=False) erzeugten
 # EntitySelector-Felder (siehe _build_room_schema). Anders als Zahlen-/
@@ -329,9 +328,9 @@ _TIME_FIELDS = {
 
 # Die acht Heizungs-Zeitfenster-Felder aus _TIME_FIELDS oben, OHNE die beiden
 # Nachtruhe-Felder - für die generische Platzierungs-Schleife in
-# _build_room_schema() (Abschnitt "Parameter") bzw. _build_global_edit_schema()
-# (Abschnitt "Parameter"), die ALLE hier gelisteten Felder an derselben
-# Stelle im Formular erzeugt. Die Nachtruhe-Felder gehören dagegen zum
+# _build_room_schema() bzw. _build_global_edit_schema() (Abschnitt
+# "Heizungs-Zeitplan"), die ALLE hier gelisteten Felder an derselben Stelle
+# im Formular erzeugt. Die Nachtruhe-Felder gehören dagegen zum
 # Abschnitt "Benachrichtigungen" (direkt bei der TTS-Lautstärke) und werden
 # deshalb einzeln, nicht über diese Schleife platziert.
 _HEATING_TIME_FIELD_KEYS = (
@@ -345,20 +344,14 @@ _HEATING_TIME_FIELD_KEYS = (
     CONF_HEATING_NIGHT_END_WEEKEND,
 )
 
-# Die elf "echten" Schwellenwert-/Lüftungs-Parameter - identisch mit
-# dem Inhalt des Raum-Abschnitts "Parameter". min_surplus_power/
-# power_grace_period gehören beim Raum bewusst zum Geräte-Abschnitt, nicht
-# hierher. CONF_REMINDER_INTERVAL bewusst NICHT hier - steht wie beim Raum
-# im Benachrichtigungs-Abschnitt (dort direkt neben dem zugehörigen
-# Erinnerungstext msg_reminder), nicht bei den übrigen Schwellenwerten.
-# CONF_TEMP_MARGIN/CONF_FROST_DEBOUNCE_MINUTES/CONF_SHOWER_RISE_THRESHOLD
-# ebenfalls bewusst NICHT hier - alle drei stehen wie beim Raum im neuen
-# Abschnitt "Erweitert" (siehe SECTION_ADVANCED), dafür einzeln über
-# _threshold_selector() erzeugt statt über diese generische Liste (analog
-# zu volume_marker/power_marker/grace_marker/reminder_marker). Die vier
-# Heizungs-Sollwertfelder (Schwelle/Comfort/Standby/Nacht) ebenso NICHT
-# hier - stehen wie beim Raum ebenfalls im Abschnitt "Erweitert"
-# (Nutzerwunsch), dafür einzeln über heating_threshold_marker etc. erzeugt.
+
+# Die zehn Schwellenwert-/Lüftungs-Parameter des Abschnitts "Fenster &
+# Lüften" (globales Formular), die gemeinsam über eine Schleife erzeugt
+# werden. Bewusst einzeln (über _threshold_selector()) statt hier erzeugt
+# werden die Felder, die in einem anderen Abschnitt stehen oder eine
+# eigene Reihenfolge brauchen: Toleranz-Marge, Frostschutz-Debounce (am Ende
+# des Abschnitts), Sommermodus-Schwelle (Abschnitt Heizung), Geräte-Felder,
+# Heizungs-Sollwerte und Erinnerungsintervall.
 _CORE_PARAMETER_KEYS = (
     CONF_TEMP_THRESHOLD_OPEN,
     CONF_TEMP_THRESHOLD_CLOSE,
@@ -370,7 +363,6 @@ _CORE_PARAMETER_KEYS = (
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
     CONF_MAX_OPEN_DURATION_WINTER,
-    CONF_SUMMER_MODE_THRESHOLD_TEMP,
 )
 
 
@@ -706,11 +698,13 @@ def _flatten_step_data(data: dict) -> dict:
     zusammen. Sections sind nur eine visuelle Gruppierung im Formular -
     intern arbeiten wir weiterhin mit einem flachen dict."""
     section_keys = (
-        SECTION_NOTIFY,
         SECTION_SENSORS,
-        SECTION_PARAMETERS,
+        SECTION_VENTILATION,
+        SECTION_DEVICES,
+        SECTION_HEATING,
+        SECTION_HEATING_SCHEDULE,
+        SECTION_NOTIFY,
         SECTION_MESSAGES,
-        SECTION_ADVANCED,
     )
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
@@ -810,34 +804,30 @@ def _build_room_schema(
     show_area_selector: bool = False,
     hass=None,
 ) -> vol.Schema:
-    """Formular für einen Raum: Raumname, danach drei Abschnitte in dieser
-    Reihenfolge - 'Sensoren & Geräte', 'Benachrichtigungen & Anwesenheit',
-    'Parameter' (alle standardmäßig eingeklappt). 'Sensoren & Geräte' fasst
-    die Mess-Entitäten UND die optional automatisch gesteuerten Geräte
-    (Luftentfeuchter/Klimaanlage/Heizung) in einem Abschnitt zusammen -
-    beide Themen überschneiden sich (z. B. eine climate-Entität kann sowohl
-    Temperatur-Quelle als auch Heizungs-Gerät sein, siehe
-    CONF_HEATING_USE_TEMP_SOURCE), getrennte Abschnitte hätten sonst eine
-    Entität ggf. an zwei Stellen zur Auswahl gezwungen. Bewusst VOR
-    'Benachrichtigungen & Anwesenheit' platziert (nicht mehr wie früher als
-    erster Abschnitt), da diese für die Heizungs-Anwesenheitsprüfung auf
-    Konzepte aus 'Sensoren & Geräte' aufbaut.
+    """Formular für einen Raum: Raumname, danach sechs Abschnitte (alle
+    standardmäßig eingeklappt) - 'Sensoren', 'Fenster & Lüften',
+    'Luftentfeuchter, Klima & Dusche', 'Heizung', 'Heizungs-Zeitplan',
+    'Benachrichtigungen'. Dieselbe Gliederung (plus 'Benachrichtigungstexte',
+    nur global) verwendet _build_global_edit_schema(), sodass jede
+    Einstellung in beiden Formularen im gleichen Abschnitt steht.
 
-    Im Abschnitt "Benachrichtigungen & Anwesenheit" (früher
-    "Benachrichtigungsmethoden" - umbenannt, da jetzt auch die
-    Anwesenheits-Entitäten für die Heizungs-Pausierung hier stehen, siehe
-    CONF_HEATING_PRESENCE_ENTITIES) aktiviert eine Checkbox die App-
+    Eine climate-Entität kann Temperatur-Quelle UND Heizungs-Gerät sein (siehe
+    CONF_HEATING_USE_TEMP_SOURCE) - die Quelle steht in 'Sensoren', die
+    Wiederverwendung als Heizung direkt bei den Heizungs-Feldern.
+
+    Im Abschnitt 'Benachrichtigungen' aktiviert eine Checkbox die App-
     Benachrichtigung; das zugehörige Feld steht direkt darunter im selben
     Abschnitt (Home-Assistant-Formulare können Felder nicht abhängig von
     einer Checkbox ein-/ausblenden - es ist daher immer sichtbar, wird aber
     nur ausgewertet, wenn die Checkbox aktiviert ist). Sprachausgabe hat
     keine eigene Checkbox - sie ist aktiv, sobald mindestens ein
-    Lautsprecher ausgewählt ist.
+    Lautsprecher ausgewählt ist. Die Anwesenheits-Entitäten für die
+    Heizungs-Pausierung (CONF_HEATING_PRESENCE_ENTITIES) gehören dagegen
+    zum Abschnitt 'Heizung'.
 
-    Die Felder in 'Parameter' sowie Leistungsschwelle/-verzögerung im
-    Geräte-Abschnitt sind echt optional: leer gelassen wird der Wert aus
-    den allgemeinen Einstellungen übernommen (siehe Eintrag "Smart
-    Climate Optionen").
+    Die Zahlen-/Zeit-/Ja-Nein-Felder sind echt optional (Überschreibungen):
+    leer gelassen wird der Wert aus den allgemeinen Einstellungen übernommen
+    (siehe Eintrag "Smart Climate Optionen").
 
     `defaults` wird sowohl beim Neuanlegen (leer/teilweise befüllt nach
     einem Formularfehler) als auch beim nachträglichen Bearbeiten eines
@@ -1024,12 +1014,13 @@ def _build_room_schema(
         CONF_HEATING_PRESET_BUILDING_PROTECTION, defaults, available_heating_presets
     )
 
-    # "Sensoren & Geräte" - ein gemeinsamer Abschnitt für Mess-Entitäten UND
-    # optional automatisch gesteuerte Geräte (siehe Docstring oben): eine
-    # climate-Entität kann beide Rollen gleichzeitig ausfüllen (Temperatur-
-    # Quelle UND Heizung, siehe CONF_HEATING_USE_TEMP_SOURCE direkt beim
-    # Heizungs-Feld unten), getrennte Abschnitte hätten sie zweimal zur
-    # Auswahl gezwungen.
+    sonos_include = _area_include_entities(
+        area_entities, "media_player", defaults.get(CONF_SONOS_ENTITY)
+    )
+    light_include = _area_include_entities(
+        area_entities, "light", defaults.get(CONF_TTS_LIGHT_ENTITY)
+    )
+
     fields[vol.Required(SECTION_SENSORS)] = section(
         vol.Schema(
             {
@@ -1046,26 +1037,17 @@ def _build_room_schema(
                     )
                 ),
                 vol.Optional(
-                    CONF_HEATING_USE_TEMP_SOURCE,
-                    default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
-                ): selector.BooleanSelector(),
-                _entity_marker(
-                    CONF_HEATING_ENTITY, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=HEATING_DOMAINS,
-                        **(
-                            {"include_entities": heating_include}
-                            if heating_include
-                            else {}
-                        ),
+                    CONF_TEMP_ATTRIBUTE,
+                    default=defaults.get(
+                        CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
+                    ),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=COMMON_TEMP_ATTRIBUTES,
+                        custom_value=True,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                heating_use_preset_marker: heating_use_preset_sel,
-                heating_preset_comfort_marker: heating_preset_comfort_sel,
-                heating_preset_standby_marker: heating_preset_standby_sel,
-                heating_preset_night_marker: heating_preset_night_sel,
-                heating_preset_building_protection_marker: heating_preset_building_protection_sel,
                 _entity_marker(
                     CONF_HUMIDITY_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1074,12 +1056,6 @@ def _build_room_schema(
                         **({"include_entities": sensor_include} if sensor_include else {}),
                     )
                 ),
-                vol.Optional(
-                    CONF_SHOWER_DETECTION_ENABLED,
-                    default=defaults.get(
-                        CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
-                    ),
-                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_CO2_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1088,9 +1064,14 @@ def _build_room_schema(
                         **({"include_entities": sensor_include} if sensor_include else {}),
                     )
                 ),
-                vol.Optional(
-                    CONF_NO_WINDOW, default=defaults.get(CONF_NO_WINDOW, False)
-                ): selector.BooleanSelector(),
+            }
+        ),
+        {"collapsed": True},
+    )
+
+    fields[vol.Required(SECTION_VENTILATION)] = section(
+        vol.Schema(
+            {
                 _entity_marker(
                     CONF_WINDOW_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1099,6 +1080,9 @@ def _build_room_schema(
                         **({"include_entities": window_include} if window_include else {}),
                     )
                 ),
+                vol.Optional(
+                    CONF_NO_WINDOW, default=defaults.get(CONF_NO_WINDOW, False)
+                ): selector.BooleanSelector(),
                 _entity_marker(
                     CONF_SHUTTER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1115,6 +1099,27 @@ def _build_room_schema(
                     CONF_DISABLE_CLOSE_RECOMMENDATION,
                     default=defaults.get(CONF_DISABLE_CLOSE_RECOMMENDATION, False),
                 ): selector.BooleanSelector(),
+                temp_open_marker: temp_open_sel,
+                temp_close_marker: temp_close_sel,
+                hum_open_marker: hum_open_sel,
+                hum_close_marker: hum_close_sel,
+                co2_open_marker: co2_open_sel,
+                co2_close_marker: co2_close_sel,
+                frost_marker: frost_sel,
+                heat_marker: heat_sel,
+                winter_marker: winter_sel,
+                duration_marker: duration_sel,
+                margin_marker: margin_sel,
+                frost_debounce_marker: frost_debounce_sel,
+                priority_marker: priority_sel,
+            }
+        ),
+        {"collapsed": True},
+    )
+
+    fields[vol.Required(SECTION_DEVICES)] = section(
+        vol.Schema(
+            {
                 _entity_marker(
                     CONF_DEHUMIDIFIER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1157,26 +1162,78 @@ def _build_room_schema(
                         DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
                     ),
                 ): selector.BooleanSelector(),
+                power_marker: power_sel,
+                grace_marker: grace_sel,
+                max_runtime_marker: max_runtime_sel,
+                max_runtime_high_marker: max_runtime_high_sel,
+                max_runtime_cooldown_marker: max_runtime_cooldown_sel,
+                vol.Optional(
+                    CONF_SHOWER_DETECTION_ENABLED,
+                    default=defaults.get(
+                        CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
+                    ),
+                ): selector.BooleanSelector(),
+                shower_threshold_marker: shower_threshold_sel,
+                shower_max_marker: shower_max_sel,
             }
         ),
         {"collapsed": True},
     )
 
-    sonos_include = _area_include_entities(
-        area_entities, "media_player", defaults.get(CONF_SONOS_ENTITY)
-    )
-    light_include = _area_include_entities(
-        area_entities, "light", defaults.get(CONF_TTS_LIGHT_ENTITY)
+    fields[vol.Required(SECTION_HEATING)] = section(
+        vol.Schema(
+            {
+                vol.Optional(
+                    CONF_HEATING_USE_TEMP_SOURCE,
+                    default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
+                ): selector.BooleanSelector(),
+                _entity_marker(
+                    CONF_HEATING_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=HEATING_DOMAINS,
+                        **(
+                            {"include_entities": heating_include}
+                            if heating_include
+                            else {}
+                        ),
+                    )
+                ),
+                heating_use_preset_marker: heating_use_preset_sel,
+                heating_preset_comfort_marker: heating_preset_comfort_sel,
+                heating_preset_standby_marker: heating_preset_standby_sel,
+                heating_preset_night_marker: heating_preset_night_sel,
+                heating_preset_building_protection_marker: heating_preset_building_protection_sel,
+                _entity_marker(
+                    CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=PRESENCE_DOMAINS,
+                        multiple=True,
+                    )
+                ),
+                heating_threshold_marker: heating_threshold_sel,
+                heating_comfort_marker: heating_comfort_sel,
+                heating_standby_marker: heating_standby_sel,
+                heating_night_marker: heating_night_sel,
+            }
+        ),
+        {"collapsed": True},
     )
 
-    # "Benachrichtigungen & Anwesenheit" - bewusst NACH "Sensoren & Geräte"
-    # platziert (siehe Docstring oben): die Anwesenheits-Entitäten für die
-    # Heizungs-Pausierung gehören inhaltlich zu den Benachrichtigungsmethoden
-    # (beide drehen sich um Personen/Geräte-Tracker), nicht zu den
-    # Mess-/Steuer-Entitäten oben. CONF_HEATING_PRESENCE_ENTITIES bewusst
-    # OHNE Bereichs-Filterung (wie CONF_PRESENCE_ENTITY im Objekt-Selector
-    # unten) - eine Person/ihr Tracking-Gerät ist ortsungebunden und so gut
-    # wie nie einem HA-Bereich zugeordnet (siehe Lektion 9).
+    fields[vol.Required(SECTION_HEATING_SCHEDULE)] = section(
+        vol.Schema(
+            {
+                heating_schedule_marker: heating_schedule_sel,
+                **{
+                    marker: sel
+                    for marker, sel in time_field_markers.values()
+                },
+            }
+        ),
+        {"collapsed": True},
+    )
+
     fields[vol.Required(SECTION_NOTIFY)] = section(
         vol.Schema(
             {
@@ -1198,7 +1255,6 @@ def _build_room_schema(
                     )
                 ),
                 tts_volume_marker: tts_volume_sel,
-                shower_max_marker: shower_max_sel,
                 tts_quiet_hours_marker: tts_quiet_hours_sel,
                 tts_quiet_start_marker: tts_quiet_start_sel,
                 tts_quiet_end_marker: tts_quiet_end_sel,
@@ -1234,76 +1290,6 @@ def _build_room_schema(
                 ),
                 persistent_marker: persistent_sel,
                 reminder_marker: reminder_sel,
-                _entity_marker(
-                    CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=PRESENCE_DOMAINS,
-                        multiple=True,
-                    )
-                ),
-            }
-        ),
-        {"collapsed": True},
-    )
-
-    fields[vol.Required(SECTION_PARAMETERS)] = section(
-        vol.Schema(
-            {
-                temp_open_marker: temp_open_sel,
-                temp_close_marker: temp_close_sel,
-                hum_open_marker: hum_open_sel,
-                hum_close_marker: hum_close_sel,
-                co2_open_marker: co2_open_sel,
-                co2_close_marker: co2_close_sel,
-                frost_marker: frost_sel,
-                heat_marker: heat_sel,
-                winter_marker: winter_sel,
-                duration_marker: duration_sel,
-                heating_schedule_marker: heating_schedule_sel,
-                **{
-                    marker: sel
-                    for marker, sel in time_field_markers.values()
-                },
-            }
-        ),
-        {"collapsed": True},
-    )
-
-    # "Erweitert" - selten geänderte Fein-Tuning-Werte (siehe SECTION_ADVANCED
-    # oben) sowie das Temperatur-Attribut, das nur bei einer climate-Quelle
-    # überhaupt greift, und die vier Heizungs-Sollwertfelder (Schwelle/
-    # Comfort/Standby/Nacht - Nutzerwunsch, seltener geändert als die
-    # übrigen Parameter). Bewusst NICHT hier: Heizungs-Zeitplan (bleibt im
-    # Abschnitt "Parameter") und TTS-Wiedergabemodus (nur global, bleibt dort).
-    fields[vol.Required(SECTION_ADVANCED)] = section(
-        vol.Schema(
-            {
-                vol.Optional(
-                    CONF_TEMP_ATTRIBUTE,
-                    default=defaults.get(
-                        CONF_TEMP_ATTRIBUTE, DEFAULT_TEMP_ATTRIBUTE
-                    ),
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=COMMON_TEMP_ATTRIBUTES,
-                        custom_value=True,
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-                heating_threshold_marker: heating_threshold_sel,
-                heating_comfort_marker: heating_comfort_sel,
-                heating_standby_marker: heating_standby_sel,
-                heating_night_marker: heating_night_sel,
-                margin_marker: margin_sel,
-                frost_debounce_marker: frost_debounce_sel,
-                priority_marker: priority_sel,
-                shower_threshold_marker: shower_threshold_sel,
-                power_marker: power_sel,
-                grace_marker: grace_sel,
-                max_runtime_marker: max_runtime_sel,
-                max_runtime_high_marker: max_runtime_high_sel,
-                max_runtime_cooldown_marker: max_runtime_cooldown_sel,
             }
         ),
         {"collapsed": True},
@@ -1314,16 +1300,12 @@ def _build_room_schema(
 
 def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     """Formular zum nachträglichen Bearbeiten der allgemeinen Einstellungen
-    (Options-Flow): Sensoren/TTS-Wiedergabe/Leistungssensor in einem
-    Abschnitt, die Schwellenwertparameter in einem eigenen - analog zum
-    "Parameter"-Abschnitt bei den Raum-Einstellungen. Der Abschnitt
-    SECTION_MESSAGES heißt im Formular "Benachrichtigungen" (nicht mehr nur
-    "Benachrichtigungstexte") und enthält seit CONF_REMINDER_INTERVAL neben
-    den reinen Textvorlagen auch die zugehörige Zahlen-Einstellung - direkt
-    neben dem Erinnerungstext msg_reminder, den sie auslöst (analog zum
-    Raum-Abschnitt "Benachrichtigungen & Anwesenheit", siehe
-    _build_room_schema). Der Name/Titel dieses Eintrags ist hier bewusst
-    nicht änderbar (nicht notwendig)."""
+    (Options-Flow): dieselben Abschnitte wie im Raum-Formular (siehe
+    _build_room_schema) - 'Sensoren' (hier: Außen), 'Fenster & Lüften',
+    'Luftentfeuchter, Klima & Dusche', 'Heizung', 'Heizungs-Zeitplan',
+    'Benachrichtigungen' - plus 'Benachrichtigungstexte' (nur global, inkl. aller
+    Textvorlagen). Der Name/Titel dieses Eintrags ist hier bewusst nicht
+    änderbar (nicht notwendig)."""
     defaults = defaults or {}
     volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
     shower_max_marker, shower_max_sel = _threshold_selector(
@@ -1342,9 +1324,8 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     )
     reminder_marker, reminder_sel = _threshold_selector(CONF_REMINDER_INTERVAL, defaults)
     # Wie volume_marker/power_marker/grace_marker: einzeln erzeugt statt über
-    # _CORE_PARAMETER_KEYS, da diese drei im neuen Abschnitt "Erweitert"
-    # stehen (siehe SECTION_ADVANCED unten), nicht bei den übrigen
-    # Schwellenwerten im Abschnitt "Parameter".
+    # _CORE_PARAMETER_KEYS, da sie in einem anderen Abschnitt bzw. in anderer
+    # Reihenfolge stehen als die Schleife sie erzeugen würde.
     frost_debounce_marker, frost_debounce_sel = _threshold_selector(
         CONF_FROST_DEBOUNCE_MINUTES, defaults
     )
@@ -1352,9 +1333,8 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     shower_threshold_marker, shower_threshold_sel = _threshold_selector(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
-    # Wie beim Raum-Formular: die vier Heizungs-Sollwertfelder stehen im
-    # Abschnitt "Erweitert" (Nutzerwunsch), daher einzeln erzeugt statt über
-    # _CORE_PARAMETER_KEYS.
+    # Die vier Heizungs-Sollwertfelder stehen im Abschnitt "Heizung", daher
+    # einzeln erzeugt statt über _CORE_PARAMETER_KEYS.
     heating_threshold_marker, heating_threshold_sel = _threshold_selector(
         CONF_HEATING_THRESHOLD_TEMP, defaults
     )
@@ -1368,45 +1348,13 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         CONF_HEATING_NIGHT_TEMP, defaults
     )
 
-    parameter_fields = {}
+    ventilation_fields = {}
     for key in _CORE_PARAMETER_KEYS:
         marker, sel = _threshold_selector(key, defaults)
-        parameter_fields[marker] = sel
-    for key in _HEATING_TIME_FIELD_KEYS:
-        marker, sel = _time_selector(key, defaults)
-        parameter_fields[marker] = sel
-
-    tts_quiet_start_marker, tts_quiet_start_sel = _time_selector(
-        CONF_TTS_QUIET_START, defaults
-    )
-    tts_quiet_end_marker, tts_quiet_end_sel = _time_selector(
-        CONF_TTS_QUIET_END, defaults
-    )
-
-    advanced_fields = {
-        _entity_marker(
-            CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False
-        ): selector.SelectSelector(
-            selector.SelectSelectorConfig(
-                options=COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES,
-                custom_value=True,
-                mode=selector.SelectSelectorMode.DROPDOWN,
-            )
-        ),
-        heating_threshold_marker: heating_threshold_sel,
-        heating_comfort_marker: heating_comfort_sel,
-        heating_standby_marker: heating_standby_sel,
-        heating_night_marker: heating_night_sel,
-        frost_debounce_marker: frost_debounce_sel,
-        margin_marker: margin_sel,
-        shower_threshold_marker: shower_threshold_sel,
-        power_marker: power_sel,
-        grace_marker: grace_sel,
-        max_runtime_marker: max_runtime_sel,
-        max_runtime_high_marker: max_runtime_high_sel,
-        max_runtime_cooldown_marker: max_runtime_cooldown_sel,
-    }
-    advanced_fields[
+        ventilation_fields[marker] = sel
+    ventilation_fields[margin_marker] = margin_sel
+    ventilation_fields[frost_debounce_marker] = frost_debounce_sel
+    ventilation_fields[
         vol.Required(
             CONF_HUMIDITY_PRIORITY_OVER_DURATION,
             default=defaults.get(
@@ -1415,18 +1363,13 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             ),
         )
     ] = selector.BooleanSelector()
-    parameter_fields[
-        vol.Required(
-            CONF_HEATING_SCHEDULE_ENABLED,
-            default=defaults.get(CONF_HEATING_SCHEDULE_ENABLED, False),
-        )
-    ] = selector.BooleanSelector()
-    parameter_fields[
+
+    heating_fields = {
         vol.Required(
             CONF_HEATING_USE_PRESET_MODE,
             default=defaults.get(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
-        )
-    ] = selector.BooleanSelector()
+        ): selector.BooleanSelector(),
+    }
     # Dropdown als raumweiter Standard - anders als im Raum-Formular (siehe
     # _heating_preset_selector()) gibt es hier keine konkrete Entität, deren
     # preset_modes sich auslesen ließen (jeder Raum kann eine andere
@@ -1442,7 +1385,49 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         marker, field_selector = _heating_preset_selector(
             key, defaults, COMMON_HEATING_PRESET_MODES
         )
-        parameter_fields[marker] = field_selector
+        heating_fields[marker] = field_selector
+    heating_fields[heating_threshold_marker] = heating_threshold_sel
+    heating_fields[heating_comfort_marker] = heating_comfort_sel
+    heating_fields[heating_standby_marker] = heating_standby_sel
+    heating_fields[heating_night_marker] = heating_night_sel
+    heating_fields[
+        _entity_marker(CONF_SUMMER_MODE_FORECAST_ENTITY, defaults, required=False)
+    ] = selector.EntitySelector(
+        selector.EntitySelectorConfig(domain=SUMMER_MODE_FORECAST_DOMAINS)
+    )
+    heating_fields[
+        _entity_marker(CONF_SUMMER_MODE_FORECAST_ATTRIBUTE, defaults, required=False)
+    ] = selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=COMMON_SUMMER_MODE_FORECAST_ATTRIBUTES,
+            custom_value=True,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+    heating_fields[
+        _entity_marker(CONF_SUMMER_MODE_SWITCH_ENTITY, defaults, required=False)
+    ] = selector.EntitySelector(selector.EntitySelectorConfig(domain="switch"))
+    summer_threshold_marker, summer_threshold_sel = _threshold_selector(
+        CONF_SUMMER_MODE_THRESHOLD_TEMP, defaults
+    )
+    heating_fields[summer_threshold_marker] = summer_threshold_sel
+
+    schedule_fields = {
+        vol.Required(
+            CONF_HEATING_SCHEDULE_ENABLED,
+            default=defaults.get(CONF_HEATING_SCHEDULE_ENABLED, False),
+        ): selector.BooleanSelector(),
+    }
+    for key in _HEATING_TIME_FIELD_KEYS:
+        marker, sel = _time_selector(key, defaults)
+        schedule_fields[marker] = sel
+
+    tts_quiet_start_marker, tts_quiet_start_sel = _time_selector(
+        CONF_TTS_QUIET_START, defaults
+    )
+    tts_quiet_end_marker, tts_quiet_end_sel = _time_selector(
+        CONF_TTS_QUIET_END, defaults
+    )
 
     return vol.Schema(
         {
@@ -1459,31 +1444,39 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="sensor")
                         ),
-                        _entity_marker(
-                            CONF_SUMMER_MODE_FORECAST_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(
-                                domain=SUMMER_MODE_FORECAST_DOMAINS
-                            )
-                        ),
-                        _entity_marker(
-                            CONF_SUMMER_MODE_SWITCH_ENTITY, defaults, required=False
-                        ): selector.EntitySelector(
-                            selector.EntitySelectorConfig(domain="switch")
-                        ),
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(SECTION_VENTILATION): section(
+                vol.Schema(ventilation_fields), {"collapsed": True}
+            ),
+            vol.Required(SECTION_DEVICES): section(
+                vol.Schema(
+                    {
                         _entity_marker(
                             CONF_POWER_ENTITY, defaults, required=False
                         ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain="sensor")
                         ),
+                        power_marker: power_sel,
+                        grace_marker: grace_sel,
+                        max_runtime_marker: max_runtime_sel,
+                        max_runtime_high_marker: max_runtime_high_sel,
+                        max_runtime_cooldown_marker: max_runtime_cooldown_sel,
+                        shower_threshold_marker: shower_threshold_sel,
+                        shower_max_marker: shower_max_sel,
                     }
                 ),
                 {"collapsed": True},
             ),
-            vol.Required(SECTION_PARAMETERS): section(
-                vol.Schema(parameter_fields), {"collapsed": True}
+            vol.Required(SECTION_HEATING): section(
+                vol.Schema(heating_fields), {"collapsed": True}
             ),
-            vol.Required(SECTION_MESSAGES): section(
+            vol.Required(SECTION_HEATING_SCHEDULE): section(
+                vol.Schema(schedule_fields), {"collapsed": True}
+            ),
+            vol.Required(SECTION_NOTIFY): section(
                 vol.Schema(
                     {
                         _entity_marker(
@@ -1492,7 +1485,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             selector.EntitySelectorConfig(domain="tts")
                         ),
                         volume_marker: volume_sel,
-                        shower_max_marker: shower_max_sel,
                         vol.Required(
                             CONF_TTS_PLAYBACK_MODE,
                             default=defaults.get(
@@ -1562,6 +1554,13 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             default=defaults.get(CONF_PERSISTENT_ENABLED, False),
                         ): selector.BooleanSelector(),
                         reminder_marker: reminder_sel,
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(SECTION_MESSAGES): section(
+                vol.Schema(
+                    {
                         vol.Required(
                             CONF_MSG_OPEN_HUMIDITY,
                             default=defaults.get(
@@ -1690,9 +1689,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                     }
                 ),
                 {"collapsed": True},
-            ),
-            vol.Required(SECTION_ADVANCED): section(
-                vol.Schema(advanced_fields), {"collapsed": True}
             ),
             vol.Required(
                 RESET_TO_DEFAULTS_KEY, default=False

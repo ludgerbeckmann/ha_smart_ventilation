@@ -10,93 +10,34 @@
       },
       "room": {
         "title": "Smart Climate – Raum hinzufügen",
-        "description": "Lege pro Raum eine Überwachung an. Wurde im vorigen Schritt ein HA-Bereich gewählt, ist der Raumname damit vorbelegt und die Sensor-/Geräte-Auswahllisten unten sind bereits auf die diesem Bereich zugeordneten Entitäten eingeschränkt (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"- Smart Climate Optionen -\" (Konfigurieren).",
+        "description": "Lege pro Raum eine Überwachung an. Wurde im vorigen Schritt ein HA-Bereich gewählt, ist der Raumname damit vorbelegt und die Auswahllisten unten sind bereits auf die diesem Bereich zugeordneten Entitäten eingeschränkt (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Wiederhole diesen Vorgang für weitere Räume (Einstellungen → Geräte & Dienste → Integration hinzufügen). Raumübergreifende Standardwerte findest du unter dem automatisch angelegten Eintrag \"- Smart Climate Optionen -\" (Konfigurieren).",
         "data": {
           "room_name": "Raumname"
         },
         "sections": {
-          "notify": {
-            "name": "Benachrichtigungen & Anwesenheit",
-            "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
-            "data": {
-              "sonos_entity": "Lautsprecher (media_player)",
-              "tts_light_entity": "Licht für Sprachausgabe (optional)",
-              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
-              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)",
-              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
-              "tts_quiet_start": "Nachtruhe-Start",
-              "tts_quiet_end": "Nachtruhe-Ende",
-              "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "App-Benachrichtigungsziele",
-              "persistent_enabled": "Persistente Benachrichtigung",
-              "reminder_interval_minutes": "Erinnerungsintervall",
-              "heating_presence_entities": "Anwesenheit für Heizung (Personen)"
-            },
-            "data_description": {
-              "mobile_targets": "Leer = globale Ziele aus \"Smart Climate Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
-              "persistent_enabled": "Meldung in der Home-Assistant-Weboberfläche. Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
-              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
-              "sonos_entity": "Mehrfachauswahl möglich. Leer = keine Sprachausgabe für diesen Raum",
-              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
-              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
-              "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}",
-              "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
-              "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
-              "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
-              "reminder_interval_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
-              "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung."
-            }
-          },
           "sensors": {
-            "name": "Sensoren & Geräte",
-            "description": "Welche Entitäten liefern die Messwerte für diesen Raum, und welche Geräte (Luftentfeuchter, Klimaanlage, Heizung) werden automatisch gesteuert?",
+            "name": "Sensoren",
+            "description": "Welche Entitäten liefern die Innen-Messwerte für diesen Raum?",
             "data": {
               "temperature_source_entity": "Innentemperatur",
-              "heating_use_temp_source": "Temperaturquelle auch fürs Heizen",
-              "heating_entity": "Heizung",
-              "heating_use_preset_mode": "Presets steuern/anzeigen",
-              "heating_preset_comfort": "Preset-Name Komfort",
-              "heating_preset_standby": "Preset-Name Standby",
-              "heating_preset_night": "Preset-Name Eco (Nacht)",
-              "heating_preset_building_protection": "Preset-Name Gebäudeschutz",
+              "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Innen-Luftfeuchtigkeit (optional)",
-              "shower_detection_enabled": "Duscherkennung",
-              "co2_entity": "CO2 (optional)",
-              "window_entity": "Fensterkontakt (optional)",
-              "shutter_entity": "Fenstersperre / Rollladen",
-              "disable_close_recommendation": "Schließempfehlung deaktivieren",
-              "no_window": "Dieser Raum hat kein Fenster",
-              "dehumidifier_entity": "Luftentfeuchter",
-              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
-              "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
-              "ac_entity": "Klimaanlage",
-              "device_window_conflict_notification_enabled": "Fenster-Gerät-Konflikt melden"
+              "co2_entity": "CO2 (optional)"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
-              "heating_use_temp_source": "Verwendet automatisch die oben gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
-              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (Abschnitt \"Parameter\") um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
-              "heating_use_preset_mode": "Leer = globale Einstellung verwenden. Aktiviert (Standard, auch global), wird die Heizung über preset_mode statt über einen Zahlen-Sollwert gesteuert/angezeigt - aber nur, wenn die Entität preset_mode tatsächlich unterstützt; sonst bleibt es automatisch bei der Sollwert-Steuerung. Aktuell global: {global_heating_use_preset_mode}",
-              "heating_preset_comfort": "Der preset_mode-Name der Heizungs-Entität für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt die tatsächlich von der Entität gemeldeten Presets, frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt, nicht über ein Preset. Aktuell global: {global_heating_preset_comfort}",
-              "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand. Aktuell global: {global_heating_preset_standby}",
-              "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt, aktiviert wird er über Nacht) - nur relevant bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_preset_night}",
-              "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand - wird ausschließlich gesetzt, solange das Fenster bestätigt offen ist (ersetzt dafür Standby). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet. Aktuell global: {global_heating_preset_building_protection}",
-              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Erweitert\"",
-              "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
-              "shutter_entity": "Nur in Verbindung mit einer Klimaanlage. Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
-              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
-              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
-              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
-              "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
-              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "device_window_conflict_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), solange ein hier konfigurierter Luftentfeuchter und/oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft - unabhängig von einem eventuellen Einspeiseleistungs-Überschuss. Löst sich automatisch wieder auf, sobald das Fenster geschlossen wird oder die Außenluft wieder hilft."
+              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität als Innentemperatur gewählt wurde",
+              "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer"
             }
           },
-          "parameters": {
-            "name": "Parameter",
-            "description": "Optional - überschreibt für diesen Raum die allgemeinen Einstellungen. Leer gelassen gilt der dort hinterlegte Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+          "ventilation": {
+            "name": "Fenster & Lüften",
+            "description": "Fenster, Rollladen, Normalbereich-Grenzen und Schutzfunktionen. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
             "data": {
+              "window_entity": "Fensterkontakt (optional)",
+              "no_window": "Dieser Raum hat kein Fenster",
+              "shutter_entity": "Fenstersperre / Rollladen",
+              "disable_close_recommendation": "Schließempfehlung deaktivieren",
               "temp_threshold_open": "Obergrenze Temperatur (öffnen)",
               "temp_threshold_close": "Untergrenze Temperatur (schließen)",
               "humidity_threshold_open": "Obergrenze Luftfeuchtigkeit (öffnen)",
@@ -107,6 +48,99 @@
               "heat_protection_temp": "Hitzeschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+              "temp_margin": "Toleranz-Marge",
+              "frost_debounce_minutes": "Debounce-Zeit Frostschutz",
+              "humidity_priority_over_duration": "Luftfeuchtigkeit/CO2 haben Vorrang"
+            },
+            "data_description": {
+              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
+              "shutter_entity": "Nur in Verbindung mit einer Klimaanlage. Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
+              "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
+              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_close}",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen. Aktuell global: {global_frost_protection_temp}",
+              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Wirkt außerdem als Hysterese der Heizungssteuerung und des Sommermodus. Aktuell global: {global_temp_margin}",
+              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung. Aktuell global: {global_frost_debounce_minutes}",
+              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}"
+            }
+          },
+          "devices": {
+            "name": "Luftentfeuchter, Klima & Dusche",
+            "description": "Automatisch gesteuerte Geräte sowie Leistungs-, Laufzeit- und Duscherkennungs-Einstellungen. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "data": {
+              "dehumidifier_entity": "Luftentfeuchter",
+              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
+              "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
+              "ac_entity": "Klimaanlage",
+              "device_window_conflict_notification_enabled": "Fenster-Gerät-Konflikt melden",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung",
+              "power_grace_period_minutes": "Abschaltverzögerung (wenig Einspeisung)",
+              "device_max_runtime_minutes": "Höchstlaufzeit bei geringer Einspeisung",
+              "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
+              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit",
+              "shower_detection_enabled": "Duscherkennung",
+              "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
+              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)"
+            },
+            "data_description": {
+              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
+              "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "device_window_conflict_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), solange ein hier konfigurierter Luftentfeuchter und/oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft - unabhängig von einem eventuellen Einspeiseleistungs-Überschuss. Löst sich automatisch wieder auf, sobald das Fenster geschlossen wird oder die Außenluft wieder hilft.",
+              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}",
+              "device_max_runtime_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = deaktiviert. Gilt bei geringer Einspeiseleistung (unter der Mindesteinspeiseleistung) bzw. ohne Leistungssensor: erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_high_surplus_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = unbegrenzt. Gilt bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor): erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_high_surplus_minutes}",
+              "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}",
+              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den im Abschnitt \"Sensoren\" gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür steht direkt darunter",
+              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn oben die Duscherkennung aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
+              "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}"
+            }
+          },
+          "heating": {
+            "name": "Heizung",
+            "description": "Heizungs-Gerät, Presets, Anwesenheitsprüfung und Sollwerte für diesen Raum. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "data": {
+              "heating_use_temp_source": "Temperaturquelle auch fürs Heizen",
+              "heating_entity": "Heizung",
+              "heating_use_preset_mode": "Presets steuern/anzeigen",
+              "heating_preset_comfort": "Preset-Name Komfort",
+              "heating_preset_standby": "Preset-Name Standby",
+              "heating_preset_night": "Preset-Name Eco (Nacht)",
+              "heating_preset_building_protection": "Preset-Name Gebäudeschutz",
+              "heating_presence_entities": "Anwesenheit für Heizung (Personen)",
+              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
+              "heating_comfort_temp": "Heizung Comfort-Sollwert",
+              "heating_standby_temp": "Heizung Standby-Sollwert",
+              "heating_night_temp": "Heizung Nacht-Sollwert"
+            },
+            "data_description": {
+              "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
+              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (weiter unten im selben Abschnitt) um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
+              "heating_use_preset_mode": "Leer = globale Einstellung verwenden. Aktiviert (Standard, auch global), wird die Heizung über preset_mode statt über einen Zahlen-Sollwert gesteuert/angezeigt - aber nur, wenn die Entität preset_mode tatsächlich unterstützt; sonst bleibt es automatisch bei der Sollwert-Steuerung. Aktuell global: {global_heating_use_preset_mode}",
+              "heating_preset_comfort": "Der preset_mode-Name der Heizungs-Entität für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt die tatsächlich von der Entität gemeldeten Presets, frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt, nicht über ein Preset. Aktuell global: {global_heating_preset_comfort}",
+              "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand. Aktuell global: {global_heating_preset_standby}",
+              "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt, aktiviert wird er über Nacht) - nur relevant bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_preset_night}",
+              "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand - wird ausschließlich gesetzt, solange das Fenster bestätigt offen ist (ersetzt dafür Standby). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet. Aktuell global: {global_heating_preset_building_protection}",
+              "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung.",
+              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist. Aktuell global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+            }
+          },
+          "heating_schedule": {
+            "name": "Heizungs-Zeitplan",
+            "description": "Zeitfenster, in denen Comfort bzw. Nacht erzwungen wird (getrennt für Werktage und Wochenende). Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "data": {
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
               "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
@@ -118,17 +152,7 @@
               "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
             },
             "data_description": {
-              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
-              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_close}",
-              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_open}",
-              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_close}",
-              "co2_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_open}",
-              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_close}",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen. Aktuell global: {global_frost_protection_temp}",
-              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
-              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben). Aktuell global: {global_heating_schedule_enabled}",
+              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekday}",
               "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_start_weekend}",
@@ -139,40 +163,32 @@
               "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}"
             }
           },
-          "advanced": {
-            "name": "Erweitert",
-            "description": "Selten benötigte Fein-Tuning-Werte für diesen Raum. Leer gelassen gilt jeweils der dort hinterlegte globale Wert.",
+          "notify": {
+            "name": "Benachrichtigungen",
+            "description": "Sprachausgabe, App-Push, persistente Benachrichtigung und Erinnerung. Die Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
-              "temperature_attribute": "Temperatur-Attribut",
-              "temp_margin": "Toleranz-Marge",
-              "frost_debounce_minutes": "Debounce-Zeit Frostschutz",
-              "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer",
-              "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
-              "min_surplus_power_watts": "Mindest-Einspeiseleistung",
-              "power_grace_period_minutes": "Abschaltverzögerung (wenig Einspeisung)",
-              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
-              "heating_comfort_temp": "Heizung Comfort-Sollwert",
-              "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert",
-              "device_max_runtime_minutes": "Höchstlaufzeit bei geringer Einspeisung",
-              "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
-              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit"
+              "sonos_entity": "Lautsprecher (media_player)",
+              "tts_light_entity": "Licht für Sprachausgabe (optional)",
+              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
+              "tts_quiet_start": "Nachtruhe-Start",
+              "tts_quiet_end": "Nachtruhe-Ende",
+              "mobile_enabled": "Home Assistant Companion App",
+              "mobile_targets": "App-Benachrichtigungsziele",
+              "persistent_enabled": "Persistente Benachrichtigung",
+              "reminder_interval_minutes": "Erinnerungsintervall"
             },
             "data_description": {
-              "temperature_attribute": "Nur relevant, wenn im Abschnitt \"Sensoren & Geräte\" eine climate-Entität als Innentemperatur gewählt wurde",
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Aktuell global: {global_temp_margin}",
-              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung. Aktuell global: {global_frost_debounce_minutes}",
-              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}",
-              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren & Geräte\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
-              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}",
-              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
-              "device_max_runtime_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = deaktiviert. Gilt bei geringer Einspeiseleistung (unter der Mindesteinspeiseleistung) bzw. ohne Leistungssensor: erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_minutes}",
-              "device_max_runtime_high_surplus_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = unbegrenzt. Gilt bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor): erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_high_surplus_minutes}",
-              "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}"
+              "sonos_entity": "Mehrfachauswahl möglich. Leer = keine Sprachausgabe für diesen Raum",
+              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
+              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
+              "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
+              "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
+              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
+              "mobile_targets": "Leer = globale Ziele aus \"Smart Climate Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
+              "persistent_enabled": "Meldung in der Home-Assistant-Weboberfläche. Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
+              "reminder_interval_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}"
             }
           }
         }
@@ -192,88 +208,29 @@
           "room_name": "Raumname"
         },
         "sections": {
-          "notify": {
-            "name": "Benachrichtigungen & Anwesenheit",
-            "description": "Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
-            "data": {
-              "sonos_entity": "Lautsprecher (media_player)",
-              "tts_light_entity": "Licht für Sprachausgabe (optional)",
-              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
-              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)",
-              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
-              "tts_quiet_start": "Nachtruhe-Start",
-              "tts_quiet_end": "Nachtruhe-Ende",
-              "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "App-Benachrichtigungsziele",
-              "persistent_enabled": "Persistente Benachrichtigung",
-              "reminder_interval_minutes": "Erinnerungsintervall",
-              "heating_presence_entities": "Anwesenheit für Heizung (Personen)"
-            },
-            "data_description": {
-              "mobile_targets": "Leer = globale Ziele aus \"Smart Climate Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
-              "persistent_enabled": "Meldung in der Home-Assistant-Weboberfläche. Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
-              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
-              "sonos_entity": "Mehrfachauswahl möglich. Leer = keine Sprachausgabe für diesen Raum",
-              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
-              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
-              "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}",
-              "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
-              "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
-              "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
-              "reminder_interval_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}",
-              "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung."
-            }
-          },
           "sensors": {
-            "name": "Sensoren & Geräte",
-            "description": "Welche Entitäten liefern die Messwerte für diesen Raum, und welche Geräte (Luftentfeuchter, Klimaanlage, Heizung) werden automatisch gesteuert?",
+            "name": "Sensoren",
+            "description": "Welche Entitäten liefern die Innen-Messwerte für diesen Raum?",
             "data": {
               "temperature_source_entity": "Innentemperatur",
-              "heating_use_temp_source": "Temperaturquelle auch fürs Heizen",
-              "heating_entity": "Heizung",
-              "heating_use_preset_mode": "Presets steuern/anzeigen",
-              "heating_preset_comfort": "Preset-Name Komfort",
-              "heating_preset_standby": "Preset-Name Standby",
-              "heating_preset_night": "Preset-Name Eco (Nacht)",
-              "heating_preset_building_protection": "Preset-Name Gebäudeschutz",
+              "temperature_attribute": "Temperatur-Attribut",
               "humidity_entity": "Innen-Luftfeuchtigkeit (optional)",
-              "shower_detection_enabled": "Duscherkennung",
-              "co2_entity": "CO2 (optional)",
-              "window_entity": "Fensterkontakt (optional)",
-              "shutter_entity": "Fenstersperre / Rollladen",
-              "disable_close_recommendation": "Schließempfehlung deaktivieren",
-              "no_window": "Dieser Raum hat kein Fenster",
-              "dehumidifier_entity": "Luftentfeuchter",
-              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
-              "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
-              "ac_entity": "Klimaanlage",
-              "device_window_conflict_notification_enabled": "Fenster-Gerät-Konflikt melden"
+              "co2_entity": "CO2 (optional)"
             },
             "data_description": {
               "temperature_source_entity": "Eine climate-, sensor-, number- oder input_number-Entität",
-              "heating_use_temp_source": "Verwendet automatisch die oben gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
-              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (Abschnitt \"Parameter\") um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
-              "heating_use_preset_mode": "Leer = globale Einstellung verwenden. Aktiviert (Standard, auch global), wird die Heizung über preset_mode statt über einen Zahlen-Sollwert gesteuert/angezeigt - aber nur, wenn die Entität preset_mode tatsächlich unterstützt; sonst bleibt es automatisch bei der Sollwert-Steuerung. Aktuell global: {global_heating_use_preset_mode}",
-              "heating_preset_comfort": "Der preset_mode-Name der Heizungs-Entität für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt die tatsächlich von der Entität gemeldeten Presets, frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt, nicht über ein Preset. Aktuell global: {global_heating_preset_comfort}",
-              "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand. Aktuell global: {global_heating_preset_standby}",
-              "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt, aktiviert wird er über Nacht) - nur relevant bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_preset_night}",
-              "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand - wird ausschließlich gesetzt, solange das Fenster bestätigt offen ist (ersetzt dafür Standby). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet. Aktuell global: {global_heating_preset_building_protection}",
-              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den oben gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür findet sich im Abschnitt \"Erweitert\"",
-              "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer",
-              "shutter_entity": "Nur in Verbindung mit einer Klimaanlage. Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
-              "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
-              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
-              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
-              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
-              "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
-              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
-              "device_window_conflict_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), solange ein hier konfigurierter Luftentfeuchter und/oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft - unabhängig von einem eventuellen Einspeiseleistungs-Überschuss. Löst sich automatisch wieder auf, sobald das Fenster geschlossen wird oder die Außenluft wieder hilft."
+              "temperature_attribute": "Nur relevant, wenn oben eine climate-Entität als Innentemperatur gewählt wurde",
+              "co2_entity": "Eine sensor-Entität mit CO2-Wert in ppm. Anders als bei Temperatur/Luftfeuchtigkeit gibt es hierfür keinen Außenluft-Vergleich - Lüften hilft bei hohem CO2-Wert immer"
             }
           },
-          "parameters": {
-            "name": "Parameter",
-            "description": "Optional - überschreibt für diesen Raum die allgemeinen Einstellungen. Leer gelassen gilt der dort hinterlegte Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+          "ventilation": {
+            "name": "Fenster & Lüften",
+            "description": "Fenster, Rollladen, Normalbereich-Grenzen und Schutzfunktionen. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
             "data": {
+              "window_entity": "Fensterkontakt (optional)",
+              "no_window": "Dieser Raum hat kein Fenster",
+              "shutter_entity": "Fenstersperre / Rollladen",
+              "disable_close_recommendation": "Schließempfehlung deaktivieren",
               "temp_threshold_open": "Obergrenze Temperatur (öffnen)",
               "temp_threshold_close": "Untergrenze Temperatur (schließen)",
               "humidity_threshold_open": "Obergrenze Luftfeuchtigkeit (öffnen)",
@@ -284,6 +241,99 @@
               "heat_protection_temp": "Hitzeschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+              "temp_margin": "Toleranz-Marge",
+              "frost_debounce_minutes": "Debounce-Zeit Frostschutz",
+              "humidity_priority_over_duration": "Luftfeuchtigkeit/CO2 haben Vorrang"
+            },
+            "data_description": {
+              "no_window": "An: es werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt - nützlich z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter/Klimaanlage anhand der Sensorwerte gesteuert werden sollen. Die Geräte-Steuerung läuft davon unabhängig weiter.",
+              "shutter_entity": "Nur in Verbindung mit einer Klimaanlage. Optional: eine cover-Entität (auf/zu) oder eine switch-Entität (1 = herunterfahren+gesperrt, 0 = hochfahren+entsperrt). Wird beim Einschalten der Klimaanlage aktiviert, beim Ausschalten wieder deaktiviert",
+              "disable_close_recommendation": "Für diesen Raum wird keine Schließen-Empfehlung mehr ausgesprochen (Temperatur/Luftfeuchtigkeit/CO2/Winter-Höchstdauer/Sommer-Fall bleiben ohne Wirkung) - sinnvoll, wenn der Fensterkontakt den tatsächlichen Zustand nicht zuverlässig widerspiegelt (z. B. eine Schiebetür) oder eine Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt. Frost-/Hitzeschutz bleiben davon unberührt und schließen weiterhin sofort. Öffnen-Empfehlungen sind ebenfalls unberührt.",
+              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_close}",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen. Aktuell global: {global_frost_protection_temp}",
+              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Wirkt außerdem als Hysterese der Heizungssteuerung und des Sommermodus. Aktuell global: {global_temp_margin}",
+              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung. Aktuell global: {global_frost_debounce_minutes}",
+              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}"
+            }
+          },
+          "devices": {
+            "name": "Luftentfeuchter, Klima & Dusche",
+            "description": "Automatisch gesteuerte Geräte sowie Leistungs-, Laufzeit- und Duscherkennungs-Einstellungen. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "data": {
+              "dehumidifier_entity": "Luftentfeuchter",
+              "dehumidifier_tank_full_entity": "Tankstatus-Sensor (Luftentfeuchter)",
+              "dehumidifier_tank_notification_enabled": "Benachrichtigung bei vollem Tank",
+              "ac_entity": "Klimaanlage",
+              "device_window_conflict_notification_enabled": "Fenster-Gerät-Konflikt melden",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung",
+              "power_grace_period_minutes": "Abschaltverzögerung (wenig Einspeisung)",
+              "device_max_runtime_minutes": "Höchstlaufzeit bei geringer Einspeisung",
+              "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
+              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit",
+              "shower_detection_enabled": "Duscherkennung",
+              "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
+              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)"
+            },
+            "data_description": {
+              "dehumidifier_entity": "Eine switch- oder humidifier-Entität. Startet bei hoher, stoppt bei niedriger Luftfeuchtigkeit",
+              "dehumidifier_tank_full_entity": "Optional: ein binary_sensor, der \"an\" meldet, wenn der Tank voll ist bzw. ein Fehler vorliegt - wird auf der Dashboard-Karte als Zusatz zum Luftentfeuchter-Status angezeigt (z. B. \"Fehler\")",
+              "dehumidifier_tank_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), sobald der oben gewählte Tankstatus-Sensor \"voll\" meldet - nur wirksam, wenn dort auch tatsächlich ein Sensor ausgewählt ist.",
+              "ac_entity": "Eine climate- oder switch-Entität. Startet, wenn drinnen zu warm ist und Lüften nicht helfen würde",
+              "device_window_conflict_notification_enabled": "Aktiviert eine echte Benachrichtigung (Sprachausgabe/App-Push/persistente Benachrichtigung, je nachdem was für diesen Raum aktiv ist), solange ein hier konfigurierter Luftentfeuchter und/oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft - unabhängig von einem eventuellen Einspeiseleistungs-Überschuss. Löst sich automatisch wieder auf, sobald das Fenster geschlossen wird oder die Außenluft wieder hilft.",
+              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}",
+              "device_max_runtime_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = deaktiviert. Gilt bei geringer Einspeiseleistung (unter der Mindesteinspeiseleistung) bzw. ohne Leistungssensor: erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_high_surplus_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = unbegrenzt. Gilt bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor): erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_high_surplus_minutes}",
+              "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}",
+              "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den im Abschnitt \"Sensoren\" gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür steht direkt darunter",
+              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn oben die Duscherkennung aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
+              "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}"
+            }
+          },
+          "heating": {
+            "name": "Heizung",
+            "description": "Heizungs-Gerät, Presets, Anwesenheitsprüfung und Sollwerte für diesen Raum. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "data": {
+              "heating_use_temp_source": "Temperaturquelle auch fürs Heizen",
+              "heating_entity": "Heizung",
+              "heating_use_preset_mode": "Presets steuern/anzeigen",
+              "heating_preset_comfort": "Preset-Name Komfort",
+              "heating_preset_standby": "Preset-Name Standby",
+              "heating_preset_night": "Preset-Name Eco (Nacht)",
+              "heating_preset_building_protection": "Preset-Name Gebäudeschutz",
+              "heating_presence_entities": "Anwesenheit für Heizung (Personen)",
+              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
+              "heating_comfort_temp": "Heizung Comfort-Sollwert",
+              "heating_standby_temp": "Heizung Standby-Sollwert",
+              "heating_night_temp": "Heizung Nacht-Sollwert"
+            },
+            "data_description": {
+              "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
+              "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (weiter unten im selben Abschnitt) um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
+              "heating_use_preset_mode": "Leer = globale Einstellung verwenden. Aktiviert (Standard, auch global), wird die Heizung über preset_mode statt über einen Zahlen-Sollwert gesteuert/angezeigt - aber nur, wenn die Entität preset_mode tatsächlich unterstützt; sonst bleibt es automatisch bei der Sollwert-Steuerung. Aktuell global: {global_heating_use_preset_mode}",
+              "heating_preset_comfort": "Der preset_mode-Name der Heizungs-Entität für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt die tatsächlich von der Entität gemeldeten Presets, frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt, nicht über ein Preset. Aktuell global: {global_heating_preset_comfort}",
+              "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand. Aktuell global: {global_heating_preset_standby}",
+              "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt, aktiviert wird er über Nacht) - nur relevant bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_preset_night}",
+              "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand - wird ausschließlich gesetzt, solange das Fenster bestätigt offen ist (ersetzt dafür Standby). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet. Aktuell global: {global_heating_preset_building_protection}",
+              "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung.",
+              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist. Aktuell global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+            }
+          },
+          "heating_schedule": {
+            "name": "Heizungs-Zeitplan",
+            "description": "Zeitfenster, in denen Comfort bzw. Nacht erzwungen wird (getrennt für Werktage und Wochenende). Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "data": {
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
               "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
@@ -295,17 +345,7 @@
               "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
             },
             "data_description": {
-              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_open}",
-              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_temp_threshold_close}",
-              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_open}",
-              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_humidity_threshold_close}",
-              "co2_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_open}",
-              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen. Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_co2_threshold_close}",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen. Aktuell global: {global_frost_protection_temp}",
-              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte. Aktuell global: {global_heat_protection_temp}",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer). Aktuell global: {global_winter_outdoor_threshold}",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert. Aktuell global: {global_max_open_duration_winter_minutes}",
-              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben). Aktuell global: {global_heating_schedule_enabled}",
+              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekday}",
               "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_start_weekend}",
@@ -316,45 +356,37 @@
               "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}"
             }
           },
-          "advanced": {
-            "name": "Erweitert",
-            "description": "Selten benötigte Fein-Tuning-Werte für diesen Raum. Leer gelassen gilt jeweils der dort hinterlegte globale Wert.",
+          "notify": {
+            "name": "Benachrichtigungen",
+            "description": "Sprachausgabe, App-Push, persistente Benachrichtigung und Erinnerung. Die Home Assistant Companion App aktivierst du über die Checkbox; das zugehörige Feld direkt darunter ist nur relevant, wenn die Checkbox aktiviert ist. Sprachausgabe ist aktiv, sobald mindestens ein Lautsprecher ausgewählt ist.",
             "data": {
-              "temperature_attribute": "Temperatur-Attribut",
-              "temp_margin": "Toleranz-Marge",
-              "frost_debounce_minutes": "Debounce-Zeit Frostschutz",
-              "humidity_priority_over_duration": "Priorität bei Winter-Höchstdauer",
-              "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
-              "min_surplus_power_watts": "Mindest-Einspeiseleistung",
-              "power_grace_period_minutes": "Abschaltverzögerung (wenig Einspeisung)",
-              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
-              "heating_comfort_temp": "Heizung Comfort-Sollwert",
-              "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert",
-              "device_max_runtime_minutes": "Höchstlaufzeit bei geringer Einspeisung",
-              "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
-              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit"
+              "sonos_entity": "Lautsprecher (media_player)",
+              "tts_light_entity": "Licht für Sprachausgabe (optional)",
+              "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
+              "tts_quiet_start": "Nachtruhe-Start",
+              "tts_quiet_end": "Nachtruhe-Ende",
+              "mobile_enabled": "Home Assistant Companion App",
+              "mobile_targets": "App-Benachrichtigungsziele",
+              "persistent_enabled": "Persistente Benachrichtigung",
+              "reminder_interval_minutes": "Erinnerungsintervall"
             },
             "data_description": {
-              "temperature_attribute": "Nur relevant, wenn im Abschnitt \"Sensoren & Geräte\" eine climate-Entität als Innentemperatur gewählt wurde",
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Aktuell global: {global_temp_margin}",
-              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung. Aktuell global: {global_frost_debounce_minutes}",
-              "humidity_priority_over_duration": "Leer = globale Einstellung verwenden. Legt fest, ob bei Erreichen der Winter-Höchstdauer ein noch bestehender Feuchtigkeits- oder CO2-Lüftungsbedarf Vorrang hat (Fenster bleibt offen) oder die Höchstdauer strikt durchgesetzt wird (Fenster schließt trotzdem). Frostschutz hat davon unabhängig immer Vorrang. Aktuell global: {global_humidity_priority_over_duration}",
-              "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Duscherkennung im Abschnitt \"Sensoren & Geräte\" aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
-              "min_surplus_power_watts": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt nur fürs Einschalten, nicht fürs Ausschalten. Aktuell global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Erst wenn die Einspeiseleistung so lange ununterbrochen zu niedrig war, wird ein bereits laufendes Gerät deswegen abgeschaltet. Aktuell global: {global_power_grace_period_minutes}",
-              "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist. Aktuell global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
-              "device_max_runtime_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = deaktiviert. Gilt bei geringer Einspeiseleistung (unter der Mindesteinspeiseleistung) bzw. ohne Leistungssensor: erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_minutes}",
-              "device_max_runtime_high_surplus_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = unbegrenzt. Gilt bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor): erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_high_surplus_minutes}",
-              "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}"
+              "sonos_entity": "Mehrfachauswahl möglich. Leer = keine Sprachausgabe für diesen Raum",
+              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
+              "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
+              "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
+              "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
+              "mobile_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_mobile_enabled}",
+              "mobile_targets": "Leer = globale Ziele aus \"Smart Climate Optionen\" verwenden. Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet. Aktuell global: {global_mobile_targets}",
+              "persistent_enabled": "Meldung in der Home-Assistant-Weboberfläche. Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktuell global: {global_persistent_enabled}",
+              "reminder_interval_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Aktuell global: {global_reminder_interval_minutes}"
             }
           }
         },
         "data_description": {
-          "area_id": "HA-Bereich für diesen Raum - schränkt die Sensor-/Geräte-Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Nach einer Änderung hier bitte einmal speichern - die Auswahllisten werden dann mit dem neuen Bereich aktualisiert angezeigt, bereits gemachte Eingaben bleiben erhalten; erst ein zweites Speichern übernimmt die Änderungen endgültig. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
+          "area_id": "HA-Bereich für diesen Raum - schränkt die Auswahllisten unten auf die diesem Bereich zugeordneten Entitäten ein (Domains ohne passende Entität im Bereich bleiben unbeschränkt). Nach einer Änderung hier bitte einmal speichern - die Auswahllisten werden dann mit dem neuen Bereich aktualisiert angezeigt, bereits gemachte Eingaben bleiben erhalten; erst ein zweites Speichern übernimmt die Änderungen endgültig. Leer lassen, um wie bisher aus allen Entitäten zu wählen."
         }
       },
       "global": {
@@ -364,30 +396,24 @@
           "reset_to_defaults": "Auf Standardwerte zurücksetzen"
         },
         "data_description": {
-          "reset_to_defaults": "Setzt beim Speichern alle Schwellenwerte in den Abschnitten \"Parameter\" und \"Erweitert\", das Erinnerungsintervall und alle Benachrichtigungstexte im Abschnitt \"Benachrichtigungen\" auf die einprogrammierten Standardwerte zurück - unabhängig davon, was aktuell in diesen Feldern eingetragen ist. Ausgewählte Entitäten (Sensoren, TTS, Leistungssensor, Benachrichtigungsziele) sowie Sprachausgabe-Modus und Benachrichtigungsmethoden bleiben davon unberührt."
+          "reset_to_defaults": "Setzt beim Speichern alle Schwellenwerte, Sollwerte, Zeitfenster und Laufzeiten, das Erinnerungsintervall und alle Benachrichtigungstexte auf die einprogrammierten Standardwerte zurück - unabhängig davon, was aktuell in diesen Feldern eingetragen ist. Ausgewählte Entitäten (Sensoren, TTS, Leistungssensor, Benachrichtigungsziele) sowie Sprachausgabe-Modus und Benachrichtigungsmethoden bleiben davon unberührt."
         },
         "sections": {
           "sensors": {
-            "name": "Sensoren & Geräte",
-            "description": "Sensoren und Wiedergabe-Einstellungen als raumweiter Standard.",
+            "name": "Sensoren",
+            "description": "Außen-Sensoren als raumweiter Standard.",
             "data": {
               "outdoor_temp_entity": "Außen-Temperatur",
-              "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit",
-              "power_entity": "Leistungssensor (Einspeiseleistung)",
-              "summer_mode_forecast_entity": "Sommermodus-Vorhersagequelle (optional)",
-              "summer_mode_switch_entity": "Sommer-/Winterbetrieb-Schalter"
+              "outdoor_humidity_entity": "Außen-Luftfeuchtigkeit"
             },
             "data_description": {
               "outdoor_temp_entity": "Wird für alle Räume verwendet - kann nicht mehr pro Raum überschrieben werden",
-              "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen",
-              "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
-              "summer_mode_switch_entity": "Optional. Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Abschnitt \"Parameter\") wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
-              "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt"
+              "outdoor_humidity_entity": "Wird für alle Räume verwendet, nicht pro Raum überschreibbar. Ohne diesen Sensor wird bei hoher Innen-Luftfeuchtigkeit weiterhin einfach gelüftet, unabhängig von der Außenluft. Mit Sensor wird das Lüften bei Feuchtigkeit nur empfohlen, wenn es draußen auch trockener ist als drinnen"
             }
           },
-          "parameters": {
-            "name": "Parameter",
-            "description": "Diese Schwellenwerte gelten als raumweiter Standard.",
+          "ventilation": {
+            "name": "Fenster & Lüften",
+            "description": "Normalbereich-Grenzen, Frost-/Hitzeschutz und Feinabstimmung als raumweiter Standard.",
             "data": {
               "temp_threshold_open": "Obergrenze Temperatur (öffnen)",
               "temp_threshold_close": "Untergrenze Temperatur (schließen)",
@@ -399,6 +425,88 @@
               "heat_protection_temp": "Hitzeschutz-Grenze (Außentemperatur)",
               "winter_outdoor_threshold": "Winter-Schwelle (Außentemperatur)",
               "max_open_duration_winter_minutes": "Max. Öffnungsdauer im Winter",
+              "temp_margin": "Toleranz-Marge",
+              "frost_debounce_minutes": "Debounce-Zeit Frostschutz",
+              "humidity_priority_over_duration": "Luftfeuchtigkeit/CO2 haben Vorrang"
+            },
+            "data_description": {
+              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen.",
+              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
+              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen.",
+              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
+              "co2_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Gängige Empfehlung: spätestens ab 1000 ppm lüften",
+              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
+              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
+              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte",
+              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
+              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
+              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden. Wirkt außerdem als Hysterese der Heizungssteuerung und des Sommermodus",
+              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung",
+              "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit/hohem CO2-Wert. Frostschutz hat davon unabhängig immer Vorrang."
+            }
+          },
+          "devices": {
+            "name": "Luftentfeuchter, Klima & Dusche",
+            "description": "Einspeiseleistungs-Sensor, Laufzeiten und Duscherkennung als raumweiter Standard.",
+            "data": {
+              "power_entity": "Leistungssensor (Einspeiseleistung)",
+              "min_surplus_power_watts": "Mindest-Einspeiseleistung",
+              "power_grace_period_minutes": "Abschaltverzögerung (wenig Einspeisung)",
+              "device_max_runtime_minutes": "Höchstlaufzeit bei geringer Einspeisung",
+              "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
+              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit",
+              "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
+              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)"
+            },
+            "data_description": {
+              "power_entity": "Wird verwendet, wenn ein Raum keinen eigenen Leistungssensor festlegt",
+              "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
+              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
+              "device_max_runtime_minutes": "Maximale ununterbrochene Laufzeit bei geringer Einspeiseleistung (unter der Mindesteinspeiseleistung bzw. ohne Leistungssensor), bevor Luftentfeuchter/Klimaanlage zwangsweise abgeschaltet werden - 0 = deaktiviert. Standardwert für alle Räume ohne eigene Angabe.",
+              "device_max_runtime_high_surplus_minutes": "Maximale ununterbrochene Laufzeit bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor), bevor Luftentfeuchter/Klimaanlage zwangsweise abgeschaltet werden - 0 = unbegrenzt. Standardwert für alle Räume ohne eigene Angabe.",
+              "device_max_runtime_cooldown_minutes": "Mindest-Ruhezeit nach einem solchen Zwangs-Abschalten, bevor das Gerät wieder einschalten darf. Standardwert für alle Räume ohne eigene Angabe.",
+              "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird - nur relevant für Räume, die die Duscherkennung aktiviert haben",
+              "shower_max_duration_minutes": "Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur bei Räumen mit aktivierter Duscherkennung und Lautsprechern) - 0 = aus. Standardwert für alle Räume ohne eigene Angabe."
+            }
+          },
+          "heating": {
+            "name": "Heizung",
+            "description": "Presets, Sollwerte und Sommermodus als raumweiter Standard.",
+            "data": {
+              "heating_use_preset_mode": "Presets steuern/anzeigen",
+              "heating_preset_comfort": "Preset-Name Komfort",
+              "heating_preset_standby": "Preset-Name Standby",
+              "heating_preset_night": "Preset-Name Eco (Nacht)",
+              "heating_preset_building_protection": "Preset-Name Gebäudeschutz",
+              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
+              "heating_comfort_temp": "Heizung Comfort-Sollwert",
+              "heating_standby_temp": "Heizung Standby-Sollwert",
+              "heating_night_temp": "Heizung Nacht-Sollwert",
+              "summer_mode_forecast_entity": "Sommermodus-Vorhersagequelle (optional)",
+              "summer_mode_forecast_attribute": "Vorhersage-Attribut (optional)",
+              "summer_mode_switch_entity": "Sommer-/Winterbetrieb-Schalter",
+              "summer_mode_threshold_temp": "Sommermodus-Schwelle (Vorhersage)"
+            },
+            "data_description": {
+              "heating_use_preset_mode": "Standard Ja (Opt-out): Heizungen, deren Entität preset_mode unterstützt (z. B. KNX), werden automatisch darüber statt über einen Zahlen-Sollwert gesteuert/angezeigt. Ohne Unterstützung bleibt es automatisch bei der Sollwert-Steuerung - pro Raum auf \"Nein\" überschreibbar, um Presets trotz Unterstützung nicht zu nutzen.",
+              "heating_preset_comfort": "Preset-Name für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt nur die acht offiziellen Home-Assistant-Standardwerte als Vorschlag (kein einzelnes Gerät zum Auslesen der tatsächlichen Presets), frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt.",
+              "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand.",
+              "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt).",
+              "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand (wird gesetzt, solange ein Fenster bestätigt offen ist). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet.",
+              "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist.",
+              "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster",
+              "heating_standby_temp": "Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit",
+              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)",
+              "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den weiter unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
+              "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (oben), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
+              "summer_mode_switch_entity": "Optional. Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Sommermodus-Schwelle weiter unten) wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
+              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind"
+            }
+          },
+          "heating_schedule": {
+            "name": "Heizungs-Zeitplan",
+            "description": "Zeitfenster, in denen Comfort bzw. Nacht erzwungen wird (getrennt für Werktage und Wochenende), als raumweiter Standard.",
+            "data": {
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
               "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
@@ -407,79 +515,20 @@
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
               "heating_night_end_weekday": "Nacht-Ende (Werktag)",
               "heating_night_start_weekend": "Nacht-Start (Wochenende)",
-              "heating_night_end_weekend": "Nacht-Ende (Wochenende)",
-              "heating_use_preset_mode": "Presets steuern/anzeigen",
-              "heating_preset_comfort": "Preset-Name Komfort",
-              "heating_preset_standby": "Preset-Name Standby",
-              "heating_preset_night": "Preset-Name Eco (Nacht)",
-              "heating_preset_building_protection": "Preset-Name Gebäudeschutz",
-              "summer_mode_threshold_temp": "Sommermodus-Schwelle (Vorhersage)"
+              "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
             },
             "data_description": {
-              "co2_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen. Gängige Empfehlung: spätestens ab 1000 ppm lüften",
-              "frost_protection_temp": "Unterhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen",
-              "heat_protection_temp": "Oberhalb dieser Außentemperatur wird nie geöffnet; ein offener Zustand wird sofort geschlossen - unabhängig davon, ob eigentlich wegen Temperatur, Luftfeuchtigkeit oder CO2 gelüftet werden sollte",
-              "winter_outdoor_threshold": "Unterhalb dieser Außentemperatur gilt die Situation als \"Winter\" (aktiviert die Höchstdauer)",
-              "max_open_duration_winter_minutes": "Bei \"Winter\"-Bedingungen wird nach dieser Zeit automatisch zum Schließen aufgefordert",
-              "heating_schedule_enabled": "Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert (Standard) gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle oben)",
+              "heating_schedule_enabled": "Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert (Standard) gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\")",
               "heating_comfort_start_weekday": "Nur wirksam bei aktiviertem Heizungs-Zeitplan",
-              "heating_night_start_weekday": "Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang",
-              "heating_use_preset_mode": "Standard Ja (Opt-out): Heizungen, deren Entität preset_mode unterstützt (z. B. KNX), werden automatisch darüber statt über einen Zahlen-Sollwert gesteuert/angezeigt. Ohne Unterstützung bleibt es automatisch bei der Sollwert-Steuerung - pro Raum auf \"Nein\" überschreibbar, um Presets trotz Unterstützung nicht zu nutzen.",
-              "heating_preset_comfort": "Preset-Name für den Comfort-Zustand (z. B. \"Comfort\") - Dropdown zeigt nur die acht offiziellen Home-Assistant-Standardwerte als Vorschlag (kein einzelnes Gerät zum Auslesen der tatsächlichen Presets), frei editierbar. Leer = dieser Zustand wird weiterhin über den Comfort-Sollwert gesetzt.",
-              "heating_preset_standby": "Wie \"Preset-Name Komfort\", für den Standby-Zustand.",
-              "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt).",
-              "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand (wird gesetzt, solange ein Fenster bestätigt offen ist). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet.",
-              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben im Abschnitt \"Sensoren & Geräte\" sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind",
-              "humidity_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen.",
-              "humidity_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
-              "temp_threshold_open": "Obergrenze des Normalbereichs – wird sie überschritten, wird Öffnen empfohlen.",
-              "temp_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen.",
-              "co2_threshold_close": "Untergrenze des Normalbereichs – wird sie unterschritten, wird Schließen empfohlen."
+              "heating_night_start_weekday": "Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang"
             }
           },
-          "advanced": {
-            "name": "Erweitert",
-            "description": "Selten benötigte Fein-Tuning-Werte als raumweiter Standard.",
-            "data": {
-              "summer_mode_forecast_attribute": "Vorhersage-Attribut (optional)",
-              "temp_margin": "Toleranz-Marge",
-              "frost_debounce_minutes": "Debounce-Zeit Frostschutz",
-              "humidity_priority_over_duration": "Luftfeuchtigkeit/CO2 haben Vorrang",
-              "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
-              "min_surplus_power_watts": "Mindest-Einspeiseleistung",
-              "power_grace_period_minutes": "Abschaltverzögerung (wenig Einspeisung)",
-              "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
-              "heating_comfort_temp": "Heizung Comfort-Sollwert",
-              "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert",
-              "device_max_runtime_minutes": "Höchstlaufzeit bei geringer Einspeisung",
-              "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
-              "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit"
-            },
-            "data_description": {
-              "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (Abschnitt \"Sensoren & Geräte\"), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
-              "temp_margin": "Toleranz bei Außen-/Innentemperatur-Vergleichen, um Flackern der Empfehlung zu vermeiden",
-              "frost_debounce_minutes": "Mindestdauer, die die Außentemperatur ununterbrochen auf/unter der Frostschutz-Grenze liegen MUSS ODER der Außensensor ununterbrochen nicht verfügbar sein muss, bevor ein offener Zustand deswegen tatsächlich geschlossen wird - schützt vor einem einzelnen Ausreißer-Messwert und vor kurzer Sensor-Nichtverfügbarkeit beim Neustart. 0 = sofortiges Schließen ohne Verzögerung",
-              "humidity_priority_over_duration": "An (Standard): bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf wird die Winter-Höchstdauer ignoriert, das Fenster bleibt offen. Aus: die Höchstdauer wird strikt durchgesetzt, auch bei noch hoher Luftfeuchtigkeit/hohem CO2-Wert. Frostschutz hat davon unabhängig immer Vorrang.",
-              "shower_rise_threshold": "Luftfeuchtigkeits-Anstieg (%-Punkte pro Minute, gemessen über die letzten 10 Minuten), ab dem ein laufendes Duschen angenommen wird - nur relevant für Räume, die die Duscherkennung im Abschnitt \"Sensoren & Geräte\" aktiviert haben",
-              "min_surplus_power_watts": "Standard-Mindestschwelle für alle Räume ohne eigene Angabe",
-              "power_grace_period_minutes": "Standard-Verzögerung für alle Räume ohne eigene Angabe",
-              "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" unten AUS ist.",
-              "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster",
-              "heating_standby_temp": "Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit",
-              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)",
-              "device_max_runtime_minutes": "Maximale ununterbrochene Laufzeit bei geringer Einspeiseleistung (unter der Mindesteinspeiseleistung bzw. ohne Leistungssensor), bevor Luftentfeuchter/Klimaanlage zwangsweise abgeschaltet werden - 0 = deaktiviert. Standardwert für alle Räume ohne eigene Angabe.",
-              "device_max_runtime_high_surplus_minutes": "Maximale ununterbrochene Laufzeit bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor), bevor Luftentfeuchter/Klimaanlage zwangsweise abgeschaltet werden - 0 = unbegrenzt. Standardwert für alle Räume ohne eigene Angabe.",
-              "device_max_runtime_cooldown_minutes": "Mindest-Ruhezeit nach einem solchen Zwangs-Abschalten, bevor das Gerät wieder einschalten darf. Standardwert für alle Räume ohne eigene Angabe."
-            }
-          },
-          "messages": {
+          "notify": {
             "name": "Benachrichtigungen",
-            "description": "Das Erinnerungsintervall sowie die Texte, die bei den jeweiligen Empfehlungen verschickt werden. Bei den Texten stehen drei Platzhalter zur Verfügung: ｛raum｝ (Raumname), ｛wert｝ (aktueller Mess- bzw. Ist-Wert inkl. Einheit) und ｛schwelle｝ (zugehöriger Schwellenwert inkl. Einheit).",
+            "description": "Sprachausgabe, App-Push, persistente Benachrichtigung und Erinnerungsintervall als raumweiter Standard.",
             "data": {
               "tts_entity": "TTS-Entität",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
-              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)",
               "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
               "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
               "tts_quiet_start": "Nachtruhe-Start",
@@ -487,7 +536,23 @@
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App-Benachrichtigungsziele",
               "persistent_enabled": "Persistente Benachrichtigung",
-              "reminder_interval_minutes": "Erinnerungsintervall",
+              "reminder_interval_minutes": "Erinnerungsintervall"
+            },
+            "data_description": {
+              "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
+              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
+              "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
+              "tts_quiet_hours_enabled": "Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen.",
+              "tts_quiet_start": "Nur wirksam, wenn die Nachtruhe oben aktiviert ist.",
+              "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
+              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat",
+              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Leer wird beim Speichern ebenfalls zu 0."
+            }
+          },
+          "messages": {
+            "name": "Benachrichtigungstexte",
+            "description": "Die Texte, die bei den jeweiligen Empfehlungen verschickt werden. Bei den Texten stehen drei Platzhalter zur Verfügung: ｛raum｝ (Raumname), ｛wert｝ (aktueller Mess- bzw. Ist-Wert inkl. Einheit) und ｛schwelle｝ (zugehöriger Schwellenwert inkl. Einheit).",
+            "data": {
               "msg_open_humidity": "Öffnen wegen Luftfeuchtigkeit",
               "msg_open_co2": "Öffnen wegen CO2",
               "msg_open_temp": "Öffnen wegen Temperatur",
@@ -505,15 +570,6 @@
               "msg_device_window_conflict": "Fenster-Gerät-Konflikt"
             },
             "data_description": {
-              "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
-              "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
-              "shower_max_duration_minutes": "Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur bei Räumen mit aktivierter Duscherkennung und Lautsprechern) - 0 = aus. Standardwert für alle Räume ohne eigene Angabe.",
-              "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
-              "tts_quiet_hours_enabled": "Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen.",
-              "tts_quiet_start": "Nur wirksam, wenn die Nachtruhe oben aktiviert ist.",
-              "mobile_targets": "Eine oder mehrere Notify-Entitäten. Je Eintrag kann optional eine person- oder device_tracker-Entität hinterlegt werden - dieses Ziel erhält die Push-Nachricht dann nur, wenn die Person/das Gerät zuhause ist. Ohne Anwesenheits-Entität wird immer gesendet.",
-              "persistent_enabled": "Erstellt eine dauerhafte Benachrichtigung im Home-Assistant-Benachrichtigungsbereich, solange die Empfehlung aktiv ist - löst sich automatisch auf, sobald sie sich erledigt hat",
-              "reminder_interval_minutes": "Wiederkehrende Erinnerung, falls die Empfehlung ignoriert wird. 0 = deaktiviert. Leer wird beim Speichern ebenfalls zu 0.",
               "msg_open_humidity": "｛raum｝ = Raumname. ｛wert｝ = aktuelle Luftfeuchtigkeit, ｛schwelle｝ = Feuchtigkeits-Schwelle zum Öffnen (jeweils inkl. %).",
               "msg_open_co2": "｛raum｝ = Raumname. ｛wert｝ = aktueller CO2-Wert, ｛schwelle｝ = CO2-Schwelle zum Öffnen (jeweils inkl. ppm).",
               "msg_open_temp": "｛raum｝ = Raumname. ｛wert｝ = aktuelle Innentemperatur, ｛schwelle｝ = Temperatur-Schwelle zum Öffnen (jeweils inkl. °C).",

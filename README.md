@@ -74,19 +74,113 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
    Liste unverändert unbeschränkt (kein Sensor "verschwindet" dadurch).
    Bleibt dieser Schritt leer, funktioniert alles wie bisher – Raumname
    frei eintippen, alle Entitäten wählbar
-3. **Hauptformular** ausfüllen (alle Abschnitte sind standardmäßig
-   eingeklappt):
+3. **Hauptformular** ausfüllen (sechs Abschnitte in dieser Reihenfolge,
+   alle standardmäßig eingeklappt):
    - **Raumname** (ganz oben, ggf. bereits durch den HA-Bereich
      vorbelegt – lässt sich hier weiterhin frei ändern)
-   - **Abschnitt "Sensoren & Geräte"** (Mess-Entitäten UND optional
-     automatisch gesteuerte Geräte in einem gemeinsamen Abschnitt - beide
-     Themen überschneiden sich: eine `climate`-Entität kann sowohl
-     Temperatur-Quelle als auch Heizung sein, siehe unten):
+   - **Abschnitt "Sensoren"** (Innen-Messwerte dieses Raums):
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität (das zugehörige "Temperatur-Attribut" steht
-       im Abschnitt "Erweitert" weiter unten)
+       direkt darunter)
+     - **Temperatur-Attribut**: vorausgewählt ist `current_temperature`
+       (Auswahl aus Liste oder eigener Text möglich). Wird nur ausgewertet,
+       wenn die oben gewählte
+       Innentemperatur-Entität tatsächlich eine `climate`-Entität ist – bei
+       `sensor`/`number`/`input_number` wird der Wert ignoriert und
+       stattdessen direkt der Entitätszustand verwendet
+     - Optional: Innen-Luftfeuchtigkeit
+     - Optional: CO2 (`sensor`-Entität mit ppm-Wert) – ohne Außenluft-
+       Vergleich der Luftqualität, da Außenluft praktisch immer weit unter
+       jeder sinnvollen Innenschwelle liegt (nur bei Außentemperatur über der
+       Temperatur-Obergrenze öffnet CO2 erst ab dem 1,5-Fachen der Schwelle)
+   - **Abschnitt "Fenster & Lüften"** (Fenster, Rollladen, Normalbereich-Grenzen,
+     Schutzfunktionen; die Felder mit Zahlenwerten **überschreiben** für diesen
+     Raum die allgemeinen Einstellungen - leer gelassen gilt der dort
+     hinterlegte Wert, als Orientierung zeigt der Hinweistext darunter den
+     aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 23.0 °C"):
+     - **Fensterkontakt** (optional; unterdrückt Benachrichtigungen, sobald
+       das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
+       eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
+       Fenster" deaktiviert ist)
+     - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
+       werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
+       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter,
+       Klimaanlage oder Heizung anhand der Sensorwerte gesteuert werden sollen
+       (siehe unten). Die Geräte-Steuerung läuft davon unabhängig weiter,
+       unabhängig vom Fenster-Status. Bei "an" ist auch keine
+       Benachrichtigungsmethode mehr zwingend erforderlich
+     - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
+       `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
+       beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
+       "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
+     - **Schließempfehlung deaktivieren** (Checkbox, Standard: aus): bei
+       "an" wird für diesen Raum nie mehr "bitte schließen" empfohlen -
+       Temperatur, Luftfeuchtigkeit, CO2, Winter-Höchstdauer und der
+       Sommer-Fall bleiben ohne Wirkung aufs Schließen. Sinnvoll für Räume,
+       in denen eine Schließen-Empfehlung nicht sinnvoll umsetzbar ist,
+       z. B. weil der Fensterkontakt den tatsächlichen Zustand nicht
+       zuverlässig widerspiegelt (etwa eine Schiebetür) oder weil eine
+       Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt.
+       Frost-/Hitzeschutz sind davon **unberührt** und schließen weiterhin
+       sofort (Sicherheits-, keine Komfort-Bedingung) - Öffnen-Empfehlungen
+       ebenfalls unberührt
+     - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
+       und CO2 sowie Frostschutz-Grenze, Hitzeschutz-Grenze, Winter-Schwelle
+       und Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
+     - **Toleranz-Marge** (wirkt außer bei der Lüftungs-Logik auch als
+       Hysterese der Heizungssteuerung und des Sommermodus), **Debounce-Zeit
+       Frostschutz** und **Luftfeuchtigkeit/CO2 haben Vorrang** (im Raum:
+       Ja/Nein/leer; Verhalten bei Erreichen der Winter-Höchstdauer)
+   - **Abschnitt "Luftentfeuchter, Klima & Dusche"** (automatisch gesteuerte Geräte,
+     Leistungs-/Laufzeit-Begrenzung und Duscherkennung; die Werte sind
+     ebenfalls Raum-Overrides mit "Aktuell global: ..."-Hinweistext):
+     - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
+     - **Tankstatus-Sensor (Luftentfeuchter)** (optional): eine
+       `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
+       bzw. ein Fehler vorliegt - rein informativ, wird auf der
+       Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
+       dem Luftentfeuchter-Status angezeigt; hat für sich allein keine
+       Auswirkung auf die Lüftungs- oder Geräte-Steuerung selbst
+     - **Benachrichtigung bei vollem Tank** (Standard aus): aktiviert eine
+       echte Benachrichtigung, sobald der oben gewählte Tankstatus-Sensor
+       "voll" meldet - nutzt dieselben, für den Raum aktuell wirksamen
+       Kanäle wie die Lüftungsempfehlung (Sprachausgabe/App-Push/persistente
+       Benachrichtigung), mit eigenem Text (siehe "Smart Climate Optionen",
+       Abschnitt "Benachrichtigungstexte"). Löst sich automatisch wieder auf,
+       sobald der Tank wieder als "leer" gemeldet wird. Nur wirksam, wenn
+       oben auch tatsächlich ein Tankstatus-Sensor ausgewählt ist
+     - **Klimaanlage**: eine `climate`- oder `switch`-Entität (die
+       zugehörige Mindest-Einspeiseleistung/Abschaltverzögerung
+       steht weiter unten in diesem Abschnitt)
+     - **Fenster-Gerät-Konflikt melden** (Standard aus): EIN
+       gemeinsamer Schalter für Luftentfeuchter UND Klimaanlage. Aktiviert
+       eine echte Benachrichtigung, solange eines der beiden konfigurierten
+       Geräte bei offenem Fenster gegen ungünstigere Außenluft ankämpft
+       (Luftentfeuchter: Außenluft nicht trockener als drinnen;
+       Klimaanlage: Außenluft nicht kühler als drinnen) - bewusst
+       **unabhängig** von einem eventuellen Einspeiseleistungs-Überschuss,
+       da das Schließen dem Gerät hilft, sein Ziel tatsächlich zu
+       erreichen, auch wenn der Betrieb gerade "kostenlos" ist. Nutzt
+       dieselben Kanäle wie die Lüftungsempfehlung, mit eigenem Text
+       (siehe "Smart Climate Optionen", Abschnitt "Benachrichtigungstexte") und
+       löst sich automatisch wieder auf, sobald das Fenster geschlossen
+       wird oder die Außenluft wieder hilft. Läuft komplett unabhängig von
+       der eigentlichen Öffnen/Schließen-Empfehlung - kann also auch dann
+       auslösen, wenn diese gerade "aus"/neutral ist
+     - **Mindest-Einspeiseleistung** / **Abschaltverzögerung** sowie die drei
+       **Höchstlaufzeit**-Felder (siehe "Geräte-Steuerung"): gelten
+       nur für Luftentfeuchter/Klimaanlage, nicht für die Heizung (der
+       Leistungssensor selbst ist nur in "- Smart Climate Optionen -"
+       hinterlegbar, nicht pro Raum)
+     - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
+       einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
+       unter "Logik im Detail". Die zugehörige **Anstiegs-Schwelle** und
+       die **Duschdauer-Ansage** (ab wie vielen Minuten Sprachansage; nur
+       Sprachausgabe) stehen direkt darunter
+   - **Abschnitt "Heizung"** (Heizungs-Gerät, Presets, Anwesenheit und Sollwerte;
+     Sollwerte sind Raum-Overrides mit "Aktuell global: ..."-Hinweistext):
      - **Temperaturquelle auch fürs Heizen** (Checkbox, Standard:
-       aus): verwendet automatisch die oben gewählte Innentemperatur-Quelle
+       aus): verwendet automatisch die im Abschnitt "Sensoren" gewählte Innentemperatur-Quelle
        als Heizungs-Gerät, statt sie zusätzlich im Feld "Heizung" separat
        auszuwählen - erspart die doppelte Auswahl derselben Entität für
        Räume, in denen dieselbe `climate`-Entität sowohl die Temperatur
@@ -96,14 +190,14 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        Formularfehler). Bei aktiviertem Schalter wird das Feld "Heizung"
        direkt darunter ignoriert (Home-Assistant-Formulare können Felder
        nicht abhängig von einer Checkbox ausblenden, siehe "Home Assistant
-       Companion App" im Abschnitt "Benachrichtigungen & Anwesenheit"
+       Companion App" im Abschnitt "Benachrichtigungen"
        weiter unten)
      - **Heizung** (optional): eine `climate`-Entität - anders als
        Luftentfeuchter/Klimaanlage kein einfaches Ein/Aus, sondern ein
        Umschalten zwischen einem Comfort-, einem Standby- und einem
        Nacht-Sollwert (siehe "Heizungs-Schwelle"/"Comfort-Sollwert"/
-       "Standby-Sollwert"/"Nacht-Sollwert" im Abschnitt "Erweitert" sowie
-       "Heizungs-Zeitplan aktivieren" im Abschnitt "Parameter") - wie für
+       "Standby-Sollwert"/"Nacht-Sollwert" weiter unten in diesem Abschnitt sowie
+       "Heizungs-Zeitplan aktivieren" im Abschnitt "Heizungs-Zeitplan") - wie für
        Heizungen typisch. Details siehe
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
        "Temperaturquelle auch fürs Heizen" aktiviert ist
@@ -125,77 +219,36 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        Preset-Unterstützung der Entität bleibt es automatisch bei der
        reinen Sollwert-Steuerung, ganz ohne dass hier etwas eingestellt
        werden müsste. Details siehe "Geräte-Steuerung" weiter unten
-     - Optional: Innen-Luftfeuchtigkeit
-     - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
-       einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
-       unter "Logik im Detail". Die zugehörige Anstiegs-Schwelle findet
-       sich im Abschnitt "Erweitert" weiter unten
-     - Optional: CO2 (`sensor`-Entität mit ppm-Wert) – ohne Außenluft-
-       Vergleich der Luftqualität, da Außenluft praktisch immer weit unter
-       jeder sinnvollen Innenschwelle liegt (nur bei Außentemperatur über der
-       Temperatur-Obergrenze öffnet CO2 erst ab dem 1,5-Fachen der Schwelle)
-     - **Dieser Raum hat kein Fenster** (Checkbox, Standard: aus): bei "an"
-       werden nie Öffnen-/Schließen-Benachrichtigungen erzeugt – nützlich
-       z. B. für fensterlose Flure/Kellerräume, bei denen nur Luftentfeuchter,
-       Klimaanlage oder Heizung anhand der Sensorwerte gesteuert werden sollen
-       (siehe unten). Die Geräte-Steuerung läuft davon unabhängig weiter,
-       unabhängig vom Fenster-Status. Bei "an" ist auch keine
-       Benachrichtigungsmethode mehr zwingend erforderlich
-     - **Fensterkontakt** (optional; unterdrückt Benachrichtigungen, sobald
-       das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
-       eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
-       Fenster" deaktiviert ist)
-     - **Fenstersperre / Rollladen** (optional): eine `cover`- **oder**
-       `switch`-Entität, die beim Einschalten der Klimaanlage herunter- und
-       beim Ausschalten wieder hochfährt. Bei einer `switch`-Entität bedeutet
-       "an" = herunterfahren + gesperrt, "aus" = hochfahren + entsperrt
-     - **Schließempfehlung deaktivieren** (Checkbox, Standard: aus): bei
-       "an" wird für diesen Raum nie mehr "bitte schließen" empfohlen -
-       Temperatur, Luftfeuchtigkeit, CO2, Winter-Höchstdauer und der
-       Sommer-Fall bleiben ohne Wirkung aufs Schließen. Sinnvoll für Räume,
-       in denen eine Schließen-Empfehlung nicht sinnvoll umsetzbar ist,
-       z. B. weil der Fensterkontakt den tatsächlichen Zustand nicht
-       zuverlässig widerspiegelt (etwa eine Schiebetür) oder weil eine
-       Klimaanlage die Kühlung ohnehin unabhängig vom Fenster übernimmt.
-       Frost-/Hitzeschutz sind davon **unberührt** und schließen weiterhin
-       sofort (Sicherheits-, keine Komfort-Bedingung) - Öffnen-Empfehlungen
-       ebenfalls unberührt
-     - **Luftentfeuchter**: eine `switch`- oder `humidifier`-Entität
-     - **Tankstatus-Sensor (Luftentfeuchter)** (optional): eine
-       `binary_sensor`-Entität, die "an" meldet, sobald der Tank voll ist
-       bzw. ein Fehler vorliegt - rein informativ, wird auf der
-       Dashboard-Karte als eigenes Status-Icon (🔴 voll/Fehler, 🟢 ok) neben
-       dem Luftentfeuchter-Status angezeigt; hat für sich allein keine
-       Auswirkung auf die Lüftungs- oder Geräte-Steuerung selbst
-     - **Benachrichtigung bei vollem Tank** (Standard aus): aktiviert eine
-       echte Benachrichtigung, sobald der oben gewählte Tankstatus-Sensor
-       "voll" meldet - nutzt dieselben, für den Raum aktuell wirksamen
-       Kanäle wie die Lüftungsempfehlung (Sprachausgabe/App-Push/persistente
-       Benachrichtigung), mit eigenem Text (siehe "Smart Climate Optionen",
-       Abschnitt "Benachrichtigungen"). Löst sich automatisch wieder auf,
-       sobald der Tank wieder als "leer" gemeldet wird. Nur wirksam, wenn
-       oben auch tatsächlich ein Tankstatus-Sensor ausgewählt ist
-     - **Klimaanlage**: eine `climate`- oder `switch`-Entität (die
-       zugehörige Mindest-Einspeiseleistung/Abschaltverzögerung
-       steht im Abschnitt "Erweitert" weiter unten)
-     - **Fenster-Gerät-Konflikt melden** (Standard aus): EIN
-       gemeinsamer Schalter für Luftentfeuchter UND Klimaanlage. Aktiviert
-       eine echte Benachrichtigung, solange eines der beiden konfigurierten
-       Geräte bei offenem Fenster gegen ungünstigere Außenluft ankämpft
-       (Luftentfeuchter: Außenluft nicht trockener als drinnen;
-       Klimaanlage: Außenluft nicht kühler als drinnen) - bewusst
-       **unabhängig** von einem eventuellen Einspeiseleistungs-Überschuss,
-       da das Schließen dem Gerät hilft, sein Ziel tatsächlich zu
-       erreichen, auch wenn der Betrieb gerade "kostenlos" ist. Nutzt
-       dieselben Kanäle wie die Lüftungsempfehlung, mit eigenem Text
-       (siehe "Smart Climate Optionen", Abschnitt "Benachrichtigungen") und
-       löst sich automatisch wieder auf, sobald das Fenster geschlossen
-       wird oder die Außenluft wieder hilft. Läuft komplett unabhängig von
-       der eigentlichen Öffnen/Schließen-Empfehlung - kann also auch dann
-       auslösen, wenn diese gerade "aus"/neutral ist
-   - **Abschnitt "Benachrichtigungen & Anwesenheit"** (früher
-     "Benachrichtigungsmethoden" - umbenannt, da hier jetzt auch die
-     Anwesenheits-Entitäten für die Heizungs-Pausierung stehen):
+     - **Anwesenheit für Heizung (Personen)** (optional): eine oder mehrere
+       `person`- oder `device_tracker`-Entitäten (Mehrfachauswahl) - ist
+       mindestens eine hinterlegt und melden ALLE davon bestätigt "nicht
+       zuhause", verhindert das ausschließlich den Wechsel in den
+       **Comfort**-Modus (Herabstufung auf Standby) - ein anderweitig
+       ermittelter Standby-/Nacht-/Gebäudeschutz-Modus läuft unverändert
+       normal weiter, es handelt sich also NICHT um eine eigene Pause.
+       Meldet mindestens eine "zuhause", oder ist der Zustand einer von
+       ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter
+       (permissiv - ein einzelner GPS-Aussetzer soll die Heizung nicht
+       fälschlich aus dem Comfort-Modus nehmen). Ohne hinterlegte Entität
+       keine Auswirkung. Unabhängig von den im Abschnitt
+       "Benachrichtigungen" konfigurierten Anwesenheits-Entitäten der App-Benachrichtigungsziele - dort geht es
+       um "wen benachrichtigen", hier um "wann Comfort erlaubt ist"
+     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
+       relevant, wenn oben eine Heizung hinterlegt oder die
+       Temperaturquelle dafür wiederverwendet wird) - jeweils Dropdown mit gängigen Vorschlagswerten,
+       weiterhin frei editierbar
+   - **Abschnitt "Heizungs-Zeitplan"** (Raum-Override, leer = globaler Wert):
+     - **Heizungs-Zeitplan aktivieren** (Ja/Nein/leer) - aktiviert, erzwingt
+       ein Comfort- bzw. Nacht-Zeitfenster (je acht Zeitfelder: Start/Ende,
+       getrennt nach Werktag und Wochenende) den jeweiligen Sollwert
+       unabhängig von der Innentemperatur; außerhalb aller Zeitfenster gilt
+       Standby. Deaktiviert (Standard) gilt weiterhin die reine
+       Schwellenwert-Logik des Abschnitts "Heizung". Details siehe "Geräte-Steuerung" weiter
+       unten
+   - **Abschnitt "Benachrichtigungen"** (Sprachausgabe, App-Push, persistente
+     Benachrichtigung und Erinnerung; die Anwesenheits-Entitäten für die
+     Heizung stehen dagegen im Abschnitt "Heizung"):
      - **Lautsprecher** (`media_player`-Entitäten, z. B. Sonos, Mehrfachauswahl):
        Sprachausgabe ist automatisch aktiv, sobald hier mindestens ein
        Lautsprecher ausgewählt ist – kein eigener Ja/Nein-Schalter mehr,
@@ -251,61 +304,6 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        gilt der dort hinterlegte Wert (Hinweistext zeigt den aktuell
        wirksamen globalen Wert an). 0 = keine wiederkehrende Erinnerung,
        falls die Empfehlung ignoriert wird
-     - **Anwesenheit für Heizung (Personen)** (optional): eine oder mehrere
-       `person`- oder `device_tracker`-Entitäten (Mehrfachauswahl) - ist
-       mindestens eine hinterlegt und melden ALLE davon bestätigt "nicht
-       zuhause", verhindert das ausschließlich den Wechsel in den
-       **Comfort**-Modus (Herabstufung auf Standby) - ein anderweitig
-       ermittelter Standby-/Nacht-/Gebäudeschutz-Modus läuft unverändert
-       normal weiter, es handelt sich also NICHT um eine eigene Pause.
-       Meldet mindestens eine "zuhause", oder ist der Zustand einer von
-       ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter
-       (permissiv - ein einzelner GPS-Aussetzer soll die Heizung nicht
-       fälschlich aus dem Comfort-Modus nehmen). Ohne hinterlegte Entität
-       keine Auswirkung. Unabhängig von den oben konfigurierten
-       Anwesenheits-Entitäten der App-Benachrichtigungsziele - dort geht es
-       um "wen benachrichtigen", hier um "wann Comfort erlaubt ist"
-   - **Abschnitt "Parameter"** (optional, standardmäßig eingeklappt –
-     **überschreibt** für diesen Raum die allgemeinen Einstellungen; leer
-     gelassen gilt der dort hinterlegte Wert - als Orientierung zeigt der
-     Hinweistext unter jedem dieser Felder zusätzlich den aktuell
-     wirksamen globalen Wert an, z. B. "Aktuell global: 23.0 °C"):
-     - Schwellenwerte zum Öffnen/Schließen für Temperatur, Luftfeuchtigkeit
-       und CO2 sowie Frostschutz-Grenze, Hitzeschutz-Grenze, Winter-Schwelle
-       und Winter-Höchstdauer – Zahlenfelder mit Pfeil-hoch/-runter-Steuerung
-       (das Erinnerungsintervall steht im Abschnitt "Benachrichtigungen
-       & Anwesenheit", die vier Heizungs-Sollwertfelder sowie weitere
-       Fein-Tuning-Werte im Abschnitt "Erweitert", jeweils siehe oben/unten)
-     - **Heizungs-Zeitplan aktivieren** (Ja/Nein/leer) - aktiviert, erzwingt
-       ein Comfort- bzw. Nacht-Zeitfenster (je acht Zeitfelder: Start/Ende,
-       getrennt nach Werktag und Wochenende) den jeweiligen Sollwert
-       unabhängig von der Innentemperatur; außerhalb aller Zeitfenster gilt
-       Standby. Deaktiviert (Standard) gilt weiterhin die reine
-       Schwellenwert-Logik oben. Details siehe "Geräte-Steuerung" weiter
-       unten
-   - **Abschnitt "Erweitert"** (optional, standardmäßig eingeklappt – seltener
-     benötigte Fein-Tuning-Werte, ebenfalls als Raum-Override mit
-     "Aktuell global: ..."-Hinweistext):
-     - **Temperatur-Attribut**: vorausgewählt ist `current_temperature`
-       (Auswahl aus Liste oder eigener Text möglich). Wird nur ausgewertet,
-       wenn die oben im Abschnitt "Sensoren & Geräte" gewählte
-       Innentemperatur-Entität tatsächlich eine `climate`-Entität ist – bei
-       `sensor`/`number`/`input_number` wird der Wert ignoriert und
-       stattdessen direkt der Entitätszustand verwendet
-     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
-       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
-       relevant, wenn im Abschnitt "Sensoren & Geräte" eine Heizung
-       hinterlegt oder die Temperaturquelle dafür wiederverwendet wird,
-       siehe dort) - jeweils Dropdown mit gängigen Vorschlagswerten,
-       weiterhin frei editierbar
-     - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
-       Winter-Höchstdauer** und **Anstiegs-Schwelle Duscherkennung**
-       (letztere nur relevant, wenn die Duscherkennung im Abschnitt
-       "Sensoren & Geräte" aktiviert ist)
-     - **Mindest-Einspeiseleistung** / **Abschaltverzögerung**: gilt
-       nur für Luftentfeuchter/Klimaanlage, nicht für die Heizung (der
-       Leistungssensor selbst ist nur in "- Smart Climate Optionen -"
-       hinterlegbar, nicht pro Raum)
 4. Für weitere Räume den Vorgang wiederholen (Integration erneut
    hinzufügen)
 
@@ -320,20 +318,19 @@ eigenen Sensor; er dient ausschließlich als raumübergreifender Standard.
 **Bearbeiten:** Beim Eintrag "- Smart Climate Optionen -" auf
 **Konfigurieren** (Zahnrad-Symbol) klicken. Ganz oben im Formular steht die
 Checkbox **"Auf Standardwerte zurücksetzen"**: aktiviert und gespeichert,
-setzt sie sämtliche Schwellenwerte in den Abschnitten "Parameter" und
-"Erweitert", das Erinnerungsintervall und sämtliche Benachrichtigungstexte
-im Abschnitt "Benachrichtigungen" auf die einprogrammierten Standardwerte
-zurück - unabhängig davon, was gerade in diesen Feldern eingetragen ist.
+setzt sie sämtliche Schwellenwerte, Sollwerte, Zeitfenster und Laufzeiten,
+das Erinnerungsintervall und sämtliche Benachrichtigungstexte auf die
+einprogrammierten Standardwerte zurück - unabhängig davon, was gerade in diesen Feldern eingetragen ist.
 Ausgewählte Entitäten (Sensoren, TTS,
 Leistungssensor, App-Benachrichtigungsziele), der Sprachausgabe-Modus und die
 Benachrichtigungsmethoden bleiben davon unberührt. Einzelne Felder lassen
 sich weiterhin wie gewohnt zurücksetzen, indem man nur sie leert und
 speichert (siehe unten) - die Checkbox ist für den Fall gedacht, dass
 gleich mehrere oder alle Werte auf einmal zurückgesetzt werden sollen.
-Danach folgen vier Abschnitte (aktuell **testweise** alle standardmäßig
-eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
+Danach folgen sieben Abschnitte in derselben Gliederung wie im Raum-Formular
+(alle standardmäßig eingeklappt; "Benachrichtigungstexte" gibt es nur hier):
 
-**Abschnitt "Sensoren"**:
+**Abschnitt "Sensoren"** (Außen-Messwerte):
 - **Außentemperatur**: wird für **alle** Räume verwendet – kann seit
   dieser Version nicht mehr pro Raum überschrieben werden (dafür gibt es
   im Raum-Formular kein Feld mehr)
@@ -344,17 +341,40 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   Luftfeuchtigkeit" unten. Ohne diesen Sensor bleibt es beim bisherigen
   Verhalten (Lüften bei hoher Innen-Luftfeuchtigkeit, unabhängig von der
   Außenluft)
-- **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
-  für die Sprachausgabe festlegt
-- **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
-  die Lautsprecher **vor** der Ansage gesetzt werden - Dropdown mit
-  gängigen Vorschlagswerten, weiterhin frei editierbar; pro Raum im
-  Abschnitt "Benachrichtigungen & Anwesenheit" überschreibbar
-- **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
-  Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
-- **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
-  im Raum-Formular auswählbar (die zugehörige Mindest-Einspeiseleistung/
-  Abschaltverzögerung steht im Abschnitt "Erweitert" weiter unten)
+
+**Abschnitt "Fenster & Lüften"**:
+- Der komplette Normalbereich-/Schwellenwerte-Satz (dieselben Felder wie im
+  Raum-Abschnitt "Fenster & Lüften", inklusive CO2-Schwellen, Frost-/
+  Hitzeschutz, Winter-Schwelle/-Höchstdauer) als raumweiter Standard
+- **Toleranz-Marge**, **Debounce-Zeit Frostschutz** und **Luftfeuchtigkeit/CO2
+  haben Vorrang** (fester Ja/Nein-Wert, Standard Ja): ebenfalls raumweiter
+  Standard, pro Raum überschreibbar. Die Toleranz-Marge wirkt außer bei der
+  Lüftungs-Logik auch als Hysterese der Heizungssteuerung und des Sommermodus
+
+**Abschnitt "Luftentfeuchter, Klima & Dusche"**:
+- **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht im
+  Raum-Formular auswählbar
+- **Mindest-Einspeiseleistung** + **Abschaltverzögerung**, die drei
+  **Höchstlaufzeit**-Felder sowie **Anstiegs-Schwelle Duscherkennung** und
+  **Duschdauer-Ansage**: Standardwerte für alle Räume, die keine eigenen
+  Werte festlegen (pro Raum überschreibbar; die Aktivierung der
+  Duscherkennung selbst sowie Luftentfeuchter/Klimaanlage/Tankstatus sind
+  reine Raumeinstellungen)
+
+**Abschnitt "Heizung"**:
+- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+  **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** - Dropdown
+  mit gängigen Vorschlagswerten, weiterhin frei editierbar; als raumweiter
+  Standard, pro Raum überschreibbar (die Heizungs-Entität selbst ist wie
+  Luftentfeuchter/Klimaanlage reine Raumeinstellung)
+- **Presets steuern/anzeigen** (Standard Ja) + vier Preset-Namen-Felder
+  (Komfort/Standby/Eco (Nacht)/Gebäudeschutz) als raumweiter Standard -
+  hier Dropdown mit den acht offiziellen Home-Assistant-Standardwerten als
+  Vorschlag (kein konkretes Gerät zum Auslesen auf globaler Ebene, daher
+  nur ein Hinweis statt eines Live-Werts), weiterhin frei editierbar; pro
+  Raum überschreibbar und dort mit Dropdown-Vorschlag der tatsächlich von
+  der jeweiligen Entität gemeldeten Presets (siehe Abschnitt "Heizung"
+  im Raum-Formular)
 - **Sommermodus-Vorhersagequelle** (optional, nur global): eine `sensor`-
   oder `weather`-Entität mit einer Temperatur-Vorhersage - z. B. ein eigener
   Template-Sensor, der die Tagesvorhersage als Attribut bereitstellt (kein
@@ -362,57 +382,7 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   nötig, siehe "Geräte-Steuerung" unten). Steuert damit automatisch den
   unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität
   bleibt der Schalter rein manuell bedienbar (das zugehörige
-  Vorhersage-Attribut steht im Abschnitt "Erweitert" weiter unten)
-- **Sommer-/Winterbetrieb-Schalter** (optional, nur global): eine bereits
-  **vorhandene** `switch`-Entität - wird **nicht** von dieser Integration
-  angelegt, sondern nur aktiv gesteuert (analog zu Luftentfeuchter/
-  Klimaanlage/Heizung, siehe "Geräte-Steuerung" unten). **An** = Sommerbetrieb
-  (Heizung aller Räume pausiert), **Aus** = Winterbetrieb (Heizung läuft
-  normal). Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine
-  Wirkung, selbst wenn eine Vorhersagequelle hinterlegt ist
-
-Sprachausgabe hat hier keine Einstellung mehr – Lautsprecherauswahl und
-Aktivierung erfolgen ausschließlich pro Raum (Abschnitt
-"Benachrichtigungen & Anwesenheit" im Raum-Formular).
-
-**Abschnitt "Parameter"**:
-- Der komplette Schwellenwerte-/Lüftungs-Parameter-Satz (dieselben Felder
-  wie im Raum-Parameter-Abschnitt) als raumweiter Standard, inklusive
-  CO2-Schwellen zum Öffnen/Schließen (die Heizungs-Schwelle und der
-  Comfort-/Standby-/Nacht-Sollwert stehen wie beim Raum im Abschnitt
-  "Erweitert" weiter unten; die Heizungs-Entität selbst ist wie
-  Luftentfeuchter/Klimaanlage reine Raumeinstellung, siehe Abschnitt
-  "Sensoren & Geräte" im Raum-Formular)
-- **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
-  Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
-  getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
-  überschreibbar wie jeder andere Parameter
-- **Presets steuern/anzeigen** (Standard Ja) + vier Preset-Namen-Felder
-  (Komfort/Standby/Eco (Nacht)/Gebäudeschutz) als raumweiter Standard -
-  hier Dropdown mit den acht offiziellen Home-Assistant-Standardwerten als
-  Vorschlag (kein konkretes Gerät zum Auslesen auf globaler Ebene, daher
-  nur ein Hinweis statt eines Live-Werts), weiterhin frei editierbar; pro
-  Raum überschreibbar und dort mit Dropdown-Vorschlag der tatsächlich von
-  der jeweiligen Entität gemeldeten Presets (siehe Abschnitt "Sensoren &
-  Geräte" im Raum-Formular)
-- **Sommermodus-Schwelle (Vorhersage)** - ab dieser Vorhersage-Temperatur
-  (+/- Toleranz-Marge) wird der oben hinterlegte Sommer-/Winterbetrieb-
-  Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch
-  wieder ausgeschaltet (Winterbetrieb). Nur global verfügbar, **kein**
-  Raum-Override - andernfalls könnten unterschiedliche Räume
-  unterschiedliche Entscheidungen für denselben gemeinsamen Schalter
-  treffen. Nur wirksam, wenn oben sowohl eine Vorhersagequelle als auch der
-  zu steuernde Schalter konfiguriert sind
-
-**Abschnitt "Erweitert"** (seltener benötigte Fein-Tuning-Werte als
-raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
-überschreibbar):
-- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
-  **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** - Dropdown
-  mit gängigen Vorschlagswerten, weiterhin frei editierbar; als raumweiter
-  Standard, pro Raum im dortigen Abschnitt "Erweitert" überschreibbar
-  (die Heizungs-Entität selbst ist wie Luftentfeuchter/Klimaanlage reine
-  Raumeinstellung, siehe Abschnitt "Sensoren & Geräte" im Raum-Formular)
+  Vorhersage-Attribut steht direkt darunter)
 - **Vorhersage-Attribut** (optional): Name eines Attributs der oben
   hinterlegten Sommermodus-Vorhersagequelle, aus dem der Vorhersagewert
   gelesen wird - Dropdown mit den offiziell dokumentierten Standard-
@@ -423,24 +393,47 @@ raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
   Attributnamen eines eigenen Template-Sensors. Leer = state der Entität
   direkt als Zahl lesen (z. B. bei einem Template-Sensor, dessen state
   selbst schon der Vorhersagewert ist)
-- **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
-  Winter-Höchstdauer** (hier "Luftfeuchtigkeit/CO2 haben Vorrang" genannt) und **Anstiegs-Schwelle Duscherkennung**
-  (die Aktivierung der Duscherkennung selbst ist reine Raumeinstellung)
-- **Mindest-Einspeiseleistung** + **Abschaltverzögerung**:
-  Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
-  Werte selbst bleiben pro Raum überschreibbar, siehe Abschnitt
-  "Erweitert" im Raum-Formular)
+- **Sommer-/Winterbetrieb-Schalter** (optional, nur global): eine bereits
+  **vorhandene** `switch`-Entität - wird **nicht** von dieser Integration
+  angelegt, sondern nur aktiv gesteuert (analog zu Luftentfeuchter/
+  Klimaanlage/Heizung, siehe "Geräte-Steuerung" unten). **An** = Sommerbetrieb
+  (Heizung aller Räume pausiert), **Aus** = Winterbetrieb (Heizung läuft
+  normal). Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine
+  Wirkung, selbst wenn eine Vorhersagequelle hinterlegt ist
+- **Sommermodus-Schwelle (Vorhersage)** - ab dieser Vorhersage-Temperatur
+  (+/- Toleranz-Marge) wird der oben hinterlegte Sommer-/Winterbetrieb-
+  Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch
+  wieder ausgeschaltet (Winterbetrieb). Nur global verfügbar, **kein**
+  Raum-Override - andernfalls könnten unterschiedliche Räume
+  unterschiedliche Entscheidungen für denselben gemeinsamen Schalter
+  treffen. Nur wirksam, wenn oben sowohl eine Vorhersagequelle als auch der
+  zu steuernde Schalter konfiguriert sind
 
-**Abschnitt "Benachrichtigungen"** (früher "Benachrichtigungstexte" -
-umbenannt, da hier jetzt auch das Erinnerungsintervall steht, direkt neben
-dem zugehörigen Erinnerungstext; standardmäßig eingeklappt):
-- **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
-  Standard, pro Raum überschreibbar
-- **Persistente Benachrichtigung** (Weboberfläche): ebenso globaler
-  Standard, pro Raum überschreibbar
+**Abschnitt "Heizungs-Zeitplan"**:
+- **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
+  Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
+  getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
+  überschreibbar wie jeder andere Parameter
+
+**Abschnitt "Benachrichtigungen"**:
+- **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
+  für die Sprachausgabe festlegt
+- **Wiedergabelautstärke für Sprachausgabe**: Lautstärke (0–100 %), auf die
+  die Lautsprecher **vor** der Ansage gesetzt werden - Dropdown mit
+  gängigen Vorschlagswerten, weiterhin frei editierbar; pro Raum im
+  Abschnitt "Benachrichtigungen" überschreibbar
+- **Vorhandene Wiedergabe beim Ansagen**: "Überlagern" (Standard) spielt die
+  Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
+- **Sprachausgabe-Nachtruhe** + Start/Ende, **Home Assistant Companion App**,
+  **App-Benachrichtigungsziele**, **Persistente Benachrichtigung**:
+  globaler Standard, pro Raum überschreibbar
 - **Erinnerungsintervall** als raumweiter Standard - pro Raum im Abschnitt
-  "Benachrichtigungen & Anwesenheit" überschreibbar (siehe oben)
+  "Benachrichtigungen" überschreibbar (siehe oben)
 
+Sprachausgabe hat hier keine eigene Aktivierung – Lautsprecherauswahl und
+Aktivierung erfolgen ausschließlich pro Raum.
+
+**Abschnitt "Benachrichtigungstexte"** (nur global):
 Außerdem ist hier der Wortlaut jeder einzelnen Benachrichtigung frei
 anpassbar - je ein Textfeld für:
 - Öffnen wegen Temperatur / wegen Luftfeuchtigkeit / wegen CO2
@@ -515,7 +508,7 @@ sich jederzeit nachträglich anpassen, ohne ihn zu löschen und neu anzulegen:
 
 > Hinweis: Home-Assistant-Formulare können Felder nicht dynamisch während
 > der Eingabe ein-/ausblenden. Das Ziel-Feld für die App-Benachrichtigung im
-> Abschnitt "Benachrichtigungen & Anwesenheit" ist deshalb immer sichtbar,
+> Abschnitt "Benachrichtigungen" ist deshalb immer sichtbar,
 > wird aber nur ausgewertet, wenn die Checkbox aktiviert ist.
 >
 > Änderungen an den globalen Einstellungen wirken sich auf alle Räume ohne
@@ -673,7 +666,7 @@ dieser Konflikt aufgelöst wird:
   Schimmelvermeidung/Gesundheit)
 
 In den globalen Einstellungen ("Smart Climate Optionen") als fester
-Ja/Nein-Schalter, im Raum-Parameter-Abschnitt als Ja/Nein/Leer-Auswahl
+Ja/Nein-Schalter, im Raum-Abschnitt "Fenster & Lüften" als Ja/Nein/Leer-Auswahl
 (leer = globalen Wert verwenden; der Hinweistext zeigt dabei auch hier den
 aktuell wirksamen globalen Wert an, z. B. "Aktuell global: Ja"). Frost- und
 Hitzeschutz haben davon unabhängig immer Vorrang, unabhängig von dieser
@@ -686,13 +679,13 @@ gefolgt von einem sofortigen erneuten Öffnen deswegen, ergäbe so gut wie
 nie Sinn.
 
 **Duscherkennung:** Optional (Standard aus, nur im Raum-Formular unter
-"Sensoren & Geräte" aktivierbar - keine globale Einstellung), gedacht für Bäder mit
+"Luftentfeuchter, Klima & Dusche" aktivierbar - keine globale Einstellung), gedacht für Bäder mit
 Dusche/Badewanne, bei denen die Luftfeuchtigkeit durch das Duschen sehr
 schnell ansteigt. Ist "Duscherkennung" für einen Raum aktiviert, wird
 laufend der Anstieg der bereits konfigurierten Luftfeuchtigkeit über die
 letzten 10 Minuten beobachtet - kein zusätzlicher Sensor nötig. Steigt die
 Luftfeuchtigkeit schneller als die "Anstiegs-Schwelle" (Standard 1,5
-%-Punkte/Minute, im Abschnitt "Parameter" einstellbar), wird angenommen,
+%-Punkte/Minute, im Abschnitt "Luftentfeuchter, Klima & Dusche" einstellbar), wird angenommen,
 dass gerade geduscht wird: die Öffnen-Empfehlung wegen Luftfeuchtigkeit
 bleibt währenddessen zurückgehalten, da Lüften mitten im Duschvorgang
 nichts bringt (es entsteht weiter Dampf). Sobald der Anstieg wieder unter
@@ -708,8 +701,8 @@ sind von der Duscherkennung nicht betroffen.
 **Duschdauer-Ansage** (seit 0.89.0): Optional (Standard 0 = aus) kann eine
 Sprachansage ausgelöst werden, sobald die erkannte Dusche länger als die
 eingestellte Zeit ununterbrochen läuft. Einstellung "Duschdauer-Ansage ab
-(Minuten)" im Abschnitt "Benachrichtigungen" (global) bzw. "Benachrichtigungen
-& Anwesenheit" (Raum-Override); Dropdown mit 0 (aus)/8/10/12/15/20 Minuten,
+(Minuten)" im Abschnitt "Luftentfeuchter, Klima & Dusche" (global und als
+Raum-Override); Dropdown mit 0 (aus)/8/10/12/15/20 Minuten,
 frei editierbar. Typische Duschen dauern etwa 5-10 Minuten - die gemessene
 Dauer ist die Zeit mit erhöhter Luftfeuchtigkeit, also etwas länger als das
 reine Duschen; einen Anhaltspunkt für den eigenen Wert liefert die Spalte
@@ -759,7 +752,7 @@ Regen und Windgeschwindigkeit.
 
 ## Fensterkontakt und Benachrichtigungen
 
-Ist im Abschnitt "Sensoren & Geräte" ein Fensterkontakt hinterlegt, wird sein
+Ist im Abschnitt "Fenster & Lüften" ein Fensterkontakt hinterlegt, wird sein
 Zustand vor jeder Benachrichtigung geprüft:
 
 - **Öffnen-Empfehlung**: Wird nur verschickt, wenn der Fensterkontakt
@@ -799,7 +792,7 @@ viel mehr Feuchtigkeit aufnehmen kann. Praktisch relevantester Fall:
   gemessen werden als drinnen, obwohl die Luft absolut mehr Wasser enthält.
   Ein reiner %-Vergleich hätte hier fälschlich zum Lüften geraten.
 
-Die Schwellenwerte zum Öffnen/Schließen selbst (im Parameter-Abschnitt)
+Die Schwellenwerte zum Öffnen/Schließen selbst (im Abschnitt "Fenster & Lüften")
 bleiben bewusst in % RH - das ist der Wert, der spürbar ist und der
 Schimmelrisiko-Bewertungen zugrunde liegt. Nur der reine Außen-/
 Innenvergleich ("würde Lüften die Feuchtigkeit tatsächlich senken?")
@@ -887,7 +880,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   Dashboard-Karte) direkt den live vom Gerät gemeldeten `preset_mode`
   zurück, statt den Sollwert näherungsweise zu erraten.
 
-  Ist **"Heizungs-Zeitplan aktivieren"** (Abschnitt "Parameter")
+  Ist **"Heizungs-Zeitplan aktivieren"** (Abschnitt "Heizungs-Zeitplan")
   **deaktiviert** (Standard), gilt außerhalb dieser Pausen weiterhin die
   ursprüngliche reine Schwellenwert-Logik: Fällt die Innentemperatur unter
   die "Heizungs-Schwelle", wird der **Comfort-Sollwert** gesetzt; erreicht
@@ -927,7 +920,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
     **an** ist (Sommerbetrieb) - pausiert dann die Heizung **aller** Räume.
 
   **Abwesenheit - keine Pause, sondern ein reines Comfort-Verbot:** Sobald
-  im Abschnitt "Benachrichtigungen & Anwesenheit" mindestens eine
+  im Abschnitt "Heizung" mindestens eine
   Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon
   bestätigt "nicht zuhause" melden, wird ein ansonsten ermittelter
   Comfort-Zielmodus auf Standby herabgestuft - ein bereits anderweitig
@@ -994,7 +987,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   einschaltet, und wieder deaktiviert, sobald sie ausschaltet. Unterstützt
   sowohl `cover`-Entitäten (auf/zu) als auch `switch`-Entitäten (an =
   herunterfahren + gesperrt, aus = hochfahren + entsperrt).
-- **Höchstlaufzeit** (Abschnitt "Erweitert", global + Raum-Override):
+- **Höchstlaufzeit** (Abschnitt "Luftentfeuchter, Klima & Dusche", global + Raum-Override):
   Läuft Luftentfeuchter oder Klimaanlage ununterbrochen länger als diese
   Zeit, werden sie zwangsweise abgeschaltet - unabhängig davon, ob die
   eigentliche Zielbedingung (Feuchtigkeit/Temperatur) noch erfüllt ist.
