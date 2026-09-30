@@ -28,7 +28,10 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[str] = ["binary_sensor"]
+PLATFORMS: list[str] = ["binary_sensor", "sensor"]
+# Die allgemeinen Einstellungen haben nur den Außen-Sensor (absolute
+# Luftfeuchtigkeit), keinen binary_sensor.
+GLOBAL_PLATFORMS: list[str] = ["sensor"]
 
 # Eigenständige JS-Custom-Card (parallel zur README-Markdown/Jinja-Karte
 # nutzbar, siehe CLAUDE.md) - wird automatisch als Lovelace-Ressource
@@ -189,10 +192,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = entry.data
 
     if entry.data.get(CONF_IS_GLOBAL):
-        # Die allgemeinen Einstellungen erzeugen keine eigene Entität - sie
-        # dienen nur als Fallback-Datenquelle für die Raum-Entitäten
-        # (siehe binary_sensor.py). Kein Platform-Forward nötig.
+        # Die allgemeinen Einstellungen dienen vor allem als Fallback-
+        # Datenquelle für die Raum-Entitäten (siehe binary_sensor.py) und
+        # erzeugen nur den Sensor "Außen Absolute Luftfeuchtigkeit" (siehe
+        # sensor.py).
         hass.data[DOMAIN][GLOBAL_ENTRY_ID_KEY] = entry.entry_id
+        await hass.config_entries.async_forward_entry_setups(entry, GLOBAL_PLATFORMS)
         entry.async_on_unload(entry.add_update_listener(_async_update_listener))
         return True
 
@@ -206,10 +211,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     (Reload/Deaktivieren - NICHT die endgültige Löschung, dafür siehe
     async_remove_entry)."""
     if entry.data.get(CONF_IS_GLOBAL):
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-        if hass.data[DOMAIN].get(GLOBAL_ENTRY_ID_KEY) == entry.entry_id:
-            hass.data[DOMAIN].pop(GLOBAL_ENTRY_ID_KEY, None)
-        return True
+        unload_ok = await hass.config_entries.async_unload_platforms(
+            entry, GLOBAL_PLATFORMS
+        )
+        if unload_ok:
+            hass.data[DOMAIN].pop(entry.entry_id, None)
+            if hass.data[DOMAIN].get(GLOBAL_ENTRY_ID_KEY) == entry.entry_id:
+                hass.data[DOMAIN].pop(GLOBAL_ENTRY_ID_KEY, None)
+        return unload_ok
 
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:

@@ -645,6 +645,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             "klimaanlage": self._config.get(CONF_AC_ENTITY),
             "heizung": self._get_heating_entity_id(),
             "sommermodus": self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None),
+            "absolute_luftfeuchtigkeit": self._sensor_entity_id(
+                self._entry.entry_id, "absolute_luftfeuchtigkeit"
+            ),
+            "aussen_absolute_luftfeuchtigkeit": self._sensor_entity_id(
+                self.hass.data.get(DOMAIN, {}).get(GLOBAL_ENTRY_ID_KEY),
+                "aussen_absolute_luftfeuchtigkeit",
+            ),
             "dusche": (
                 self._shower_sensor.entity_id if self._shower_sensor is not None else None
             ),
@@ -928,6 +935,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     @callback
     def _handle_tick(self, now) -> None:
         self.hass.async_create_task(self._evaluate())
+
+    def _sensor_entity_id(self, entry_id: str | None, suffix: str) -> str | None:
+        """Entity-ID eines von dieser Integration angelegten Sensors (über die
+        Entity-Registry, feste unique_id-Konvention) - None, falls es ihn nicht
+        (mehr) gibt."""
+        if not entry_id:
+            return None
+        return er.async_get(self.hass).async_get_entity_id(
+            "sensor", DOMAIN, f"{entry_id}_{suffix}"
+        )
 
     def _global_config(self) -> dict:
         """Liefert die Daten der globalen Einstellungen (falls vorhanden)."""
