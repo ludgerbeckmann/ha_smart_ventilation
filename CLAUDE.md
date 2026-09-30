@@ -3752,6 +3752,39 @@ dafür an Leerzeichen um. Bei 280 px bleibt es bei 4 Zeilen mit "…" (Antippen 
 Lektion: Wer den Inhalt einer auto-Tabellenspalte verkürzt (Komma-Liste -> Zeilen), ändert
 ihre Breitenverteilung - danach bei 280/320/380 px im Screenshot prüfen, nicht nur im Sweep.
 
+**91. Formular-Gliederung vereinheitlicht: Raum- und globales Formular haben dieselben Abschnitte (0.90.0).**
+Nutzerwunsch: Die Menüoptionen neu strukturieren, sodass jede Einstellung in
+beiden Formularen im gleichen Abschnitt steht. Die alte Gliederung (Raum: Sensoren & Geräte / Benachrichtigungen & Anwesenheit / Parameter / Erweitert; global:
+Sensoren / Parameter / Benachrichtigungen / Erweitert) hatte Felder in
+unterschiedlichen Abschnitten je Formular und "Erweitert"/"Parameter" als
+Sammelbecken. Neu (wichtiges zuerst): Sensoren, Fenster & Lüften,
+Luftentfeuchter/Klima & Dusche, Heizung, Heizungs-Zeitplan, Benachrichtigungen
+(+ nur global: Benachrichtigungstexte) - Konstanten `SECTION_SENSORS`,
+`SECTION_VENTILATION`, `SECTION_DEVICES`, `SECTION_HEATING`,
+`SECTION_HEATING_SCHEDULE`, `SECTION_NOTIFY`, `SECTION_MESSAGES`;
+`SECTION_PARAMETERS`/`SECTION_ADVANCED` entfielen. Schlüssel der Felder
+blieben unverändert, daher keine Migration. Entscheidungen des Nutzers:
+Dusche bekommt keinen eigenen Abschnitt (gehört zu den Geräten), der
+Heizungs-Zeitplan schon, Tank-Benachrichtigung und Fenster-Gerät-Konflikt
+bleiben bei den Geräten, die Toleranz-Marge bleibt bei "Fenster & Lüften"
+(Hinweistext nennt, dass sie auch Heizung und Sommermodus betrifft), die
+Anwesenheit für die Heizung steht bei "Heizung". Vereinheitlicht wurde auch
+die Bezeichnung von `humidity_priority_over_duration` ("Luftfeuchtigkeit/CO2
+haben Vorrang"). Umsetzung: `config_flow.py` per Skript aus Zeilenbereichen
+der alten Builder neu zusammengesetzt, `strings.json`/`translations/{de,en}.json`
+per Skript (Labels/Hinweise pro Abschnitt, Lektion 55) neu sortiert und alle
+Querverweise in den Hinweistexten ("oben"/"unten"/"im Abschnitt X") auf die
+neue Gliederung angepasst - diese Verweise sind die eigentliche Fehlerquelle
+bei einem solchen Umbau, nicht die Schema-Definition. Verifikation statt Sichtprüfung:
+Die beiden Builder mit gestubbten HA-Modulen ausgeführt und je Abschnitt
+die Schlüsselliste gegen `strings.json` verglichen (Raum 65 Felder in 6,
+global 70 Felder in 7 Abschnitten, keine Dubletten, `strings.json` == `de.json`, en-Struktur
+identisch, kein Label über 40 Zeichen, keine Leerzeichen an den Rändern -
+Lektion 85). Lektion: Bei einer Umgliederung von Formularen zuerst eine
+vollständige Feld-zu-Abschnitt-Tabelle je Formular festlegen (vom Nutzer
+bestätigt), dann automatisiert gegen Code und Übersetzungen prüfen; und
+jeden Text durchsuchen, der auf Position oder Abschnitt verweist.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

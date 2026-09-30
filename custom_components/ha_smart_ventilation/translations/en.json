@@ -15,88 +15,29 @@
           "room_name": "Room name"
         },
         "sections": {
-          "notify": {
-            "name": "Notifications & Presence",
-            "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
-            "data": {
-              "sonos_entity": "Speaker(s) (media_player)",
-              "tts_light_entity": "Light for voice announcements (optional)",
-              "tts_volume": "Playback volume for voice announcements",
-              "shower_max_duration_minutes": "Shower announcement after (minutes)",
-              "tts_quiet_hours_enabled": "Voice announcement quiet hours",
-              "tts_quiet_start": "Quiet hours start",
-              "tts_quiet_end": "Quiet hours end",
-              "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "App notification targets",
-              "persistent_enabled": "Persistent notification",
-              "reminder_interval_minutes": "Reminder interval",
-              "heating_presence_entities": "Presence for heating (people)"
-            },
-            "data_description": {
-              "mobile_targets": "Empty = use the global targets from \"Smart Climate Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
-              "persistent_enabled": "Notice in the Home Assistant web interface. Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
-              "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
-              "sonos_entity": "Multiple selection possible. Empty = no voice announcement for this room",
-              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
-              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
-              "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}",
-              "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
-              "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
-              "tts_quiet_end": "Empty = use the value from the global settings. Currently global: {global_tts_quiet_end}",
-              "reminder_interval_minutes": "Empty = use the value from the global settings. Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
-              "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
-            }
-          },
           "sensors": {
-            "name": "Sensors & Devices",
-            "description": "Which entities provide the measurements for this room, and which devices (dehumidifier, air conditioner, heating) are controlled automatically?",
+            "name": "Sensors",
+            "description": "Which entities provide the indoor measurements for this room?",
             "data": {
               "temperature_source_entity": "Indoor temperature",
-              "heating_use_temp_source": "Also use temperature source for heating",
-              "heating_entity": "Heating",
-              "heating_use_preset_mode": "Control/show via presets",
-              "heating_preset_comfort": "Preset name Comfort",
-              "heating_preset_standby": "Preset name Standby",
-              "heating_preset_night": "Preset name Eco (Night)",
-              "heating_preset_building_protection": "Preset name Building protection",
+              "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Indoor humidity (optional)",
-              "shower_detection_enabled": "Shower detection",
-              "co2_entity": "CO2 (optional)",
-              "window_entity": "Window contact sensor (optional)",
-              "shutter_entity": "Shutter / window lock",
-              "disable_close_recommendation": "Disable close recommendation",
-              "no_window": "This room has no window",
-              "dehumidifier_entity": "Dehumidifier",
-              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
-              "dehumidifier_tank_notification_enabled": "Notify when tank is full",
-              "ac_entity": "Air conditioner",
-              "device_window_conflict_notification_enabled": "Notify on window/device conflict"
+              "co2_entity": "CO2 (optional)"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
-              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
-              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
-              "heating_use_preset_mode": "Empty = use the global setting. Enabled (default, also globally), heating is controlled/shown via preset_mode instead of a numeric setpoint - but only if the entity actually supports preset_mode; otherwise it automatically falls back to setpoint control. Currently global: {global_heating_use_preset_mode}",
-              "heating_preset_comfort": "The preset_mode name of the heating entity for the comfort state (e.g. \"Comfort\") - dropdown shows the presets actually reported by the entity, freely editable. Empty = this state keeps being set via the comfort setpoint instead of a preset. Currently global: {global_heating_preset_comfort}",
-              "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state. Currently global: {global_heating_preset_standby}",
-              "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices, activated overnight) - only relevant with the heating schedule enabled. Currently global: {global_heating_preset_night}",
-              "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state - set exclusively while the window is confirmed open (replaces standby for that case). Without an entered name, the standby setpoint is used instead. Currently global: {global_heating_preset_building_protection}",
-              "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected above). The rise threshold for this lives in the \"Advanced\" section",
-              "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
-              "shutter_entity": "Only together with an air conditioner. Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
-              "disable_close_recommendation": "No \"please close\" recommendation is ever made for this room (temperature/humidity/CO2/winter max duration/summer case have no effect) - useful when the window contact doesn't reliably reflect the actual state (e.g. a sliding door) or an air conditioner handles cooling independently of the window. Frost/heat protection are unaffected and still close immediately. Open recommendations are unaffected too.",
-              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting.",
-              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
-              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
-              "dehumidifier_tank_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room) as soon as the tank status sensor selected above reports \"full\" - only effective if a sensor is actually selected there.",
-              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
-              "device_window_conflict_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room), while a dehumidifier and/or air conditioner configured here is fighting unfavourable outdoor air through an open window - regardless of any surplus feed-in power. Automatically resolves once the window is closed or the outdoor air becomes favourable again."
+              "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature above",
+              "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high"
             }
           },
-          "parameters": {
-            "name": "Parameters",
-            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+          "ventilation": {
+            "name": "Windows & Ventilation",
+            "description": "Window, shutter, normal-range limits and protection features. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
+              "window_entity": "Window contact sensor (optional)",
+              "no_window": "This room has no window",
+              "shutter_entity": "Shutter / window lock",
+              "disable_close_recommendation": "Disable close recommendation",
               "temp_threshold_open": "Upper limit temperature (open)",
               "temp_threshold_close": "Lower limit temperature (close)",
               "humidity_threshold_open": "Upper limit humidity (open)",
@@ -107,6 +48,99 @@
               "heat_protection_temp": "Heat protection (outdoor limit)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
+              "temp_margin": "Tolerance margin",
+              "frost_debounce_minutes": "Frost protection debounce time",
+              "humidity_priority_over_duration": "Humidity/CO2 take priority"
+            },
+            "data_description": {
+              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting.",
+              "shutter_entity": "Only together with an air conditioner. Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
+              "disable_close_recommendation": "No \"please close\" recommendation is ever made for this room (temperature/humidity/CO2/winter max duration/summer case have no effect) - useful when the window contact doesn't reliably reflect the actual state (e.g. a sliding door) or an air conditioner handles cooling independently of the window. Frost/heat protection are unaffected and still close immediately. Open recommendations are unaffected too.",
+              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_co2_threshold_close}",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately. Currently global: {global_frost_protection_temp}",
+              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Also acts as the hysteresis for the heating control and summer mode. Currently global: {global_temp_margin}",
+              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay. Currently global: {global_frost_debounce_minutes}",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}"
+            }
+          },
+          "devices": {
+            "name": "Dehumidifier, AC & Shower",
+            "description": "Automatically controlled devices plus power, runtime and shower-detection settings. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "data": {
+              "dehumidifier_entity": "Dehumidifier",
+              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
+              "dehumidifier_tank_notification_enabled": "Notify when tank is full",
+              "ac_entity": "Air conditioner",
+              "device_window_conflict_notification_enabled": "Notify on window/device conflict",
+              "min_surplus_power_watts": "Minimum surplus power",
+              "power_grace_period_minutes": "Turn-off delay (low surplus power)",
+              "device_max_runtime_minutes": "Max. runtime at low surplus power",
+              "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
+              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime",
+              "shower_detection_enabled": "Shower detection",
+              "shower_rise_threshold": "Shower detection rise threshold",
+              "shower_max_duration_minutes": "Shower announcement after (minutes)"
+            },
+            "data_description": {
+              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
+              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
+              "dehumidifier_tank_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room) as soon as the tank status sensor selected above reports \"full\" - only effective if a sensor is actually selected there.",
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "device_window_conflict_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room), while a dehumidifier and/or air conditioner configured here is fighting unfavourable outdoor air through an open window - regardless of any surplus feed-in power. Automatically resolves once the window is closed or the outdoor air becomes favourable again.",
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}",
+              "device_max_runtime_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = disabled. Applies at low surplus power (below the minimum surplus power) or without a power sensor: forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
+              "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}",
+              "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected in the \"Sensors\" section). The rise threshold for this is directly below",
+              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled above. Currently global: {global_shower_rise_threshold}",
+              "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}"
+            }
+          },
+          "heating": {
+            "name": "Heating",
+            "description": "Heating device, presets, presence check and setpoints for this room. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "data": {
+              "heating_use_temp_source": "Also use temperature source for heating",
+              "heating_entity": "Heating",
+              "heating_use_preset_mode": "Control/show via presets",
+              "heating_preset_comfort": "Preset name Comfort",
+              "heating_preset_standby": "Preset name Standby",
+              "heating_preset_night": "Preset name Eco (Night)",
+              "heating_preset_building_protection": "Preset name Building protection",
+              "heating_presence_entities": "Presence for heating (people)",
+              "heating_threshold_temp": "Heating threshold (indoor temperature)",
+              "heating_comfort_temp": "Heating comfort setpoint",
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint"
+            },
+            "data_description": {
+              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
+              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (further down in this section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
+              "heating_use_preset_mode": "Empty = use the global setting. Enabled (default, also globally), heating is controlled/shown via preset_mode instead of a numeric setpoint - but only if the entity actually supports preset_mode; otherwise it automatically falls back to setpoint control. Currently global: {global_heating_use_preset_mode}",
+              "heating_preset_comfort": "The preset_mode name of the heating entity for the comfort state (e.g. \"Comfort\") - dropdown shows the presets actually reported by the entity, freely editable. Empty = this state keeps being set via the comfort setpoint instead of a preset. Currently global: {global_heating_preset_comfort}",
+              "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state. Currently global: {global_heating_preset_standby}",
+              "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices, activated overnight) - only relevant with the heating schedule enabled. Currently global: {global_heating_preset_night}",
+              "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state - set exclusively while the window is confirmed open (replaces standby for that case). Without an entered name, the standby setpoint is used instead. Currently global: {global_heating_preset_building_protection}",
+              "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set.",
+              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
+            }
+          },
+          "heating_schedule": {
+            "name": "Heating schedule",
+            "description": "Time windows in which comfort or night is enforced (separate for weekdays and weekends). Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "data": {
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
               "heating_comfort_end_weekday": "Comfort end (weekday)",
@@ -118,16 +152,6 @@
               "heating_night_end_weekend": "Night end (weekend)"
             },
             "data_description": {
-              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
-              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_temp_threshold_close}",
-              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_open}",
-              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_close}",
-              "co2_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_co2_threshold_open}",
-              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_co2_threshold_close}",
-              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately. Currently global: {global_frost_protection_temp}",
-              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
-              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
-              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
@@ -139,40 +163,32 @@
               "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}"
             }
           },
-          "advanced": {
-            "name": "Advanced",
-            "description": "Rarely needed fine-tuning values for this room. Left empty, the respective global value applies.",
+          "notify": {
+            "name": "Notifications",
+            "description": "Voice announcement, app push, persistent notification and reminder. Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
-              "temperature_attribute": "Temperature attribute",
-              "temp_margin": "Tolerance margin",
-              "frost_debounce_minutes": "Frost protection debounce time",
-              "humidity_priority_over_duration": "Priority for winter max duration",
-              "shower_rise_threshold": "Shower detection rise threshold",
-              "min_surplus_power_watts": "Minimum surplus power",
-              "power_grace_period_minutes": "Turn-off delay (low surplus power)",
-              "heating_threshold_temp": "Heating threshold (indoor temperature)",
-              "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint",
-              "device_max_runtime_minutes": "Max. runtime at low surplus power",
-              "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
-              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
+              "sonos_entity": "Speaker(s) (media_player)",
+              "tts_light_entity": "Light for voice announcements (optional)",
+              "tts_volume": "Playback volume for voice announcements",
+              "tts_quiet_hours_enabled": "Voice announcement quiet hours",
+              "tts_quiet_start": "Quiet hours start",
+              "tts_quiet_end": "Quiet hours end",
+              "mobile_enabled": "Home Assistant Companion App",
+              "mobile_targets": "App notification targets",
+              "persistent_enabled": "Persistent notification",
+              "reminder_interval_minutes": "Reminder interval"
             },
             "data_description": {
-              "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature in the \"Sensors & Devices\" section",
-              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Currently global: {global_temp_margin}",
-              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay. Currently global: {global_frost_debounce_minutes}",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
-              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors & Devices\" section. Currently global: {global_shower_rise_threshold}",
-              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}",
-              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "device_max_runtime_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = disabled. Applies at low surplus power (below the minimum surplus power) or without a power sensor: forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_minutes}",
-              "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
-              "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}"
+              "sonos_entity": "Multiple selection possible. Empty = no voice announcement for this room",
+              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
+              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
+              "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
+              "tts_quiet_end": "Empty = use the value from the global settings. Currently global: {global_tts_quiet_end}",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
+              "mobile_targets": "Empty = use the global targets from \"Smart Climate Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
+              "persistent_enabled": "Notice in the Home Assistant web interface. Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
+              "reminder_interval_minutes": "Empty = use the value from the global settings. Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}"
             }
           }
         }
@@ -192,88 +208,29 @@
           "room_name": "Room name"
         },
         "sections": {
-          "notify": {
-            "name": "Notifications & Presence",
-            "description": "Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
-            "data": {
-              "sonos_entity": "Speaker(s) (media_player)",
-              "tts_light_entity": "Light for voice announcements (optional)",
-              "tts_volume": "Playback volume for voice announcements",
-              "shower_max_duration_minutes": "Shower announcement after (minutes)",
-              "tts_quiet_hours_enabled": "Voice announcement quiet hours",
-              "tts_quiet_start": "Quiet hours start",
-              "tts_quiet_end": "Quiet hours end",
-              "mobile_enabled": "Home Assistant Companion App",
-              "mobile_targets": "App notification targets",
-              "persistent_enabled": "Persistent notification",
-              "reminder_interval_minutes": "Reminder interval",
-              "heating_presence_entities": "Presence for heating (people)"
-            },
-            "data_description": {
-              "mobile_targets": "Empty = use the global targets from \"Smart Climate Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
-              "persistent_enabled": "Notice in the Home Assistant web interface. Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
-              "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
-              "sonos_entity": "Multiple selection possible. Empty = no voice announcement for this room",
-              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
-              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
-              "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}",
-              "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
-              "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
-              "tts_quiet_end": "Empty = use the value from the global settings. Currently global: {global_tts_quiet_end}",
-              "reminder_interval_minutes": "Empty = use the value from the global settings. Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}",
-              "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set."
-            }
-          },
           "sensors": {
-            "name": "Sensors & Devices",
-            "description": "Which entities provide the measurements for this room, and which devices (dehumidifier, air conditioner, heating) are controlled automatically?",
+            "name": "Sensors",
+            "description": "Which entities provide the indoor measurements for this room?",
             "data": {
               "temperature_source_entity": "Indoor temperature",
-              "heating_use_temp_source": "Also use temperature source for heating",
-              "heating_entity": "Heating",
-              "heating_use_preset_mode": "Control/show via presets",
-              "heating_preset_comfort": "Preset name Comfort",
-              "heating_preset_standby": "Preset name Standby",
-              "heating_preset_night": "Preset name Eco (Night)",
-              "heating_preset_building_protection": "Preset name Building protection",
+              "temperature_attribute": "Temperature attribute",
               "humidity_entity": "Indoor humidity (optional)",
-              "shower_detection_enabled": "Shower detection",
-              "co2_entity": "CO2 (optional)",
-              "window_entity": "Window contact sensor (optional)",
-              "shutter_entity": "Shutter / window lock",
-              "disable_close_recommendation": "Disable close recommendation",
-              "no_window": "This room has no window",
-              "dehumidifier_entity": "Dehumidifier",
-              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
-              "dehumidifier_tank_notification_enabled": "Notify when tank is full",
-              "ac_entity": "Air conditioner",
-              "device_window_conflict_notification_enabled": "Notify on window/device conflict"
+              "co2_entity": "CO2 (optional)"
             },
             "data_description": {
               "temperature_source_entity": "A climate, sensor, number or input_number entity",
-              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
-              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (\"Parameters\" section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
-              "heating_use_preset_mode": "Empty = use the global setting. Enabled (default, also globally), heating is controlled/shown via preset_mode instead of a numeric setpoint - but only if the entity actually supports preset_mode; otherwise it automatically falls back to setpoint control. Currently global: {global_heating_use_preset_mode}",
-              "heating_preset_comfort": "The preset_mode name of the heating entity for the comfort state (e.g. \"Comfort\") - dropdown shows the presets actually reported by the entity, freely editable. Empty = this state keeps being set via the comfort setpoint instead of a preset. Currently global: {global_heating_preset_comfort}",
-              "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state. Currently global: {global_heating_preset_standby}",
-              "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices, activated overnight) - only relevant with the heating schedule enabled. Currently global: {global_heating_preset_night}",
-              "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state - set exclusively while the window is confirmed open (replaces standby for that case). Without an entered name, the standby setpoint is used instead. Currently global: {global_heating_preset_building_protection}",
-              "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected above). The rise threshold for this lives in the \"Advanced\" section",
-              "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high",
-              "shutter_entity": "Only together with an air conditioner. Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
-              "disable_close_recommendation": "No \"please close\" recommendation is ever made for this room (temperature/humidity/CO2/winter max duration/summer case have no effect) - useful when the window contact doesn't reliably reflect the actual state (e.g. a sliding door) or an air conditioner handles cooling independently of the window. Frost/heat protection are unaffected and still close immediately. Open recommendations are unaffected too.",
-              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting.",
-              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
-              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
-              "dehumidifier_tank_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room) as soon as the tank status sensor selected above reports \"full\" - only effective if a sensor is actually selected there.",
-              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
-              "device_window_conflict_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room), while a dehumidifier and/or air conditioner configured here is fighting unfavourable outdoor air through an open window - regardless of any surplus feed-in power. Automatically resolves once the window is closed or the outdoor air becomes favourable again."
+              "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature above",
+              "co2_entity": "A sensor entity with a CO2 value in ppm. Unlike temperature/humidity, there is no outdoor comparison for this - ventilating always helps when CO2 is high"
             }
           },
-          "parameters": {
-            "name": "Parameters",
-            "description": "Optional - overrides the global settings for this room. Left empty, the value stored there applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+          "ventilation": {
+            "name": "Windows & Ventilation",
+            "description": "Window, shutter, normal-range limits and protection features. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
+              "window_entity": "Window contact sensor (optional)",
+              "no_window": "This room has no window",
+              "shutter_entity": "Shutter / window lock",
+              "disable_close_recommendation": "Disable close recommendation",
               "temp_threshold_open": "Upper limit temperature (open)",
               "temp_threshold_close": "Lower limit temperature (close)",
               "humidity_threshold_open": "Upper limit humidity (open)",
@@ -284,6 +241,99 @@
               "heat_protection_temp": "Heat protection (outdoor limit)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
+              "temp_margin": "Tolerance margin",
+              "frost_debounce_minutes": "Frost protection debounce time",
+              "humidity_priority_over_duration": "Humidity/CO2 take priority"
+            },
+            "data_description": {
+              "no_window": "On: open/close notifications are never generated - useful for windowless hallways/basement rooms where only the dehumidifier/air conditioner should be controlled based on sensor readings. Device control keeps working regardless of this setting.",
+              "shutter_entity": "Only together with an air conditioner. Optional: a cover entity (open/close) or a switch entity (1 = lowered+locked, 0 = raised+unlocked). Activated when the air conditioner turns on, deactivated again when it turns off",
+              "disable_close_recommendation": "No \"please close\" recommendation is ever made for this room (temperature/humidity/CO2/winter max duration/summer case have no effect) - useful when the window contact doesn't reliably reflect the actual state (e.g. a sliding door) or an air conditioner handles cooling independently of the window. Frost/heat protection are unaffected and still close immediately. Open recommendations are unaffected too.",
+              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
+              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_temp_threshold_close}",
+              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_open}",
+              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_close}",
+              "co2_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_co2_threshold_open}",
+              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_co2_threshold_close}",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately. Currently global: {global_frost_protection_temp}",
+              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Also acts as the hysteresis for the heating control and summer mode. Currently global: {global_temp_margin}",
+              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay. Currently global: {global_frost_debounce_minutes}",
+              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}"
+            }
+          },
+          "devices": {
+            "name": "Dehumidifier, AC & Shower",
+            "description": "Automatically controlled devices plus power, runtime and shower-detection settings. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "data": {
+              "dehumidifier_entity": "Dehumidifier",
+              "dehumidifier_tank_full_entity": "Tank status sensor (dehumidifier)",
+              "dehumidifier_tank_notification_enabled": "Notify when tank is full",
+              "ac_entity": "Air conditioner",
+              "device_window_conflict_notification_enabled": "Notify on window/device conflict",
+              "min_surplus_power_watts": "Minimum surplus power",
+              "power_grace_period_minutes": "Turn-off delay (low surplus power)",
+              "device_max_runtime_minutes": "Max. runtime at low surplus power",
+              "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
+              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime",
+              "shower_detection_enabled": "Shower detection",
+              "shower_rise_threshold": "Shower detection rise threshold",
+              "shower_max_duration_minutes": "Shower announcement after (minutes)"
+            },
+            "data_description": {
+              "dehumidifier_entity": "A switch or humidifier entity. Turns on at high, off at low humidity",
+              "dehumidifier_tank_full_entity": "Optional: a binary_sensor that reports \"on\" when the tank is full or there is a fault - shown on the dashboard card as an addition to the dehumidifier status (e.g. \"error\")",
+              "dehumidifier_tank_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room) as soon as the tank status sensor selected above reports \"full\" - only effective if a sensor is actually selected there.",
+              "ac_entity": "A climate or switch entity. Turns on when it's too warm indoors and ventilating wouldn't help",
+              "device_window_conflict_notification_enabled": "Enables a real notification (voice announcement/app push/persistent notification, whichever is active for this room), while a dehumidifier and/or air conditioner configured here is fighting unfavourable outdoor air through an open window - regardless of any surplus feed-in power. Automatically resolves once the window is closed or the outdoor air becomes favourable again.",
+              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
+              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}",
+              "device_max_runtime_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = disabled. Applies at low surplus power (below the minimum surplus power) or without a power sensor: forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
+              "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}",
+              "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected in the \"Sensors\" section). The rise threshold for this is directly below",
+              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled above. Currently global: {global_shower_rise_threshold}",
+              "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}"
+            }
+          },
+          "heating": {
+            "name": "Heating",
+            "description": "Heating device, presets, presence check and setpoints for this room. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "data": {
+              "heating_use_temp_source": "Also use temperature source for heating",
+              "heating_entity": "Heating",
+              "heating_use_preset_mode": "Control/show via presets",
+              "heating_preset_comfort": "Preset name Comfort",
+              "heating_preset_standby": "Preset name Standby",
+              "heating_preset_night": "Preset name Eco (Night)",
+              "heating_preset_building_protection": "Preset name Building protection",
+              "heating_presence_entities": "Presence for heating (people)",
+              "heating_threshold_temp": "Heating threshold (indoor temperature)",
+              "heating_comfort_temp": "Heating comfort setpoint",
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint"
+            },
+            "data_description": {
+              "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
+              "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (further down in this section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
+              "heating_use_preset_mode": "Empty = use the global setting. Enabled (default, also globally), heating is controlled/shown via preset_mode instead of a numeric setpoint - but only if the entity actually supports preset_mode; otherwise it automatically falls back to setpoint control. Currently global: {global_heating_use_preset_mode}",
+              "heating_preset_comfort": "The preset_mode name of the heating entity for the comfort state (e.g. \"Comfort\") - dropdown shows the presets actually reported by the entity, freely editable. Empty = this state keeps being set via the comfort setpoint instead of a preset. Currently global: {global_heating_preset_comfort}",
+              "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state. Currently global: {global_heating_preset_standby}",
+              "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices, activated overnight) - only relevant with the heating schedule enabled. Currently global: {global_heating_preset_night}",
+              "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state - set exclusively while the window is confirmed open (replaces standby for that case). Without an entered name, the standby setpoint is used instead. Currently global: {global_heating_preset_building_protection}",
+              "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set.",
+              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
+            }
+          },
+          "heating_schedule": {
+            "name": "Heating schedule",
+            "description": "Time windows in which comfort or night is enforced (separate for weekdays and weekends). Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "data": {
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
               "heating_comfort_end_weekday": "Comfort end (weekday)",
@@ -295,16 +345,6 @@
               "heating_night_end_weekend": "Night end (weekend)"
             },
             "data_description": {
-              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_temp_threshold_open}",
-              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_temp_threshold_close}",
-              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_open}",
-              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_humidity_threshold_close}",
-              "co2_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Empty = use the value from the global settings. Currently global: {global_co2_threshold_open}",
-              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut. Empty = use the value from the global settings. Currently global: {global_co2_threshold_close}",
-              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately. Currently global: {global_frost_protection_temp}",
-              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2. Currently global: {global_heat_protection_temp}",
-              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit). Currently global: {global_winter_outdoor_threshold}",
-              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration. Currently global: {global_max_open_duration_winter_minutes}",
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
               "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
               "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
@@ -316,40 +356,32 @@
               "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}"
             }
           },
-          "advanced": {
-            "name": "Advanced",
-            "description": "Rarely needed fine-tuning values for this room. Left empty, the respective global value applies.",
+          "notify": {
+            "name": "Notifications",
+            "description": "Voice announcement, app push, persistent notification and reminder. Enable the Home Assistant Companion App via the checkbox; the field directly below is only relevant if the checkbox is enabled. Voice announcement is active as soon as at least one speaker is selected.",
             "data": {
-              "temperature_attribute": "Temperature attribute",
-              "temp_margin": "Tolerance margin",
-              "frost_debounce_minutes": "Frost protection debounce time",
-              "humidity_priority_over_duration": "Priority for winter max duration",
-              "shower_rise_threshold": "Shower detection rise threshold",
-              "min_surplus_power_watts": "Minimum surplus power",
-              "power_grace_period_minutes": "Turn-off delay (low surplus power)",
-              "heating_threshold_temp": "Heating threshold (indoor temperature)",
-              "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint",
-              "device_max_runtime_minutes": "Max. runtime at low surplus power",
-              "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
-              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
+              "sonos_entity": "Speaker(s) (media_player)",
+              "tts_light_entity": "Light for voice announcements (optional)",
+              "tts_volume": "Playback volume for voice announcements",
+              "tts_quiet_hours_enabled": "Voice announcement quiet hours",
+              "tts_quiet_start": "Quiet hours start",
+              "tts_quiet_end": "Quiet hours end",
+              "mobile_enabled": "Home Assistant Companion App",
+              "mobile_targets": "App notification targets",
+              "persistent_enabled": "Persistent notification",
+              "reminder_interval_minutes": "Reminder interval"
             },
             "data_description": {
-              "temperature_attribute": "Only relevant if a climate entity was selected as indoor temperature in the \"Sensors & Devices\" section",
-              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Currently global: {global_temp_margin}",
-              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay. Currently global: {global_frost_debounce_minutes}",
-              "humidity_priority_over_duration": "Empty = use the global setting. Determines whether a still-active humidity or CO2 ventilation need takes priority when the winter max duration is reached (window stays open) or whether the max duration is enforced strictly (window closes anyway). Frost protection always takes priority regardless. Currently global: {global_humidity_priority_over_duration}",
-              "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled in the \"Sensors & Devices\" section. Currently global: {global_shower_rise_threshold}",
-              "min_surplus_power_watts": "Empty = use the value from the global settings. Only applies to turning on, never to turning off. Currently global: {global_min_surplus_power_watts}",
-              "power_grace_period_minutes": "Empty = use the value from the global settings. A running device is only turned off for insufficient power once it has stayed low for this long. Currently global: {global_power_grace_period_minutes}",
-              "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "device_max_runtime_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = disabled. Applies at low surplus power (below the minimum surplus power) or without a power sensor: forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_minutes}",
-              "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
-              "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}"
+              "sonos_entity": "Multiple selection possible. Empty = no voice announcement for this room",
+              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
+              "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
+              "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
+              "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
+              "tts_quiet_end": "Empty = use the value from the global settings. Currently global: {global_tts_quiet_end}",
+              "mobile_enabled": "Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_mobile_enabled}",
+              "mobile_targets": "Empty = use the global targets from \"Smart Climate Options\". One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent. Currently global: {global_mobile_targets}",
+              "persistent_enabled": "Notice in the Home Assistant web interface. Empty = use the global setting from \"Smart Climate Options\". Currently global: {global_persistent_enabled}",
+              "reminder_interval_minutes": "Empty = use the value from the global settings. Recurring reminder if the recommendation is ignored. 0 = disabled. Currently global: {global_reminder_interval_minutes}"
             }
           }
         },
@@ -364,30 +396,24 @@
           "reset_to_defaults": "Reset to defaults"
         },
         "data_description": {
-          "reset_to_defaults": "When saved, resets all thresholds in the \"Parameters\" and \"Advanced\" sections, the reminder interval and all notification message texts in the \"Notifications\" section to their built-in defaults - regardless of what is currently entered in those fields. Selected entities (sensors, TTS, power sensor, notification targets) as well as the voice playback mode and notification methods are unaffected."
+          "reset_to_defaults": "When saved, resets all thresholds, setpoints, time windows and runtimes, the reminder interval and all notification message texts to their built-in defaults - regardless of what is currently entered in those fields. Selected entities (sensors, TTS, power sensor, notification targets) as well as the voice playback mode and notification methods are unaffected."
         },
         "sections": {
           "sensors": {
-            "name": "Sensors & Devices",
-            "description": "Sensors and playback settings as the room-wide default.",
+            "name": "Sensors",
+            "description": "Outdoor sensors as the room-wide default.",
             "data": {
               "outdoor_temp_entity": "Outdoor temperature",
-              "outdoor_humidity_entity": "Outdoor humidity",
-              "power_entity": "Power sensor (grid feed-in)",
-              "summer_mode_forecast_entity": "Summer mode forecast source (optional)",
-              "summer_mode_switch_entity": "Summer/winter mode switch"
+              "outdoor_humidity_entity": "Outdoor humidity"
             },
             "data_description": {
               "outdoor_temp_entity": "Used for all rooms - can no longer be overridden per room",
-              "outdoor_humidity_entity": "Used for all rooms, cannot be overridden per room. Without this sensor, ventilating on high indoor humidity is still recommended regardless of outdoor conditions. With it set, humidity-based ventilation is only recommended if it's actually drier outside than inside",
-              "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically controls the summer/winter mode switch selected below. Without this entity, the switch remains purely manual.",
-              "summer_mode_switch_entity": "Optional. An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (\"Parameters\" section) again. Without a configured entity, summer/winter mode has no effect.",
-              "power_entity": "Used when a room doesn't set its own power sensor"
+              "outdoor_humidity_entity": "Used for all rooms, cannot be overridden per room. Without this sensor, ventilating on high indoor humidity is still recommended regardless of outdoor conditions. With it set, humidity-based ventilation is only recommended if it's actually drier outside than inside"
             }
           },
-          "parameters": {
-            "name": "Parameters",
-            "description": "These thresholds act as the room-wide default.",
+          "ventilation": {
+            "name": "Windows & Ventilation",
+            "description": "Normal-range limits, frost/heat protection and fine-tuning as the room-wide default.",
             "data": {
               "temp_threshold_open": "Upper limit temperature (open)",
               "temp_threshold_close": "Lower limit temperature (close)",
@@ -399,6 +425,88 @@
               "heat_protection_temp": "Heat protection (outdoor limit)",
               "winter_outdoor_threshold": "Winter threshold (outdoor temperature)",
               "max_open_duration_winter_minutes": "Max. open duration in winter",
+              "temp_margin": "Tolerance margin",
+              "frost_debounce_minutes": "Frost protection debounce time",
+              "humidity_priority_over_duration": "Humidity/CO2 take priority"
+            },
+            "data_description": {
+              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded.",
+              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
+              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded.",
+              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
+              "co2_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Common recommendation: ventilate at 1000 ppm at the latest",
+              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
+              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
+              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2",
+              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
+              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
+              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering. Also acts as the hysteresis for the heating control and summer mode",
+              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay",
+              "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless."
+            }
+          },
+          "devices": {
+            "name": "Dehumidifier, AC & Shower",
+            "description": "Feed-in power sensor, runtimes and shower detection as the room-wide default.",
+            "data": {
+              "power_entity": "Power sensor (grid feed-in)",
+              "min_surplus_power_watts": "Minimum surplus power",
+              "power_grace_period_minutes": "Turn-off delay (low surplus power)",
+              "device_max_runtime_minutes": "Max. runtime at low surplus power",
+              "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
+              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime",
+              "shower_rise_threshold": "Shower detection rise threshold",
+              "shower_max_duration_minutes": "Shower announcement after (minutes)"
+            },
+            "data_description": {
+              "power_entity": "Used when a room doesn't set its own power sensor",
+              "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
+              "power_grace_period_minutes": "Default delay for all rooms without their own setting",
+              "device_max_runtime_minutes": "Maximum uninterrupted runtime at low surplus power (below the minimum surplus power or without a power sensor) before the dehumidifier/AC is forced off - 0 = disabled. Default for all rooms without their own value.",
+              "device_max_runtime_high_surplus_minutes": "Maximum uninterrupted runtime at high surplus power (at least the minimum surplus power, only with a power sensor) before the dehumidifier/AC is forced off - 0 = unlimited. Default for all rooms without their own value.",
+              "device_max_runtime_cooldown_minutes": "Minimum rest period after such a forced shutoff before the device may turn on again. Default for all rooms without their own value.",
+              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection",
+              "shower_max_duration_minutes": "Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only for rooms with shower detection and speakers) - 0 = off. Default for all rooms without their own value."
+            }
+          },
+          "heating": {
+            "name": "Heating",
+            "description": "Presets, setpoints and summer mode as the room-wide default.",
+            "data": {
+              "heating_use_preset_mode": "Control/show via presets",
+              "heating_preset_comfort": "Preset name Comfort",
+              "heating_preset_standby": "Preset name Standby",
+              "heating_preset_night": "Preset name Eco (Night)",
+              "heating_preset_building_protection": "Preset name Building protection",
+              "heating_threshold_temp": "Heating threshold (indoor temperature)",
+              "heating_comfort_temp": "Heating comfort setpoint",
+              "heating_standby_temp": "Heating standby setpoint",
+              "heating_night_temp": "Heating night setpoint",
+              "summer_mode_forecast_entity": "Summer mode forecast source (optional)",
+              "summer_mode_forecast_attribute": "Forecast attribute (optional)",
+              "summer_mode_switch_entity": "Summer/winter mode switch",
+              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
+            },
+            "data_description": {
+              "heating_use_preset_mode": "Default Yes (opt-out): heating entities that support preset_mode (e.g. KNX) are controlled/shown via presets automatically instead of a numeric setpoint. Without support, it automatically stays on setpoint control - overridable per room to \"No\" to avoid using presets despite support.",
+              "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - dropdown only suggests the eight official Home Assistant standard values (no single device to read the actual presets from), freely editable. Empty = this state keeps being set via the comfort setpoint.",
+              "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state.",
+              "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
+              "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",
+              "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
+              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
+              "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
+              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
+              "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically controls the summer/winter mode switch selected below. Without this entity, the switch remains purely manual.",
+              "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (above) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
+              "summer_mode_switch_entity": "Optional. An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (summer mode threshold further down) again. Without a configured entity, summer/winter mode has no effect.",
+              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above"
+            }
+          },
+          "heating_schedule": {
+            "name": "Heating schedule",
+            "description": "Time windows in which comfort or night is enforced (separate for weekdays and weekends), as the room-wide default.",
+            "data": {
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
               "heating_comfort_end_weekday": "Comfort end (weekday)",
@@ -407,79 +515,20 @@
               "heating_night_start_weekday": "Night start (weekday)",
               "heating_night_end_weekday": "Night end (weekday)",
               "heating_night_start_weekend": "Night start (weekend)",
-              "heating_night_end_weekend": "Night end (weekend)",
-              "heating_use_preset_mode": "Control/show via presets",
-              "heating_preset_comfort": "Preset name Comfort",
-              "heating_preset_standby": "Preset name Standby",
-              "heating_preset_night": "Preset name Eco (Night)",
-              "heating_preset_building_protection": "Preset name Building protection",
-              "summer_mode_threshold_temp": "Summer mode threshold (forecast)"
+              "heating_night_end_weekend": "Night end (weekend)"
             },
             "data_description": {
-              "co2_threshold_open": "Upper limit of the normal range – recommends opening when exceeded. Common recommendation: ventilate at 1000 ppm at the latest",
-              "frost_protection_temp": "Below this outdoor temperature, opening is never recommended; an open state is closed immediately",
-              "heat_protection_temp": "Above this outdoor temperature, opening is never recommended; an open state is closed immediately - regardless of whether the room actually needs ventilating due to temperature, humidity or CO2",
-              "winter_outdoor_threshold": "Below this outdoor temperature, conditions are considered \"winter\" (enables the max duration limit)",
-              "max_open_duration_winter_minutes": "Under \"winter\" conditions, closing is recommended automatically after this duration",
               "heating_schedule_enabled": "Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled (default): the plain threshold logic above still applies",
               "heating_comfort_start_weekday": "Only effective while the heating schedule is enabled",
-              "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority",
-              "heating_use_preset_mode": "Default Yes (opt-out): heating entities that support preset_mode (e.g. KNX) are controlled/shown via presets automatically instead of a numeric setpoint. Without support, it automatically stays on setpoint control - overridable per room to \"No\" to avoid using presets despite support.",
-              "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - dropdown only suggests the eight official Home Assistant standard values (no single device to read the actual presets from), freely editable. Empty = this state keeps being set via the comfort setpoint.",
-              "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state.",
-              "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
-              "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",
-              "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above in the \"Sensors & Devices\" section",
-              "humidity_threshold_open": "Upper limit of the normal range – recommends opening when exceeded.",
-              "humidity_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
-              "temp_threshold_open": "Upper limit of the normal range – recommends opening when exceeded.",
-              "temp_threshold_close": "Lower limit of the normal range – recommends closing when undercut.",
-              "co2_threshold_close": "Lower limit of the normal range – recommends closing when undercut."
+              "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority"
             }
           },
-          "advanced": {
-            "name": "Advanced",
-            "description": "Rarely needed fine-tuning values as the room-wide default.",
-            "data": {
-              "summer_mode_forecast_attribute": "Forecast attribute (optional)",
-              "temp_margin": "Tolerance margin",
-              "frost_debounce_minutes": "Frost protection debounce time",
-              "humidity_priority_over_duration": "Humidity/CO2 take priority",
-              "shower_rise_threshold": "Shower detection rise threshold",
-              "min_surplus_power_watts": "Minimum surplus power",
-              "power_grace_period_minutes": "Turn-off delay (low surplus power)",
-              "heating_threshold_temp": "Heating threshold (indoor temperature)",
-              "heating_comfort_temp": "Heating comfort setpoint",
-              "heating_standby_temp": "Heating standby setpoint",
-              "heating_night_temp": "Heating night setpoint",
-              "device_max_runtime_minutes": "Max. runtime at low surplus power",
-              "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
-              "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
-            },
-            "data_description": {
-              "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (\"Sensors & Devices\" section) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
-              "temp_margin": "Tolerance used for outdoor/indoor temperature comparisons, to avoid the recommendation flickering",
-              "frost_debounce_minutes": "Minimum duration the outdoor temperature must stay continuously at/below the frost protection limit, OR the outdoor sensor must stay continuously unavailable, before an open state is actually closed because of it - protects against a single outlier reading and against brief sensor unavailability at startup. 0 = close immediately without delay",
-              "humidity_priority_over_duration": "On (default): if humidity or CO2 still needs ventilating, the winter max duration is ignored and the window stays open. Off: the max duration is enforced strictly, even at high humidity/CO2. Frost protection always takes priority regardless.",
-              "shower_rise_threshold": "Humidity rise (percentage points per minute, measured over the last 10 minutes) above which an ongoing shower is assumed - only relevant for rooms that enabled shower detection in the \"Sensors & Devices\" section",
-              "min_surplus_power_watts": "Default minimum threshold for all rooms without their own setting",
-              "power_grace_period_minutes": "Default delay for all rooms without their own setting",
-              "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
-              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
-              "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
-              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
-              "device_max_runtime_minutes": "Maximum uninterrupted runtime at low surplus power (below the minimum surplus power or without a power sensor) before the dehumidifier/AC is forced off - 0 = disabled. Default for all rooms without their own value.",
-              "device_max_runtime_high_surplus_minutes": "Maximum uninterrupted runtime at high surplus power (at least the minimum surplus power, only with a power sensor) before the dehumidifier/AC is forced off - 0 = unlimited. Default for all rooms without their own value.",
-              "device_max_runtime_cooldown_minutes": "Minimum rest period after such a forced shutoff before the device may turn on again. Default for all rooms without their own value."
-            }
-          },
-          "messages": {
+          "notify": {
             "name": "Notifications",
-            "description": "The reminder interval and the texts sent for the respective recommendations. For the texts, three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit).",
+            "description": "Voice announcement, app push, persistent notification and reminder interval as the room-wide default.",
             "data": {
               "tts_entity": "TTS entity",
               "tts_volume": "Playback volume for voice announcements",
-              "shower_max_duration_minutes": "Shower announcement after (minutes)",
               "tts_playback_mode": "Existing playback when announcing",
               "tts_quiet_hours_enabled": "Voice announcement quiet hours",
               "tts_quiet_start": "Quiet hours start",
@@ -487,7 +536,23 @@
               "mobile_enabled": "Home Assistant Companion App",
               "mobile_targets": "App notification targets",
               "persistent_enabled": "Persistent notification",
-              "reminder_interval_minutes": "Reminder interval",
+              "reminder_interval_minutes": "Reminder interval"
+            },
+            "data_description": {
+              "tts_entity": "Used when a room doesn't set its own TTS entity",
+              "tts_volume": "Volume the speakers are set to before the announcement - automatically restored to the previous value afterwards (see README)",
+              "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
+              "tts_quiet_hours_enabled": "When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected.",
+              "tts_quiet_start": "Only effective if quiet hours above are enabled.",
+              "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
+              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved",
+              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Leaving it empty also becomes 0 when saved."
+            }
+          },
+          "messages": {
+            "name": "Notification texts",
+            "description": "The texts sent for the respective recommendations. For the texts, three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit).",
+            "data": {
               "msg_open_humidity": "Open due to humidity",
               "msg_open_co2": "Open due to CO2",
               "msg_open_temp": "Open due to temperature",
@@ -505,15 +570,6 @@
               "msg_device_window_conflict": "Window/device conflict"
             },
             "data_description": {
-              "tts_entity": "Used when a room doesn't set its own TTS entity",
-              "tts_volume": "Volume the speakers are set to before the announcement - automatically restored to the previous value afterwards (see README)",
-              "shower_max_duration_minutes": "Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only for rooms with shower detection and speakers) - 0 = off. Default for all rooms without their own value.",
-              "tts_playback_mode": "\"Overlay\" plays the announcement directly over any running playback. \"Pause\" pauses it first (not automatically resumed afterwards)",
-              "tts_quiet_hours_enabled": "When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected.",
-              "tts_quiet_start": "Only effective if quiet hours above are enabled.",
-              "mobile_targets": "One or more notify entities. Each entry can optionally have a person or device_tracker entity - that target then only receives the push notification if the person/device is home. Without a presence entity, it is always sent.",
-              "persistent_enabled": "Creates a persistent notification in the Home Assistant notification panel while the recommendation is active - automatically dismissed once it's resolved",
-              "reminder_interval_minutes": "Recurring reminder if the recommendation is ignored. 0 = disabled. Leaving it empty also becomes 0 when saved.",
               "msg_open_humidity": "｛raum｝ = room name. ｛wert｝ = current humidity, ｛schwelle｝ = humidity threshold to open (each incl. %).",
               "msg_open_co2": "｛raum｝ = room name. ｛wert｝ = current CO2 value, ｛schwelle｝ = CO2 threshold to open (each incl. ppm).",
               "msg_open_temp": "｛raum｝ = room name. ｛wert｝ = current indoor temperature, ｛schwelle｝ = temperature threshold to open (each incl. °C).",
