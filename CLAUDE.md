@@ -3569,6 +3569,27 @@ sich nur mit dem Zustand VOR dem Ereignis diagnostizieren - eine
 Diagnose-Momentaufnahme allein reicht dafür nicht, das Ereignis selbst muss
 protokolliert werden (wie schon `push_verlauf`, Lektion 66).
 
+**74. JS-Karte: Klick auf Werte/Geräte öffnet die Detailansicht (more-info), plus Mindestanstieg bei der Duscherkennung (0.81.0).**
+Zwei Nutzerwünsche gebündelt. (1) Auf die Frage nach Optimierung der
+Duscherkennung anhand echter Verlaufsdaten (24-h-Diagramm: Grundrauschen
++-3 bis 5, Spitzen bis ca. 9 Punkte; Dusche +40 Punkte in ~10 min) stellte
+sich heraus, dass der zuvor vorgeschlagene Mindestanstieg von 4 Punkten
+wirkungslos gewesen wäre (bei 3 min Warm-up verlangt die Rate von 1,5 %/min
+ohnehin schon 4,5 Punkte). Sinnvoll ist ein Mindestanstieg von 8 Punkten
+(`SHOWER_MIN_RISE_POINTS`) über dem Rauschen. Lektion: Eine zusätzliche
+Absicherung vor dem Einbau gegen die vorhandene Bedingung rechnen - ist sie
+davon schon mit abgedeckt, ist sie nur toter Code. (2) Klickbare Werte: die
+Karte löst das Standard-Ereignis `hass-more-info` (`detail.entityId`,
+`bubbles`/`composed`) aus. Dafür braucht sie Entity-IDs: neues Attribut
+`entitaeten` (Dict, nur konfigurierte Entitäten) statt vieler Einzelattribute;
+`temperatur_quelle`/`fensterkontakt_entity` bleiben für die Markdown-Karte.
+Ein Klick auf eine Entität in einer gekürzten Zelle (Lektion 71) öffnet nur
+more-info und klappt nicht zusätzlich auf. Markdown-Karte unverändert (kann
+das nicht, Auslaufmodell). Sichtbarer Hinweis: gepunktete Unterstreichung
+(auf dem Handy gibt es kein Hover). Getestet mit jsdom (Ereignis,
+Entity-IDs, kein Aufklappen, fehlendes Attribut), Chromium (kein Überlauf
+300-430 px) und Stub-Tests (Attribut, Mindestanstieg).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

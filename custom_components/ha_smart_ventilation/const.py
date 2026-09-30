@@ -541,6 +541,11 @@ SHOWER_RISE_LOOKBACK_MINUTES = 10
 # die ersten Minuten nach dem Start bzw. nach einem Sensorausfall, im
 # Normalbereich ist der Verlauf ohnehin voll.
 SHOWER_MIN_HISTORY_MINUTES = 3
+# Mindestanstieg (%-Punkte relative Luftfeuchtigkeit) im Beobachtungsfenster,
+# unabhängig von der Rate: liegt über dem normalen Rauschen des Hygrometers
+# (typisch +-3 bis 5, in Spitzen bis ca. 9 Punkte bei offenem Fenster), eine
+# echte Dusche steigt um deutlich mehr (typisch +30 bis 40 Punkte).
+SHOWER_MIN_RISE_POINTS = 8.0
 
 # Konfigurierbare Benachrichtigungstexte (nur in den globalen Einstellungen
 # "Smart Climate Optionen" - {raum} wird durch den jeweiligen Raumnamen

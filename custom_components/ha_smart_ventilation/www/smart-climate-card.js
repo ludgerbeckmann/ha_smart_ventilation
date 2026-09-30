@@ -170,7 +170,22 @@ class SmartClimateCard extends HTMLElement {
       // (auf dem Handy gibt es keinen Tooltip). Delegation auf _content, das
       // beim Rendern nicht neu erzeugt wird.
       this._content.addEventListener("click", (ev) => {
-        const el = ev.target && ev.target.closest && ev.target.closest("[data-cell]");
+        const target = ev.target && ev.target.closest ? ev.target : null;
+        if (!target) return;
+        // Klick auf einen Wert/ein Gerät: Detailansicht (more-info) der
+        // zugehörigen Entität öffnen (Standard-Ereignis von Home Assistant).
+        const entityEl = target.closest("[data-entity]");
+        if (entityEl) {
+          this.dispatchEvent(
+            new CustomEvent("hass-more-info", {
+              bubbles: true,
+              composed: true,
+              detail: { entityId: entityEl.dataset.entity },
+            })
+          );
+          return;
+        }
+        const el = target.closest("[data-cell]");
         if (!el || !this._expandedCells) return;
         const key = el.dataset.cell;
         if (this._expandedCells.has(key)) this._expandedCells.delete(key);
@@ -238,6 +253,11 @@ class SmartClimateCard extends HTMLElement {
       return `<div class="clamp${this._expandedCells.has(key) ? " expanded" : ""}" data-cell="${esc(key)}" title="${plain}">${html}</div>`;
     };
 
+    // Klickbarer Wert: öffnet per Klick die Detailansicht der Entität
+    // (click-Listener oben); ohne Entity-ID bleibt der Text unverändert.
+    const ent = (entityId, html) =>
+      entityId ? `<span class="ent" data-entity="${esc(entityId)}">${html}</span>` : html;
+
     const sorted = [...entityIds].sort((idA, idB) =>
       String(states[idA].attributes.raum).localeCompare(
         String(states[idB].attributes.raum)
@@ -248,6 +268,7 @@ class SmartClimateCard extends HTMLElement {
       const s = states[id];
       const a = s.attributes;
 
+      const ents = a.entitaeten || {};
       const noWindow = has(a, "hat_fenster") && a.hat_fenster === false;
       const openReasons = a.offene_gruende || [];
       const openLabel = openReasons.map((c) => GRUND_TEXT[c] || c).join(", ");
@@ -314,34 +335,46 @@ class SmartClimateCard extends HTMLElement {
 
       const wrap = (text, on) => (on ? `<span class="${highlightClass}">${text}</span>` : text);
 
-      const tempVal = wrap(
-        a.innentemperatur !== undefined && a.innentemperatur !== null
-          ? `${roundStr(a.innentemperatur, 1)} °C`
-          : "–",
-        highlightTemp
+      const tempVal = ent(
+        ents.innentemperatur || a.temperatur_quelle,
+        wrap(
+          a.innentemperatur !== undefined && a.innentemperatur !== null
+            ? `${roundStr(a.innentemperatur, 1)} °C`
+            : "–",
+          highlightTemp
+        )
       );
       const outdoorTempDefined = has(a, "aussentemperatur") && a.aussentemperatur !== null;
-      const outdoorTempVal = wrap(
-        outdoorTempDefined ? `${roundStr(a.aussentemperatur, 1)} °C` : "–",
-        ["frost", "heat", "outdoor_warmer"].includes(highlightCode)
+      const outdoorTempVal = ent(
+        ents.aussentemperatur,
+        wrap(
+          outdoorTempDefined ? `${roundStr(a.aussentemperatur, 1)} °C` : "–",
+          ["frost", "heat", "outdoor_warmer"].includes(highlightCode)
+        )
       );
       const outdoorHumDefined = has(a, "aussen_luftfeuchtigkeit") && a.aussen_luftfeuchtigkeit !== null;
       const outdoorHumVal = outdoorHumDefined ? roundStr(a.aussen_luftfeuchtigkeit, 0) : "–";
 
       let humRow = "";
       if (has(a, "luftfeuchtigkeit")) {
-        const humVal = wrap(
-          a.luftfeuchtigkeit !== null ? `${roundStr(a.luftfeuchtigkeit, 0)} %` : "–",
-          highlightHum
+        const humVal = ent(
+          ents.luftfeuchtigkeit,
+          wrap(
+            a.luftfeuchtigkeit !== null ? `${roundStr(a.luftfeuchtigkeit, 0)} %` : "–",
+            highlightHum
+          )
         );
         const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
         const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
-        humRow = `<tr><td>Luftfeuchtigkeit</td><td class="nw">${humVal}</td><td class="nw">${outdoorHumVal} %</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
+        humRow = `<tr><td>Luftfeuchtigkeit</td><td class="nw">${humVal}</td><td class="nw">${ent(ents.aussen_luftfeuchtigkeit, `${outdoorHumVal} %`)}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
       }
 
       let co2Row = "";
       if (has(a, "co2")) {
-        const co2Val = wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : "–", highlightCo2);
+        const co2Val = ent(
+          ents.co2,
+          wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : "–", highlightCo2)
+        );
         const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         co2Row = `<tr><td>CO2</td><td class="nw">${co2Val}</td><td class="nw">–</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
@@ -370,9 +403,9 @@ class SmartClimateCard extends HTMLElement {
       // Geräte-Tabelle
       let deviceRows = "";
       if (has(a, "luftentfeuchter_an")) {
-        let name = `${a.luftentfeuchter_an ? "🔴" : "⚫"} Luftentfeuchter`;
+        let name = ent(ents.luftentfeuchter, `${a.luftentfeuchter_an ? "🔴" : "⚫"} Luftentfeuchter`);
         if (has(a, "luftentfeuchter_tank_fehler")) {
-          name += `<br>${a.luftentfeuchter_tank_fehler ? "🔴" : "🟢"} Wassertank`;
+          name += `<br>${ent(ents.luftentfeuchter_tank, `${a.luftentfeuchter_tank_fehler ? "🔴" : "🟢"} Wassertank`)}`;
         }
         let laufzeit = "–";
         if (a.luftentfeuchter_an && a.luftentfeuchter_seit) {
@@ -384,7 +417,7 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|dehum`, grund)}</td></tr>`;
       }
       if (has(a, "klimaanlage_an")) {
-        const name = `${a.klimaanlage_an ? "🔴" : "⚫"} Klimaanlage`;
+        const name = ent(ents.klimaanlage, `${a.klimaanlage_an ? "🔴" : "⚫"} Klimaanlage`);
         let laufzeit = "–";
         if (a.klimaanlage_an && a.klimaanlage_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.klimaanlage_seit).getTime()) / 60000);
@@ -395,9 +428,9 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|ac`, grund)}</td></tr>`;
       }
       if (has(a, "heizung_an")) {
-        let name = `${a.heizung_an ? "🔴" : "⚫"} Heizung`;
+        let name = ent(ents.heizung, `${a.heizung_an ? "🔴" : "⚫"} Heizung`);
         const modeInfo = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
-        if (modeInfo) name += `<br>${modeInfo.icon} ${modeInfo.text}`;
+        if (modeInfo) name += `<br>${ent(ents.heizung, `${modeInfo.icon} ${modeInfo.text}`)}`;
         let laufzeit = "–";
         if (a.heizung_an && a.heizung_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.heizung_seit).getTime()) / 60000);
@@ -411,7 +444,7 @@ class SmartClimateCard extends HTMLElement {
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|heat`, grund)}</td></tr>`;
       }
       if (has(a, "duschen_erkannt")) {
-        const name = `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`;
+        const name = ent(ents.dusche, `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`);
         let laufzeit = "–";
         if (a.duschen_erkannt && a.dusche_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.dusche_seit).getTime()) / 60000);
@@ -438,9 +471,9 @@ class SmartClimateCard extends HTMLElement {
       if (!noWindow) {
         empfTable =
           `<table class="values"><thead><tr><th>Fenster</th><th>Empfehlung</th><th>Auslöser</th><th>Uhrzeit</th></tr></thead><tbody>` +
-          `<tr><td class="nw">${windowStateText}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
+          `<tr><td class="nw">${ent(windowEntity, windowStateText)}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
         if (hasLiveReason) {
-          empfTable += `<tr><td class="nw">–</td><td class="nw">${empfehlungText}</td><td>${cellDiv(`${a.raum}|trigger`, esc(grundLabel))}</td><td class="nw">${changedTime}</td></tr>`;
+          empfTable += `<tr><td class="nw">–</td><td class="nw">${ent(id, empfehlungText)}</td><td>${cellDiv(`${a.raum}|trigger`, esc(grundLabel))}</td><td class="nw">${changedTime}</td></tr>`;
         }
         empfTable += "</tbody></table>";
       }
@@ -453,9 +486,13 @@ class SmartClimateCard extends HTMLElement {
         `${humRow}${absRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
-      const n1Ziel = has(a, "sprachausgabe_lautsprecher") ? breakable(esc(a.sprachausgabe_lautsprecher.join(", "))) : "–";
+      const n1Ziel = has(a, "sprachausgabe_lautsprecher")
+        ? a.sprachausgabe_lautsprecher.map((t) => ent(t, breakable(esc(t)))).join(", ")
+        : "–";
       const n2Status = has(a, "app_aktiv") ? "🟢" : "⚫";
-      const n2Ziel = has(a, "app_ziele") ? breakable(esc(a.app_ziele.join(", "))) : "–";
+      const n2Ziel = has(a, "app_ziele")
+        ? a.app_ziele.map((t) => ent(t, breakable(esc(t)))).join(", ")
+        : "–";
       const n3Status = has(a, "persistent_aktiv") ? "🟢" : "⚫";
       const notifyOpen = this._notifyOpenState.get(a.raum) || false;
       const notifyTable =
@@ -569,6 +606,8 @@ class SmartClimateCard extends HTMLElement {
       }
       table.overview td.nw, table.values td.nw { white-space: nowrap; }
       /* Automatische Kürzung mit "…" nach 4 Zeilen; Tippen klappt auf. */
+      /* Klickbare Werte/Geräte (öffnen die Detailansicht der Entität). */
+      .ent { cursor: pointer; text-decoration: underline dotted; text-decoration-color: rgba(128, 128, 128, 0.55); text-underline-offset: 3px; }
       table.values .clamp {
         display: -webkit-box;
         -webkit-box-orient: vertical;

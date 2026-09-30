@@ -711,6 +711,10 @@ Sensorausfall) ist der Feuchteverlauf noch leer - deshalb wird die Erkennung
 erst bewertet, wenn mindestens 3 Minuten Verlauf vorliegen. Sonst könnte ein
 normaler Ausschlag des Sensors (z. B. bei offenem Fenster) in den ersten
 Minuten als Duschen gelten. Im laufenden Betrieb verzögert das nichts.
+Zusätzlich muss die Luftfeuchtigkeit im Beobachtungsfenster insgesamt um
+mindestens 8 %-Punkte steigen (liegt über dem normalen Rauschen eines
+Hygrometers, eine echte Dusche steigt um deutlich mehr) - unabhängig davon,
+wie hoch die Rate kurzzeitig wirkt.
 **Diagnose:** Bei jedem Anschlagen und Ende der Erkennung führt der
 Haupt-Sensor ein Kurzprotokoll im Attribut `dusche_verlauf` (letzte 6
 Einträge, neueste zuerst): Zeitpunkt, Feuchte, berechneter Anstieg samt
@@ -1007,6 +1011,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 | `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
+| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `dusche`) - nur die konfigurierten. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
 | `integration_version` | aktuell installierte Version der Integration (aus `manifest.json`) - identisch für jeden Raum, dient nur der Dashboard-Karte zur Anzeige der Versionsnummer |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
@@ -1545,6 +1550,16 @@ in der JS-Karte zusätzlich die Zeile „Abs. Luftfeuchtigkeit“ (innen und
 außen) genauso hervorgehoben wie der Auslöser - der Vergleich der absoluten
 Werte (Außenluft trockener) ist es, der das Öffnen freigibt. Fehlt ein
 Wert, bleibt die Zeile unauffällig.
+
+**Detailansicht per Klick:** In der JS-Karte lassen sich Werte und Geräte
+antippen bzw. anklicken - es öffnet sich die Standard-Detailansicht
+(more-info, mit Verlauf/Logbuch) der jeweiligen Entität: Innen-/Außen-
+Temperatur und -Luftfeuchtigkeit, CO2, Fensterstatus, Luftentfeuchter
+(inkl. Wassertank), Heizung, Dusche, der Empfehlungs-Sensor selbst (Zelle
+"Empfehlung") sowie die Ziele der Benachrichtigungen. Klickbare Werte sind
+dezent gepunktet unterstrichen. Die Entity-IDs liefert das Attribut
+`entitaeten` (nur die tatsächlich konfigurierten). Die Markdown-Karte kann
+das nicht.
 
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
