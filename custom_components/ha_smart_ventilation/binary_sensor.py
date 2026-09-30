@@ -565,7 +565,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         attrs = {
             "raum": self._config[CONF_ROOM_NAME],
-            "temperatur_quelle": self._config[CONF_TEMP_SOURCE_ENTITY],
             "innentemperatur": indoor_temp,
             "schwelle_temperatur_oeffnen": self._effective(
                 CONF_TEMP_THRESHOLD_OPEN, DEFAULT_TEMP_THRESHOLD_OPEN
@@ -635,10 +634,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             dew = self._dew_point(outdoor_temp, outdoor_humidity)
             if dew is not None:
                 attrs["aussen_taupunkt"] = round(dew, 1)
-        if self._config.get(CONF_TEMP_ATTRIBUTE):
-            attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
-        if self._config.get(CONF_WINDOW_ENTITY):
-            attrs["fensterkontakt_entity"] = self._config[CONF_WINDOW_ENTITY]
         # Entity-IDs der angezeigten Werte/Geräte - die JS-Karte öffnet damit
         # per Klick die Detailansicht (more-info) der jeweiligen Entität.
         linked_entities = {
@@ -804,9 +799,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
-            attrs["schwelle_heizung"] = self._effective(
-                CONF_HEATING_THRESHOLD_TEMP, DEFAULT_HEATING_THRESHOLD_TEMP
-            )
         summer_mode_entity = self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None)
         if summer_mode_entity and not self._device_entity_missing(summer_mode_entity):
             attrs["sommermodus_an"] = self._is_summer_mode_active()

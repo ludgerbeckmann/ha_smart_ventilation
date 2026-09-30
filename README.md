@@ -1037,10 +1037,8 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `heizung_letzte_laufzeit` | wie `luftentfeuchter_letzte_laufzeit`/`klimaanlage_letzte_laufzeit`, nur für die Heizung |
-| `schwelle_heizung` | aktuell wirksame Heizungs-Schwelle (inkl. Raum-Override/globaler Fallback) - nur vorhanden, falls eine Heizung konfiguriert ist. Ohne Wirkung, solange der Heizungs-Zeitplan aktiviert ist |
 | `sommermodus_an` | nur vorhanden, falls in "- Smart Climate Optionen -" ein Sommer-/Winterbetrieb-Schalter hinterlegt ist UND diese Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen. Identisch für jeden Raum, da es sich um eine hausweite, nicht raumspezifische Einstellung handelt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
-| `fensterkontakt_entity` | Entity-ID des Fensterkontakt-Sensors, nur vorhanden falls im Raum hinterlegt (nützlich für Dashboards, um den tatsächlichen Fensterzustand per `states(...)` nachzuschlagen) |
 | `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn der Raum mindestens einen Lautsprecher ausgewählt hat |
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
@@ -1051,360 +1049,110 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
 wann der aktuelle Öffnen/Schließen-Status gilt.
 
-### Beispiel-Dashboard-Karte (Statusübersicht aller Räume)
+### Dashboard-Karte (Statusübersicht aller Räume)
 
-Eine **Markdown-Karte** mit folgendem Inhalt zeigt automatisch alle Räume
-mit Status, aktuellen Werten, Schwellenwerten und letzter Änderung – ganz
-ohne zusätzliche Custom Cards.
+Die Integration bringt eine eigene Lovelace-Karte mit (`smart-climate-card`,
+Einrichtung siehe "Einrichtung und Bedienung der Karte" weiter unten). Sie
+zeigt automatisch alle Räume mit Status, aktuellen Werten, Schwellenwerten
+und letzter Änderung. Die folgenden Abschnitte beschreiben, was die Karte
+anzeigt und wie sie die Farben bestimmt.
 
-**Aktuelle Karten-Version: 35** – anders als der Integrations-Code wird
-diese Karte nicht automatisch aktualisiert, sondern muss nach jeder
-inhaltlichen Änderung manuell neu in dein Dashboard eingefügt werden. Die
-Zahl in der `card_version`-Zeile ganz am Anfang der Vorlage unten zeigt
-dir in der Übersichts-Tabelle deines Dashboards ("Karte"-Spalte), welchen
-Stand deine eingefügte Karte gerade hat – stimmt sie nicht mit der hier
-im README dokumentierten aktuellen Version überein, ist deine Karte
-veraltet und du solltest den Block unten erneut komplett einfügen.
+**Hervorhebung des ausschlaggebenden Werts** (fette, farbige Schrift):
+Hervorgehoben wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
+nicht nur `34.2`) - bei jedem aktiven Auslöser grundsätzlich **rot**,
+mit Ausnahmen für Schließen-Gründe: Ein Schließen-Auslöser bedeutet per
+Definition, dass der jeweilige Wert seine Schließen-Schwelle bereits
+erreicht hat - das zugrunde liegende Problem (zu warm/zu feucht/zu viel
+CO2) ist damit bereits gelöst, im Unterschied zu einem Öffnen-Auslöser,
+bei dem der Wert noch außerhalb der Norm liegt und auf Normalisierung
+"wartet". Deshalb: **grün**, wenn "CO2" der aktuelle Schließen-Auslöser
+ist - ein niedriger CO2-Wert ist kein Sicherheitsrisiko (anders als
+Frost-/Hitzeschutz), das Schließen dient nur der Ordnung, nicht der
+Sicherheit (siehe "Logik im Detail" unten), es besteht also kein
+Handlungsbedarf, unabhängig vom tatsächlichen Fensterzustand; **grün**
+auch, wenn Temperatur, Luftfeuchtigkeit oder "Außen wärmer"/
+"Außen feuchter" der aktuelle Schließen-Auslöser ist UND das Fenster
+bereits geschlossen ist (die Person hat also bereits reagiert) - anders
+als bei CO2 kann Weiterlüften hier aber tatsächlich schaden (zu kalt/zu
+feucht werden, oder bei "Außen wärmer"/"Außen feuchter" die Lage sogar
+verschlimmern), daher gilt Grün hier NUR bei bereits passendem Fenster,
+nicht unabhängig vom Fensterzustand wie bei CO2. Bleibt das Fenster bei
+diesen vier Gründen dagegen noch offen (Fenster-Mismatch), zeigt die
+Karte weiterhin normal **rot** - ein Handeln ist dann sehr wohl nötig;
+**orange**, wenn das Fenster bereits genau so steht, wie es die aktuelle
+Empfehlung vorsieht (die Person hat also bereits reagiert), die
+zugrunde liegenden Werte sich aber noch nicht normalisiert haben - das
+betrifft ausschließlich Öffnen-Auslöser (Temperatur/Luftfeuchtigkeit/
+CO2 noch über ihrer Öffnen-Schwelle): hier ist ebenfalls kein weiteres
+Handeln nötig, die Werte liegen aber (anders als beim Totzone-Fall)
+tatsächlich noch außerhalb der Norm, daher nicht grün, sondern nur
+orange. Bei Räumen ohne Fenster ("Dieser Raum hat kein Fenster"
+aktiviert) gilt ebenfalls **orange**, unabhängig vom Auslöser, da sich
+der Wert dort gar nicht durch Lüften beeinflussen lässt (höchstens
+Luftentfeuchter/Klimaanlage reagieren automatisch). Rot bleibt damit auf
+den Fall beschränkt, in dem tatsächlich noch etwas zu tun ist: das
+Fenster steht (noch) nicht so, wie die Empfehlung es vorsieht. Da zu
+jedem Zeitpunkt ohnehin immer nur **ein** Auslöser als "der" Grund gilt
+(siehe Prioritätsreihenfolge unten - Frostschutz vor Hitzeschutz vor
+Luftfeuchtigkeit vor CO2 vor Temperatur), stellt sich die Frage "mehrere
+Auslöser gleichzeitig" für die Farbe nicht: Rot ist der Normalfall bei
+einem echten Fenster-Mismatch, die Grün-Ausnahmen greifen nur, wenn
+dieser eine, gewinnende Auslöser tatsächlich ein Schließen-Grund ist -
+überwiegt stattdessen ein Öffnen-Grund, wird dieser zum gewinnenden
+Auslöser, und der Raum zeigt ganz normal Rot bzw. Orange dafür, nicht
+Grün.
 
-```yaml
-type: markdown
-title: Lüftungsübersicht
-content: >
-  {% set card_version = 35 %}
-  {% set grund_text = {'temp': 'Temperatur', 'humidity': 'Luftfeuchtigkeit', 'co2': 'CO2', 'frost': 'Frostschutz', 'heat': 'Hitzeschutz', 'duration': 'Winter-Höchstdauer', 'outdoor_warmer': 'Außen wärmer', 'outdoor_wetter': 'Außen feuchter'} %}
-  {% set today_str = now().strftime('%Y-%m-%d') %}
-  {% set ns = namespace(green=0, orange=0, red=0, entries=[], rooms='', version=none, summer_mode=none, window_times=[]) %}
-  {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') %}
-  {% set a = s.attributes %}
-  {% if a.fensterkontakt_entity is defined %}
-  {% set w = states(a.fensterkontakt_entity) %}
-  {% if w in ['on', 'off'] %}
-  {% set ns.window_times = ns.window_times + [as_local(states[a.fensterkontakt_entity].last_changed).strftime('%Y-%m-%d %H:%M')] %}
-  {% endif %}
-  {% endif %}
-  {% endfor %}
-  {% for s in states.binary_sensor | selectattr('attributes.raum', 'defined') | sort(attribute='attributes.raum') %}
-  {% set a = s.attributes %}
-  {% set no_window = a.hat_fenster is defined and a.hat_fenster == false %}
-  {% set open_reasons = a.offene_gruende if a.offene_gruende is defined else [] %}
-  {% set room_ns = namespace(open_label='') %}
-  {% for code in open_reasons %}
-  {% set room_ns.open_label = room_ns.open_label ~ (', ' if room_ns.open_label else '') ~ grund_text.get(code, code) %}
-  {% endfor %}
-  {% set live_grund_open = open_reasons[0] if open_reasons else '' %}
-  {% set live_grund_close = a.schliessgrund_live if a.schliessgrund_live is defined else '' %}
-  {% set highlight_code = live_grund_open if s.state == 'on' else live_grund_close %}
-  {% set has_live_reason = highlight_code != '' %}
-  {% set window_entity = a.fensterkontakt_entity if a.fensterkontakt_entity is defined else '' %}
-  {% set window_state_text = '–' %}
-  {% set window_changed_time = '–' %}
-  {% set co2_close_exception = s.state == 'off' and highlight_code == 'co2' %}
-  {% set comfort_close_resolved_exception = s.state == 'off' and highlight_code in ['humidity', 'temp', 'outdoor_warmer', 'outdoor_wetter'] %}
-  {% set no_window_resolved = no_window and comfort_close_resolved_exception %}
-  {% set match_icon = '🟢 ' if (not has_live_reason or co2_close_exception or no_window_resolved) else ('🟠 ' if no_window else '🔴 ') %}
-  {% set highlight_ok = false %}
-  {% if window_entity %}
-  {% set w = states(window_entity) %}
-  {% set window_state_text = 'geöffnet' if w == 'on' else ('geschlossen' if w == 'off' else 'unbekannt') %}
-  {% if w in ['on', 'off'] %}
-  {% set window_dt = as_local(states[window_entity].last_changed) %}
-  {% set window_key = window_dt.strftime('%Y-%m-%d %H:%M') %}
-  {% set window_mass_reset = ns.window_times.count(window_key) >= 3 %}
-  {% set window_changed_time = '–' if window_mass_reset else (window_dt.strftime('%H:%M') if window_dt.strftime('%Y-%m-%d') == today_str else window_dt.strftime('%d.%m. %H:%M')) %}
-  {% endif %}
-  {% if not no_window and has_live_reason and not co2_close_exception and w in ['on', 'off'] %}
-  {% set is_match = (s.state == 'on') == (w == 'on') %}
-  {% set match_icon = ('🟢 ' if comfort_close_resolved_exception else '🟠 ') if is_match else '🔴 ' %}
-  {% set highlight_ok = is_match %}
-  {% endif %}
-  {% endif %}
-  {% if ns.version is none and a.integration_version is defined %}
-  {% set ns.version = a.integration_version %}
-  {% endif %}
-  {% if ns.summer_mode is none and a.sommermodus_an is defined %}
-  {% set ns.summer_mode = a.sommermodus_an %}
-  {% endif %}
-  {% if match_icon == '🟢 ' %}
-  {% set ns.green = ns.green + 1 %}
-  {% elif match_icon == '🟠 ' %}
-  {% set ns.orange = ns.orange + 1 %}
-  {% elif match_icon == '🔴 ' %}
-  {% set ns.red = ns.red + 1 %}
-  {% endif %}
-  {% set highlight_open = '<font color="green"><strong>' if (co2_close_exception or (comfort_close_resolved_exception and highlight_ok) or no_window_resolved) else ('<font color="orange"><strong>' if (no_window or highlight_ok) else '<font color="red"><strong>') %}
-  {% set status_icon = ('Öffnen' if s.state == 'on' else 'Schließen') if has_live_reason else '–' %}
-  {% set changed_time = '–' %}
-  {% if has_live_reason and a.letzter_wechsel is defined and a.letzter_wechsel is not none %}
-  {% set wechsel_dt = as_local(as_datetime(a.letzter_wechsel)) %}
-  {% set changed_time = wechsel_dt.strftime('%H:%M') if wechsel_dt.strftime('%Y-%m-%d') == today_str else wechsel_dt.strftime('%d.%m. %H:%M') %}
-  {% endif %}
-  {% set highlight_temp = ('temp' in open_reasons) if s.state == 'on' else (highlight_code == 'temp') %}
-  {% set highlight_hum = ('humidity' in open_reasons) if s.state == 'on' else (highlight_code == 'humidity') %}
-  {% set highlight_co2_cell = ('co2' in open_reasons) if s.state == 'on' else (highlight_code == 'co2') %}
-  {% set temp_val = (a.innentemperatur | round(1) | string ~ ' °C') if a.innentemperatur is not none else '–' %}
-  {% set temp_val = (highlight_open ~ temp_val ~ '</strong></font>') if highlight_temp else temp_val %}
-  {% set outdoor_temp_val = (a.aussentemperatur | round(1) | string ~ ' °C') if (a.aussentemperatur is defined and a.aussentemperatur is not none) else '–' %}
-  {% set outdoor_temp_val = (highlight_open ~ outdoor_temp_val ~ '</strong></font>') if highlight_code in ['frost', 'heat', 'outdoor_warmer'] else outdoor_temp_val %}
-  {% set outdoor_hum_val = (a.aussen_luftfeuchtigkeit | round(0) | string) if (a.aussen_luftfeuchtigkeit is defined and a.aussen_luftfeuchtigkeit is not none) else '–' %}
-  {% set hum_row = '' %}
-  {% if a.luftfeuchtigkeit is defined %}
-  {% set hum_val = (a.luftfeuchtigkeit | round(0) | string ~ ' %') if a.luftfeuchtigkeit is not none else '–' %}
-  {% set hum_val = (highlight_open ~ hum_val ~ '</strong></font>') if highlight_hum else hum_val %}
-  {% set hum_row = '\n| Luftfeuchtigkeit | ' ~ hum_val ~ ' | ' ~ outdoor_hum_val ~ ' % | ' ~ ([a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen] | min | round(0) | int | string) ~ ' - ' ~ ([a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen] | max | round(0) | int | string) ~ ' % |' %}
-  {% endif %}
-  {% set co2_row = '' %}
-  {% if a.co2 is defined %}
-  {% set co2_val = (a.co2 | round(0) | string ~ ' ppm') if a.co2 is not none else '–' %}
-  {% set co2_val = (highlight_open ~ co2_val ~ '</strong></font>') if highlight_co2_cell else co2_val %}
-  {% set co2_row = '\n| CO2 | ' ~ co2_val ~ ' | – | ' ~ ([a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen] | min | round(0) | int | string) ~ ' - ' ~ ([a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen] | max | round(0) | int | string) ~ ' ppm |' %}
-  {% endif %}
-  {% set abs_row = '' %}
-  {% if a.luftfeuchtigkeit is defined %}
-  {% set abs_in = (a.absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.absolute_luftfeuchtigkeit is defined and a.absolute_luftfeuchtigkeit is not none) else '–' %}
-  {% set abs_out = (a.aussen_absolute_luftfeuchtigkeit | string ~ ' g/m³') if (a.aussen_absolute_luftfeuchtigkeit is defined and a.aussen_absolute_luftfeuchtigkeit is not none) else '–' %}
-  {% set abs_out = (highlight_open ~ abs_out ~ '</strong></font>') if highlight_code == 'outdoor_wetter' else abs_out %}
-  {% set abs_row = '\n| Abs. Luftfeuchtigkeit | ' ~ abs_in ~ ' | ' ~ abs_out ~ ' | – |' %}
-  {% endif %}
-  {% set device_rows = '' %}
-  {% if a.luftentfeuchter_an is defined %}
-  {% set dehum_name = ('🔴' if a.luftentfeuchter_an else '⚫') ~ '&nbsp;Luftentfeuchter' %}
-  {% set dehum_name = (dehum_name ~ '<br>' ~ (('🔴' if a.luftentfeuchter_tank_fehler else '🟢') ~ '&nbsp;Wassertank')) if a.luftentfeuchter_tank_fehler is defined else dehum_name %}
-  {% set dehum_laufzeit = '–' %}
-  {% if a.luftentfeuchter_an and a.luftentfeuchter_seit is defined %}
-  {% set dehum_minutes = ((now() - as_datetime(a.luftentfeuchter_seit)).total_seconds() / 60) | int %}
-  {% set dehum_laufzeit = (dehum_minutes ~ ' Min') if dehum_minutes < 60 else ((dehum_minutes // 60) ~ 'h ' ~ (dehum_minutes % 60) ~ ' Min') %}
-  {% elif a.luftentfeuchter_letzte_laufzeit is defined %}
-  {% set dehum_minutes = a.luftentfeuchter_letzte_laufzeit %}
-  {% set dehum_laufzeit = (dehum_minutes ~ ' Min') if dehum_minutes < 60 else ((dehum_minutes // 60) ~ 'h ' ~ (dehum_minutes % 60) ~ ' Min') %}
-  {% endif %}
-  {% set dehum_grund = a.luftentfeuchter_grund if a.luftentfeuchter_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ dehum_name ~ ' | ' ~ dehum_laufzeit ~ ' | ' ~ dehum_grund ~ ' |' %}
-  {% endif %}
-  {% if a.klimaanlage_an is defined %}
-  {% set ac_name = ('🔴' if a.klimaanlage_an else '⚫') ~ '&nbsp;Klimaanlage' %}
-  {% set ac_laufzeit = '–' %}
-  {% if a.klimaanlage_an and a.klimaanlage_seit is defined %}
-  {% set ac_minutes = ((now() - as_datetime(a.klimaanlage_seit)).total_seconds() / 60) | int %}
-  {% set ac_laufzeit = (ac_minutes ~ ' Min') if ac_minutes < 60 else ((ac_minutes // 60) ~ 'h ' ~ (ac_minutes % 60) ~ ' Min') %}
-  {% elif a.klimaanlage_letzte_laufzeit is defined %}
-  {% set ac_minutes = a.klimaanlage_letzte_laufzeit %}
-  {% set ac_laufzeit = (ac_minutes ~ ' Min') if ac_minutes < 60 else ((ac_minutes // 60) ~ 'h ' ~ (ac_minutes % 60) ~ ' Min') %}
-  {% endif %}
-  {% set ac_grund = a.klimaanlage_grund if a.klimaanlage_grund is defined else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ ac_name ~ ' | ' ~ ac_laufzeit ~ ' | ' ~ ac_grund ~ ' |' %}
-  {% endif %}
-  {% if a.heizung_an is defined %}
-  {% set heiz_name = ('🔴' if a.heizung_an else '⚫') ~ '&nbsp;Heizung' %}
-  {% set heiz_modus_label = ('🔴&nbsp;Komfort' if a.heizung_modus == 'comfort' else ('🟡&nbsp;Eco (Nacht)' if a.heizung_modus == 'night' else ('🔵&nbsp;Gebäudeschutz' if a.heizung_modus == 'building_protection' else ('🟠&nbsp;Standby' if a.heizung_modus == 'standby' else '')))) if a.heizung_modus is defined else '' %}
-  {% set heiz_name = (heiz_name ~ '<br>' ~ heiz_modus_label) if heiz_modus_label else heiz_name %}
-  {% set heiz_laufzeit = '–' %}
-  {% if a.heizung_an and a.heizung_seit is defined %}
-  {% set heiz_minutes = ((now() - as_datetime(a.heizung_seit)).total_seconds() / 60) | int %}
-  {% set heiz_laufzeit = (heiz_minutes ~ ' Min') if heiz_minutes < 60 else ((heiz_minutes // 60) ~ 'h ' ~ (heiz_minutes % 60) ~ ' Min') %}
-  {% elif a.heizung_letzte_laufzeit is defined %}
-  {% set heiz_minutes = a.heizung_letzte_laufzeit %}
-  {% set heiz_laufzeit = (heiz_minutes ~ ' Min') if heiz_minutes < 60 else ((heiz_minutes // 60) ~ 'h ' ~ (heiz_minutes % 60) ~ ' Min') %}
-  {% endif %}
-  {% set heiz_grund = a.heizung_grund if a.heizung_grund is defined else '–' %}
-  {% set heiz_grund = (heiz_grund ~ ' (' ~ (a.heizung_zieltemperatur | round(1) | string) ~ ' °C)') if (a.heizung_zieltemperatur is defined and a.heizung_zieltemperatur is not none) else heiz_grund %}
-  {% set device_rows = device_rows ~ '\n| ' ~ heiz_name ~ ' | ' ~ heiz_laufzeit ~ ' | ' ~ heiz_grund ~ ' |' %}
-  {% endif %}
-  {% if a.duschen_erkannt is defined %}
-  {% set dusche_name = ('🟢' if a.duschen_erkannt else '⚫') ~ '&nbsp;Dusche' %}
-  {% set dusche_laufzeit = '–' %}
-  {% if a.duschen_erkannt and a.dusche_seit is defined %}
-  {% set dusche_minutes = ((now() - as_datetime(a.dusche_seit)).total_seconds() / 60) | int %}
-  {% set dusche_laufzeit = (dusche_minutes ~ ' Min') if dusche_minutes < 60 else ((dusche_minutes // 60) ~ 'h ' ~ (dusche_minutes % 60) ~ ' Min') %}
-  {% elif a.dusche_letzte_laufzeit is defined %}
-  {% set dusche_minutes = a.dusche_letzte_laufzeit %}
-  {% set dusche_laufzeit = (dusche_minutes ~ ' Min') if dusche_minutes < 60 else ((dusche_minutes // 60) ~ 'h ' ~ (dusche_minutes % 60) ~ ' Min') %}
-  {% endif %}
-  {% set dusche_grund = 'Luftfeuchtigkeit steigt schnell' if a.duschen_erkannt else '–' %}
-  {% set device_rows = device_rows ~ '\n| ' ~ dusche_name ~ ' | ' ~ dusche_laufzeit ~ ' | ' ~ dusche_grund ~ ' |' %}
-  {% endif %}
-  {% set device_table = ('| Gerät | Laufzeit | Grund |\n|---|:---:|---|' ~ device_rows) if device_rows else '' %}
-  {% set grund_label = (room_ns.open_label if room_ns.open_label else '–') if s.state == 'on' else (grund_text.get(highlight_code, highlight_code) if highlight_code else '–') %}
-  {% set header = '<details' ~ (' open' if match_icon == '🔴 ' else '') ~ '>\n<summary><strong>' ~ match_icon ~ a.raum ~ '</strong></summary>' %}
-  {% set empfehlung_text = (highlight_open ~ status_icon ~ '</strong></font>') if has_live_reason else status_icon %}
-  {% set uhrzeit_val = changed_time %}
-  {% set empf_table = '' %}
-  {% if not no_window %}
-  {% set empf_table = '| Fenster | Empfehlung | Auslöser | Uhrzeit |\n|---|---|---|---|\n| ' ~ window_state_text ~ ' | – | – | ' ~ window_changed_time ~ ' |' %}
-  {% if has_live_reason %}
-  {% set empf_table = empf_table ~ '\n| – | ' ~ empfehlung_text ~ ' | ' ~ grund_label ~ ' | ' ~ uhrzeit_val ~ ' |' %}
-  {% endif %}
-  {% endif %}
-  {% set values_table = '| Messwert | Innen | Außen | Normalbereich |\n|---|---|---|---|\n| Temperatur | ' ~ temp_val ~ ' | ' ~ outdoor_temp_val ~ ' | ' ~ ([a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen] | min | string) ~ ' - ' ~ ([a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen] | max | string) ~ ' °C |' ~ hum_row ~ abs_row ~ co2_row %}
-  {% set n1 = 'Sprachausgabe' %}
-  {% set n1_status = '🟢' if a.sprachausgabe_aktiv is defined else '⚫' %}
-  {% set n1_ziel = (a.sprachausgabe_lautsprecher | join(', ')) if a.sprachausgabe_lautsprecher is defined else '–' %}
-  {% set n2 = 'App-Benachrichtigung' %}
-  {% set n2_status = '🟢' if a.app_aktiv is defined else '⚫' %}
-  {% set n2_ziel = (a.app_ziele | join(', ')) if a.app_ziele is defined else '–' %}
-  {% set n3 = 'Persistente Benachrichtigung' %}
-  {% set n3_status = '🟢' if a.persistent_aktiv is defined else '⚫' %}
-  {% set n3_ziel = '–' %}
-  {% set notify_table = '<details>\n<summary><strong>Benachrichtigungen</strong></summary>\n\n| Benachrichtigung | Status | Ziel(e) |\n|---|:---:|---|\n| ' ~ n1 ~ ' | ' ~ n1_status ~ ' | ' ~ n1_ziel ~ ' |\n| ' ~ n2 ~ ' | ' ~ n2_status ~ ' | ' ~ n2_ziel ~ ' |\n| ' ~ n3 ~ ' | ' ~ n3_status ~ ' | ' ~ n3_ziel ~ ' |\n\n</details>' %}
-  {% set spacer = '\n\n<small><small><small>&nbsp;</small></small></small>\n\n' %}
-  {% set body = empf_table %}
-  {% set body = (body ~ spacer ~ values_table) if body else values_table %}
-  {% set body = (body ~ spacer ~ device_table) if device_table else body %}
-  {% set body = body ~ spacer ~ notify_table %}
-  {% set color_rank = '0' if match_icon == '🔴 ' else ('1' if match_icon == '🟠 ' else '2') %}
-  {% set sort_key = color_rank ~ a.raum %}
-  {% set ns.entries = ns.entries + [{'key': sort_key, 'block': header ~ '\n\n' ~ body ~ '\n\n</details>'}] %}
-  {% endfor %}
-  {% for entry in ns.entries | sort(attribute='key') %}
-  {% set sep_before = '\n\n' if not loop.first else '' %}
-  {% set ns.rooms = ns.rooms ~ sep_before ~ entry.block %}
-  {% endfor %}
-  {% set summer_header = ' Modus |' if ns.summer_mode is not none else '' %}
-  {% set summer_sep = ':---:|' if ns.summer_mode is not none else '' %}
-  {% set summer_cell = (' ☀️ Sommer |' if ns.summer_mode else ' ❄️ Winter |') if ns.summer_mode is not none else '' %}
-  {% set version_header = (' Integration |' if ns.version is not none else '') ~ ' Karte |' %}
-  {% set version_sep = (':---:|' if ns.version is not none else '') ~ ':---:|' %}
-  {% set version_cell = (' ' ~ ns.version ~ ' |' if ns.version is not none else '') ~ ' ' ~ card_version ~ ' |' %}
-  {% set overview = '| 🟢 | 🟠 | 🔴 |' ~ summer_header ~ version_header ~ '\n|:---:|:---:|:---:|' ~ summer_sep ~ version_sep ~ '\n| ' ~ ns.green ~ ' | ' ~ ns.orange ~ ' | ' ~ ns.red ~ ' |' ~ summer_cell ~ version_cell %}
-  {{ overview ~ '\n\n<details>\n<summary><strong>Räume</strong></summary>\n\n' ~ ns.rooms ~ '\n\n</details>' }}
-```
-
-Einfügen über **Dashboard bearbeiten → Karte hinzufügen → Markdown** (im
-YAML-Modus den obigen Inhalt einfügen). Die Karte findet Räume automatisch
-über das `raum`-Attribut - neue Räume erscheinen ohne weitere Anpassung.
-
-**Wichtige technische Erkenntnis:** Home Assistants Markdown-Karte
-filtert offenbar das `style`-Attribut aus eingebettetem HTML heraus (ein
-üblicher Sicherheitsmechanismus - Skripte oder aufwändiges CSS über
-eingebettetes HTML einzuschleusen soll verhindert werden). Deshalb wurden
-`<div style="height: ...">` und `<hr style="...">` unwirksam. Diese
-Version verzichtet komplett auf `style`-Attribute:
-
-- **Abstand zwischen Tabellen**: `<small><small><small>&nbsp;</small></small></small>` -
-  ein eigenständiger Absatz, durch dreifaches `<small>` möglichst kompakt
-  gehalten, ohne jedes Style-Attribut
-- **Einklappbare Bereiche** (seit Karten-Version 35): Die Übersichts-
-  Tabelle (🟢/🟠/🔴, Modus, Version) steht immer sichtbar ganz oben. Darunter
-  liegen alle Räume in einem äußeren `<details>`-Abschnitt "Räume"
-  (standardmäßig **eingeklappt**). Jeder Raum ist ein eigenes `<details>`
-  mit Icon und Raumname als `<summary>`; Räume mit 🔴 sind standardmäßig
-  **aufgeklappt** (`open`), 🟢/🟠 eingeklappt. Das ersetzt die frühere
-  Trennlinie zwischen den Räumen. Wichtig: Home Assistant zeichnet die
-  Markdown-Karte bei jeder Statusänderung neu - ein von Hand geänderter
-  Auf-/Zuklapp-Zustand geht dabei verloren (die JS-Karte merkt sich ihn
-  dagegen)
-- **Hervorhebung des ausschlaggebenden Werts**: `<font color="red"><strong>`
-  bzw. `<font color="green"><strong>` statt `<span style="...">` - das
-  `style`-Attribut wird gefiltert (siehe oben), das ältere, rein
-  präsentative `color`-Attribut auf `<font>` sowie das attributlose
-  `<strong>` aber nicht. Zuvor kam `<mark>` (gelber Hintergrund) zum
-  Einsatz; auf Nutzerwunsch durch fette, farbige Schrift ersetzt, da die
-  gelbe Markierung als zu unauffällig wahrgenommen wurde. Hervorgehoben
-  wird jeweils die Zelle mit der Maßeinheit zusammen (z. B. `34.2 °C`,
-  nicht nur `34.2`) - bei jedem aktiven Auslöser grundsätzlich **rot**,
-  mit Ausnahmen für Schließen-Gründe: Ein Schließen-Auslöser bedeutet per
-  Definition, dass der jeweilige Wert seine Schließen-Schwelle bereits
-  erreicht hat - das zugrunde liegende Problem (zu warm/zu feucht/zu viel
-  CO2) ist damit bereits gelöst, im Unterschied zu einem Öffnen-Auslöser,
-  bei dem der Wert noch außerhalb der Norm liegt und auf Normalisierung
-  "wartet". Deshalb: **grün**, wenn "CO2" der aktuelle Schließen-Auslöser
-  ist - ein niedriger CO2-Wert ist kein Sicherheitsrisiko (anders als
-  Frost-/Hitzeschutz), das Schließen dient nur der Ordnung, nicht der
-  Sicherheit (siehe "Logik im Detail" unten), es besteht also kein
-  Handlungsbedarf, unabhängig vom tatsächlichen Fensterzustand; **grün**
-  auch, wenn Temperatur, Luftfeuchtigkeit oder "Außen wärmer"/
-  "Außen feuchter" der aktuelle Schließen-Auslöser ist UND das Fenster
-  bereits geschlossen ist (die Person hat also bereits reagiert) - anders
-  als bei CO2 kann Weiterlüften hier aber tatsächlich schaden (zu kalt/zu
-  feucht werden, oder bei "Außen wärmer"/"Außen feuchter" die Lage sogar
-  verschlimmern), daher gilt Grün hier NUR bei bereits passendem Fenster,
-  nicht unabhängig vom Fensterzustand wie bei CO2. Bleibt das Fenster bei
-  diesen vier Gründen dagegen noch offen (Fenster-Mismatch), zeigt die
-  Karte weiterhin normal **rot** - ein Handeln ist dann sehr wohl nötig;
-  **orange**, wenn das Fenster bereits genau so steht, wie es die aktuelle
-  Empfehlung vorsieht (die Person hat also bereits reagiert), die
-  zugrunde liegenden Werte sich aber noch nicht normalisiert haben - das
-  betrifft ausschließlich Öffnen-Auslöser (Temperatur/Luftfeuchtigkeit/
-  CO2 noch über ihrer Öffnen-Schwelle): hier ist ebenfalls kein weiteres
-  Handeln nötig, die Werte liegen aber (anders als beim Totzone-Fall)
-  tatsächlich noch außerhalb der Norm, daher nicht grün, sondern nur
-  orange. Bei Räumen ohne Fenster ("Dieser Raum hat kein Fenster"
-  aktiviert) gilt ebenfalls **orange**, unabhängig vom Auslöser, da sich
-  der Wert dort gar nicht durch Lüften beeinflussen lässt (höchstens
-  Luftentfeuchter/Klimaanlage reagieren automatisch). Rot bleibt damit auf
-  den Fall beschränkt, in dem tatsächlich noch etwas zu tun ist: das
-  Fenster steht (noch) nicht so, wie die Empfehlung es vorsieht. Da zu
-  jedem Zeitpunkt ohnehin immer nur **ein** Auslöser als "der" Grund gilt
-  (siehe Prioritätsreihenfolge unten - Frostschutz vor Hitzeschutz vor
-  Luftfeuchtigkeit vor CO2 vor Temperatur), stellt sich die Frage "mehrere
-  Auslöser gleichzeitig" für die Farbe nicht: Rot ist der Normalfall bei
-  einem echten Fenster-Mismatch, die Grün-Ausnahmen greifen nur, wenn
-  dieser eine, gewinnende Auslöser tatsächlich ein Schließen-Grund ist -
-  überwiegt stattdessen ein Öffnen-Grund, wird dieser zum gewinnenden
-  Auslöser, und der Raum zeigt ganz normal Rot bzw. Orange dafür, nicht
-  Grün.
-
-  Auslöser und Hervorhebung werden dabei **live** berechnet, nicht aus dem
-  historischen `letzter_grund`-Attribut: Die Integration selbst wertet bei
-  jedem Lesen der Attribute (nicht nur bei einem echten Zustandswechsel)
-  aus, welche der drei Öffnen-Größen (Innentemperatur, Luftfeuchtigkeit,
-  CO2) aktuell ihre Öffnen-Schwelle erreichen (`offene_gruende`, ggf. auch
-  mehrere gleichzeitig, siehe unten), sowie - für die Schließen-Seite -
-  einen einzelnen, live berechneten Grund (`schliessgrund_live`): zuerst
-  Frost- und Hitzeschutz (aktuelle Außentemperatur gegen die konfigurierte
-  Grenze), dann Luftfeuchtigkeit, CO2, Temperatur gegen ihre jeweilige
-  Schließen-Schwelle, dann der Sommer-Fall ("Außen wärmer", aktuelle
-  Außentemperatur gegen die Öffnen-Schwelle selbst - die obere
-  Normalbereich-Grenze) und "Außenluft inzwischen feuchter"
-  (`outdoor_wetter`, absolute Außenluftfeuchtigkeit gegen die auf dieselbe
-  Weise umgerechnete Feuchtigkeits-Öffnen-Schwelle) - beide Male schließt
-  Lüften also erst, wenn die Außenluft selbst außerhalb des Normalbereichs
-  liegt, nicht schon, wenn sie nur wärmer/feuchter als die aktuelle (noch
-  im Normalbereich liegende) Innenluft ist. Die Dashboard-Karte liest diese
-  beiden Attribute nur noch aus, statt die Vergleiche selbst aus
-  Rohwerten/Schwellen nachzubauen.
-  Das funktioniert unabhängig davon, ob die Empfehlung schon einmal einen
-  echten Zustandswechsel hatte, und beschreibt immer den **aktuellen**
-  Zustand, nicht nur die Historie - wurde z. B. wegen eines längst
-  vorbeigezogenen Kälte-Einbruchs geschlossen und ist die Außentemperatur
-  inzwischen wieder deutlich über der Frostschutz-Grenze, oder wegen eines
-  inzwischen längst wieder abgekühlten "Außen wärmer"-Falls, zeigt der
-  Auslöser das nicht mehr an.
-  `letzter_grund` dient nur noch als **Rückfallwert** für den einen
-  verbleibenden Fall, der sich nicht live nachrechnen lässt: die
-  Winter-Höchstdauer (`duration` - dafür fehlen als Attribute noch die
-  Winter-Schwelle, die Höchstdauer selbst und das Prioritäts-Flag).
-  Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
-  eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
-  liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell
-  zieht), zeigt die Karte konsequent überall neutral "–" statt einer
-  veralteten Empfehlung: Auslöser, Empfehlung **und** Uhrzeit werden dann
-  alle "–", das Icon am Raumnamen wird 🟢 (aktuell liegt kein Grund zum
-  Eingreifen vor, unabhängig vom Fensterzustand). Der zugrunde liegende
-  `binary_sensor` behält seinen letzten
-  Zustand technisch unverändert bei (er ändert sich erst bei einem echten
-  neuen Auslöser) - die Karte soll aber nicht länger eine aktive
-  Empfehlung suggerieren, für die es aktuell keinen nachvollziehbaren
-  Grund gibt. Innen-/Außenwerte bleiben in diesem Fall unhervorgehoben, da
-  es keinen ausschlaggebenden Grund gibt.
-
-Falls einzelne dieser drei Elemente bei dir immer noch nicht wie erwartet
-aussehen, sag bitte genau, **welches** der drei betroffen ist - das hilft,
-die Ursache weiter einzugrenzen (z. B. ob wirklich nur `style`-Attribute
-gefiltert werden oder noch mehr).
+Auslöser und Hervorhebung werden dabei **live** berechnet, nicht aus dem
+historischen `letzter_grund`-Attribut: Die Integration selbst wertet bei
+jedem Lesen der Attribute (nicht nur bei einem echten Zustandswechsel)
+aus, welche der drei Öffnen-Größen (Innentemperatur, Luftfeuchtigkeit,
+CO2) aktuell ihre Öffnen-Schwelle erreichen (`offene_gruende`, ggf. auch
+mehrere gleichzeitig, siehe unten), sowie - für die Schließen-Seite -
+einen einzelnen, live berechneten Grund (`schliessgrund_live`): zuerst
+Frost- und Hitzeschutz (aktuelle Außentemperatur gegen die konfigurierte
+Grenze), dann Luftfeuchtigkeit, CO2, Temperatur gegen ihre jeweilige
+Schließen-Schwelle, dann der Sommer-Fall ("Außen wärmer", aktuelle
+Außentemperatur gegen die Öffnen-Schwelle selbst - die obere
+Normalbereich-Grenze) und "Außenluft inzwischen feuchter"
+(`outdoor_wetter`, absolute Außenluftfeuchtigkeit gegen die auf dieselbe
+Weise umgerechnete Feuchtigkeits-Öffnen-Schwelle) - beide Male schließt
+Lüften also erst, wenn die Außenluft selbst außerhalb des Normalbereichs
+liegt, nicht schon, wenn sie nur wärmer/feuchter als die aktuelle (noch
+im Normalbereich liegende) Innenluft ist. Die Dashboard-Karte liest diese
+beiden Attribute nur noch aus, statt die Vergleiche selbst aus
+Rohwerten/Schwellen nachzubauen.
+Das funktioniert unabhängig davon, ob die Empfehlung schon einmal einen
+echten Zustandswechsel hatte, und beschreibt immer den **aktuellen**
+Zustand, nicht nur die Historie - wurde z. B. wegen eines längst
+vorbeigezogenen Kälte-Einbruchs geschlossen und ist die Außentemperatur
+inzwischen wieder deutlich über der Frostschutz-Grenze, oder wegen eines
+inzwischen längst wieder abgekühlten "Außen wärmer"-Falls, zeigt der
+Auslöser das nicht mehr an.
+`letzter_grund` dient nur noch als **Rückfallwert** für den einen
+verbleibenden Fall, der sich nicht live nachrechnen lässt: die
+Winter-Höchstdauer (`duration` - dafür fehlen als Attribute noch die
+Winter-Schwelle, die Höchstdauer selbst und das Prioritäts-Flag).
+Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
+eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
+liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell
+zieht), zeigt die Karte konsequent überall neutral "–" statt einer
+veralteten Empfehlung: Auslöser, Empfehlung **und** Uhrzeit werden dann
+alle "–", das Icon am Raumnamen wird 🟢 (aktuell liegt kein Grund zum
+Eingreifen vor, unabhängig vom Fensterzustand). Der zugrunde liegende
+`binary_sensor` behält seinen letzten
+Zustand technisch unverändert bei (er ändert sich erst bei einem echten
+neuen Auslöser) - die Karte soll aber nicht länger eine aktive
+Empfehlung suggerieren, für die es aktuell keinen nachvollziehbaren
+Grund gibt. Innen-/Außenwerte bleiben in diesem Fall unhervorgehoben, da
+es keinen ausschlaggebenden Grund gibt.
 
 **Reihenfolge:** Zu Beginn der Karte (einmalig, vor der Raumliste) eine
 **Übersichts-Tabelle** (🟢/🟠/🔴 als Spaltenköpfe, darunter zentriert die
 Anzahl der Räume mit dem jeweiligen Icon-Status - Zählung identisch zum
 Icon am jeweiligen Raumnamen weiter unten - gefolgt von - falls vorhanden -
-einer Spalte "Integration" mit der aktuell installierten Versionsnummer **der
-Integration**, liest `integration_version` vom ersten Raum, für den das
-Attribut vorhanden ist, und zuletzt einer Spalte "Karte" mit der
-Versionsnummer **dieser Karten-Vorlage selbst** (`card_version`, eine
-reine Konstante ganz am Anfang der Vorlage, siehe unten); nebeneinander
-platzierte, aber getrennte Tabellen sind in Home Assistants Markdown-
-Karte ohne das gefilterte `style`-Attribut nicht zuverlässig umsetzbar,
-siehe "Hervorhebung des ausschlaggebenden Werts" oben - daher eine
-gemeinsame Tabelle). Die Raumliste selbst ist nach demselben Icon-Status
+einer Spalte "Integration" mit der aktuell installierten Versionsnummer
+(`integration_version`, vom ersten Raum, für den das Attribut vorhanden ist)).
+Die Raumliste selbst ist nach demselben Icon-Status
 wie am Raumnamen sortiert (identisch zur Zählung in der Übersichts-
 Tabelle): zuerst alle 🔴-Räume (echter Fenster-Mismatch, größter
 Handlungsbedarf), danach alle 🟠-Räume (Fenster steht schon korrekt, aber
@@ -1534,25 +1282,14 @@ grün/orange/rot-Logik (siehe "Hervorhebung des ausschlaggebenden Werts"
 oben).
 Die Schwellenwerte
 sind mit `>`/`<` versehen (öffnen **oberhalb**, schließen **unterhalb**
-des jeweiligen Werts). Die Vorlage ist bewusst in viele kurze, einfache
-Einzelschritte zerlegt - das macht sie robuster gegenüber Kopier-/
-Einfügeproblemen. Diese Version wurde sowohl gegen eine echte
-YAML-Faltung (`content: >`) als auch gegen Home Assistants sandboxed
-Jinja-Umgebung getestet.
+des jeweiligen Werts).
 
-### Alternative: eigenständige JS-Custom-Card
+### Einrichtung und Bedienung der Karte
 
-Seit Version 0.75.0 gibt es zusätzlich zur oben beschriebenen Markdown/
-Jinja-Karte eine eigenständige, in reinem JavaScript geschriebene
-Lovelace-Custom-Card (`smart-climate-card.js`) - **parallel** zur
-bisherigen Karte nutzbar, keine der beiden ersetzt die andere. Sie zeigt
-inhaltlich dieselben Informationen (Übersichts-Tabelle, pro Raum
-Empfehlungs-/Werte-/Geräte-Tabelle, Benachrichtigungen) und liest dafür
-exakt dieselben Sensor-Attribute wie die Markdown-Karte - unterliegt aber
-nicht den Einschränkungen von Home Assistants Jinja-Sandbox (siehe oben,
-u. a. keine mutierenden Listen-Methoden, kein gefiltertes `style`-Attribut)
-und lässt sich daher mit normalem CSS gestalten statt über die `<font>`/
-`<strong>`-Notlösung.
+Die Karte (`smart-climate-card.js`) ist eine eigenständige, in reinem
+JavaScript geschriebene Lovelace-Custom-Card und lässt sich mit normalem CSS
+gestalten. Sie liest alle Werte aus den Sensor-Attributen der Räume (siehe
+"Attribute für eine Statusübersicht").
 
 **Einrichtung:** Die Karte wird von der Integration selbst automatisch als
 Lovelace-Ressource bereitgestellt - es ist **keine** eigene
@@ -1560,17 +1297,15 @@ Lovelace-Ressource bereitgestellt - es ist **keine** eigene
 Update einfach eine neue Karte anlegen und als Typ
 `Custom: Smart Climate Karte` wählen (oder im YAML-Modus
 `type: custom:smart-climate-card` eintragen) - ohne weitere Konfiguration
-findet die Karte automatisch alle Räume über das `raum`-Attribut, genau
-wie die Markdown-Karte. Optional lässt sich ein Kartentitel vergeben
+findet die Karte automatisch alle Räume über das `raum`-Attribut. Optional lässt sich ein Kartentitel vergeben
 (`title:` im YAML-Modus, oder über das Textfeld im Karten-Editor - dafür
 bringt die Karte einen eigenen, schlanken visuellen Editor mit) - leer
 gelassen erscheint kein Titel, wie bisher.
 
-Anders als die Jinja-Vorlage (die der Nutzer manuell in eine Karte
-einfügt und die dadurch veralten kann, siehe `card_version` oben) hat die
-JS-Karte keine eigene Versionsanzeige - sie wird automatisch als
-Lovelace-Ressource von der Integration selbst bereitgestellt und ist
-dadurch immer auf demselben Stand wie die installierte Integration.
+Die Karte hat keine eigene Versionsanzeige - sie wird automatisch als
+Lovelace-Ressource von der Integration selbst bereitgestellt und ist dadurch
+immer auf demselben Stand wie die installierte Integration (die Übersicht
+zeigt die Version der Integration).
 
 **Lange Texte:** Sehr lange Texte in den Tabellen (Auslöser, Grund der
 Geräte, Ziele der Benachrichtigungen) werden nach vier Zeilen automatisch
@@ -1597,7 +1332,7 @@ Benachrichtigungen. Die Werte selbst (z. B. "22,3 °C", "geöffnet") sind nicht
 klickbar; klickbare Elemente zeigen nur den Mauszeiger, keine Unterstreichung.
 Auch "Abs. Luftfeuchtigkeit" und "Taupunkt" sind klickbar (eigene Sensoren, siehe "Absolute Luftfeuchtigkeit als Sensor").
 Die Entity-IDs liefert das Attribut `entitaeten` (nur die tatsächlich
-konfigurierten). Die Markdown-Karte kann das nicht.
+konfigurierten).
 
 **Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
 JS-Karte sie einmal ganz oben unter der Statuszeile als vier Kacheln

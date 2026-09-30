@@ -45,29 +45,16 @@ GitHub: `ludgerbeckmann/ha_smart_ventilation` (Domain `ha_smart_ventilation`).
   gesamten geplanten Umsetzungsumfang. Rein exploratorische Fragen ("was
   hältst du von X", siehe bereits bestehende allgemeine Regel dazu)
   bleiben davon unberührt - dort wird ohnehin nicht ungefragt umgesetzt.
-- **Dashboard-Karte, bei jeder inhaltlichen Änderung (seit 0.50.0, vom
-  Nutzer wiederholt bestätigt):**
-  1. `card_version` in der Jinja-Vorlage hochzählen und den "Aktuelle
-     Karten-Version: N"-Hinweis im README direkt darüber mitziehen (siehe
-     "Versionierung & Release" unten).
-  2. Ausschließlich den **Inhalt des `content:`-Abschnitts** (die
-     Jinja-Zeilen selbst, ohne die umgebenden `type: markdown`/`title:`/
-     `content: >`-YAML-Hüllzeilen) zusätzlich zum README-Diff **direkt als
-     Text in der Chat-Antwort posten**, in einem Markdown-Code-Block -
-     nicht nur als angehängte Datei (`SendUserFile`), nicht nur per
-     Verweis auf die README, und **nicht über die Ausgabe eines Bash-/
-     Tool-Aufrufs** (z. B. `cat`) - Tool-Ergebnisse werden dem Nutzer
-     nicht angezeigt, nur die eigene Textausgabe der Antwort selbst. Gilt
-     für JEDE Änderung an der Karte, auch kleine/kosmetische - unabhängig
-     davon, ob dafür ein `manifest.json`-Versionsbump nötig ist. Grund: ein
-     rein per Datei-Anhang verschicktes YAML hatte beim Nutzer zu
-     Unsicherheit geführt, ob wirklich der neueste Stand eingefügt wurde;
-     eine über einen Tool-Aufruf ausgegebene Datei kam beim Nutzer
-     überhaupt nicht an; der komplette YAML-Rahmen (`type:`/`title:`) ist
-     für den Nutzer irrelevant, da er nur den `content:`-Teil in seine
-     bereits bestehende Karte einfügt.
-  3. Vor dem Posten immer lokal in der Jinja-Sandbox testen (siehe
-     Lektion 7) - `StrictUndefined` nicht vergessen.
+- **Dashboard-Karte (nur noch die JS-Karte `www/smart-climate-card.js`; die
+  Markdown-Karte wurde vom Nutzer gelöscht und aus der README entfernt, seit
+  0.87.0):** Die Karte wird von der Integration automatisch als
+  Lovelace-Ressource ausgeliefert - kein Einfügen von Karten-Code durch den
+  Nutzer, kein `card_version`, kein Posten von Karten-Code im Chat. Jede
+  Änderung an der Karte bekommt einen normalen `manifest.json`-Versionsbump
+  und wird lokal getestet (jsdom für Logik, Chromium/Playwright für Layout,
+  dichter Breiten-Sweep 280-430 px; `NODE_PATH=/opt/node22/lib/node_modules`).
+  Nach dem Update muss die Companion-App vollständig neu gestartet werden
+  (Cache).
 - **Nach Bestätigung der Umsetzung: Branch → Commit → Push → PR → CI-
   Verifikation → Merge (Squash) → Feature-Branch auf neuen `main`-Stand
   zurücksetzen komplett selbstständig durchführen, ohne vor dem Merge
@@ -88,6 +75,8 @@ custom_components/ha_smart_ventilation/
 ├── binary_sensor.py     # Kernlogik: Bewertung, Benachrichtigung, Geräte
 ├── config_flow.py       # Config-/Options-Flow für Räume + globale Optionen
 ├── const.py             # Alle CONF_*/DEFAULT_*-Konstanten
+├── sensor.py            # Sensoren: absolute Luftfeuchtigkeit + Taupunkt (Raum + Außen)
+├── www/smart-climate-card.js  # JS-Dashboard-Karte (+ schlanker Editor)
 ├── diagnostics.py       # "Diagnose herunterladen" - Config + Live-Zustand
 │                          referenzierter Sensoren, zur Ferndiagnose
 ├── strings.json / translations/{de,en}.json
@@ -3679,6 +3668,9 @@ Nutzer bestätigte den Vorschlag ("ja") nach der Erklärung, was der Taupunkt is
 **81. JS-Karte: Standard-Schriftgröße, Außen-Kacheln und Editor-Option für Räume mit Handlungsbedarf (0.86.1).**
 Nutzerfrage: nutzt die Karte dieselbe Schrift wie die Standardkacheln? Schriftart ja (von `ha-card` geerbt, keine eigene), Größe nicht: Tabellenzellen `0,92 em`, Benachrichtigungs-Summary `0,9 em` - auf `1 em` angehoben (Raumname/Statuszeile unverändert). Der Nutzer verlangte außerdem die Außen-Messwerte (jetzt vier Zeilen) platzsparender: umgesetzt als CSS-Grid `repeat(auto-fit, minmax(150px, 1fr))` mit vier Kacheln (Bezeichnung klein, Wert fett) - Handy 2 x 2, breit eine Zeile, sehr schmal eine Spalte; vorab per echtem Chromium-Screenshot (Dunkelmodus, 380/900 px) gezeigt und bestätigt. Neue Editor-Option `expand_attention_rooms` (Standard true, nur die Abweichung false wird gespeichert): steuert nur den STANDARD für 🟠/🔴-Räume; `setConfig()` leert `_roomOpenState`, wenn die Option umgeschaltet wird, sonst hielte der gemerkte Zustand den alten Standard bis zum nächsten Statuswechsel fest. Layout-Regression durch die größere Schrift: bei Kartenbreite 310-330 px lief die Empfehlungs-Tabelle 5-25 px über (nowrap-Spalten); Fix: Zellen-Padding 6 -> 5 px seitlich und die `.nw`-Lockerung von `max-width: 340px` auf `380px` (Viewport) - Chromium-Sweep 280-430 px ohne Überlauf. Lektion: Eine globale Schriftvergrößerung verschiebt die Überlauf-Grenzen von nowrap-Spalten - danach einen dichten Breiten-Sweep (alle 10 px, nicht nur die üblichen Handybreiten) laufen lassen, weil erst dort der Grenzbereich sichtbar wird.
 
+**82. Markdown-Karte entfernt - README, Karten-Attribute und Arbeitsanweisungen aufgeräumt (0.87.0).**
+Der Nutzer hat die Markdown-Karte (Jinja, "Auslaufmodell") endgültig gelöscht und fragte, ob dadurch Sensor-Attribute überflüssig werden. Analyse: von 62 Attributen las die JS-Karte 54; von den übrigen 8 bleiben `empfehlung_aktiv_seit`/`letzter_grund` (RestoreEntity, Lektion 3/11; `letzter_grund` auch für die Winter-Höchstdauer in `_live_reasons()`) und die drei Diagnose-Protokolle `dusche_verlauf`/`push_verlauf`/`letzte_benachrichtigung`. Entfernt: `temperatur_attribut`, `schwelle_heizung` (niemand las sie) sowie `fensterkontakt_entity` und `temperatur_quelle` - beide waren nur für die Markdown-Karte gedacht (Lektion 74); die JS-Karte liest das Fenster und die Innentemperatur jetzt über `entitaeten.fenster`/`entitaeten.innentemperatur`. Breaking nur für eigene Automationen/Templates, die diese vier Attribute nutzen. README: YAML-Vorlage, Karten-Version, Jinja-/style-Erkenntnisse und Markdown-Hinweise entfernt; die inhaltliche Beschreibung der Karte (Farblogik, Reihenfolge, Icons, Live-Berechnung) bleibt, jetzt unter "Dashboard-Karte" bzw. "Einrichtung und Bedienung der Karte". Die Lektionen 4-7, 13-17, 22, 29-32, 39, 54, 58 (Kartenteil), 61 (Kartenteil), 63-65, 67, 69 betreffen die entfernte Jinja-/Markdown-Karte und bleiben nur als Historie stehen (die Arbeitsanweisung "card_version/YAML im Chat posten" gilt nicht mehr). Lektion: Beim Entfernen eines Konsumenten (hier: der Markdown-Karte) zuerst alle Attribute daraufhin prüfen, wer sie noch liest - RestoreEntity, Diagnose und Live-Berechnung zählen als Leser, nicht nur die Karte; und einen Ausweichpfad der verbleibenden Karte (hier: `fensterkontakt_entity` statt `entitaeten.fenster`) vor dem Entfernen des Attributs umstellen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
@@ -3698,21 +3690,9 @@ Nutzerfrage: nutzt die Karte dieselbe Schrift wie die Standardkacheln? Schriftar
   **global** einstellbar, nicht pro Raum - Codepfad (`_effective()`) würde
   einen Raum-Override ohne weitere Änderung bereits unterstützen, dafür
   fehlt aktuell nur die UI im Raum-Formular.
-- Dashboard-Karte (siehe README, Abschnitt "Attribute für eine
-  Statusübersicht") ist bewusst NICHT Teil des Integrations-Codes, sondern
-  wird separat vom Nutzer in eine Home-Assistant-Dashboard-Karte
-  eingefügt - Änderungen daran erfordern keinen `manifest.json`-
-  Versionsbump/kein Release. Seit 0.50.0 hat die Karte aber eine eigene,
-  unabhängige Versionierung (Start bei `card_version = 1`, Konstante ganz
-  am Anfang der Jinja-Vorlage): muss bei **jeder** inhaltlichen Änderung
-  an der Karte hochgezählt werden, zusammen mit dem "Aktuelle
-  Karten-Version: N"-Hinweis direkt über dem Codeblock im README - dient
-  dem Nutzer als Selbstdiagnose (Übersichts-Tabelle zeigt "Karte: N" im
-  Dashboard), ob seine eingefügte Karte noch dem aktuellen Stand
-  entspricht, da die Karte (anders als der Code) nie automatisch
-  aktualisiert wird. Das Posten des vollständigen YAML-Codes im Chat bei
-  jeder Änderung ist eine feste Arbeitsanweisung - siehe ganz oben in
-  dieser Datei ("Feste Arbeitsanweisungen").
+- Dashboard-Karte: nur noch die JS-Karte (siehe README, Abschnitt
+  "Dashboard-Karte"); sie wird mit der Integration ausgeliefert und braucht
+  keinen separaten Versionsstand.
 - Überschreibbare Dropdowns für Zahlenfelder (siehe Lektion 53): bisher nur
   für Erinnerungsintervall und Mindesteinspeiseleistung umgesetzt (global +
   Raum-Override). Der Nutzer wollte weitere geeignete Felder selbst nennen
