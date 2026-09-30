@@ -706,6 +706,18 @@ Entität "‹Raum› Dusche aktiv" (siehe "Was die Integration macht" oben).
 Rein temperatur- oder anders begründete Öffnen-Empfehlungen (siehe oben)
 sind von der Duscherkennung nicht betroffen.
 
+Direkt nach einem Start oder Neuladen der Integration (bzw. nach einem
+Sensorausfall) ist der Feuchteverlauf noch leer - deshalb wird die Erkennung
+erst bewertet, wenn mindestens 3 Minuten Verlauf vorliegen. Sonst könnte ein
+normaler Ausschlag des Sensors (z. B. bei offenem Fenster) in den ersten
+Minuten als Duschen gelten. Im laufenden Betrieb verzögert das nichts.
+**Diagnose:** Bei jedem Anschlagen und Ende der Erkennung führt der
+Haupt-Sensor ein Kurzprotokoll im Attribut `dusche_verlauf` (letzte 6
+Einträge, neueste zuerst): Zeitpunkt, Feuchte, berechneter Anstieg samt
+Beobachtungsdauer, Fensterzustand, Minuten seit Start und die letzten
+Messwerte. Es steht auch in der heruntergeladenen Diagnose-Datei und hilft,
+einen Fehlalarm nachzuvollziehen (nicht über Neustarts hinweg gespeichert).
+
 **Zusätzlich:**
 - **Frostschutz** verhindert außerdem grundsätzlich das Öffnen, solange die
   Außentemperatur auf/unter der Frostschutz-Grenze liegt
