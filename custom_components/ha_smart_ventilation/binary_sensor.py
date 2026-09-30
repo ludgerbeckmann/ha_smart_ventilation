@@ -179,6 +179,7 @@ from .const import (
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     SHOWER_MIN_HISTORY_MINUTES,
+    SHOWER_MIN_RISE_POINTS,
     SHOWER_RISE_LOOKBACK_MINUTES,
     TTS_PLAYBACK_MODE_PAUSE,
     VERSION_KEY,
@@ -628,6 +629,24 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["temperatur_attribut"] = self._config[CONF_TEMP_ATTRIBUTE]
         if self._config.get(CONF_WINDOW_ENTITY):
             attrs["fensterkontakt_entity"] = self._config[CONF_WINDOW_ENTITY]
+        # Entity-IDs der angezeigten Werte/Geräte - die JS-Karte öffnet damit
+        # per Klick die Detailansicht (more-info) der jeweiligen Entität.
+        linked_entities = {
+            "innentemperatur": self._config.get(CONF_TEMP_SOURCE_ENTITY),
+            "luftfeuchtigkeit": self._config.get(CONF_HUMIDITY_ENTITY),
+            "co2": self._config.get(CONF_CO2_ENTITY),
+            "aussentemperatur": outdoor_temp_entity,
+            "aussen_luftfeuchtigkeit": self._effective(CONF_OUTDOOR_HUMIDITY_ENTITY, None),
+            "fenster": self._config.get(CONF_WINDOW_ENTITY),
+            "luftentfeuchter": self._config.get(CONF_DEHUMIDIFIER_ENTITY),
+            "luftentfeuchter_tank": self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
+            "klimaanlage": self._config.get(CONF_AC_ENTITY),
+            "heizung": self._get_heating_entity_id(),
+            "dusche": (
+                self._shower_sensor.entity_id if self._shower_sensor is not None else None
+            ),
+        }
+        attrs["entitaeten"] = {k: v for k, v in linked_entities.items() if v}
 
         # Effektiv wirksame Benachrichtigungsmethoden - für Dashboards, die
         # anzeigen wollen, worüber ein Raum tatsächlich benachrichtigt.
@@ -985,6 +1004,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         rise_rate = (humidity - oldest_value) / elapsed_minutes
         self._shower_last_eval = (rise_rate, elapsed_minutes, oldest_value)
+        if humidity - oldest_value < SHOWER_MIN_RISE_POINTS:
+            # Zu kleiner Gesamtanstieg - normales Sensorrauschen/Schwankung,
+            # auch wenn die Rate über kurze Zeit rechnerisch hoch wirkt.
+            return False
         threshold = self._effective(
             CONF_SHOWER_RISE_THRESHOLD, DEFAULT_SHOWER_RISE_THRESHOLD
         )
