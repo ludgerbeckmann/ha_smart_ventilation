@@ -1571,6 +1571,15 @@ dezent gepunktet unterstrichen. Die Entity-IDs liefert das Attribut
 `entitaeten` (nur die tatsächlich konfigurierten). Die Markdown-Karte kann
 das nicht.
 
+**Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
+JS-Karte sie einmal ganz oben unter der Statuszeile in einer eigenen Tabelle
+("Messwert | Außen": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit;
+Temperatur und Luftfeuchtigkeit sind antippbar und öffnen die Detailansicht
+des Außensensors). Die Messwert-Tabellen der einzelnen Räume haben dadurch
+keine Spalte "Außen" mehr (nur noch Messwert, Innen, Normalbereich) - die
+Hervorhebung der Außenzelle bei "Außen wärmer/feuchter", Frost und Hitze
+entfällt dort, der Auslöser steht weiter in der Empfehlungs-Zeile.
+
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
 simulierte DOM-Umgebung (jsdom) mit Beispieldaten gegen die dokumentierten
