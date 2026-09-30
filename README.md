@@ -1573,10 +1573,10 @@ das nicht.
 
 **Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
 JS-Karte sie einmal ganz oben unter der Statuszeile in einer eigenen Tabelle
-("Messwert | Außen": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit;
+(Titel "Außen-Messwerte": Temperatur, Luftfeuchtigkeit, absolute Luftfeuchtigkeit;
 Temperatur und Luftfeuchtigkeit sind antippbar und öffnen die Detailansicht
 des Außensensors). Die Messwert-Tabellen der einzelnen Räume haben dadurch
-keine Spalte "Außen" mehr (nur noch Messwert, Innen, Normalbereich) - die
+keine Spalte "Außen" mehr (Kopfzeile nur noch "Messwert" über Bezeichnung und Wert sowie "Normalbereich"; die Überschrift "Innen" entfällt, da klar ist, dass es der Innenwert ist) - die
 Hervorhebung der Außenzelle bei "Außen wärmer/feuchter", Frost und Hitze
 entfällt dort, der Auslöser steht weiter in der Empfehlungs-Zeile.
 

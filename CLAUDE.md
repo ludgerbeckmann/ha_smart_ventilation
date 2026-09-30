@@ -3637,6 +3637,19 @@ etwas entfernt, das zusätzlich eine Nebenfunktion hatte (hier: Hervorhebung
 der Außenzelle), diese Nebenfunktion vorab benennen und den Nutzer
 entscheiden lassen, statt sie stillschweigend zu verlieren.
 
+**77. JS-Karte: Tabellenüberschriften vereinfacht (0.83.1).**
+Nutzerwunsch: In den Raum-Messwert-Tabellen die Überschrift "Innen" entfernen
+(klar, dass der Innenwert gemeint ist), "Messwert" bleibt; in der Außentabelle
+die beiden Titelzellen zu einer mit "Außen-Messwerte" zusammenfassen. Die
+Nachricht kam per Sprachdiktat ("der Messwert in gemeint" = "innen"): meine
+erste Lesart (Überschrift "Messwert" entfernen) war falsch, eine zweite
+Rückfrage brachte die richtige Fassung - Umsetzung: Kopfzeile
+`<th colspan=2>Messwert</th><th>Normalbereich</th>` (Messwert über Bezeichnung und
+Wert, analog zur Außentabelle mit einer Titelzelle über beide Spalten).
+Lektion: Bei diktierten Nachrichten Wörter, die als Fachbegriff keinen Sinn
+ergeben ("in"), zuerst als Verhörer lesen (hier "Innen") und die Umsetzung mit
+der Lesart bestätigen lassen, bevor eine Überschrift entfernt wird.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
