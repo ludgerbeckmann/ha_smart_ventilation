@@ -245,6 +245,7 @@ class SmartClimateCard extends HTMLElement {
     // Außenwerte sind für alle Räume gleich und stehen oben unter der
     // Statuszeile - hier der jeweils erste Raum mit einem Wert.
     const outdoor = { temp: null, hum: null, abs: null, tempEnt: "", humEnt: "" };
+    let summerModeEntity = "";
     const entries = [];
 
     // Lange Texte (Grund, Auslöser, Ziele) werden nach 4 Zeilen automatisch mit
@@ -314,6 +315,7 @@ class SmartClimateCard extends HTMLElement {
 
       if (version === null && has(a, "integration_version")) version = a.integration_version;
       if (summerMode === null && has(a, "sommermodus_an")) summerMode = a.sommermodus_an;
+      if (!summerModeEntity && ents.sommermodus) summerModeEntity = ents.sommermodus;
       if (outdoor.temp === null && has(a, "aussentemperatur") && a.aussentemperatur !== null) {
         outdoor.temp = a.aussentemperatur;
         outdoor.tempEnt = ents.aussentemperatur || "";
@@ -349,39 +351,30 @@ class SmartClimateCard extends HTMLElement {
 
       const wrap = (text, on) => (on ? `<span class="${highlightClass}">${text}</span>` : text);
 
-      const tempVal = ent(
-        ents.innentemperatur || a.temperatur_quelle,
-        wrap(
-          a.innentemperatur !== undefined && a.innentemperatur !== null
-            ? `${roundStr(a.innentemperatur, 1)} °C`
-            : "–",
-          highlightTemp
-        )
+      const tempVal = wrap(
+        a.innentemperatur !== undefined && a.innentemperatur !== null
+          ? `${roundStr(a.innentemperatur, 1)} °C`
+          : "–",
+        highlightTemp
       );
 
       let humRow = "";
       if (has(a, "luftfeuchtigkeit")) {
-        const humVal = ent(
-          ents.luftfeuchtigkeit,
-          wrap(
-            a.luftfeuchtigkeit !== null ? `${roundStr(a.luftfeuchtigkeit, 0)} %` : "–",
-            highlightHum
-          )
+        const humVal = wrap(
+          a.luftfeuchtigkeit !== null ? `${roundStr(a.luftfeuchtigkeit, 0)} %` : "–",
+          highlightHum
         );
         const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
         const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
-        humRow = `<tr><td>Luftfeuchtigkeit</td><td class="nw">${humVal}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
+        humRow = `<tr><td>${ent(ents.luftfeuchtigkeit, "Luftfeuchtigkeit")}</td><td class="nw">${humVal}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
       }
 
       let co2Row = "";
       if (has(a, "co2")) {
-        const co2Val = ent(
-          ents.co2,
-          wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : "–", highlightCo2)
-        );
+        const co2Val = wrap(a.co2 !== null ? `${roundStr(a.co2, 0)} ppm` : "–", highlightCo2);
         const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
-        co2Row = `<tr><td>CO2</td><td class="nw">${co2Val}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
+        co2Row = `<tr><td>${ent(ents.co2, "CO2")}</td><td class="nw">${co2Val}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
       }
 
       let absRow = "";
@@ -431,7 +424,7 @@ class SmartClimateCard extends HTMLElement {
       if (has(a, "heizung_an")) {
         let name = ent(ents.heizung, `${a.heizung_an ? "🔴" : "⚫"} Heizung`);
         const modeInfo = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
-        if (modeInfo) name += `<br>${ent(ents.heizung, `${modeInfo.icon} ${modeInfo.text}`)}`;
+        if (modeInfo) name += `<br>${modeInfo.icon} ${modeInfo.text}`;
         let laufzeit = "–";
         if (a.heizung_an && a.heizung_seit) {
           laufzeit = fmtDuration((Date.now() - new Date(a.heizung_seit).getTime()) / 60000);
@@ -471,10 +464,10 @@ class SmartClimateCard extends HTMLElement {
       let empfTable = "";
       if (!noWindow) {
         empfTable =
-          `<table class="values"><thead><tr><th>Fenster</th><th>Empfehlung</th><th>Auslöser</th><th>Uhrzeit</th></tr></thead><tbody>` +
-          `<tr><td class="nw">${ent(windowEntity, windowStateText)}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
+          `<table class="values"><thead><tr><th>${ent(windowEntity, "Fenster")}</th><th>${ent(id, "Empfehlung")}</th><th>Auslöser</th><th>Uhrzeit</th></tr></thead><tbody>` +
+          `<tr><td class="nw">${windowStateText}</td><td class="nw">–</td><td>–</td><td class="nw">${windowChangedTime}</td></tr>`;
         if (hasLiveReason) {
-          empfTable += `<tr><td class="nw">–</td><td class="nw">${ent(id, empfehlungText)}</td><td>${cellDiv(`${a.raum}|trigger`, esc(grundLabel))}</td><td class="nw">${changedTime}</td></tr>`;
+          empfTable += `<tr><td class="nw">–</td><td class="nw">${empfehlungText}</td><td>${cellDiv(`${a.raum}|trigger`, esc(grundLabel))}</td><td class="nw">${changedTime}</td></tr>`;
         }
         empfTable += "</tbody></table>";
       }
@@ -483,7 +476,7 @@ class SmartClimateCard extends HTMLElement {
       const tempHi = Math.max(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const valuesTable =
         `<table class="values"><thead><tr><th colspan="2">Messwert</th><th>Normalbereich</th></tr></thead><tbody>` +
-        `<tr><td>Temperatur</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
+        `<tr><td>${ent(ents.innentemperatur || a.temperatur_quelle, "Temperatur")}</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
         `${humRow}${absRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
@@ -545,7 +538,7 @@ class SmartClimateCard extends HTMLElement {
     if (summerMode !== null) {
       overviewCells.push({
         label: "Modus",
-        value: summerMode ? "☀️ Sommer" : "❄️ Winter",
+        value: ent(summerModeEntity, summerMode ? "☀️ Sommer" : "❄️ Winter"),
         cls: "",
       });
     }
@@ -566,8 +559,8 @@ class SmartClimateCard extends HTMLElement {
         `<tr><td>${label}</td><td class="nw">${valueHtml}</td></tr>`;
       outdoorTable =
         `<table class="values outdoor"><thead><tr><th colspan="2">Außen-Messwerte</th></tr></thead><tbody>` +
-        row("Temperatur", outdoor.temp !== null ? ent(outdoor.tempEnt, `${roundStr(outdoor.temp, 1)} °C`) : "–") +
-        row("Luftfeuchtigkeit", outdoor.hum !== null ? ent(outdoor.humEnt, `${roundStr(outdoor.hum, 0)} %`) : "–") +
+        row(ent(outdoor.tempEnt, "Temperatur"), outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : "–") +
+        row(ent(outdoor.humEnt, "Luftfeuchtigkeit"), outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : "–") +
         row("Abs. Luftfeuchtigkeit", outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–") +
         `</tbody></table>`;
     }
@@ -619,8 +612,8 @@ class SmartClimateCard extends HTMLElement {
       }
       table.overview td.nw, table.values td.nw { white-space: nowrap; }
       /* Automatische Kürzung mit "…" nach 4 Zeilen; Tippen klappt auf. */
-      /* Klickbare Werte/Geräte (öffnen die Detailansicht der Entität). */
-      .ent { cursor: pointer; text-decoration: underline dotted; text-decoration-color: rgba(128, 128, 128, 0.55); text-underline-offset: 3px; }
+      /* Klickbare Bezeichnungen (öffnen die Detailansicht der Entität), ohne Unterstreichung. */
+      .ent { cursor: pointer; }
       table.values .clamp {
         display: -webkit-box;
         -webkit-box-orient: vertical;
