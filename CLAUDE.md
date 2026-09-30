@@ -3650,6 +3650,26 @@ Lektion: Bei diktierten Nachrichten Wörter, die als Fachbegriff keinen Sinn
 ergeben ("in"), zuerst als Verhörer lesen (hier "Innen") und die Umsetzung mit
 der Lesart bestätigen lassen, bevor eine Überschrift entfernt wird.
 
+**78. JS-Karte: Bezeichnungen statt Werte klickbar, keine Unterstreichung, Sommermodus anklickbar (0.84.0).**
+Nutzerfeedback zu Lektion 74: die Unterstreichung wirkt störend, und in Home
+Assistant klickt man üblicherweise den Sensornamen, nicht den Wert. Umsetzung:
+`ent()` umschließt jetzt die Bezeichnung ("Temperatur", "Luftfeuchtigkeit",
+"CO2" in Raum- und Außentabelle, die Kopfzellen "Fenster"/"Empfehlung", die
+Gerätenamen); Werte, Zustände (z. B. Heizmodus "Gebäudeschutz") und die
+Zellen "geöffnet"/"Öffnen" sind nicht mehr klickbar; CSS nur noch
+`cursor: pointer`. "Abs. Luftfeuchtigkeit" bleibt ohne Klick (berechnet, keine
+Entität). Neuer Eintrag `sommermodus` in `entitaeten` (globaler Schalter,
+`_effective(CONF_SUMMER_MODE_SWITCH_ENTITY)`); in der Statuszeile ist der WERT
+unter "Modus" klickbar, nicht die Kopfzelle (ausdrücklicher Nutzerwunsch, weicht
+von der Namensregel ab: der Wert "Sommer/Winter" ist dort der Sensorname).
+Nutzeridee (offen, noch nicht umgesetzt): die absolute Luftfeuchtigkeit als
+eigenen `sensor` bereitzustellen (dann auch anklickbar/aufzeichenbar).
+Getestet mit jsdom (Bezeichnungen klickbar, Werte nicht, keine Unterstreichung,
+Modus-Wert) und Chromium (kein Überlauf). Lektion: Bei einer Interaktion, die
+etwas Bekanntes nachbildet (Home Assistant: Name anklicken), zuerst dessen
+Konvention übernehmen, statt eine eigene Darstellung (unterstrichene Werte)
+zu erfinden.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

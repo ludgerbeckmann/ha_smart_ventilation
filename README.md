@@ -1021,7 +1021,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `app_aktiv`, `app_ziele` | nur vorhanden, wenn App-Benachrichtigung effektiv aktiv ist |
 | `persistent_aktiv` | nur vorhanden, wenn persistente Web-Benachrichtigung effektiv aktiv ist |
 | `duschen_erkannt` | nur vorhanden, wenn Duscherkennung effektiv aktiv ist; `true`, solange die Luftfeuchtigkeit schneller als die Anstiegs-Schwelle steigt (siehe "Duscherkennung" unter "Logik im Detail") |
-| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `dusche`) - nur die konfigurierten. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
+| `entitaeten` | Entity-IDs der angezeigten Werte/Geräte (`innentemperatur`, `luftfeuchtigkeit`, `co2`, `aussentemperatur`, `aussen_luftfeuchtigkeit`, `fenster`, `luftentfeuchter`, `luftentfeuchter_tank`, `klimaanlage`, `heizung`, `sommermodus`, `dusche`) - nur die konfigurierten. Die JS-Karte öffnet damit per Klick die Detailansicht (more-info) |
 | `integration_version` | aktuell installierte Version der Integration (aus `manifest.json`) - identisch für jeden Raum, dient nur der Dashboard-Karte zur Anzeige der Versionsnummer |
 
 Der Standard-Entitätszustand selbst (`last_changed`) zeigt außerdem, seit
@@ -1561,15 +1561,19 @@ außen) genauso hervorgehoben wie der Auslöser - der Vergleich der absoluten
 Werte (Außenluft trockener) ist es, der das Öffnen freigibt. Fehlt ein
 Wert, bleibt die Zeile unauffällig.
 
-**Detailansicht per Klick:** In der JS-Karte lassen sich Werte und Geräte
-antippen bzw. anklicken - es öffnet sich die Standard-Detailansicht
-(more-info, mit Verlauf/Logbuch) der jeweiligen Entität: Innen-/Außen-
-Temperatur und -Luftfeuchtigkeit, CO2, Fensterstatus, Luftentfeuchter
-(inkl. Wassertank), Heizung, Dusche, der Empfehlungs-Sensor selbst (Zelle
-"Empfehlung") sowie die Ziele der Benachrichtigungen. Klickbare Werte sind
-dezent gepunktet unterstrichen. Die Entity-IDs liefert das Attribut
-`entitaeten` (nur die tatsächlich konfigurierten). Die Markdown-Karte kann
-das nicht.
+**Detailansicht per Klick:** In der JS-Karte lassen sich die **Bezeichnungen**
+der Sensoren und Geräte antippen bzw. anklicken (wie sonst in Home Assistant
+üblich) - es öffnet sich die Standard-Detailansicht (more-info, mit
+Verlauf/Logbuch) der jeweiligen Entität: "Temperatur", "Luftfeuchtigkeit" und
+"CO2" in den Messwert-Tabellen (Raum und Außen), die Kopfzellen "Fenster"
+(Fensterkontakt) und "Empfehlung" (Empfehlungs-Sensor), die Gerätenamen
+(Luftentfeuchter, Wassertank, Heizung, Dusche), der Wert unter "Modus" in der
+Statuszeile (globaler Sommer-/Winterschalter) sowie die Ziele der
+Benachrichtigungen. Die Werte selbst (z. B. "22,3 °C", "geöffnet") sind nicht
+klickbar; klickbare Elemente zeigen nur den Mauszeiger, keine Unterstreichung.
+Nicht klickbar ist "Abs. Luftfeuchtigkeit" (berechnet, keine eigene Entität).
+Die Entity-IDs liefert das Attribut `entitaeten` (nur die tatsächlich
+konfigurierten). Die Markdown-Karte kann das nicht.
 
 **Außenwerte oben:** Da die Außenwerte für alle Räume gleich sind, zeigt die
 JS-Karte sie einmal ganz oben unter der Statuszeile in einer eigenen Tabelle

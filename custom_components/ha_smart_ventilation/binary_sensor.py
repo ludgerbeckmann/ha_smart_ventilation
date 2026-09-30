@@ -644,6 +644,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             "luftentfeuchter_tank": self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
             "klimaanlage": self._config.get(CONF_AC_ENTITY),
             "heizung": self._get_heating_entity_id(),
+            "sommermodus": self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None),
             "dusche": (
                 self._shower_sensor.entity_id if self._shower_sensor is not None else None
             ),
