@@ -22,6 +22,7 @@
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "tts_light_entity": "Licht für Sprachausgabe (optional)",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)",
               "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
               "tts_quiet_start": "Nachtruhe-Start",
               "tts_quiet_end": "Nachtruhe-Ende",
@@ -38,6 +39,7 @@
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
               "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}",
               "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
               "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
@@ -197,6 +199,7 @@
               "sonos_entity": "Lautsprecher (media_player) – Mehrfachauswahl möglich",
               "tts_light_entity": "Licht für Sprachausgabe (optional)",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)",
               "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
               "tts_quiet_start": "Nachtruhe-Start",
               "tts_quiet_end": "Nachtruhe-Ende",
@@ -213,6 +216,7 @@
               "sonos_entity": "Leer = keine Sprachausgabe für diesen Raum",
               "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
+              "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}",
               "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
               "tts_quiet_end": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_quiet_end}",
@@ -470,6 +474,7 @@
             "data": {
               "tts_entity": "TTS-Entität",
               "tts_volume": "Wiedergabelautstärke für Sprachausgabe",
+              "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)",
               "tts_playback_mode": "Vorhandene Wiedergabe beim Ansagen",
               "tts_quiet_hours_enabled": "Sprachausgabe-Nachtruhe",
               "tts_quiet_start": "Nachtruhe-Start",
@@ -491,11 +496,13 @@
               "msg_close_outdoor_wetter": "Schließen weil draußen feuchter",
               "msg_reminder": "Erinnerung",
               "msg_tank_full": "Wassertank voll",
+              "msg_shower_long": "Dusche zu lang",
               "msg_device_window_conflict": "Fenster-Gerät-Konflikt"
             },
             "data_description": {
               "tts_entity": "Wird verwendet, wenn ein Raum keine eigene TTS-Entität festlegt",
               "tts_volume": "Lautstärke, auf die die Lautsprecher vor der Ansage gesetzt werden - wird danach automatisch wieder auf den vorherigen Wert zurückgesetzt (siehe README)",
+              "shower_max_duration_minutes": "Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur bei Räumen mit aktivierter Duscherkennung und Lautsprechern) - 0 = aus. Standardwert für alle Räume ohne eigene Angabe.",
               "tts_playback_mode": "\"Überlagern\" spielt die Ansage direkt über eine laufende Wiedergabe. \"Pausieren\" pausiert sie vorher (wird danach nicht automatisch fortgesetzt)",
               "tts_quiet_hours_enabled": "Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen.",
               "tts_quiet_start": "Nur wirksam, wenn die Nachtruhe oben aktiviert ist.",
@@ -515,6 +522,7 @@
               "msg_close_outdoor_wetter": "｛raum｝ = Raumname. ｛wert｝ = aktuelle absolute Außen-Luftfeuchtigkeit, ｛schwelle｝ = aktuelle absolute Innen-Luftfeuchtigkeit (jeweils inkl. g/m³).",
               "msg_reminder": "｛raum｝ = Raumname. ｛wert｝/｛schwelle｝ = aktueller Wert bzw. Öffnen-Schwelle des ursprünglichen Lüftungsgrundes (Temperatur/Luftfeuchtigkeit/CO2), inkl. jeweiliger Einheit.",
               "msg_tank_full": "｛raum｝ = Raumname. Kein ｛wert｝/｛schwelle｝, da der Tankstatus rein binär ist (voll/nicht voll).",
+              "msg_shower_long": "｛raum｝ = Raumname, ｛wert｝ = bisherige Duschdauer in Minuten. Nur Sprachausgabe.",
               "msg_device_window_conflict": "Gesendet, sobald ein Luftentfeuchter oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft (siehe Raum-Option \"Benachrichtigung bei Fenster-Gerät-Konflikt\"). Platzhalter: ｛raum｝, ｛geraet｝ (\"Luftentfeuchter\" oder \"Klimaanlage\")."
             }
           }

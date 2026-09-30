@@ -74,6 +74,7 @@ from .const import (
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
     CONF_MSG_REMINDER,
+    CONF_MSG_SHOWER_LONG,
     CONF_MSG_TANK_FULL,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
@@ -84,6 +85,7 @@ from .const import (
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
     CONF_SHOWER_DETECTION_ENABLED,
+    CONF_SHOWER_MAX_DURATION,
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENTITY,
@@ -149,10 +151,12 @@ from .const import (
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
     DEFAULT_MSG_REMINDER,
+    DEFAULT_MSG_SHOWER_LONG,
     DEFAULT_MSG_TANK_FULL,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
+    DEFAULT_SHOWER_MAX_DURATION,
     DEFAULT_SHOWER_RISE_THRESHOLD,
     DEFAULT_SUMMER_MODE_THRESHOLD_TEMP,
     DEFAULT_TEMP_ATTRIBUTE,
@@ -249,6 +253,7 @@ _THRESHOLD_FIELDS = {
     CONF_POWER_GRACE_PERIOD: (DEFAULT_POWER_GRACE_PERIOD, 0, 120, 5, "min"),
     CONF_TTS_VOLUME: (DEFAULT_TTS_VOLUME, 0, 100, 5, "%"),
     CONF_SHOWER_RISE_THRESHOLD: (DEFAULT_SHOWER_RISE_THRESHOLD, 0.2, 10, 0.1, "%/min"),
+    CONF_SHOWER_MAX_DURATION: (DEFAULT_SHOWER_MAX_DURATION, 0, 60, 1, "min"),
     CONF_HEATING_THRESHOLD_TEMP: (DEFAULT_HEATING_THRESHOLD_TEMP, 10, 25, 0.5, "°C"),
     CONF_HEATING_COMFORT_TEMP: (DEFAULT_HEATING_COMFORT_TEMP, 10, 28, 0.5, "°C"),
     CONF_HEATING_STANDBY_TEMP: (DEFAULT_HEATING_STANDBY_TEMP, 5, 25, 0.5, "°C"),
@@ -290,6 +295,7 @@ _THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
     CONF_REMINDER_INTERVAL: (int, [0, 20, 40, 60]),
     CONF_MIN_SURPLUS_POWER: (float, [500, 1000, 1500, 2000]),
     CONF_TTS_VOLUME: (int, [30, 50, 70, 100]),
+    CONF_SHOWER_MAX_DURATION: (int, [0, 8, 10, 12, 15, 20]),
     CONF_HEATING_THRESHOLD_TEMP: (float, [18, 19, 20, 21]),
     CONF_HEATING_COMFORT_TEMP: (float, [19, 20, 21, 22]),
     CONF_HEATING_STANDBY_TEMP: (float, [15, 16, 17, 18]),
@@ -673,6 +679,7 @@ _MESSAGE_FIELD_DEFAULTS = {
     CONF_MSG_CLOSE_OUTDOOR_WETTER: DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
     CONF_MSG_REMINDER: DEFAULT_MSG_REMINDER,
     CONF_MSG_TANK_FULL: DEFAULT_MSG_TANK_FULL,
+    CONF_MSG_SHOWER_LONG: DEFAULT_MSG_SHOWER_LONG,
     CONF_MSG_DEVICE_WINDOW_CONFLICT: DEFAULT_MSG_DEVICE_WINDOW_CONFLICT,
 }
 
@@ -894,6 +901,9 @@ def _build_room_schema(
         CONF_SHOWER_RISE_THRESHOLD, defaults
     )
     tts_volume_marker, tts_volume_sel = _override_selector(CONF_TTS_VOLUME, defaults)
+    shower_max_marker, shower_max_sel = _override_selector(
+        CONF_SHOWER_MAX_DURATION, defaults
+    )
     heating_threshold_marker, heating_threshold_sel = _override_selector(
         CONF_HEATING_THRESHOLD_TEMP, defaults
     )
@@ -1188,6 +1198,7 @@ def _build_room_schema(
                     )
                 ),
                 tts_volume_marker: tts_volume_sel,
+                shower_max_marker: shower_max_sel,
                 tts_quiet_hours_marker: tts_quiet_hours_sel,
                 tts_quiet_start_marker: tts_quiet_start_sel,
                 tts_quiet_end_marker: tts_quiet_end_sel,
@@ -1315,6 +1326,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     nicht änderbar (nicht notwendig)."""
     defaults = defaults or {}
     volume_marker, volume_sel = _threshold_selector(CONF_TTS_VOLUME, defaults)
+    shower_max_marker, shower_max_sel = _threshold_selector(
+        CONF_SHOWER_MAX_DURATION, defaults
+    )
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
     grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
     max_runtime_marker, max_runtime_sel = _threshold_selector(
@@ -1478,6 +1492,7 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             selector.EntitySelectorConfig(domain="tts")
                         ),
                         volume_marker: volume_sel,
+                        shower_max_marker: shower_max_sel,
                         vol.Required(
                             CONF_TTS_PLAYBACK_MODE,
                             default=defaults.get(
@@ -1651,6 +1666,14 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             CONF_MSG_TANK_FULL,
                             default=defaults.get(
                                 CONF_MSG_TANK_FULL, DEFAULT_MSG_TANK_FULL
+                            ),
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        ),
+                        vol.Required(
+                            CONF_MSG_SHOWER_LONG,
+                            default=defaults.get(
+                                CONF_MSG_SHOWER_LONG, DEFAULT_MSG_SHOWER_LONG
                             ),
                         ): selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)

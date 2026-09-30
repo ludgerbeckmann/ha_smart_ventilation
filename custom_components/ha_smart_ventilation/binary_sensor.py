@@ -90,6 +90,7 @@ from .const import (
     CONF_MSG_OPEN_HUMIDITY,
     CONF_MSG_OPEN_TEMP,
     CONF_MSG_REMINDER,
+    CONF_MSG_SHOWER_LONG,
     CONF_MSG_TANK_FULL,
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
@@ -100,6 +101,7 @@ from .const import (
     CONF_REMINDER_INTERVAL,
     CONF_ROOM_NAME,
     CONF_SHOWER_DETECTION_ENABLED,
+    CONF_SHOWER_MAX_DURATION,
     CONF_SHOWER_RISE_THRESHOLD,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENTITY,
@@ -162,10 +164,12 @@ from .const import (
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
     DEFAULT_MSG_REMINDER,
+    DEFAULT_MSG_SHOWER_LONG,
     DEFAULT_MSG_TANK_FULL,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
+    DEFAULT_SHOWER_MAX_DURATION,
     DEFAULT_SHOWER_RISE_THRESHOLD,
     DEFAULT_SUMMER_MODE_THRESHOLD_TEMP,
     DEFAULT_TEMP_ATTRIBUTE,
@@ -372,6 +376,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._ac_on_since = None
         self._heating_on_since = None
         self._shower_on_since = None
+        # True, sobald für die aktuell laufende Dusche schon die Duschdauer-
+        # Ansage (CONF_SHOWER_MAX_DURATION) ausgelöst wurde - einmal pro Dusche,
+        # wird beim Ende der Dusche zurückgesetzt. Nicht über Neustarts
+        # persistiert; stattdessen wird bei einer wiederhergestellten
+        # laufenden Dusche vorsorglich True gesetzt (keine Doppelansage).
+        self._shower_long_announced = False
 
         # Dauer des letzten abgeschlossenen Laufs in Minuten (Dashboard-
         # Karte, Spalte "Laufzeit" - zeigt diese, solange das Gerät gerade
@@ -868,6 +878,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._heating_on_since = dt_util.parse_datetime(attrs["heizung_seit"])
             if "dusche_seit" in attrs:
                 self._shower_on_since = dt_util.parse_datetime(attrs["dusche_seit"])
+                self._shower_long_announced = self._shower_on_since is not None
             # Letzte abgeschlossene Laufzeit wiederherstellen (sonst würde
             # die Dashboard-Karte nach jedem Neustart, bevor der nächste
             # Lauf beendet ist, wieder auf "–" zurückfallen).
@@ -1872,6 +1883,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 )
                 self._log_shower_end(humidity)
             self._shower_on_since = None
+            self._shower_long_announced = False
+        await self._check_shower_too_long()
         if self._shower_sensor is not None and self._shower_sensor.hass is not None:
             # hass kann bei der allerersten Bewertung noch None sein, falls
             # beide Entitäten gerade erst gleichzeitig hinzugefügt werden
@@ -3443,6 +3456,53 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             blocking=False,
         )
         self._persistent_notification_active = False
+
+    async def _check_shower_too_long(self) -> None:
+        """Sprachansage, sobald die erkannte Dusche länger als
+        CONF_SHOWER_MAX_DURATION Minuten ununterbrochen läuft - einmal pro
+        Dusche (self._shower_long_announced). Nur Sprachausgabe (keine
+        App-/Web-Benachrichtigung, Nutzerwunsch) und nur, wenn für den Raum
+        Lautsprecher und eine TTS-Entität vorhanden sind; Nachtruhe und
+        Licht-aus-Regel gelten wie bei der Wassertank-Ansage. Ist die Ansage
+        durch Nachtruhe/Licht unterdrückt, gilt sie trotzdem als erledigt -
+        sonst würde sie mitten in der Dusche nachgeholt, sobald die
+        Nachtruhe endet. Standard 0 = aus."""
+        max_minutes = self._effective(CONF_SHOWER_MAX_DURATION, DEFAULT_SHOWER_MAX_DURATION)
+        if (
+            not max_minutes
+            or not self._showering
+            or self._shower_on_since is None
+            or self._shower_long_announced
+        ):
+            return
+        minutes = int(
+            (dt_util.utcnow() - self._shower_on_since).total_seconds() / 60
+        )
+        if minutes < max_minutes:
+            return
+        self._shower_long_announced = True
+        sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
+        tts_entity = self._effective(CONF_TTS_ENTITY, None)
+        if (
+            not sonos_entities
+            or not tts_entity
+            or self._is_tts_quiet_hours_active()
+            or self._is_tts_light_off()
+        ):
+            return
+        room = self._config[CONF_ROOM_NAME]
+        template = self._effective(CONF_MSG_SHOWER_LONG, DEFAULT_MSG_SHOWER_LONG)
+        try:
+            message = template.format(raum=room, wert=minutes, schwelle=max_minutes)
+        except (KeyError, ValueError, IndexError):
+            _LOGGER.warning(
+                "Duschdauer-Ansagetext für Raum %s enthält einen ungültigen "
+                "Platzhalter - wird unverändert gesendet: %s",
+                room,
+                template,
+            )
+            message = template
+        await self._play_tts(sonos_entities, tts_entity, message)
 
     async def _check_tank_full(self) -> None:
         """Prüft bei jeder Neubewertung, ob sich der Wassertank-Status des
