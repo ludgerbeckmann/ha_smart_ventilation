@@ -527,9 +527,9 @@ class SmartClimateCard extends HTMLElement {
       const notifyTable =
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Ziel(e)</th></tr></thead><tbody>` +
-        `<tr><td class="nw">${n1Status} Sprachausgabe</td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
-        `<tr><td class="nw">${n2Status} App-Benachrichtigung</td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
-        `<tr><td class="nw">${n3Status} Persistente Benachrichtigung</td><td>–</td></tr>` +
+        `<tr><td>${n1Status}&nbsp;Sprachausgabe</td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
+        `<tr><td>${n2Status}&nbsp;App-Benachrichtigung</td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
+        `<tr><td>${n3Status}&nbsp;Persistente Benachrichtigung</td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
       const statusClass =
@@ -748,6 +748,10 @@ class SmartClimateCard extends HTMLElement {
         margin-top: 4px;
       }
       .notify-details table.values { margin-top: 8px; margin-bottom: 4px; }
+      /* Methodennamen nur an Leerzeichen/Bindestrichen umbrechen, nie mitten im Wort -
+         die Ziele-Spalte bricht dagegen an . und _ (siehe breakable()). */
+      .notify-details table.values th:first-child,
+      .notify-details table.values td:first-child { overflow-wrap: normal; word-break: normal; }
       .notify-details summary {
         cursor: pointer;
         padding: 6px 0;
