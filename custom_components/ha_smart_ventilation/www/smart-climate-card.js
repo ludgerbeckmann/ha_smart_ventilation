@@ -468,7 +468,7 @@ class SmartClimateCard extends HTMLElement {
         }
         let grund = has(a, "heizung_grund") ? esc(a.heizung_grund) : "–";
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
-          grund += ` (${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
+          grund += ` (Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|heat`, grund)}</td></tr>`;
       }
