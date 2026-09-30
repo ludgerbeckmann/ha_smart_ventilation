@@ -178,6 +178,7 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    SHOWER_MIN_HISTORY_MINUTES,
     SHOWER_RISE_LOOKBACK_MINUTES,
     TTS_PLAYBACK_MODE_PAUSE,
     VERSION_KEY,
@@ -191,6 +192,8 @@ _TICK_INTERVAL = timedelta(minutes=5)
 
 # Anzahl der Einträge im Attribut `push_verlauf` (neueste zuerst).
 _PUSH_LOG_SIZE = 8
+# Anzahl der Einträge im Attribut `dusche_verlauf` (neueste zuerst).
+_SHOWER_LOG_SIZE = 6
 
 SERVICE_SEND_TEST_PUSH = "send_test_push"
 
@@ -265,6 +268,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # zuerst), als Attribut `push_verlauf` sichtbar - nicht über
         # Neustarts hinweg wiederhergestellt (reine Debug-Hilfe).
         self._push_log: deque[str] = deque(maxlen=_PUSH_LOG_SIZE)
+        # Kurzprotokoll der letzten Duscherkennungen (Start/Ende, neueste
+        # zuerst) als Attribut `dusche_verlauf` - Diagnose-Hilfe für
+        # Fehlalarme, nicht über Neustarts hinweg wiederhergestellt.
+        self._shower_log: deque[str] = deque(maxlen=_SHOWER_LOG_SIZE)
+        self._shower_last_eval: tuple[float, float, float] | None = None
+        # Zeitpunkt, seit dem diese Entität ihre Werte verfolgt (Start/Neuladen)
+        # - im Protokoll als "nach Start" angegeben.
+        self._started_at = dt_util.utcnow()
         self._last_reason: str | None = None
         # Zeitpunkt des letzten ECHTEN Empfehlungswechsels - anders als
         # last_changed der Entität selbst (das Home Assistant bei jedem
@@ -646,6 +657,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["letzte_benachrichtigung"] = self._last_notified_at.isoformat()
         if self._push_log:
             attrs["push_verlauf"] = list(self._push_log)
+        if self._shower_log:
+            attrs["dusche_verlauf"] = list(self._shower_log)
         if self._last_reason is not None:
             attrs["letzter_grund"] = self._last_reason
         if self._config.get(
@@ -964,16 +977,53 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         oldest_time, oldest_value = self._humidity_samples[0]
         elapsed_minutes = (now - oldest_time).total_seconds() / 60
-        if elapsed_minutes < 1:
-            # Noch nicht genug Historie, um einen Anstieg zu beurteilen -
-            # permissiv wie bei "nicht konfiguriert" (siehe CLAUDE.md).
+        if elapsed_minutes < SHOWER_MIN_HISTORY_MINUTES:
+            # Noch nicht genug Historie, um einen Anstieg zu beurteilen
+            # (z. B. direkt nach einem Start/Neuladen) - permissiv wie bei
+            # "nicht konfiguriert" (siehe CLAUDE.md).
             return False
 
         rise_rate = (humidity - oldest_value) / elapsed_minutes
+        self._shower_last_eval = (rise_rate, elapsed_minutes, oldest_value)
         threshold = self._effective(
             CONF_SHOWER_RISE_THRESHOLD, DEFAULT_SHOWER_RISE_THRESHOLD
         )
         return rise_rate >= threshold
+
+    def _shower_log_add(self, text: str) -> None:
+        stamp = dt_util.as_local(dt_util.utcnow()).strftime("%d.%m. %H:%M:%S")
+        self._shower_log.appendleft(f"{stamp} {text}")
+        _LOGGER.debug("Duscherkennung (%s): %s", self._config[CONF_ROOM_NAME], text)
+
+    def _log_shower_start(self, humidity: float | None) -> None:
+        """Protokolliert, WARUM die Duscherkennung gerade anschlägt (Rate,
+        Beobachtungsdauer, Verlauf, Fensterzustand, Zeit seit Start) - für
+        die Diagnose von Fehlalarmen (Attribut `dusche_verlauf`)."""
+        parts = [f"Start: Feuchte {humidity} %"]
+        if self._shower_last_eval is not None:
+            rate, elapsed, oldest = self._shower_last_eval
+            parts.append(
+                f"Anstieg {rate:.1f} %/min über {elapsed:.1f} min (von {oldest} %)"
+            )
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        window_state = self.hass.states.get(window_entity) if window_entity else None
+        parts.append(f"Fenster {window_state.state if window_state else '–'}")
+        since_start = (dt_util.utcnow() - self._started_at).total_seconds() / 60
+        parts.append(f"{since_start:.1f} min nach Start")
+        samples = ", ".join(
+            f"{dt_util.as_local(t).strftime('%H:%M:%S')}={v}"
+            for t, v in list(self._humidity_samples)[-8:]
+        )
+        parts.append(f"Verlauf: {samples}")
+        self._shower_log_add("; ".join(parts))
+
+    def _log_shower_end(self, humidity: float | None) -> None:
+        minutes = (
+            (dt_util.utcnow() - self._shower_on_since).total_seconds() / 60
+            if self._shower_on_since is not None
+            else 0
+        )
+        self._shower_log_add(f"Ende nach {minutes:.1f} min: Feuchte {humidity} %")
 
     def _window_action_needed(self, target_open: bool) -> bool:
         """Prüft, ob eine Benachrichtigung überhaupt nötig ist, oder ob das
@@ -1756,11 +1806,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._showering:
             if self._shower_on_since is None:
                 self._shower_on_since = dt_util.utcnow()
+                self._log_shower_start(humidity)
         else:
             if self._shower_on_since is not None:
                 self._shower_last_runtime_minutes = int(
                     (dt_util.utcnow() - self._shower_on_since).total_seconds() / 60
                 )
+                self._log_shower_end(humidity)
             self._shower_on_since = None
         if self._shower_sensor is not None and self._shower_sensor.hass is not None:
             # hass kann bei der allerersten Bewertung noch None sein, falls

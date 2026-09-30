@@ -3546,6 +3546,29 @@ unverändert (Auslaufmodell). Lektion: Ein Auslöser und eine Freigabe sind
 technisch verschieden, für den Nutzer aber beides "der Grund" - die Anzeige
 sollte beide zeigen, wenn erst beide zusammen die Empfehlung erklären.
 
+**73. Duscherkennung: Fehlalarm 2 Minuten nach Start, plus Diagnose-Protokoll (0.80.5).**
+Nutzer-Meldung: Die Dusche wurde aktiv, obwohl niemand geduscht hatte. Auf
+Rückfrage nach Verlaufsdaten lieferte der Nutzer Screenshots: "Dusche aktiv"
+wechselte um 23:48:29 von "Nicht verfügbar" auf "Trocken" (Start/Neuladen der
+Integration), um 23:50:39 "Nass" (2 min 10 s später), um 23:58:29 wieder
+"Trocken". Die Feuchte hatte gerade einen Tiefpunkt (52 %) und stieg bei
+offenem Fenster (Außenluft, starke Schwankungen 52-63 %) in ca. 2 min auf 61 %
+(> 4 %/min). Ursache: Der rollierende Verlauf ist nach einem Start leer, und
+`_update_shower_detection()` bewertete schon ab 1 min Verlauf - ein normaler
+Ausschlag aus einem Tiefpunkt sah wie Duschen aus. Fix: `SHOWER_MIN_HISTORY_
+MINUTES = 3` (erst ab 3 min Verlauf bewerten). Verzögert im Normalbetrieb
+nichts, weil der Verlauf dort voll ist (der Nutzer hatte 3 min zunächst als
+"zu spät" für 5-7 min Duschen empfunden; 2 min hätten den Fall nicht
+verhindert, er trat bei 2:10 auf). Zusätzlich Beobachtbarkeit statt Raten:
+Attribut `dusche_verlauf` (letzte 6 Start-/Ende-Einträge mit Rate, Dauer,
+Fensterzustand, Minuten nach Start, letzten Messwerten) und `last_changed` im
+`_snapshot()` der Diagnose. Getestet mit Stub-Modulen (Neustart-Fall, echte
+Dusche, normale Schwankung, Protokoll). Lektion: Ein Verlauf-basierter
+Detektor braucht nach jedem Start eine Warm-up-Zeit; und ein Fehlalarm lässt
+sich nur mit dem Zustand VOR dem Ereignis diagnostizieren - eine
+Diagnose-Momentaufnahme allein reicht dafür nicht, das Ereignis selbst muss
+protokolliert werden (wie schon `push_verlauf`, Lektion 66).
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

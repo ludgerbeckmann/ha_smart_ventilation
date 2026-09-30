@@ -534,6 +534,13 @@ DEFAULT_SHOWER_RISE_THRESHOLD = 1.5
 # desto störanfälliger gegen kurze Messschwankungen. Bewusst fest verdrahtet,
 # nicht über die UI einstellbar.
 SHOWER_RISE_LOOKBACK_MINUTES = 10
+# Mindest-Verlaufslänge (Minuten), bevor die Duscherkennung überhaupt
+# bewertet: direkt nach einem Start/Neuladen der Integration ist der
+# Feuchteverlauf leer - ein normaler Ausschlag des Sensors (z. B. bei offenem
+# Fenster) sähe dann schon nach 1-2 Minuten wie ein Duschen aus. Betrifft nur
+# die ersten Minuten nach dem Start bzw. nach einem Sensorausfall, im
+# Normalbereich ist der Verlauf ohnehin voll.
+SHOWER_MIN_HISTORY_MINUTES = 3
 
 # Konfigurierbare Benachrichtigungstexte (nur in den globalen Einstellungen
 # "Smart Climate Optionen" - {raum} wird durch den jeweiligen Raumnamen

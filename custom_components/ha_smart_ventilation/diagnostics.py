@@ -54,6 +54,7 @@ def _snapshot(hass: HomeAssistant, entity_id: str | None) -> dict[str, Any] | No
     return {
         "entity_id": entity_id,
         "state": state.state,
+        "last_changed": state.last_changed.isoformat(),
         "attributes": dict(state.attributes),
     }
 
