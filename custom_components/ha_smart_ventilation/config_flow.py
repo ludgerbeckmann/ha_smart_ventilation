@@ -22,6 +22,7 @@ from .const import (
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
     CONF_DEVICE_MAX_RUNTIME_MINUTES,
     CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
@@ -111,6 +112,7 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
     DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
@@ -254,6 +256,13 @@ _THRESHOLD_FIELDS = {
     CONF_SUMMER_MODE_THRESHOLD_TEMP: (DEFAULT_SUMMER_MODE_THRESHOLD_TEMP, 5, 30, 0.5, "°C"),
     CONF_DEVICE_MAX_RUNTIME_MINUTES: (
         DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
+        0,
+        720,
+        15,
+        "min",
+    ),
+    CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES: (
+        DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
         0,
         720,
         15,
@@ -869,6 +878,9 @@ def _build_room_schema(
     max_runtime_marker, max_runtime_sel = _override_selector(
         CONF_DEVICE_MAX_RUNTIME_MINUTES, defaults
     )
+    max_runtime_high_marker, max_runtime_high_sel = _override_selector(
+        CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES, defaults
+    )
     max_runtime_cooldown_marker, max_runtime_cooldown_sel = _override_selector(
         CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES, defaults
     )
@@ -1279,6 +1291,7 @@ def _build_room_schema(
                 power_marker: power_sel,
                 grace_marker: grace_sel,
                 max_runtime_marker: max_runtime_sel,
+                max_runtime_high_marker: max_runtime_high_sel,
                 max_runtime_cooldown_marker: max_runtime_cooldown_sel,
             }
         ),
@@ -1306,6 +1319,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
     max_runtime_marker, max_runtime_sel = _threshold_selector(
         CONF_DEVICE_MAX_RUNTIME_MINUTES, defaults
+    )
+    max_runtime_high_marker, max_runtime_high_sel = _threshold_selector(
+        CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES, defaults
     )
     max_runtime_cooldown_marker, max_runtime_cooldown_sel = _threshold_selector(
         CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES, defaults
@@ -1373,6 +1389,7 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         power_marker: power_sel,
         grace_marker: grace_sel,
         max_runtime_marker: max_runtime_sel,
+        max_runtime_high_marker: max_runtime_high_sel,
         max_runtime_cooldown_marker: max_runtime_cooldown_sel,
     }
     advanced_fields[

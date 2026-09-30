@@ -152,7 +152,8 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC",
+              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC at low surplus power",
+              "device_max_runtime_high_surplus_minutes": "Max. runtime dehumidifier/AC at high surplus power",
               "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
             },
             "data_description": {
@@ -167,7 +168,8 @@
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "device_max_runtime_minutes": "Empty = use the value from the global settings. 0 = disabled. Forces the device off once it has run this long uninterrupted - an available power surplus lifts this limit. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_minutes": "Empty = use the value from the global settings. 0 = disabled. Applies at low surplus power (below the minimum surplus power) or without a power sensor: forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
               "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}"
             }
           }
@@ -325,7 +327,8 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC",
+              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC at low surplus power",
+              "device_max_runtime_high_surplus_minutes": "Max. runtime dehumidifier/AC at high surplus power",
               "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
             },
             "data_description": {
@@ -340,7 +343,8 @@
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "device_max_runtime_minutes": "Empty = use the value from the global settings. 0 = disabled. Forces the device off once it has run this long uninterrupted - an available power surplus lifts this limit. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_minutes": "Empty = use the value from the global settings. 0 = disabled. Applies at low surplus power (below the minimum surplus power) or without a power sensor: forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_minutes}",
+              "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
               "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}"
             }
           }
@@ -439,7 +443,8 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC",
+              "device_max_runtime_minutes": "Max. runtime dehumidifier/AC at low surplus power",
+              "device_max_runtime_high_surplus_minutes": "Max. runtime dehumidifier/AC at high surplus power",
               "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime"
             },
             "data_description": {
@@ -454,7 +459,8 @@
               "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
               "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
               "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
-              "device_max_runtime_minutes": "Maximum uninterrupted runtime before the dehumidifier/AC is forced off - 0 = disabled. An available power surplus lifts this limit. Default for all rooms without their own value.",
+              "device_max_runtime_minutes": "Maximum uninterrupted runtime at low surplus power (below the minimum surplus power or without a power sensor) before the dehumidifier/AC is forced off - 0 = disabled. Default for all rooms without their own value.",
+              "device_max_runtime_high_surplus_minutes": "Maximum uninterrupted runtime at high surplus power (at least the minimum surplus power, only with a power sensor) before the dehumidifier/AC is forced off - 0 = unlimited. Default for all rooms without their own value.",
               "device_max_runtime_cooldown_minutes": "Minimum rest period after such a forced shutoff before the device may turn on again. Default for all rooms without their own value."
             }
           },

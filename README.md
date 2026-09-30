@@ -955,20 +955,30 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   einschaltet, und wieder deaktiviert, sobald sie ausschaltet. Unterstützt
   sowohl `cover`-Entitäten (auf/zu) als auch `switch`-Entitäten (an =
   herunterfahren + gesperrt, aus = hochfahren + entsperrt).
-- **Höchstlaufzeit** (Abschnitt "Erweitert", global + Raum-Override, Standard
-  0 = deaktiviert): Läuft Luftentfeuchter oder Klimaanlage ununterbrochen
-  länger als diese Zeit, werden sie zwangsweise abgeschaltet - unabhängig
-  davon, ob die eigentliche Zielbedingung (Feuchtigkeit/Temperatur) noch
-  erfüllt ist. Verfolgt wird dafür die tatsächlich am Gerät live abgefragte
-  Laufzeit, nicht nur der zuletzt von dieser Integration gesendete Befehl.
-  Ein vorhandener Einspeiseleistungs-Überschuss (siehe Leistungssensor oben)
-  hebt die Begrenzung auf - ohne konfigurierten Leistungssensor gilt sie
-  immer. Nach einem solchen Zwangs-Abschalten gilt zusätzlich eine
-  konfigurierbare **Ruhezeit** (Standard 30 Minuten), bevor das Gerät wieder
-  einschalten darf - ohne sie würde es bei weiterhin hoher Feuchtigkeit/
-  Temperatur sofort wieder anspringen und die Begrenzung wäre wirkungslos.
-  Während der Ruhezeit zeigt die Geräte-Tabelle als Grund "Ruhezeit nach
-  Höchstlaufzeit, bis HH:MM" an.
+- **Höchstlaufzeit** (Abschnitt "Erweitert", global + Raum-Override):
+  Läuft Luftentfeuchter oder Klimaanlage ununterbrochen länger als diese
+  Zeit, werden sie zwangsweise abgeschaltet - unabhängig davon, ob die
+  eigentliche Zielbedingung (Feuchtigkeit/Temperatur) noch erfüllt ist.
+  Verfolgt wird dafür die tatsächlich am Gerät live abgefragte Laufzeit,
+  nicht nur der zuletzt von dieser Integration gesendete Befehl. Es gibt
+  **zwei Werte**, je nach aktueller Einspeiseleistung (Grenze ist die
+  **Mindesteinspeiseleistung** aus dem Leistungssensor oben):
+  - **Höchstlaufzeit bei geringer Einspeiseleistung** (Standard 0 =
+    deaktiviert): gilt, solange die Leistung unter der
+    Mindesteinspeiseleistung liegt - und immer dann, wenn kein
+    Leistungssensor konfiguriert ist.
+  - **Höchstlaufzeit bei hoher Einspeiseleistung** (Standard 0 =
+    unbegrenzt, wie bisher): gilt, solange die Leistung mindestens der
+    Mindesteinspeiseleistung entspricht (nur mit konfiguriertem
+    Leistungssensor). Damit lässt sich z. B. bei viel PV-Überschuss eine
+    längere Laufzeit erlauben als bei knappem Überschuss.
+
+  Nach einem Zwangs-Abschalten (in beiden Fällen) gilt zusätzlich eine
+  gemeinsame, konfigurierbare **Ruhezeit** (Standard 30 Minuten), bevor das
+  Gerät wieder einschalten darf - ohne sie würde es bei weiterhin hoher
+  Feuchtigkeit/Temperatur sofort wieder anspringen und die Begrenzung wäre
+  wirkungslos. Während der Ruhezeit zeigt die Geräte-Tabelle als Grund
+  "Ruhezeit nach Höchstlaufzeit, bis HH:MM" an.
 
 ## Attribute für eine Statusübersicht
 
