@@ -242,6 +242,9 @@ class SmartClimateCard extends HTMLElement {
     let red = 0;
     let version = null;
     let summerMode = null;
+    // Außenwerte sind für alle Räume gleich und stehen oben unter der
+    // Statuszeile - hier der jeweils erste Raum mit einem Wert.
+    const outdoor = { temp: null, hum: null, abs: null, tempEnt: "", humEnt: "" };
     const entries = [];
 
     // Lange Texte (Grund, Auslöser, Ziele) werden nach 4 Zeilen automatisch mit
@@ -311,6 +314,17 @@ class SmartClimateCard extends HTMLElement {
 
       if (version === null && has(a, "integration_version")) version = a.integration_version;
       if (summerMode === null && has(a, "sommermodus_an")) summerMode = a.sommermodus_an;
+      if (outdoor.temp === null && has(a, "aussentemperatur") && a.aussentemperatur !== null) {
+        outdoor.temp = a.aussentemperatur;
+        outdoor.tempEnt = ents.aussentemperatur || "";
+      }
+      if (outdoor.hum === null && has(a, "aussen_luftfeuchtigkeit") && a.aussen_luftfeuchtigkeit !== null) {
+        outdoor.hum = a.aussen_luftfeuchtigkeit;
+        outdoor.humEnt = ents.aussen_luftfeuchtigkeit || "";
+      }
+      if (outdoor.abs === null && has(a, "aussen_absolute_luftfeuchtigkeit") && a.aussen_absolute_luftfeuchtigkeit !== null) {
+        outdoor.abs = a.aussen_absolute_luftfeuchtigkeit;
+      }
 
       if (matchIcon === "🟢") green += 1;
       else if (matchIcon === "🟠") orange += 1;
@@ -344,16 +358,6 @@ class SmartClimateCard extends HTMLElement {
           highlightTemp
         )
       );
-      const outdoorTempDefined = has(a, "aussentemperatur") && a.aussentemperatur !== null;
-      const outdoorTempVal = ent(
-        ents.aussentemperatur,
-        wrap(
-          outdoorTempDefined ? `${roundStr(a.aussentemperatur, 1)} °C` : "–",
-          ["frost", "heat", "outdoor_warmer"].includes(highlightCode)
-        )
-      );
-      const outdoorHumDefined = has(a, "aussen_luftfeuchtigkeit") && a.aussen_luftfeuchtigkeit !== null;
-      const outdoorHumVal = outdoorHumDefined ? roundStr(a.aussen_luftfeuchtigkeit, 0) : "–";
 
       let humRow = "";
       if (has(a, "luftfeuchtigkeit")) {
@@ -366,7 +370,7 @@ class SmartClimateCard extends HTMLElement {
         );
         const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
         const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
-        humRow = `<tr><td>Luftfeuchtigkeit</td><td class="nw">${humVal}</td><td class="nw">${ent(ents.aussen_luftfeuchtigkeit, `${outdoorHumVal} %`)}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
+        humRow = `<tr><td>Luftfeuchtigkeit</td><td class="nw">${humVal}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} %</td></tr>`;
       }
 
       let co2Row = "";
@@ -377,7 +381,7 @@ class SmartClimateCard extends HTMLElement {
         );
         const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
         const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
-        co2Row = `<tr><td>CO2</td><td class="nw">${co2Val}</td><td class="nw">–</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
+        co2Row = `<tr><td>CO2</td><td class="nw">${co2Val}</td><td class="nw">${Math.round(lo)} - ${Math.round(hi)} ppm</td></tr>`;
       }
 
       let absRow = "";
@@ -386,18 +390,15 @@ class SmartClimateCard extends HTMLElement {
           has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null
             ? `${a.absolute_luftfeuchtigkeit} g/m³`
             : "–";
-        let absOut =
-          has(a, "aussen_absolute_luftfeuchtigkeit") && a.aussen_absolute_luftfeuchtigkeit !== null
-            ? `${a.aussen_absolute_luftfeuchtigkeit} g/m³`
-            : "–";
+        const absOutAvailable =
+          has(a, "aussen_absolute_luftfeuchtigkeit") && a.aussen_absolute_luftfeuchtigkeit !== null;
         // Öffnen wegen Luftfeuchtigkeit: die absolute Luftfeuchtigkeit gibt das
         // Öffnen frei (Außenluft trockener) und wird wie der Auslöser
         // hervorgehoben - innen und außen, sofern beide Werte vorliegen.
         const absOpenGate =
-          s.state === "on" && openReasons.includes("humidity") && absIn !== "–" && absOut !== "–";
+          s.state === "on" && openReasons.includes("humidity") && absIn !== "–" && absOutAvailable;
         absIn = wrap(absIn, absOpenGate);
-        absOut = wrap(absOut, absOpenGate || highlightCode === "outdoor_wetter");
-        absRow = `<tr><td>Abs. Luftfeuchtigkeit</td><td class="nw">${absIn}</td><td class="nw">${absOut}</td><td class="nw">–</td></tr>`;
+        absRow = `<tr><td>Abs. Luftfeuchtigkeit</td><td class="nw">${absIn}</td><td class="nw">–</td></tr>`;
       }
 
       // Geräte-Tabelle
@@ -481,8 +482,8 @@ class SmartClimateCard extends HTMLElement {
       const tempLo = Math.min(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const tempHi = Math.max(a.schwelle_temperatur_schliessen, a.schwelle_temperatur_oeffnen);
       const valuesTable =
-        `<table class="values"><thead><tr><th>Messwert</th><th>Innen</th><th>Außen</th><th>Normalbereich</th></tr></thead><tbody>` +
-        `<tr><td>Temperatur</td><td class="nw">${tempVal}</td><td class="nw">${outdoorTempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
+        `<table class="values"><thead><tr><th>Messwert</th><th>Innen</th><th>Normalbereich</th></tr></thead><tbody>` +
+        `<tr><td>Temperatur</td><td class="nw">${tempVal}</td><td class="nw">${tempLo} - ${tempHi} °C</td></tr>` +
         `${humRow}${absRow}${co2Row}</tbody></table>`;
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
@@ -559,9 +560,21 @@ class SmartClimateCard extends HTMLElement {
         .map((c) => `<td class="${c.cls}">${c.value}</td>`)
         .join("")}</tr></tbody></table>`;
 
+    let outdoorTable = "";
+    if (outdoor.temp !== null || outdoor.hum !== null || outdoor.abs !== null) {
+      const row = (label, valueHtml) =>
+        `<tr><td>${label}</td><td class="nw">${valueHtml}</td></tr>`;
+      outdoorTable =
+        `<table class="values outdoor"><thead><tr><th>Messwert</th><th>Außen</th></tr></thead><tbody>` +
+        row("Temperatur", outdoor.temp !== null ? ent(outdoor.tempEnt, `${roundStr(outdoor.temp, 1)} °C`) : "–") +
+        row("Luftfeuchtigkeit", outdoor.hum !== null ? ent(outdoor.humEnt, `${roundStr(outdoor.hum, 0)} %`) : "–") +
+        row("Abs. Luftfeuchtigkeit", outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–") +
+        `</tbody></table>`;
+    }
+
     const roomsHtml = entries.map((e) => e.html).join("");
 
-    this._content.innerHTML = `<div class="overview-wrap">${overviewTable}</div>${roomsHtml}`;
+    this._content.innerHTML = `<div class="overview-wrap">${overviewTable}${outdoorTable}</div>${roomsHtml}`;
   }
 
   static _css() {
@@ -637,6 +650,8 @@ class SmartClimateCard extends HTMLElement {
         background: rgba(244, 67, 54, 0.12);
       }
       table.overview td { font-size: 1.1em; font-weight: 600; }
+      /* Außenwerte unter der Statuszeile (Bezeichnung links, Messwert rechts). */
+      table.overview + table.values { margin-top: 8px; }
       table.values td.center { text-align: center; }
 
       details.room {

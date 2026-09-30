@@ -3616,6 +3616,27 @@ Begrenzung) für einen Zustand war, wird durch einen eigenen Wert mit Standard 0
 rückwärtskompatibel erweiterbar; beim Umbenennen eines Labels den
 Konfigurationsschlüssel stabil lassen.
 
+**76. JS-Karte: Außenwerte einmal oben statt pro Raum (0.83.0).**
+Nutzeridee: Die Außenklimawerte sind für alle Räume gleich, also ganz nach
+oben unter die globale Statuszeile. Rückfrage: Die Spalte "Außen" in den
+Raum-Messwert-Tabellen entfällt (Empfehlung des Assistenten, vom Nutzer
+gewählt) - dadurch geht die raumbezogene Hervorhebung der Außenzelle bei
+"Außen wärmer/feuchter", Frost und Hitze verloren (der Auslöser steht weiter in
+der Empfehlungs-Zeile), die Raumtabelle wird schmaler. Layout auf Nutzerwunsch:
+Tabelle mit Bezeichnung links und Messwert rechts (drei Zeilen: Temperatur,
+Luftfeuchtigkeit, Abs. Luftfeuchtigkeit); der Nutzer sprach von "dreispaltig",
+beschrieb aber zwei Spalten - umgesetzt als drei Zeilen x zwei Spalten. Werte:
+jeweils vom ersten Raum mit Wert (Außensensoren sind global, Räume könnten sie
+technisch überschreiben - dann gilt der erste). Entity-IDs kommen aus
+`entitaeten` (0.81.0), nur Temperatur/Luftfeuchtigkeit sind antippbar (die
+absolute Luftfeuchtigkeit ist berechnet, keine eigene Entität). Nur die
+JS-Karte (Markdown-Karte unverändert), kein Backend-Umbau. Getestet mit jsdom
+(Tabelle, Werte, Klick, keine Außen-Spalte mehr, keine Tabelle ohne Werte) und
+Chromium (300-430 px kein Überlauf). Lektion: Wenn eine Anzeige-Verlagerung
+etwas entfernt, das zusätzlich eine Nebenfunktion hatte (hier: Hervorhebung
+der Außenzelle), diese Nebenfunktion vorab benennen und den Nutzer
+entscheiden lassen, statt sie stillschweigend zu verlieren.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für
