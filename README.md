@@ -85,7 +85,7 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
      - **Innentemperatur**: eine `climate`-, `sensor`-, `number`- oder
        `input_number`-Entität (das zugehörige "Temperatur-Attribut" steht
        im Abschnitt "Erweitert" weiter unten)
-     - **Temperaturquelle auch fürs Heizen verwenden** (Checkbox, Standard:
+     - **Temperaturquelle auch fürs Heizen** (Checkbox, Standard:
        aus): verwendet automatisch die oben gewählte Innentemperatur-Quelle
        als Heizungs-Gerät, statt sie zusätzlich im Feld "Heizung" separat
        auszuwählen - erspart die doppelte Auswahl derselben Entität für
@@ -106,7 +106,7 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        "Heizungs-Zeitplan aktivieren" im Abschnitt "Parameter") - wie für
        Heizungen typisch. Details siehe
        "Geräte-Steuerung" weiter unten. Wird ignoriert, falls oben
-       "Temperaturquelle auch fürs Heizen verwenden" aktiviert ist
+       "Temperaturquelle auch fürs Heizen" aktiviert ist
      - **Presets steuern/anzeigen** (Ja/Nein/leer, Standard auch global: Ja)
        + vier Preset-Namen-Felder (Komfort/Standby/Eco (Nacht)/Gebäudeschutz):
        Manche climate-Integrationen (z. B. KNX) bilden diese Zustände nativ
@@ -176,9 +176,9 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        sobald der Tank wieder als "leer" gemeldet wird. Nur wirksam, wenn
        oben auch tatsächlich ein Tankstatus-Sensor ausgewählt ist
      - **Klimaanlage**: eine `climate`- oder `switch`-Entität (die
-       zugehörige Mindest-Einspeiseleistung/Verzögerung bis Abschalten
+       zugehörige Mindest-Einspeiseleistung/Abschaltverzögerung
        steht im Abschnitt "Erweitert" weiter unten)
-     - **Benachrichtigung bei Fenster-Gerät-Konflikt** (Standard aus): EIN
+     - **Fenster-Gerät-Konflikt melden** (Standard aus): EIN
        gemeinsamer Schalter für Luftentfeuchter UND Klimaanlage. Aktiviert
        eine echte Benachrichtigung, solange eines der beiden konfigurierten
        Geräte bei offenem Fenster gegen ungünstigere Außenluft ankämpft
@@ -233,7 +233,7 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        genau dieses Ziel die Push-Nachricht nur, wenn die Person/das Gerät
        zuhause ist. Über "Hinzufügen" lassen sich beliebig viele Ziele
        ergänzen
-     - **Persistente Benachrichtigung (Weboberfläche)** (Ja/Nein/leer) –
+     - **Persistente Benachrichtigung** (Weboberfläche) (Ja/Nein/leer) –
        keine weiteren Felder nötig. Erstellt eine dauerhafte Benachrichtigung
        im Home-Assistant-Benachrichtigungsbereich (Glocken-Symbol), solange
        die Empfehlung aktiv ist, und löst sich automatisch wieder auf,
@@ -302,7 +302,7 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        Winter-Höchstdauer** und **Anstiegs-Schwelle Duscherkennung**
        (letztere nur relevant, wenn die Duscherkennung im Abschnitt
        "Sensoren & Geräte" aktiviert ist)
-     - **Mindest-Einspeiseleistung** / **Verzögerung bis Abschalten**: gilt
+     - **Mindest-Einspeiseleistung** / **Abschaltverzögerung**: gilt
        nur für Luftentfeuchter/Klimaanlage, nicht für die Heizung (der
        Leistungssensor selbst ist nur in "- Smart Climate Optionen -"
        hinterlegbar, nicht pro Raum)
@@ -354,7 +354,7 @@ eingeklappt - vorher waren "Sensoren" und "Parameter" ausgeklappt):
   Ansage direkt über eine laufende Wiedergabe; "Pausieren" pausiert sie vorher
 - **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht mehr
   im Raum-Formular auswählbar (die zugehörige Mindest-Einspeiseleistung/
-  Verzögerung bis Abschalten steht im Abschnitt "Erweitert" weiter unten)
+  Abschaltverzögerung steht im Abschnitt "Erweitert" weiter unten)
 - **Sommermodus-Vorhersagequelle** (optional, nur global): eine `sensor`-
   oder `weather`-Entität mit einer Temperatur-Vorhersage - z. B. ein eigener
   Template-Sensor, der die Tagesvorhersage als Attribut bereitstellt (kein
@@ -424,10 +424,9 @@ raumweiter Standard, pro Raum im dortigen Abschnitt "Erweitert"
   direkt als Zahl lesen (z. B. bei einem Template-Sensor, dessen state
   selbst schon der Vorhersagewert ist)
 - **Toleranz-Marge**, **Debounce-Zeit Frostschutz**, **Priorität bei
-  Winter-Höchstdauer** (hier "Luftfeuchtigkeit/CO2 haben Vorrang vor
-  Winter-Höchstdauer" genannt) und **Anstiegs-Schwelle Duscherkennung**
+  Winter-Höchstdauer** (hier "Luftfeuchtigkeit/CO2 haben Vorrang" genannt) und **Anstiegs-Schwelle Duscherkennung**
   (die Aktivierung der Duscherkennung selbst ist reine Raumeinstellung)
-- **Mindest-Einspeiseleistung** + **Verzögerung bis Abschalten**:
+- **Mindest-Einspeiseleistung** + **Abschaltverzögerung**:
   Standardwerte für alle Räume, die keine eigenen Werte festlegen (die
   Werte selbst bleiben pro Raum überschreibbar, siehe Abschnitt
   "Erweitert" im Raum-Formular)
@@ -437,7 +436,7 @@ umbenannt, da hier jetzt auch das Erinnerungsintervall steht, direkt neben
 dem zugehörigen Erinnerungstext; standardmäßig eingeklappt):
 - **Home Assistant Companion App** + **App-Benachrichtigungsziele**: globaler
   Standard, pro Raum überschreibbar
-- **Persistente Benachrichtigung (Weboberfläche)**: ebenso globaler
+- **Persistente Benachrichtigung** (Weboberfläche): ebenso globaler
   Standard, pro Raum überschreibbar
 - **Erinnerungsintervall** als raumweiter Standard - pro Raum im Abschnitt
   "Benachrichtigungen & Anwesenheit" überschreibbar (siehe oben)
@@ -549,9 +548,9 @@ zur unbeschränkten Auswahl zurückzukehren.
 
 Jede der drei Größen (Temperatur, Luftfeuchtigkeit, CO2) hat ein Paar
 Schwellenwerte, die zusammen einen **Normalbereich** aufspannen: unterhalb
-der "Normalbereich-Untergrenze" (Formularfeld "... zum Schließen") wird
-geschlossen, oberhalb der "Normalbereich-Obergrenze" (Formularfeld "... zum
-Öffnen") wird geöffnet, dazwischen bleibt der zuletzt gesetzte Zustand
+der Untergrenze (Formularfelder "Untergrenze Temperatur/Luftfeuchtigkeit/CO2
+(schließen)") wird geschlossen, oberhalb der Obergrenze (Formularfelder
+"Obergrenze ... (öffnen)") wird geöffnet, dazwischen bleibt der zuletzt gesetzte Zustand
 unverändert (Hysterese/Totzone, siehe unten). Genau diese
 Normalbereich-Grenzen entscheiden bei Temperatur und Luftfeuchtigkeit auch
 mit darüber, wann die Außenluft selbst als "nicht mehr hilfreich" gilt
@@ -663,7 +662,7 @@ obwohl sich der eigentliche Lüftungsbedarf die ganze Zeit über nicht
 geändert hat. Einzige Ausnahme: Frost- und Hitzeschutz haben immer Vorrang.
 
 **Konfigurierbare Priorität bei Winter-Höchstdauer:** Der Parameter
-"Luftfeuchtigkeit/CO2 haben Vorrang vor Winter-Höchstdauer" legt fest, wie
+"Luftfeuchtigkeit/CO2 haben Vorrang" (gegenüber der Winter-Höchstdauer) legt fest, wie
 dieser Konflikt aufgelöst wird:
 - **An (Standard)**: Luftfeuchtigkeit/CO2 gewinnen – die Winter-Höchstdauer
   wird bei noch bestehendem Feuchtigkeits- oder CO2-Lüftungsbedarf
@@ -1003,11 +1002,11 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   nicht nur der zuletzt von dieser Integration gesendete Befehl. Es gibt
   **zwei Werte**, je nach aktueller Einspeiseleistung (Grenze ist die
   **Mindesteinspeiseleistung** aus dem Leistungssensor oben):
-  - **Höchstlaufzeit bei geringer Einspeiseleistung** (Standard 0 =
+  - **Höchstlaufzeit bei geringer Einspeisung** (Standard 0 =
     deaktiviert): gilt, solange die Leistung unter der
     Mindesteinspeiseleistung liegt - und immer dann, wenn kein
     Leistungssensor konfiguriert ist.
-  - **Höchstlaufzeit bei hoher Einspeiseleistung** (Standard 0 =
+  - **Höchstlaufzeit bei hoher Einspeisung** (Standard 0 =
     unbegrenzt, wie bisher): gilt, solange die Leistung mindestens der
     Mindesteinspeiseleistung entspricht (nur mit konfiguriertem
     Leistungssensor). Damit lässt sich z. B. bei viel PV-Überschuss eine
@@ -1231,7 +1230,7 @@ Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (21.0 °C)" oder
 Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
 Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziel(e)", das Status-Icon
-🟢/⚫ steht links vor dem Namen der Methode).
+🟢/⚫ steht links vor dem Namen der Methode; bei schmaler Karte bricht der Methodenname an den Leerzeichen um, damit die Ziele-Spalte Platz behält).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
@@ -1581,7 +1580,7 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   `tag`/eigene `notification_id`, unabhängig von der Lüftungsempfehlung) und
   löst sich nach demselben "Clean Notification"-Muster automatisch wieder
   auf, sobald der Tank wieder als "leer" gemeldet wird.
-- **Benachrichtigung bei Fenster-Gerät-Konflikt**: Ist für einen Raum die
+- **Fenster-Gerät-Konflikt melden** (Benachrichtigung): Ist für einen Raum die
   entsprechende Option aktiviert UND läuft dort ein konfigurierter
   Luftentfeuchter oder eine konfigurierte Klimaanlage bei offenem Fenster
   gegen ungünstigere Außenluft an, löst das eine eigene Benachrichtigung
