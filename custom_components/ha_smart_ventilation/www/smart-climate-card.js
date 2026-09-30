@@ -687,18 +687,28 @@ class SmartClimateCard extends HTMLElement {
       table.values td.center { text-align: center; }
 
       details.room {
-        /* Linke Ecken eckig: der farbige Streifen läuft gerade durch, ohne Bogen an den Enden. */
-        border-radius: 0 10px 10px 0;
+        /* Rahmen bleibt abgerundet; der Farbstreifen (::before) läuft gerade durch. */
+        position: relative;
+        border-radius: 10px;
         border: 1px solid var(--divider-color, #e0e0e0);
-        border-left: 4px solid var(--divider-color, #e0e0e0);
         background: var(--card-background-color, transparent);
-        padding: 10px 6px 12px;
+        padding: 10px 6px 12px 9px;
         margin-bottom: 14px;
       }
+      details.room::before {
+        content: "";
+        position: absolute;
+        left: -1px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 0;
+        background: var(--divider-color, #e0e0e0);
+      }
       details.room:not([open]) { padding-bottom: 10px; }
-      .room.status-green { border-left-color: var(--success-color, #4caf50); }
-      .room.status-orange { border-left-color: var(--warning-color, #ff9800); }
-      .room.status-red { border-left-color: var(--error-color, #f44336); }
+      .room.status-green::before { background: var(--success-color, #4caf50); }
+      .room.status-orange::before { background: var(--warning-color, #ff9800); }
+      .room.status-red::before { background: var(--error-color, #f44336); }
 
       .room-header {
         display: flex;
