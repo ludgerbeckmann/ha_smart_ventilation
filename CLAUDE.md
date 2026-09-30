@@ -3590,6 +3590,32 @@ das nicht, Auslaufmodell). Sichtbarer Hinweis: gepunktete Unterstreichung
 Entity-IDs, kein Aufklappen, fehlendes Attribut), Chromium (kein Überlauf
 300-430 px) und Stub-Tests (Attribut, Mindestanstieg).
 
+**75. Höchstlaufzeit für Luftentfeuchter/Klimaanlage nach Einspeiseleistung getrennt (0.82.0).**
+Nutzerwunsch: die Höchstlaufzeit soll nach hoher und geringer
+Einspeiseleistung (Schwellenwert) unterscheidbar sein. Bis dahin galt sie nur
+bei zu geringer Leistung (bzw. ohne Leistungssensor); bei ausreichendem
+Überschuss gab es keine Begrenzung (Lektion 34-Muster). Rückfrage klärte:
+(1) die bestehende Mindesteinspeiseleistung ist die Grenze (kein neues
+Schwellenfeld) - der Hinweis, dass bei "gering" das Gerät ohnehin nur während
+der Karenzzeit laufen kann, hielt den Nutzer nicht von dieser Wahl ab; (2) die
+Ruhezeit bleibt ein gemeinsames Feld. Umsetzung: neues Feld
+`CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES` (Standard 0 = unbegrenzt =
+bisheriges Verhalten, keine Migration nötig); das bestehende
+`CONF_DEVICE_MAX_RUNTIME_MINUTES` gilt jetzt "bei geringer Einspeiseleistung"
+(Label umbenannt, Schlüssel unverändert, damit gespeicherte Werte gültig
+bleiben). In `_update_single_device()` wählt `power_entity_configured and
+power_ok` den Wert; die bisherige Bedingung `not (power_entity_configured and
+power_ok)` in der Zwangsabschalt-Prüfung entfiel, weil die Auswahl jetzt vorher
+geschieht. Neuer Eintrag in `_THRESHOLD_FIELDS` (damit Raum-Override,
+"Aktuell global"-Platzhalter und Reset automatisch mitlaufen), Marker in
+Raum- und globalem Formular, Übersetzungen (je 3 Stellen x data/data_description
+in strings.json/de/en, per Skript). Getestet mit Stub-Modulen (8 Szenarien:
+ohne Sensor, hohe/geringe Leistung, hoch nicht gesetzt = unbegrenzt, globale
+Werte, Ruhezeit gesetzt). Lektion: Eine Bedingung, die bisher "Aus" (keine
+Begrenzung) für einen Zustand war, wird durch einen eigenen Wert mit Standard 0
+rückwärtskompatibel erweiterbar; beim Umbenennen eines Labels den
+Konfigurationsschlüssel stabil lassen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

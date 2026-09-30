@@ -39,6 +39,7 @@ from .const import (
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
     CONF_DEVICE_MAX_RUNTIME_MINUTES,
     CONF_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     CONF_DISABLE_CLOSE_RECOMMENDATION,
@@ -124,6 +125,7 @@ from .const import (
     DEFAULT_CO2_THRESHOLD_OPEN,
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
+    DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
     DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
@@ -2434,8 +2436,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # verfolgt die tatsächliche, LIVE abgefragte Laufzeit (nicht den
         # internen Tracker "current", der nur bestätigt, dass wir zuletzt
         # "an" kommandiert haben, siehe Lektion 47/56). Ein vorhandener
-        # Einspeiseleistungs-Überschuss hebt die Begrenzung auf (identisches
-        # Muster zu dehumidifier_pause_open_window, Lektion 34).
+        # Einspeiseleistungs-Überschuss (Leistung mindestens so hoch wie die
+        # Mindesteinspeiseleistung, nur mit Leistungssensor) verwendet eine
+        # EIGENE Höchstlaufzeit (CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
+        # Standard 0 = unbegrenzt wie bisher); bei geringer Einspeiseleistung
+        # bzw. ohne Leistungssensor gilt CONF_DEVICE_MAX_RUNTIME_MINUTES.
         force_off_due_to_max_runtime = False
         if runtime_since_attr is not None:
             if live_state is True:
@@ -2449,13 +2454,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # off_confirmed-Behandlung von "nicht lesbar" oben).
 
             runtime_since = getattr(self, runtime_since_attr)
-            max_minutes = self._effective(
-                CONF_DEVICE_MAX_RUNTIME_MINUTES, DEFAULT_DEVICE_MAX_RUNTIME_MINUTES
-            )
+            if power_entity_configured and power_ok:
+                max_minutes = self._effective(
+                    CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
+                    DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
+                )
+            else:
+                max_minutes = self._effective(
+                    CONF_DEVICE_MAX_RUNTIME_MINUTES, DEFAULT_DEVICE_MAX_RUNTIME_MINUTES
+                )
             if (
                 max_minutes > 0
                 and runtime_since is not None
-                and not (power_entity_configured and power_ok)
                 and (dt_util.utcnow() - runtime_since).total_seconds() / 60
                 >= max_minutes
             ):

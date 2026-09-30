@@ -338,6 +338,15 @@ CONF_POWER_GRACE_PERIOD = "power_grace_period_minutes"
 # Leistungssensor gilt sie immer.
 CONF_DEVICE_MAX_RUNTIME_MINUTES = "device_max_runtime_minutes"
 DEFAULT_DEVICE_MAX_RUNTIME_MINUTES = 0
+# Höchstlaufzeit bei HOHER Einspeiseleistung (Leistung mindestens so hoch wie
+# die Mindesteinspeiseleistung CONF_MIN_SURPLUS_POWER, nur mit konfiguriertem
+# Leistungssensor). Das Feld CONF_DEVICE_MAX_RUNTIME_MINUTES gilt dagegen bei
+# GERINGER Einspeiseleistung (darunter bzw. ohne Leistungssensor). Standard 0
+# = unbegrenzt - entspricht dem bisherigen Verhalten (bei ausreichendem
+# Überschuss gab es keine Begrenzung), bestehende Installationen ändern sich
+# also nicht.
+CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES = "device_max_runtime_high_surplus_minutes"
+DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES = 0
 # Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor
 # das Gerät wieder einschalten darf - ohne diese würde es bei weiterhin
 # hoher Luftfeuchtigkeit/Temperatur sofort wieder anspringen und die
