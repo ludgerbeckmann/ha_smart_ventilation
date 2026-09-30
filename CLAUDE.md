@@ -3724,6 +3724,21 @@ Lektion: Wer eine Spalte entfernt, muss prüfen, welche Information nur dort sta
 (hier: Gründe ohne Messwert-Zeile), und sie an anderer Stelle erhalten oder den
 Nutzer vorab entscheiden lassen.
 
+**89. JS-Karte: Vorsatz "pausiert: " in der Geräte-Tabelle weggelassen (0.89.5).**
+Nutzerwunsch (Screenshot): Bei der Heizung ("pausiert: Sommerbetrieb aktiv
+(Sollstellung: 19.0 °C)") ist der Vorsatz überflüssig, der Zustand ergibt sich
+aus dem Status-Icon. Auf die Rückfrage wurde die Änderung auf Luftentfeuchter und
+Klimaanlage ausgedehnt (gleicher Code). Nur die Karte: `deviceReason()` schneidet
+einen führenden Vorsatz "pausiert: " ab und setzt den Rest mit Großbuchstaben an
+("niemand zuhause (kein Comfort)" -> "Niemand zuhause (kein Comfort)"); Grund-Texte
+ohne Vorsatz bleiben unverändert, der Text wird weiter escaped. Die Attribute
+`luftentfeuchter_grund`/`klimaanlage_grund`/`heizung_grund` bleiben unverändert (Automationen,
+Diagnose). README-Stelle zu den Grund-Texten nachgezogen, dabei auch die seit 0.89.2
+veraltete Klammer "(21.0 °C)" -> "(Sollstellung: 21.0 °C)". Lektion: Bei einer Änderung
+an einer Stelle, die in mehreren strukturell gleichen Zeilen vorkommt (hier drei
+Geräte), vor dem Umsetzen fragen oder gleich alle prüfen; und beim Nachziehen der README
+den ganzen Absatz lesen - ein älterer Anzeige-Fix (0.89.2) war dort nicht nachgezogen.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

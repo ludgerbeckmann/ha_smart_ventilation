@@ -32,6 +32,15 @@ const HEATING_MODE_LABEL = {
   standby: { icon: "🟠", text: "Standby" },
 };
 
+// Geräte-Grund ohne den Vorsatz "pausiert: " (ergibt sich aus dem Status-Icon);
+// der Rest beginnt mit Großbuchstaben.
+function deviceReason(value) {
+  const text = String(value);
+  if (!text.startsWith("pausiert: ")) return esc(text);
+  const rest = text.slice("pausiert: ".length);
+  return esc(rest.charAt(0).toUpperCase() + rest.slice(1));
+}
+
 function esc(value) {
   if (value === null || value === undefined) return "";
   return String(value)
@@ -444,7 +453,7 @@ class SmartClimateCard extends HTMLElement {
         } else if (has(a, "luftentfeuchter_letzte_laufzeit")) {
           laufzeit = fmtDuration(a.luftentfeuchter_letzte_laufzeit);
         }
-        const grund = has(a, "luftentfeuchter_grund") ? esc(a.luftentfeuchter_grund) : "–";
+        const grund = has(a, "luftentfeuchter_grund") ? deviceReason(a.luftentfeuchter_grund) : "–";
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|dehum`, grund)}</td></tr>`;
       }
       if (has(a, "klimaanlage_an")) {
@@ -455,7 +464,7 @@ class SmartClimateCard extends HTMLElement {
         } else if (has(a, "klimaanlage_letzte_laufzeit")) {
           laufzeit = fmtDuration(a.klimaanlage_letzte_laufzeit);
         }
-        const grund = has(a, "klimaanlage_grund") ? esc(a.klimaanlage_grund) : "–";
+        const grund = has(a, "klimaanlage_grund") ? deviceReason(a.klimaanlage_grund) : "–";
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|ac`, grund)}</td></tr>`;
       }
       if (has(a, "heizung_an")) {
@@ -468,7 +477,7 @@ class SmartClimateCard extends HTMLElement {
         } else if (has(a, "heizung_letzte_laufzeit")) {
           laufzeit = fmtDuration(a.heizung_letzte_laufzeit);
         }
-        let grund = has(a, "heizung_grund") ? esc(a.heizung_grund) : "–";
+        let grund = has(a, "heizung_grund") ? deviceReason(a.heizung_grund) : "–";
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
           grund += ` (Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
