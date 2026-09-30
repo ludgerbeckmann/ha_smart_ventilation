@@ -524,17 +524,17 @@ class SmartClimateCard extends HTMLElement {
 
       const n1Status = has(a, "sprachausgabe_aktiv") ? "🟢" : "⚫";
       const n1Ziel = has(a, "sprachausgabe_lautsprecher")
-        ? a.sprachausgabe_lautsprecher.map((t) => ent(t, breakable(esc(t)))).join(", ")
+        ? a.sprachausgabe_lautsprecher.map((t) => `<div class="tgt">${ent(t, breakable(esc(t)))}</div>`).join("")
         : "–";
       const n2Status = has(a, "app_aktiv") ? "🟢" : "⚫";
       const n2Ziel = has(a, "app_ziele")
-        ? a.app_ziele.map((t) => ent(t, breakable(esc(t)))).join(", ")
+        ? a.app_ziele.map((t) => `<div class="tgt">${ent(t, breakable(esc(t)))}</div>`).join("")
         : "–";
       const n3Status = has(a, "persistent_aktiv") ? "🟢" : "⚫";
       const notifyOpen = this._notifyOpenState.get(a.raum) || false;
       const notifyTable =
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
-        `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Ziel(e)</th></tr></thead><tbody>` +
+        `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Ziele</th></tr></thead><tbody>` +
         `<tr><td><div class="nrow"><span class="ni">${n1Status}</span><span>Sprachausgabe</span></div></td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
         `<tr><td><div class="nrow"><span class="ni">${n2Status}</span><span>App-Benachrichtigung</span></div></td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
         `<tr><td><div class="nrow"><span class="ni">${n3Status}</span><span>Persistente Benachrichtigung</span></div></td><td>–</td></tr>` +
@@ -756,6 +756,11 @@ class SmartClimateCard extends HTMLElement {
          die Ziele-Spalte bricht dagegen an . und _ (siehe breakable()). */
       .notify-details table.values th:first-child,
       .notify-details table.values td:first-child { overflow-wrap: normal; word-break: normal; }
+      /* Ziele stehen untereinander - die Spalte bekommt Vorrang, die Methodennamen
+         brechen dafür an Leerzeichen/Bindestrichen um. */
+      .notify-details .tgt + .tgt { margin-top: 4px; }
+      .notify-details table.values th:nth-child(2),
+      .notify-details table.values td:nth-child(2) { width: 62%; }
       /* Icon links, Name rechts daneben - ein Umbruch des Namens beginnt unter dem
          Namen, nicht unter dem Icon (Hängeeinzug). */
       .notify-details .nrow { display: flex; align-items: baseline; gap: 0.4em; }

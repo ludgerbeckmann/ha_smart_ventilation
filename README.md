@@ -1236,7 +1236,7 @@ Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (Sollstellung: 21.0 °C
 "Zeitfenster: Nacht (Sollstellung: 16.0 °C)"); bei Dusche entsprechend, ob und warum die
 Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
-Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziel(e)", das Status-Icon
+Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziele" (mehrere Ziele stehen jeweils in einer eigenen Zeile, ohne Komma, und sind einzeln antippbar), das Status-Icon
 🟢/⚫ steht links vor dem Namen der Methode; bei schmaler Karte bricht der Methodenname an den Leerzeichen um, damit die Ziele-Spalte Platz behält).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
