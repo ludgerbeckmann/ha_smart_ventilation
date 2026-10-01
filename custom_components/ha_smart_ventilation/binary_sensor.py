@@ -5,7 +5,7 @@ import asyncio
 import logging
 import math
 from collections import deque
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -201,6 +201,34 @@ _TICK_INTERVAL = timedelta(minutes=5)
 _PUSH_LOG_SIZE = 8
 # Anzahl der Einträge im Attribut `dusche_verlauf` (neueste zuerst).
 _SHOWER_LOG_SIZE = 6
+# Rückblick/Obergrenze für die Verlaufsabfrage des Fensterkontakts (siehe
+# _async_lookup_window_since): neueste Zustände der letzten 30 Tage.
+_WINDOW_HISTORY_DAYS = 30
+_WINDOW_HISTORY_LIMIT = 500
+
+
+def _window_since_from_history(
+    rows: list[tuple[str, "datetime"]], current: str
+) -> "datetime | None":
+    """Seit wann steht der Fensterkontakt ununterbrochen im Zustand `current`?
+
+    `rows` sind (Zustand, last_changed)-Paare aus der Verlaufsdatenbank.
+    Phasen mit "unavailable"/"unknown" (typisch bei jedem Neustart) werden
+    übersprungen: Gesucht ist der erste on/off-Eintrag mit `current` nach
+    dem letzten Eintrag mit dem Gegenteil. None, wenn es kein Gegenteil im
+    Rückblick gibt oder `current` danach (noch) nicht eingetragen ist
+    (die Datenbank schreibt mit einigen Sekunden Verzögerung)."""
+    onoff = [(st, ts) for st, ts in sorted(rows, key=lambda r: r[1]) if st in ("on", "off")]
+    last_other = None
+    for idx, (st, _ts) in enumerate(onoff):
+        if st != current:
+            last_other = idx
+    if last_other is None:
+        return None
+    for st, ts in onoff[last_other + 1 :]:
+        if st == current:
+            return ts
+    return None
 
 SERVICE_SEND_TEST_PUSH = "send_test_push"
 
@@ -291,6 +319,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # neu gesetzt (analog zu _open_since).
         self._last_state_change_at = None
         self._unsub_tick = None
+        # Zeitpunkt, seit dem der Fensterkontakt im aktuellen Zustand steht
+        # (`_window_since_state`): aus der Verlaufsdatenbank gelesen (übersteht
+        # Neustarts, bei denen last_changed des Sensors zurückgesetzt wird)
+        # bzw. bei einem echten Wechsel im Betrieb direkt übernommen. None,
+        # falls unbekannt - die Karte nutzt dann ihren eigenen Rückfall.
+        self._window_since: datetime | None = None
+        self._window_since_state: str | None = None
 
         # Ob aktuell eine Push- bzw. persistente Web-Benachrichtigung
         # angezeigt wird, die noch nicht durch eine "clean notification"
@@ -700,6 +735,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["empfehlung_aktiv_seit"] = self._open_since.isoformat()
         if self._last_state_change_at is not None:
             attrs["letzter_wechsel"] = self._last_state_change_at.isoformat()
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        if window_entity and self._window_since is not None:
+            window_state = self.hass.states.get(window_entity)
+            if window_state is not None and window_state.state == self._window_since_state:
+                attrs["fenster_seit"] = self._window_since.isoformat()
         if self._last_notified_at is not None:
             attrs["letzte_benachrichtigung"] = self._last_notified_at.isoformat()
         if self._push_log:
@@ -941,7 +981,82 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
     @callback
     def _handle_state_change(self, event: Event) -> None:
+        # Echter Fensterwechsel im Betrieb (auch über "nicht verfügbar"
+        # hinweg): last_changed des neuen Zustands ist dann der richtige
+        # Zeitpunkt. Direkt nach dem Start (noch nichts bekannt) liest
+        # _evaluate() stattdessen die Verlaufsdatenbank.
+        new_state = event.data.get("new_state")
+        if (
+            new_state is not None
+            and event.data.get("entity_id") == self._config.get(CONF_WINDOW_ENTITY)
+            and new_state.state in ("on", "off")
+            and self._window_since_state is not None
+            and new_state.state != self._window_since_state
+        ):
+            self._window_since = new_state.last_changed
+            self._window_since_state = new_state.state
         self.hass.async_create_task(self._evaluate())
+
+    async def _async_lookup_window_since(
+        self, entity_id: str, current: str
+    ) -> datetime | None:
+        """Liest aus der Verlaufsdatenbank, seit wann der Fensterkontakt im
+        Zustand `current` steht (None, falls nicht ermittelbar - z. B. Recorder
+        nicht geladen, Entität ausgeschlossen oder kein Wechsel im Rückblick)."""
+        try:
+            from homeassistant.components.recorder import get_instance
+            from homeassistant.components.recorder.history import (
+                state_changes_during_period,
+            )
+
+            start = dt_util.utcnow() - timedelta(days=_WINDOW_HISTORY_DAYS)
+            result = await get_instance(self.hass).async_add_executor_job(
+                lambda: state_changes_during_period(
+                    self.hass,
+                    start,
+                    entity_id=entity_id,
+                    no_attributes=True,
+                    descending=True,
+                    limit=_WINDOW_HISTORY_LIMIT,
+                    include_start_time_state=False,
+                )
+            )
+            rows = [(st.state, st.last_changed) for st in result.get(entity_id, [])]
+        except Exception:  # noqa: BLE001 - Verlauf ist nur eine Komfort-Anzeige
+            _LOGGER.debug("Fensterverlauf für %s nicht lesbar", entity_id, exc_info=True)
+            return None
+        return _window_since_from_history(rows, current)
+
+    async def _async_update_window_since(self) -> None:
+        """Ermittelt einmal je Fensterzustand den Zeitpunkt aus dem Verlauf
+        (beim Start); spätere Wechsel übernimmt _handle_state_change."""
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        if not window_entity:
+            return
+        state = self.hass.states.get(window_entity)
+        if state is None or state.state not in ("on", "off"):
+            return
+        if self._window_since_state == state.state:
+            return
+        self._window_since_state = state.state
+        self._window_since = None
+        # Im Hintergrund, damit eine langsame Datenbank (z. B. direkt nach dem
+        # Start) die erste Neubewertung nicht aufhält.
+        self._entry.async_create_background_task(
+            self.hass,
+            self._async_resolve_window_since(window_entity, state.state),
+            f"{DOMAIN}_window_since_{self._entry.entry_id}",
+        )
+
+    async def _async_resolve_window_since(self, entity_id: str, current: str) -> None:
+        since = await self._async_lookup_window_since(entity_id, current)
+        # Zwischenzeitlich echter Wechsel (siehe _handle_state_change)? Dann
+        # ist der Wert veraltet und wird verworfen.
+        if since is None or self._window_since_state != current:
+            return
+        self._window_since = since
+        if self.hass is not None and self.entity_id:
+            self.async_write_ha_state()
 
     def _stop_tick_timer(self) -> None:
         if self._unsub_tick is not None:
@@ -1482,6 +1597,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
     async def _evaluate(self) -> None:  # noqa: C901 - bewusst als ein Ablauf gehalten
         """Prüft alle Bedingungen und aktualisiert ggf. den Zustand."""
+        await self._async_update_window_since()
         indoor_temp = self._get_indoor_temperature()
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY), decimals=0)
         co2 = self._get_float_state(self._config.get(CONF_CO2_ENTITY), decimals=0)

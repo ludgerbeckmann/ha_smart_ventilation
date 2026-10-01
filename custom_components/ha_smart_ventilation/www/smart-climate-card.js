@@ -241,12 +241,14 @@ class SmartClimateCard extends HTMLElement {
     // Pass 1: Fenster-Zeitstempel sammeln (für den "Massen-Reset"-Filter,
     // siehe README - erkennt einen Home-Assistant-Neustart, bei
     // dem mehrere Fensterkontakte gleichzeitig neu registriert wurden).
+    // Nur für Räume ohne Attribut fenster_seit (dort liefert die Integration
+    // den echten Zeitpunkt aus der Verlaufsdatenbank, kein Filter nötig).
     const windowTimes = [];
     for (const id of entityIds) {
       const s = states[id];
       const a = s.attributes;
       const windowEntity = (a.entitaeten || {}).fenster;
-      if (windowEntity && states[windowEntity]) {
+      if (windowEntity && states[windowEntity] && !a.fenster_seit) {
         const w = states[windowEntity].state;
         if (w === "on" || w === "off") {
           windowTimes.push(
@@ -327,10 +329,14 @@ class SmartClimateCard extends HTMLElement {
         const w = states[windowEntity].state;
         windowStateText = w === "on" ? "geöffnet" : w === "off" ? "geschlossen" : "unbekannt";
         if (w === "on" || w === "off") {
-          const windowDt = new Date(states[windowEntity].last_changed);
-          const windowKey = localDateTimeMinuteStr(windowDt);
-          const massReset = windowTimes.filter((t) => t === windowKey).length >= 3;
-          windowChangedTime = massReset ? "–" : shortTimeStr(windowDt, todayStr);
+          if (a.fenster_seit) {
+            windowChangedTime = shortTimeStr(new Date(a.fenster_seit), todayStr);
+          } else {
+            const windowDt = new Date(states[windowEntity].last_changed);
+            const windowKey = localDateTimeMinuteStr(windowDt);
+            const massReset = windowTimes.filter((t) => t === windowKey).length >= 3;
+            windowChangedTime = massReset ? "–" : shortTimeStr(windowDt, todayStr);
+          }
         }
         if (!noWindow && hasLiveReason && !co2CloseException && (w === "on" || w === "off")) {
           const isMatch = (s.state === "on") === (w === "on");
