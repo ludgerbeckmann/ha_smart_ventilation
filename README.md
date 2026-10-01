@@ -1431,6 +1431,14 @@ angehoben. Die Heizung zählt nicht dazu. In der Zeile "Dusche" der Gerätetabel
 in "Status/Grund" die letzte Startzeit ("Letzter Start 07:42", an einem anderen Tag mit
 Datum; während der Dusche "Luftfeuchtigkeit steigt schnell (Start 07:42)").
 
+**Statuszeilen für laufende Geräte (seit 0.92.4):** Solange ein Luftentfeuchter oder eine
+Klimaanlage läuft, steht in der ersten Tabelle des Raums (unter "Fenster" und
+"Empfehlung") eine Zeile "Luftentfeuchter" bzw. "Klimaanlage" mit Status "Aktiv" und der
+Startzeit (heute nur Uhrzeit, sonst mit Datum; ohne bekannten Start "–"). Die bisherige
+Zeile verschwindet, sobald das Gerät aus ist. Räume ohne Fenster haben die Tabelle nur
+dann, wenn ein Gerät läuft (nur mit der Geräte-Zeile). Die Begründungs-Zeile bleibt
+direkt unter "Empfehlung"; die Bezeichnung öffnet wie sonst die Detailansicht.
+
 **Karten-Editor:** Neben dem Titel gibt es die Option "Räume mit Handlungsbedarf
 (🟠/🔴) aufgeklappt anzeigen" (YAML: `expand_attention_rooms`, Standard `true`).
 Ist sie aus (`expand_attention_rooms: false`), starten alle Räume eingeklappt;
