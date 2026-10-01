@@ -266,7 +266,20 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        verfügbarer Zustand (z. B. kurz nach einem Neustart) unterdrückt die
        Ansage **nicht** (bewusst permissiv, reiner Komfort-Fall ohne
        Sicherheitsrelevanz). Betrifft ausschließlich die Sprachausgabe,
-       App-Push und persistente Benachrichtigung laufen unverändert weiter
+       App-Push und persistente Benachrichtigung laufen unverändert weiter.
+       **Wiederholung beim Einschalten (seit 0.93.0):** Geht das Licht von
+       **aus** auf **an** (ein Wechsel aus „nicht verfügbar" zählt nicht), werden
+       offene Dinge per Sprachausgabe erneut angesagt, höchstens alle
+       5 Minuten: erst „Wassertank voll" (sofern die Tank-Benachrichtigung
+       aktiv ist und der Tank noch voll ist), dann die noch offene
+       Lüftungsempfehlung - beides als eine Ansage. Öffnen-Empfehlung: solange das
+       Fenster laut Kontakt noch nicht offen ist (ohne Kontakt zählt die
+       Empfehlung selbst). Schließen-Empfehlung: nur mit Fensterkontakt, wenn das
+       Fenster noch offen ist und schon vor dem Wechsel der Empfehlung geöffnet
+       wurde; bewusst still bleibende Gründe (CO2, fehlender Frost-Sensor) werden
+       nicht wiederholt. Nachtruhe unterdrückt auch diese Ansagen; die
+       Erinnerung (Intervall) und die einmalige Duschdauer-Ansage bleiben
+       unverändert
      - **Wiedergabelautstärke für Sprachausgabe** (optional): überschreibt
        für diesen Raum die in "Smart Climate Optionen" hinterlegte
        Lautstärke - leer gelassen gilt der dort hinterlegte Wert (Hinweistext

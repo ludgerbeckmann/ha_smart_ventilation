@@ -182,7 +182,7 @@
             },
             "data_description": {
               "sonos_entity": "Mehrfachauswahl möglich. Leer = keine Sprachausgabe für diesen Raum",
-              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
+              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT. Schaltet das Licht von aus auf an, werden offene Ansagen (Wassertank voll, noch offene Lüftungsempfehlung) wiederholt, höchstens alle 5 Minuten.",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
@@ -377,7 +377,7 @@
             },
             "data_description": {
               "sonos_entity": "Mehrfachauswahl möglich. Leer = keine Sprachausgabe für diesen Raum",
-              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT.",
+              "tts_light_entity": "Leer = Sprachausgabe unabhängig vom Licht (wie bisher). Ist eine Licht-Entität hinterlegt, wird die Ansage nur unterdrückt, wenn dieses Licht bestätigt aus ist - ein unbekannter/nicht verfügbarer Zustand unterdrückt die Ansage NICHT. Schaltet das Licht von aus auf an, werden offene Ansagen (Wassertank voll, noch offene Lüftungsempfehlung) wiederholt, höchstens alle 5 Minuten.",
               "tts_volume": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Leer = globale Einstellung verwenden. Aktiviert unterdrückt ausschließlich die Sprachausgabe im unten angegebenen Zeitfenster - App-Push und persistente Benachrichtigung sind davon nicht betroffen. Aktuell global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn die Nachtruhe oben aktiviert ist. Aktuell global: {global_tts_quiet_start}",
