@@ -182,7 +182,7 @@
             },
             "data_description": {
               "sonos_entity": "Multiple selection possible. Empty = no voice announcement for this room",
-              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
+              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement. When the light turns from off to on, open announcements (water tank full, pending ventilation recommendation) are repeated, at most every 5 minutes.",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",
@@ -377,7 +377,7 @@
             },
             "data_description": {
               "sonos_entity": "Multiple selection possible. Empty = no voice announcement for this room",
-              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement.",
+              "tts_light_entity": "Empty = voice announcements work regardless of the light (as before). If a light entity is set, announcements are only suppressed when this light is confirmed off - an unknown/unavailable state does NOT suppress the announcement. When the light turns from off to on, open announcements (water tank full, pending ventilation recommendation) are repeated, at most every 5 minutes.",
               "tts_volume": "Empty = use the value from the global settings. Currently global: {global_tts_volume}",
               "tts_quiet_hours_enabled": "Empty = use the global setting. When enabled, suppresses only the voice announcement during the time window below - app push and persistent notification are not affected. Currently global: {global_tts_quiet_hours_enabled}",
               "tts_quiet_start": "Empty = use the value from the global settings. Only relevant if quiet hours above are enabled. Currently global: {global_tts_quiet_start}",

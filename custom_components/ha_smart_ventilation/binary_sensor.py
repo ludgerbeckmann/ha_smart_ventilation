@@ -198,6 +198,10 @@ _LOGGER = logging.getLogger(__name__)
 # Wie oft (während "Lüften empfohlen" aktiv ist) die Winter-Höchstdauer und
 # eine mögliche Erinnerung erneut geprüft werden.
 _TICK_INTERVAL = timedelta(minutes=5)
+# Mindestabstand zwischen zwei Ansagen, die durch das Einschalten des Lichts
+# ausgelöst werden (CONF_TTS_LIGHT_ENTITY) - verhindert Dauer-Ansagen bei
+# schnellem mehrfachem Schalten.
+_LIGHT_REPEAT_COOLDOWN = timedelta(minutes=5)
 
 # Anzahl der Einträge im Attribut `push_verlauf` (neueste zuerst).
 _PUSH_LOG_SIZE = 8
@@ -341,6 +345,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # - unabhängig von den obigen beiden, da eine eigene notification_id/
         # tag verwendet wird (siehe _tank_notification_id()).
         self._tank_full_state: bool | None = None
+        # Zeitpunkt der letzten durch das Licht ausgelösten Ansage (nicht
+        # wiederhergestellt: nach einem Neustart darf wieder angesagt werden).
+        self._light_repeat_last_at: datetime | None = None
         self._tank_mobile_notification_active = False
         self._tank_persistent_notification_active = False
 
@@ -984,6 +991,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self.async_on_remove(
             async_track_state_change_event(self.hass, tracked, self._handle_state_change)
         )
+        # Licht-Entität (nur mit Lautsprechern): Schaltet das Licht von "aus"
+        # auf "an", werden offene Ansagen wiederholt (siehe
+        # _repeat_announcements_on_light()).
+        light_entity = self._config.get(CONF_TTS_LIGHT_ENTITY)
+        if light_entity and self._as_list(self._config.get(CONF_SONOS_ENTITY)):
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, [light_entity], self._handle_light_change
+                )
+            )
         # Geräte-Entitäten (Luftentfeuchter/Klimaanlage/Heizung, Tankstatus)
         # werden nur für die Anzeige verfolgt: Ändert sich ihr Zustand, wird
         # lediglich der Sensorzustand neu geschrieben (extra_state_attributes
@@ -1017,6 +1034,71 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._get_heating_entity_id(),
         ]
         return list(dict.fromkeys(e for e in entities if e))
+
+    @callback
+    def _handle_light_change(self, event: Event) -> None:
+        """Licht von "aus" auf "an": offene Ansagen wiederholen. Ein Wechsel
+        aus "unavailable"/"unknown" (z. B. Neustart) zählt bewusst nicht."""
+        old_state = event.data.get("old_state")
+        new_state = event.data.get("new_state")
+        if (
+            old_state is not None
+            and new_state is not None
+            and old_state.state == "off"
+            and new_state.state == "on"
+        ):
+            self.hass.async_create_task(self._repeat_announcements_on_light())
+
+    def _pending_recommendation_message(self) -> str | None:
+        """Text der aktuell noch offenen Lüftungsempfehlung - oder None.
+
+        Öffnen: Empfehlung aktiv und das Fenster ist (laut Kontakt) noch nicht
+        offen (ohne Fensterkontakt zählt die Empfehlung selbst). Schließen:
+        Empfehlung aus, das Fenster ist bestätigt offen und wurde schon vor
+        dem Wechsel der Empfehlung geöffnet (sonst hat es die Person
+        eigenständig geöffnet, es gibt nichts zu schließen). Bewusst still
+        bleibende Gründe (CO2, fehlender Frost-Sensor) werden nicht wiederholt."""
+        if self._attr_is_on:
+            if not self._window_action_needed(True):
+                return None
+            return self._build_message(True, self._last_reason)
+        if self._last_reason in (None, "co2") or not self._is_window_confirmed_open():
+            return None
+        window_state = self.hass.states.get(self._config.get(CONF_WINDOW_ENTITY))
+        if (
+            window_state is None
+            or self._last_state_change_at is None
+            or window_state.last_changed > self._last_state_change_at
+        ):
+            return None
+        return self._build_message(False, self._last_reason)
+
+    async def _repeat_announcements_on_light(self) -> None:
+        """Sagt bei jedem Einschalten des Lichts (Mindestabstand
+        _LIGHT_REPEAT_COOLDOWN) offene Dinge an: erst "Wassertank voll", dann die
+        noch offene Lüftungsempfehlung - als EINE Ansage, damit sich zwei
+        aufeinanderfolgende tts.speak-Aufrufe nicht gegenseitig abbrechen.
+        Nachtruhe unterdrückt wie sonst."""
+        sonos_entities = self._as_list(self._config.get(CONF_SONOS_ENTITY))
+        tts_entity = self._effective(CONF_TTS_ENTITY, None)
+        if not sonos_entities or not tts_entity or self._is_tts_quiet_hours_active():
+            return
+        now = dt_util.utcnow()
+        if (
+            self._light_repeat_last_at is not None
+            and now - self._light_repeat_last_at < _LIGHT_REPEAT_COOLDOWN
+        ):
+            return
+        parts: list[str] = []
+        if self._tank_full_state:
+            parts.append(self._tank_full_message())
+        recommendation = self._pending_recommendation_message()
+        if recommendation:
+            parts.append(recommendation)
+        if not parts:
+            return
+        self._light_repeat_last_at = now
+        await self._play_tts(sonos_entities, tts_entity, " ".join(parts))
 
     @callback
     def _handle_device_state_change(self, event: Event) -> None:
@@ -3725,6 +3807,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._tank_full_state = tank_full
             await self._notify_tank_full(tank_full)
 
+    def _tank_full_message(self) -> str:
+        """Text "Wassertank voll" (CONF_MSG_TANK_FULL) für diesen Raum."""
+        room = self._config[CONF_ROOM_NAME]
+        template = self._effective(CONF_MSG_TANK_FULL, DEFAULT_MSG_TANK_FULL)
+        try:
+            return template.format(raum=room)
+        except (KeyError, ValueError, IndexError):
+            _LOGGER.warning(
+                "Wassertank-Benachrichtigungstext für Raum %s enthält einen "
+                "ungültigen Platzhalter - wird unverändert gesendet: %s",
+                room,
+                template,
+            )
+            return template
+
     async def _notify_tank_full(self, tank_full: bool) -> None:
         """Benachrichtigt über den vollen Wassertank des Luftentfeuchters -
         nutzt dieselben, für den Raum aktuell wirksamen Kanäle wie die
@@ -3760,17 +3857,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._tank_persistent_notification_active = False
             return
 
-        template = self._effective(CONF_MSG_TANK_FULL, DEFAULT_MSG_TANK_FULL)
-        try:
-            message = template.format(raum=room)
-        except (KeyError, ValueError, IndexError):
-            _LOGGER.warning(
-                "Wassertank-Benachrichtigungstext für Raum %s enthält einen "
-                "ungültigen Platzhalter - wird unverändert gesendet: %s",
-                room,
-                template,
-            )
-            message = template
+        message = self._tank_full_message()
 
         if sonos_entities:
             tts_entity = self._effective(CONF_TTS_ENTITY, None)
