@@ -515,19 +515,76 @@ class SmartClimateCard extends HTMLElement {
         : "";
 
       const empfehlungText = hasLiveReason ? wrap(statusText, true) : statusText;
-      // Gründe ohne eigene Zeile in der Messwert-Tabelle (Frost, Hitze, Außenluft,
-      // Winter-Höchstdauer) stehen weiterhin als Text unter dem Status.
-      const extraReason =
-        hasLiveReason && s.state !== "on" && !["temp", "humidity", "co2"].includes(highlightCode)
-          ? `<br>${esc(GRUND_TEXT[highlightCode] || highlightCode)}`
-          : "";
+
+      // Ausführliche Begründung: eigene Zeile über die ganze Empfehlungs-Tabelle,
+      // nur vorhanden, wenn ein aktueller Grund vorliegt (mehrere Öffnen-Gründe
+      // stehen untereinander). Zahlen nur, soweit die Karte sie als Attribut hat.
+      const numTxt = (v, d, unit) =>
+        v === undefined || v === null || Number.isNaN(Number(v)) ? null : `${roundStr(v, d)} ${unit}`;
+      const reasonSentence = (code, isOpen) => {
+        const label = `<span class="${highlightClass}">${esc(GRUND_TEXT[code] || code)}:</span>`;
+        const tIn = numTxt(a.innentemperatur, 1, "°C");
+        const tOut = numTxt(a.aussentemperatur, 1, "°C");
+        const hIn = numTxt(a.luftfeuchtigkeit, 0, "%");
+        const cIn = numTxt(a.co2, 0, "ppm");
+        const tHi = numTxt(a.schwelle_temperatur_oeffnen, 1, "°C");
+        const tLo = numTxt(a.schwelle_temperatur_schliessen, 1, "°C");
+        const hHi = numTxt(a.schwelle_feuchtigkeit_oeffnen, 0, "%");
+        const hLo = numTxt(a.schwelle_feuchtigkeit_schliessen, 0, "%");
+        const cHi = numTxt(a.schwelle_co2_oeffnen, 0, "ppm");
+        const cLo = numTxt(a.schwelle_co2_schliessen, 0, "ppm");
+        const aIn = numTxt(a.absolute_luftfeuchtigkeit, 1, "g/m³");
+        const aOut = numTxt(a.aussen_absolute_luftfeuchtigkeit, 1, "g/m³");
+        let text = "";
+        switch (code) {
+          case "temp":
+            text = isOpen
+              ? `Die Raumtemperatur${tIn ? ` (${tIn})` : ""} liegt über der Obergrenze${tHi ? ` von ${tHi}` : ""}, Lüften kühlt den Raum.`
+              : `Die Raumtemperatur${tIn ? ` (${tIn})` : ""} liegt unter der Untergrenze${tLo ? ` von ${tLo}` : ""}, weiteres Lüften kühlt zu stark aus.`;
+            break;
+          case "humidity":
+            text = isOpen
+              ? `Die Luftfeuchtigkeit${hIn ? ` (${hIn})` : ""} liegt über der Obergrenze${hHi ? ` von ${hHi}` : ""}.` +
+                (aIn && aOut ? ` Die Außenluft ist absolut trockener (${aOut} gegen ${aIn} innen), Lüften entfeuchtet.` : "")
+              : `Die Luftfeuchtigkeit${hIn ? ` (${hIn})` : ""} liegt unter der Untergrenze${hLo ? ` von ${hLo}` : ""}, weiteres Lüften ist nicht nötig.`;
+            break;
+          case "co2":
+            text = isOpen
+              ? `Der CO2-Wert${cIn ? ` (${cIn})` : ""} liegt über der Obergrenze${cHi ? ` von ${cHi}` : ""}, frische Luft ist nötig.`
+              : `Der CO2-Wert${cIn ? ` (${cIn})` : ""} liegt unter der Untergrenze${cLo ? ` von ${cLo}` : ""}, die Luftqualität ist wieder gut.`;
+            break;
+          case "frost":
+            text = `Die Außentemperatur${tOut ? ` (${tOut})` : ""} liegt an oder unter der Frostschutz-Grenze, das Fenster soll geschlossen bleiben.`;
+            break;
+          case "heat":
+            text = `Die Außentemperatur${tOut ? ` (${tOut})` : ""} liegt an oder über der Hitzeschutz-Grenze, Lüften würde den Raum aufheizen.`;
+            break;
+          case "outdoor_warmer":
+            text = `Die Außenluft${tOut ? ` (${tOut})` : ""} ist wärmer als die Obergrenze${tHi ? ` von ${tHi}` : ""}, Lüften würde den Raum aufheizen.`;
+            break;
+          case "outdoor_wetter":
+            text = `Die Außenluft ist absolut feuchter${aIn && aOut ? ` (${aOut} gegen ${aIn} innen)` : ""}, Lüften würde die Feuchtigkeit erhöhen.`;
+            break;
+          case "duration":
+            text = "Das Fenster war im Winter schon lange geöffnet, zum Energiesparen wird geschlossen.";
+            break;
+          default:
+            text = "";
+        }
+        return text ? `${label} ${esc(text)}` : label;
+      };
+      const reasonCodes = !hasLiveReason ? [] : s.state === "on" ? openReasons : [highlightCode];
+      const reasonRow = reasonCodes.length
+        ? `<tr class="reason-row"><td colspan="3">${reasonCodes.map((c) => reasonSentence(c, s.state === "on")).join("<br>")}</td></tr>`
+        : "";
 
       let empfTable = "";
       if (!noWindow) {
         empfTable =
           `<table class="values"><thead><tr><th></th><th>Status</th><th>Uhrzeit</th></tr></thead><tbody>` +
           `<tr><td>${ent(windowEntity, "Fenster")}</td><td class="nw">${windowStateText}</td><td class="nw">${windowChangedTime}</td></tr>` +
-          `<tr><td>${ent(id, "Empfehlung")}</td><td class="nw">${hasLiveReason ? empfehlungText + extraReason : "–"}</td><td class="nw">${hasLiveReason ? changedTime : "–"}</td></tr>` +
+          `<tr><td>${ent(id, "Empfehlung")}</td><td class="nw">${hasLiveReason ? empfehlungText : "–"}</td><td class="nw">${hasLiveReason ? changedTime : "–"}</td></tr>` +
+          reasonRow +
           "</tbody></table>";
       }
 
@@ -767,6 +824,9 @@ class SmartClimateCard extends HTMLElement {
         padding: 2px 6px;
         margin-top: 4px;
       }
+      /* Ausführliche Begründung: eine Zeile über die ganze Tabelle, normaler
+         Zeilenumbruch nur an Leerzeichen. */
+      table.values tr.reason-row td { overflow-wrap: normal; word-break: normal; white-space: normal; }
       .notify-details table.values { margin-top: 8px; margin-bottom: 4px; }
       /* Methodennamen nur an Leerzeichen/Bindestrichen umbrechen, nie mitten im Wort -
          die Ziele-Spalte bricht dagegen an . und _ (siehe breakable()). */
