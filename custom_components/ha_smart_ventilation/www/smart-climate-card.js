@@ -370,6 +370,12 @@ class SmartClimateCard extends HTMLElement {
       }
 
       if (hasMissing && matchIcon === "🟢") matchIcon = "🟠";
+      // Läuft ein Luftentfeuchter oder eine Klimaanlage, braucht der Raum
+      // Aufmerksamkeit (Energie, Einspeisung) - ein sonst grüner Raum wird orange,
+      // rot bleibt rot. Die Heizung zählt nicht dazu.
+      if ((a.luftentfeuchter_an === true || a.klimaanlage_an === true) && matchIcon === "🟢") {
+        matchIcon = "🟠";
+      }
 
       if (matchIcon === "🟢") green += 1;
       else if (matchIcon === "🟠") orange += 1;
@@ -497,11 +503,15 @@ class SmartClimateCard extends HTMLElement {
         } else if (has(a, "dusche_letzte_laufzeit")) {
           laufzeit = fmtDuration(a.dusche_letzte_laufzeit);
         }
-        const grund = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "–";
+        let grund = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "–";
+        if (has(a, "dusche_letzter_start") && a.dusche_letzter_start) {
+          const startTxt = `Start ${shortTimeStr(new Date(a.dusche_letzter_start), todayStr)}`;
+          grund = a.duschen_erkannt ? `${grund} (${startTxt})` : `Letzter ${startTxt}`;
+        }
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|shower`, grund)}</td></tr>`;
       }
       const deviceTable = deviceRows
-        ? `<table class="values"><thead><tr><th>Gerät</th><th>Laufzeit</th><th>Grund</th></tr></thead><tbody>${deviceRows}</tbody></table>`
+        ? `<table class="values"><thead><tr><th>Gerät</th><th>Laufzeit</th><th>Status/Grund</th></tr></thead><tbody>${deviceRows}</tbody></table>`
         : "";
 
       const empfehlungText = hasLiveReason ? wrap(statusText, true) : statusText;
@@ -542,7 +552,7 @@ class SmartClimateCard extends HTMLElement {
         `<details class="notify-details" data-notify-room="${esc(a.raum)}"${notifyOpen ? " open" : ""}><summary><strong>Benachrichtigungen</strong></summary>` +
         `<table class="values"><thead><tr><th>Benachrichtigung</th><th>Ziele</th></tr></thead><tbody>` +
         `<tr><td><div class="nrow"><span class="ni">${n1Status}</span><span>Sprachausgabe</span></div></td><td>${n1Ziel === "–" ? n1Ziel : cellDiv(`${a.raum}|n1`, n1Ziel)}</td></tr>` +
-        `<tr><td><div class="nrow"><span class="ni">${n2Status}</span><span>App-Benachrichtigung</span></div></td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
+        `<tr><td><div class="nrow"><span class="ni">${n2Status}</span><span>Push-Benachrichtigung</span></div></td><td>${n2Ziel === "–" ? n2Ziel : cellDiv(`${a.raum}|n2`, n2Ziel)}</td></tr>` +
         `<tr><td><div class="nrow"><span class="ni">${n3Status}</span><span>Persistente Benachrichtigung</span></div></td><td>–</td></tr>` +
         `</tbody></table></details>`;
 
