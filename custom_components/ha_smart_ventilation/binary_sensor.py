@@ -426,6 +426,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._ac_last_runtime_minutes = None
         self._heating_last_runtime_minutes = None
         self._shower_last_runtime_minutes = None
+        # Startzeitpunkt der zuletzt erkannten Dusche (bleibt nach dem Ende
+        # stehen, anders als `_shower_on_since`) - Dashboard-Karte, Zeile
+        # "Dusche" der Gerätetabelle.
+        self._shower_last_start = None
 
     def attach_shower_sensor(
         self, shower_sensor: "SmartVentilationShowerBinarySensor"
@@ -659,6 +663,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["duschen_erkannt"] = self._showering
             if self._shower_on_since is not None:
                 attrs["dusche_seit"] = self._shower_on_since.isoformat()
+            if self._shower_last_start is not None:
+                attrs["dusche_letzter_start"] = self._shower_last_start.isoformat()
             if self._shower_last_runtime_minutes is not None:
                 attrs["dusche_letzte_laufzeit"] = self._shower_last_runtime_minutes
         if outdoor_humidity is not None:
@@ -919,6 +925,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if "dusche_seit" in attrs:
                 self._shower_on_since = dt_util.parse_datetime(attrs["dusche_seit"])
                 self._shower_long_announced = self._shower_on_since is not None
+            if "dusche_letzter_start" in attrs:
+                self._shower_last_start = dt_util.parse_datetime(
+                    attrs["dusche_letzter_start"]
+                )
+            elif self._shower_on_since is not None:
+                self._shower_last_start = self._shower_on_since
             # Letzte abgeschlossene Laufzeit wiederherstellen (sonst würde
             # die Dashboard-Karte nach jedem Neustart, bevor der nächste
             # Lauf beendet ist, wieder auf "–" zurückfallen).
@@ -1991,6 +2003,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._showering:
             if self._shower_on_since is None:
                 self._shower_on_since = dt_util.utcnow()
+                self._shower_last_start = self._shower_on_since
                 self._log_shower_start(humidity)
         else:
             if self._shower_on_since is not None:
@@ -2567,8 +2580,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Verzögertes Abschalten: erst wenn die Einspeisung ununterbrochen
         # seit mindestens "grace_minutes" zu niedrig ist, wird ein bereits
         # laufendes Gerät deswegen abgeschaltet.
+        # Maßgeblich ist der LIVE gelesene Gerätezustand, nicht nur der
+        # interne Tracker: Ein von Hand/anderer Automation eingeschaltetes
+        # oder nach einem Neustart nicht mehr zugeordnetes Gerät (Tracker
+        # None/False) lief sonst bei zu geringer Einspeisung unbegrenzt weiter.
+        live_state = self._get_device_live_state(entity_id)
+        device_running = live_state is True or (current is True and live_state is None)
         force_off_due_to_power = False
-        if current is True and power_entity_configured:
+        if device_running and power_entity_configured:
             if power_ok:
                 setattr(self, low_power_attr, None)
             else:
@@ -2579,6 +2598,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     elapsed = (dt_util.utcnow() - low_since).total_seconds() / 60
                     if elapsed >= grace_minutes:
                         force_off_due_to_power = True
+        elif live_state is False:
+            setattr(self, low_power_attr, None)
 
         # Der interne Tracker allein bestätigt nur, dass ein Befehl
         # erfolgreich AN Home Assistant übergeben wurde - nicht, dass das
@@ -2590,7 +2611,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # (unavailable/unknown), bleibt es beim reinen Tracker-Vergleich,
         # um kein Kommando gegen eine gerade nicht antwortende Entität zu
         # wiederholen.
-        live_state = self._get_device_live_state(entity_id)
         off_confirmed = current is False and live_state is not True
         on_confirmed = current is True and live_state is not False
 

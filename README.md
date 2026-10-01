@@ -171,7 +171,10 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        **Höchstlaufzeit**-Felder (siehe "Geräte-Steuerung"): gelten
        nur für Luftentfeuchter/Klimaanlage, nicht für die Heizung (der
        Leistungssensor selbst ist nur in "- Smart Climate Optionen -"
-       hinterlegbar, nicht pro Raum)
+       hinterlegbar, nicht pro Raum). Die Abschaltung wegen zu geringer
+       Einspeisung richtet sich seit 0.91.0 nach dem tatsächlichen Gerätezustand:
+       Sie gilt auch für ein von Hand oder von einer anderen Automation
+       eingeschaltetes Gerät
      - **Duscherkennung** (Checkbox, Standard: aus; nur hier im Raum
        einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
        unter "Logik im Detail". Die zugehörige **Anstiegs-Schwelle** und
@@ -1040,6 +1043,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `luftentfeuchter_grund`, `klimaanlage_grund` | nur vorhanden, falls das jeweilige Gerät konfiguriert und seine Entität vorhanden ist - kurzer, rein informativer Text, warum das Gerät aktuell an/aus ist bzw. pausiert (z. B. "Luftfeuchtigkeit über Schwelle", "pausiert: Fenster offen, Außenluft nicht trockener"); live bei jeder Neubewertung berechnet, hat selbst keine Steuerungswirkung |
 | `luftentfeuchter_tank_fehler` | nur vorhanden, falls ein Tankstatus-Sensor für den Luftentfeuchter hinterlegt ist; `true`, solange dieser "an" meldet (Tank voll/Fehler) |
 | `luftentfeuchter_seit`, `klimaanlage_seit`, `dusche_seit` | nur vorhanden, solange das jeweilige Gerät gerade läuft bzw. die Duscherkennung gerade anschlägt - Zeitpunkt, seit dem das ununterbrochen der Fall ist (Dashboard-Karte, Spalte "Laufzeit"). Live anhand des tatsächlichen Gerätezustands gepflegt (wie `luftentfeuchter_an`/`klimaanlage_an`), übersteht daher auch ein manuelles Ein-/Ausschalten außerhalb dieser Integration korrekt |
+| `dusche_letzter_start` | Startzeitpunkt der zuletzt erkannten Dusche (ISO-Zeitstempel) - bleibt nach dem Ende stehen (anders als `dusche_seit`) und übersteht einen Neustart; Dashboard-Karte, Zeile "Dusche" der Gerätetabelle |
 | `luftentfeuchter_letzte_laufzeit`, `klimaanlage_letzte_laufzeit`, `dusche_letzte_laufzeit` | Dauer (Minuten) des letzten ABGESCHLOSSENEN Laufs - nur vorhanden, sobald mindestens einmal ein Lauf beendet wurde, bleibt danach bis zum nächsten abgeschlossenen Lauf unverändert stehen. Die Dashboard-Karte zeigt in der Spalte "Laufzeit" diesen Wert, solange das Gerät gerade aus ist (bzw. die Duscherkennung nicht anschlägt) - andernfalls weiterhin die laufende Zeit aus `..._seit` |
 | `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true` genau bei Comfort - erkennt daher auch, wenn der Sollwert/Preset manuell oder von einer anderen Automation geändert wurde |
 | `heizung_modus` | wie `heizung_an`, aber alle vier Stufen: `"comfort"`/`"standby"`/`"night"`/`"building_protection"` (bzw. `null`, falls sich der aktuelle Zustand nicht ablesen/zuordnen lässt). Bei aktiver Preset-Steuerung direkt aus dem live gemeldeten `preset_mode` zurückgemappt, sonst aus der Näherung zum aktuellen Zahlen-Sollwert (kennt dabei kein `"building_protection"`, da es dafür keinen eigenen Sollwert gibt) |
@@ -1231,7 +1235,7 @@ Zeile in der "Gerät"-Spalte per Zeilenumbruch (`<br>`) zusätzlich
 Gerätenamen; "Laufzeit" zeigt, seit wann das jeweilige Gerät ununter-
 brochen läuft bzw. die Duscherkennung anschlägt (`Xh YMin`/`XMin`,
 live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`heizung_seit`/
-`dusche_seit` berechnet), sonst "–"; "Grund" zeigt bei Luftentfeuchter/
+`dusche_seit` berechnet), sonst "–"; die Spalte "Status/Grund" zeigt bei Luftentfeuchter/
 Klimaanlage/Heizung eine rein informative, live bei jeder Neubewertung
 berechnete Kurzbeschreibung, warum das Gerät gerade an/aus (bzw. bei der
 Heizung: Comfort/Standby/Nacht bzw. "Zeitfenster: …" bei aktiviertem
@@ -1244,7 +1248,7 @@ Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (Sollstellung: 21.0 °C
 Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
 Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziele" (mehrere Ziele stehen jeweils in einer eigenen Zeile, ohne Komma, und sind einzeln antippbar), das Status-Icon
-🟢/⚫ steht links vor dem Namen der Methode; bei schmaler Karte bricht der Methodenname an den Leerzeichen um, damit die Ziele-Spalte Platz behält).
+🟢/⚫ steht links vor dem Namen der Methode (Sprachausgabe, Push-Benachrichtigung, Persistente Benachrichtigung); bei schmaler Karte bricht der Methodenname an den Leerzeichen um, damit die Ziele-Spalte Platz behält).
 
 Icons dienen ausschließlich zur **Status-Signalisierung**: 🟢/🟠/🔴 am
 Raumnamen zeigen, ob aktuell eine Empfehlung mit Handlungsbedarf vorliegt
@@ -1391,6 +1395,13 @@ Orange mitgezählt, standardmäßig aufgeklappt) und den fehlenden Wert als oran
 "–". Ein 🔴-Raum (Fenster passt nicht zur Empfehlung) bleibt rot; das Orange
 hebt nur einen sonst grünen Raum an. Nach einem Neustart von Home Assistant
 kann ein Raum kurz orange erscheinen, solange seine Sensoren noch laden.
+
+**Laufende Geräte (seit 0.91.0):** Läuft in einem Raum ein Luftentfeuchter oder eine
+Klimaanlage (`luftentfeuchter_an`/`klimaanlage_an`, live vom Gerät gelesen), zeigt die
+Karte den Raum ebenfalls 🟠 - ein 🔴-Raum bleibt rot, nur ein sonst grüner Raum wird
+angehoben. Die Heizung zählt nicht dazu. In der Zeile "Dusche" der Gerätetabelle steht
+in "Status/Grund" die letzte Startzeit ("Letzter Start 07:42", an einem anderen Tag mit
+Datum; während der Dusche "Luftfeuchtigkeit steigt schnell (Start 07:42)").
 
 **Karten-Editor:** Neben dem Titel gibt es die Option "Räume mit Handlungsbedarf
 (🟠/🔴) aufgeklappt anzeigen" (YAML: `expand_attention_rooms`, Standard `true`).
