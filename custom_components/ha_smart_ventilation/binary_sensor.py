@@ -36,6 +36,7 @@ from .const import (
     CONF_CO2_THRESHOLD_CLOSE,
     CONF_CO2_THRESHOLD_OPEN,
     CONF_DEHUMIDIFIER_ENTITY,
+    CONF_DEHUMIDIFIER_EXTREME_HUMIDITY,
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
@@ -128,6 +129,7 @@ from .const import (
     DEFAULT_DEHUMIDIFIER_TANK_NOTIFICATION_ENABLED,
     DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES,
     DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
+    DEFAULT_DEHUMIDIFIER_EXTREME_HUMIDITY,
     DEFAULT_DEVICE_MAX_RUNTIME_MINUTES,
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
@@ -1910,7 +1912,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             else:
                 self._dehumidifier_reason = "im Sollbereich, hält letzten Zustand"
             if self._effective(CONF_POWER_ENTITY, None) and not self._check_power_ok():
-                self._dehumidifier_reason += " (Einspeiseleistung zu gering)"
+                if (
+                    self._dehumidifier_reason == "Luftfeuchtigkeit über Schwelle"
+                    and self._is_extreme_humidity()
+                ):
+                    self._dehumidifier_reason = (
+                        "extreme Luftfeuchtigkeit (läuft trotz geringer Einspeiseleistung)"
+                    )
+                else:
+                    self._dehumidifier_reason += " (Einspeiseleistung zu gering)"
         if self._config.get(CONF_AC_ENTITY):
             if (
                 self._ac_max_runtime_cooldown_until is not None
@@ -2460,6 +2470,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         min_power = self._effective(CONF_MIN_SURPLUS_POWER, DEFAULT_MIN_SURPLUS_POWER)
         return power_value is not None and power_value >= min_power
 
+    def _is_extreme_humidity(self) -> bool:
+        """True, wenn die Luftfeuchtigkeit mindestens so hoch ist wie die
+        Schwelle "Extreme Luftfeuchtigkeit" (CONF_DEHUMIDIFIER_EXTREME_HUMIDITY,
+        0 = aus). Dann läuft der Luftentfeuchter auch bei zu geringer
+        Einspeiseleistung - nur die Leistungsbedingung entfällt, Pausen,
+        Tankstatus und Höchstlaufzeit bleiben wirksam (siehe
+        _update_single_device()). Ohne Feuchtigkeitswert immer False."""
+        threshold = self._effective(
+            CONF_DEHUMIDIFIER_EXTREME_HUMIDITY, DEFAULT_DEHUMIDIFIER_EXTREME_HUMIDITY
+        )
+        if not threshold or threshold <= 0:
+            return False
+        humidity = self._get_float_state(
+            self._config.get(CONF_HUMIDITY_ENTITY), decimals=0
+        )
+        return humidity is not None and humidity >= threshold
+
     async def _set_device_state(self, entity_id: str, turn_on: bool) -> None:
         """Schaltet eine Geräte-Entität ein/aus (funktioniert generisch für
         switch, humidifier und climate, da alle turn_on/turn_off unterstützen)."""
@@ -2525,6 +2552,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             low_power_attr="_dehumidifier_low_power_since",
             want_on=humidity_needs_open and not dehumidifier_pause_open_window,
             want_off=humidity_needs_close or dehumidifier_pause_open_window,
+            power_override=self._is_extreme_humidity(),
             runtime_since_attr="_dehumidifier_max_runtime_since",
             cooldown_until_attr="_dehumidifier_max_runtime_cooldown_until",
         )
@@ -2552,7 +2580,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         shutter_key: str | None = None,
         runtime_since_attr: str | None = None,
         cooldown_until_attr: str | None = None,
+        power_override: bool = False,
     ) -> None:
+        """power_override: die Leistungsbedingung (Mindest-Einspeiseleistung
+        fürs Einschalten, Karenz-Abschaltung bei zu geringer Einspeisung)
+        gilt als erfüllt - nur für den Luftentfeuchter bei extremer
+        Luftfeuchtigkeit gesetzt. Die Höchstlaufzeit richtet sich weiter nach
+        der TATSÄCHLICHEN Einspeiseleistung (real_power_ok)."""
         entity_id = self._config.get(entity_key)
         if not entity_id:
             return
@@ -2572,7 +2606,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         current = getattr(self, state_attr)
         power_entity_configured = bool(self._effective(CONF_POWER_ENTITY, None))
-        power_ok = self._check_power_ok()
+        real_power_ok = self._check_power_ok()
+        power_ok = real_power_ok or power_override
         grace_minutes = self._effective(
             CONF_POWER_GRACE_PERIOD, DEFAULT_POWER_GRACE_PERIOD
         )
@@ -2636,7 +2671,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             # off_confirmed-Behandlung von "nicht lesbar" oben).
 
             runtime_since = getattr(self, runtime_since_attr)
-            if power_entity_configured and power_ok:
+            if power_entity_configured and real_power_ok:
                 max_minutes = self._effective(
                     CONF_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,
                     DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES,

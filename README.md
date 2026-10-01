@@ -167,7 +167,8 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        wird oder die Außenluft wieder hilft. Läuft komplett unabhängig von
        der eigentlichen Öffnen/Schließen-Empfehlung - kann also auch dann
        auslösen, wenn diese gerade "aus"/neutral ist
-     - **Mindest-Einspeiseleistung** / **Abschaltverzögerung** sowie die drei
+     - **Mindest-Einspeiseleistung** / **Extreme Luftfeuchtigkeit** /
+       **Abschaltverzögerung** sowie die drei
        **Höchstlaufzeit**-Felder (siehe "Geräte-Steuerung"): gelten
        nur für Luftentfeuchter/Klimaanlage, nicht für die Heizung (der
        Leistungssensor selbst ist nur in "- Smart Climate Optionen -"
@@ -357,7 +358,8 @@ Danach folgen sieben Abschnitte in derselben Gliederung wie im Raum-Formular
 **Abschnitt "Luftentfeuchter, Klima & Dusche"**:
 - **Leistungssensor**: wird für **alle** Räume verwendet – ist nicht im
   Raum-Formular auswählbar
-- **Mindest-Einspeiseleistung** + **Abschaltverzögerung**, die drei
+- **Mindest-Einspeiseleistung** + **Extreme Luftfeuchtigkeit** +
+  **Abschaltverzögerung**, die drei
   **Höchstlaufzeit**-Felder sowie **Anstiegs-Schwelle Duscherkennung** und
   **Duschdauer-Ansage**: Standardwerte für alle Räume, die keine eigenen
   Werte festlegen (pro Raum überschreibbar; die Aktivierung der
@@ -985,6 +987,19 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   eigentliche Zielbedingung (Temperatur/Feuchtigkeit) erreicht ist.
 - Wird die Mindest-Einspeiseleistung beim gewünschten Einschalten nicht
   erreicht, wird die Prüfung spätestens alle 5 Minuten automatisch wiederholt.
+- **Extreme Luftfeuchtigkeit (seit 0.92.0, nur Luftentfeuchter)**: Liegt die
+  Luftfeuchtigkeit mindestens bei der Schwelle "Extreme Luftfeuchtigkeit"
+  (Standard 80 %, 0 = aus; global, pro Raum überschreibbar), läuft der
+  Luftentfeuchter auch bei zu geringer Einspeiseleistung: Die
+  Mindest-Einspeiseleistung gilt dann nicht, und die Abschaltverzögerung
+  schaltet ihn nicht ab. Unverändert wirksam bleiben die Pause bei offenem
+  Fenster (feuchtere Außenluft), der Tankstatus, die Obergrenze des
+  Normalbereichs (ohne Überschreitung wird nicht eingeschaltet), die
+  Ruhezeit nach der Höchstlaufzeit und die Höchstlaufzeit "bei geringer
+  Einspeiseleistung" (sie richtet sich weiter nach der tatsächlichen
+  Einspeisung). Der Grund in der Gerätetabelle lautet dann "extreme
+  Luftfeuchtigkeit (läuft trotz geringer Einspeiseleistung)". Ohne
+  Leistungssensor ändert die Schwelle nichts.
 - **Rollladen-Kopplung**: Ist bei der Klimaanlage eine Fenstersperre/Rollladen
   hinterlegt, wird diese automatisch aktiviert, sobald die Klimaanlage
   einschaltet, und wieder deaktiviert, sobald sie ausschaltet. Unterstützt
