@@ -584,13 +584,28 @@ class SmartClimateCard extends HTMLElement {
         ? `<tr class="reason-row"><td colspan="3">${reasonCodes.map((c) => reasonSentence(c, s.state === "on")).join("<br>")}</td></tr>`
         : "";
 
+      // Statuszeilen für laufende Geräte (Luftentfeuchter/Klimaanlage): nur solange
+      // das Gerät läuft; Uhrzeit = Start (aus *_seit), sonst "–".
+      const deviceStatusRow = (entityId, name, on, since) => {
+        if (on !== true) return "";
+        const t = since ? shortTimeStr(new Date(since), todayStr) : "–";
+        return `<tr><td>${ent(entityId, name)}</td><td class="nw">Aktiv</td><td class="nw">${t}</td></tr>`;
+      };
+      const deviceStatusRows =
+        deviceStatusRow(ents.luftentfeuchter, "Luftentfeuchter", a.luftentfeuchter_an, a.luftentfeuchter_seit) +
+        deviceStatusRow(ents.klimaanlage, "Klimaanlage", a.klimaanlage_an, a.klimaanlage_seit);
+
       let empfTable = "";
-      if (!noWindow) {
+      if (!noWindow || deviceStatusRows) {
+        const windowRows = noWindow
+          ? ""
+          : `<tr><td>${ent(windowEntity, "Fenster")}</td><td class="nw">${windowStateText}</td><td class="nw">${windowChangedTime}</td></tr>` +
+            `<tr><td>${ent(id, "Empfehlung")}</td><td class="nw">${hasLiveReason ? empfehlungText : "–"}</td><td class="nw">${hasLiveReason ? changedTime : "–"}</td></tr>` +
+            reasonRow;
         empfTable =
           `<table class="values"><thead><tr><th></th><th>Status</th><th>Uhrzeit</th></tr></thead><tbody>` +
-          `<tr><td>${ent(windowEntity, "Fenster")}</td><td class="nw">${windowStateText}</td><td class="nw">${windowChangedTime}</td></tr>` +
-          `<tr><td>${ent(id, "Empfehlung")}</td><td class="nw">${hasLiveReason ? empfehlungText : "–"}</td><td class="nw">${hasLiveReason ? changedTime : "–"}</td></tr>` +
-          reasonRow +
+          windowRows +
+          deviceStatusRows +
           "</tbody></table>";
       }
 
