@@ -1226,10 +1226,15 @@ Auslöser-Spalte gibt es nicht mehr: Der Auslöser ergibt sich aus der
 Werte-Tabelle darunter - bei Temperatur, Luftfeuchtigkeit und CO2 sind dort
 **Bezeichnung und Wert** des auslösenden Eintrags gleich eingefärbt (siehe
 "Hervorhebung des ausschlaggebenden Werts" oben; auch ein fehlender Messwert
-färbt Bezeichnung und "–" orange). Nur Gründe ohne eigene Zeile dort (Frostschutz,
-Hitzeschutz, Außen wärmer/feuchter, Winter-Höchstdauer) stehen als Text unter dem
-Status der Empfehlung. Der Auslöser wird live aus den aktuellen Werten/Schwellen
-berechnet. Solange dabei ein Auslöser vorliegt,
+färbt Bezeichnung und "–" orange). **Ausführliche Begründung (seit 0.92.1):** Unter
+der Zeile "Empfehlung" steht, über die ganze Tabellenbreite, eine eigene Zeile mit
+einem ausgeschriebenen Satz je aktuellem Grund (z. B. "Außen feuchter: Die Außenluft ist
+absolut feuchter (14.4 g/m³ gegen 12.8 g/m³ innen), Lüften würde die Feuchtigkeit
+erhöhen."). Sie erscheint nur, wenn aktuell ein Grund vorliegt; mehrere gleichzeitige
+Öffnen-Gründe stehen untereinander. Die Texte nennen Messwerte und Grenzen, soweit die
+Karte sie als Attribut kennt (bei Frost-/Hitzeschutz und Winter-Höchstdauer ohne Zahl).
+Räume ohne Fenster haben diese Tabelle nicht und damit auch keine Begründungs-Zeile. Der
+Auslöser wird live aus den aktuellen Werten/Schwellen berechnet. Solange dabei ein Auslöser vorliegt,
 zeigt die Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand;
 liegt aktuell **kein** Auslöser vor ("Totzone", siehe
 oben), zeigt die Zeile "Empfehlung" in Status und Uhrzeit "–" statt einer sonst
