@@ -540,6 +540,12 @@ CONF_SHOWER_RISE_THRESHOLD = "shower_rise_threshold"
 # Standard 0 = aus (bestehende Installationen ändern sich nicht).
 CONF_SHOWER_MAX_DURATION = "shower_max_duration_minutes"
 DEFAULT_SHOWER_MAX_DURATION = 0
+# Extreme Luftfeuchtigkeit (%): ab diesem Wert läuft der Luftentfeuchter auch bei
+# zu geringer Einspeiseleistung (Mindest-Einspeiseleistung und Karenz-Abschaltung
+# gelten dann nicht). Pausen (offenes Fenster), Tankstatus und Höchstlaufzeit
+# bleiben unverändert wirksam. 0 = aus.
+CONF_DEHUMIDIFIER_EXTREME_HUMIDITY = "dehumidifier_extreme_humidity"
+DEFAULT_DEHUMIDIFIER_EXTREME_HUMIDITY = 80
 DEFAULT_SHOWER_DETECTION_ENABLED = False
 # %-Punkte relative Luftfeuchtigkeit pro Minute, oberhalb der ein laufendes
 # Duschen angenommen wird.

@@ -57,6 +57,7 @@ from .const import (
     CONF_HUMIDITY_THRESHOLD_OPEN,
     CONF_IS_GLOBAL,
     CONF_MAX_OPEN_DURATION_WINTER,
+    CONF_DEHUMIDIFIER_EXTREME_HUMIDITY,
     CONF_MIN_SURPLUS_POWER,
     CONF_MOBILE_ENABLED,
     CONF_MOBILE_NOTIFY_ENTITY,
@@ -153,6 +154,7 @@ from .const import (
     DEFAULT_MSG_REMINDER,
     DEFAULT_MSG_SHOWER_LONG,
     DEFAULT_MSG_TANK_FULL,
+    DEFAULT_DEHUMIDIFIER_EXTREME_HUMIDITY,
     DEFAULT_POWER_GRACE_PERIOD,
     DEFAULT_REMINDER_INTERVAL,
     DEFAULT_SHOWER_DETECTION_ENABLED,
@@ -250,6 +252,13 @@ _THRESHOLD_FIELDS = {
     CONF_REMINDER_INTERVAL: (DEFAULT_REMINDER_INTERVAL, 0, 180, 5, "min"),
     CONF_MIN_SURPLUS_POWER: (DEFAULT_MIN_SURPLUS_POWER, 0, 10000, 100, "W"),
     CONF_POWER_GRACE_PERIOD: (DEFAULT_POWER_GRACE_PERIOD, 0, 120, 5, "min"),
+    CONF_DEHUMIDIFIER_EXTREME_HUMIDITY: (
+        DEFAULT_DEHUMIDIFIER_EXTREME_HUMIDITY,
+        0,
+        100,
+        1,
+        "%",
+    ),
     CONF_TTS_VOLUME: (DEFAULT_TTS_VOLUME, 0, 100, 5, "%"),
     CONF_SHOWER_RISE_THRESHOLD: (DEFAULT_SHOWER_RISE_THRESHOLD, 0.2, 10, 0.1, "%/min"),
     CONF_SHOWER_MAX_DURATION: (DEFAULT_SHOWER_MAX_DURATION, 0, 60, 1, "min"),
@@ -295,6 +304,7 @@ _THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
     CONF_MIN_SURPLUS_POWER: (float, [500, 1000, 1500, 2000]),
     CONF_TTS_VOLUME: (int, [30, 50, 70, 100]),
     CONF_SHOWER_MAX_DURATION: (int, [0, 8, 10, 12, 15, 20]),
+    CONF_DEHUMIDIFIER_EXTREME_HUMIDITY: (int, [0, 70, 75, 80, 85, 90]),
     CONF_HEATING_THRESHOLD_TEMP: (float, [18, 19, 20, 21]),
     CONF_HEATING_COMFORT_TEMP: (float, [19, 20, 21, 22]),
     CONF_HEATING_STANDBY_TEMP: (float, [15, 16, 17, 18]),
@@ -871,6 +881,9 @@ def _build_room_schema(
     duration_marker, duration_sel = _override_selector(CONF_MAX_OPEN_DURATION_WINTER, defaults)
     reminder_marker, reminder_sel = _override_selector(CONF_REMINDER_INTERVAL, defaults)
     power_marker, power_sel = _override_selector(CONF_MIN_SURPLUS_POWER, defaults)
+    extreme_hum_marker, extreme_hum_sel = _override_selector(
+        CONF_DEHUMIDIFIER_EXTREME_HUMIDITY, defaults
+    )
     grace_marker, grace_sel = _override_selector(CONF_POWER_GRACE_PERIOD, defaults)
     max_runtime_marker, max_runtime_sel = _override_selector(
         CONF_DEVICE_MAX_RUNTIME_MINUTES, defaults
@@ -1163,6 +1176,7 @@ def _build_room_schema(
                     ),
                 ): selector.BooleanSelector(),
                 power_marker: power_sel,
+                extreme_hum_marker: extreme_hum_sel,
                 grace_marker: grace_sel,
                 max_runtime_marker: max_runtime_sel,
                 max_runtime_high_marker: max_runtime_high_sel,
@@ -1312,6 +1326,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         CONF_SHOWER_MAX_DURATION, defaults
     )
     power_marker, power_sel = _threshold_selector(CONF_MIN_SURPLUS_POWER, defaults)
+    extreme_hum_marker, extreme_hum_sel = _threshold_selector(
+        CONF_DEHUMIDIFIER_EXTREME_HUMIDITY, defaults
+    )
     grace_marker, grace_sel = _threshold_selector(CONF_POWER_GRACE_PERIOD, defaults)
     max_runtime_marker, max_runtime_sel = _threshold_selector(
         CONF_DEVICE_MAX_RUNTIME_MINUTES, defaults
@@ -1460,6 +1477,7 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                             selector.EntitySelectorConfig(domain="sensor")
                         ),
                         power_marker: power_sel,
+                        extreme_hum_marker: extreme_hum_sel,
                         grace_marker: grace_sel,
                         max_runtime_marker: max_runtime_sel,
                         max_runtime_high_marker: max_runtime_high_sel,
