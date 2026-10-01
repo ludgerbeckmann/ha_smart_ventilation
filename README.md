@@ -1271,7 +1271,9 @@ es bereits), ohne selbst Einfluss auf die Steuerung zu haben - siehe
 `binary_sensor.py`; bei der Heizung ergänzt um die aktuelle Sollstellung in
 Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (Sollstellung: 21.0 °C)" oder
 "Zeitfenster: Nacht (Sollstellung: 16.0 °C)"); bei Dusche entsprechend, ob und warum die
-Duscherkennung aktuell anschlägt) → **Benachrichtigungen**
+Duscherkennung aktuell anschlägt; seit 0.92.3 steht jeder Text in Klammern - Sollstellung,
+"(Einspeiseleistung zu gering)", "(kein Comfort)", "(Start 07:42)" - in einer eigenen Zeile
+unter dem Grund) → **Benachrichtigungen**
 (ein-/ausklappbare Tabelle, standardmäßig eingeklappt, jetzt als letzter
 Abschnitt pro Raum; zwei Spalten "Benachrichtigung | Ziele" (mehrere Ziele stehen jeweils in einer eigenen Zeile, ohne Komma, und sind einzeln antippbar), das Status-Icon
 🟢/⚫ steht links vor dem Namen der Methode (Sprachausgabe, Push-Benachrichtigung, Persistente Benachrichtigung); bei schmaler Karte bricht der Methodenname an den Leerzeichen um, damit die Ziele-Spalte Platz behält).

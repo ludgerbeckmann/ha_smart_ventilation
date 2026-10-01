@@ -32,13 +32,19 @@ const HEATING_MODE_LABEL = {
   standby: { icon: "🟠", text: "Standby" },
 };
 
+// Jeder Text in Klammern (z. B. "(Sollstellung: 17.0 °C)") steht in einer
+// eigenen Zeile; das Leerzeichen davor bleibt für Tooltip/Textkopie erhalten.
+function parenBreak(html) {
+  return String(html).replace(/\s*\(/g, " <br>(");
+}
+
 // Geräte-Grund ohne den Vorsatz "pausiert: " (ergibt sich aus dem Status-Icon);
-// der Rest beginnt mit Großbuchstaben.
+// der Rest beginnt mit Großbuchstaben. Klammern stehen in eigener Zeile.
 function deviceReason(value) {
   const text = String(value);
-  if (!text.startsWith("pausiert: ")) return esc(text);
+  if (!text.startsWith("pausiert: ")) return parenBreak(esc(text));
   const rest = text.slice("pausiert: ".length);
-  return esc(rest.charAt(0).toUpperCase() + rest.slice(1));
+  return parenBreak(esc(rest.charAt(0).toUpperCase() + rest.slice(1)));
 }
 
 function esc(value) {
@@ -491,7 +497,7 @@ class SmartClimateCard extends HTMLElement {
         }
         let grund = has(a, "heizung_grund") ? deviceReason(a.heizung_grund) : "–";
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
-          grund += ` (Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
+          grund += ` <br>(Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|heat`, grund)}</td></tr>`;
       }
@@ -506,7 +512,7 @@ class SmartClimateCard extends HTMLElement {
         let grund = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "–";
         if (has(a, "dusche_letzter_start") && a.dusche_letzter_start) {
           const startTxt = `Start ${shortTimeStr(new Date(a.dusche_letzter_start), todayStr)}`;
-          grund = a.duschen_erkannt ? `${grund} (${startTxt})` : `Letzter ${startTxt}`;
+          grund = a.duschen_erkannt ? `${grund} <br>(${startTxt})` : `Letzter ${startTxt}`;
         }
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|shower`, grund)}</td></tr>`;
       }
