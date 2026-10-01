@@ -1032,6 +1032,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `taupunkt` / `aussen_taupunkt` | Taupunkt in °C (Magnus-Formel), nur wenn Temperatur und Feuchte vorliegen und die Feuchte > 0 % ist - nur für die Anzeige in der JS-Karte |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
+| `fenster_seit` | Zeitpunkt, seit dem der Fensterkontakt im aktuellen Zustand (auf/zu) steht - aus der Verlaufsdatenbank gelesen, übersteht Neustarts (siehe Dashboard-Karte, "Fenster-Zeitpunkt über Neustarts"). Nur gesetzt, wenn bekannt |
 | `letzter_wechsel` | Zeitpunkt des letzten ECHTEN Empfehlungswechsels (nur bei tatsächlichem Zustandswechsel neu gesetzt, über Neustarts hinweg korrekt erhalten) - anders als `last_changed` der Entität selbst, das Home Assistant bei jedem Neustart auf den Neustart-Zeitpunkt zurücksetzt. Von der Dashboard-Karte für die "Uhrzeit"-Spalte der Empfehlung verwendet, statt sich auf das irreführende `last_changed` zu verlassen |
 | `letzter_grund` | Grund der letzten Empfehlungsänderung (`temp`, `humidity`, `co2`, `frost`, `heat`, `duration`, `outdoor_warmer`, `outdoor_wetter`) - fehlt ein Außentemperatur-Wert (Sensor gerade `unavailable`/`unknown`), schließt der Frostschutz zwar vorsorglich, ohne dabei `letzter_grund` zu setzen (siehe "Logik im Detail") |
 | `letzte_benachrichtigung` | Zeitpunkt der letzten tatsächlich verschickten Benachrichtigung |
@@ -1173,8 +1174,8 @@ stehen so immer ganz oben, unabhängig vom Raumnamen. Pro Raum dann: Raumname �
 **Empfehlungs-Tabelle** (Spalten: leer | Status |
 Uhrzeit, darunter die beiden Zeilen "Fenster" und "Empfehlung" - nur für Räume mit Fenster; die erste
 zeigt ausschließlich den Fensterzustand mit dem Zeitpunkt seiner letzten
-tatsächlichen Änderung (`last_changed` des Fensterkontakt-Sensors selbst,
-"–" ohne konfigurierten Fensterkontakt), die zweite ausschließlich
+tatsächlichen Änderung (Attribut `fenster_seit`, siehe unten; "–" ohne
+konfigurierten Fensterkontakt), die zweite ausschließlich
 die Empfehlung mit dem Zeitpunkt des letzten ECHTEN Empfehlungswechsels
 (`letzter_wechsel`-Attribut, siehe "Attribute für eine Statusübersicht" -
 bewusst nicht `last_changed` der Sensor-Entität selbst, das Home Assistant
@@ -1184,11 +1185,24 @@ Empfehlungswechsel lag, z. B. um zu prüfen, ob eine fehlende
 Benachrichtigung dadurch erklärbar ist (Fenster stand zum Zeitpunkt des
 Wechsels bereits passend, siehe "Logik im Detail"). Beide Zeitstempel
 zeigen nur die Uhrzeit ohne Datum, falls sie auf den heutigen Tag fallen.
-Fällt bei mindestens drei Räumen zeitgleich (auf die Minute gerundet)
-derselbe Fenster-Zeitstempel auf - ein zuverlässiges Anzeichen für einen
-gemeinsamen Neustart-Reset des jeweiligen Fensterkontakt-Integrations
-statt einer echten, zufällig zeitgleichen Fensteraktion in mehreren Räumen
-- wird "–" statt dieses irreführenden Zeitstempels angezeigt. Eine eigene
+**Fenster-Zeitpunkt über Neustarts (seit 0.90.1):** Das `last_changed` des
+Fensterkontakt-Sensors springt bei jedem Neustart (Zustand "Nicht
+verfügbar" und danach wieder "Geöffnet") auf den Neustart-Zeitpunkt. Deshalb
+liest die Integration beim Start einmal je Raum die Zustandshistorie des
+Fensterkontakts aus der Verlaufsdatenbank (Recorder, letzte 30 Tage) und
+bestimmt daraus, seit wann das Fenster im aktuellen Zustand steht: Phasen
+mit "Nicht verfügbar"/"Unbekannt" werden übersprungen (auf → nicht
+verfügbar → auf bleibt der ursprüngliche Öffnungszeitpunkt). Spätere echte
+Wechsel im Betrieb übernimmt die Integration direkt. Das Ergebnis steht im
+Attribut `fenster_seit` (nur gesetzt, wenn bekannt). Ist die Zeit nicht
+ermittelbar (Recorder nicht geladen, Fensterkontakt vom Recorder
+ausgeschlossen, in 30 Tagen kein Wechsel), fehlt das Attribut, und die
+Karte fällt auf das alte Verhalten zurück: Fällt bei mindestens drei Räumen
+zeitgleich (auf die Minute gerundet) derselbe Fenster-Zeitstempel auf - ein
+Anzeichen für einen gemeinsamen Neustart-Reset - wird "–" statt dieses
+irreführenden Zeitstempels angezeigt. Ein Wechsel, der passiert, während Home
+Assistant aus ist, bleibt unbekannt (angezeigt wird dann der Zeitpunkt nach
+dem Start). Eine eigene
 Auslöser-Spalte gibt es nicht mehr: Der Auslöser ergibt sich aus der
 Werte-Tabelle darunter - bei Temperatur, Luftfeuchtigkeit und CO2 sind dort
 **Bezeichnung und Wert** des auslösenden Eintrags gleich eingefärbt (siehe
