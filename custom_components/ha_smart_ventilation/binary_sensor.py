@@ -984,6 +984,20 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self.async_on_remove(
             async_track_state_change_event(self.hass, tracked, self._handle_state_change)
         )
+        # Geräte-Entitäten (Luftentfeuchter/Klimaanlage/Heizung, Tankstatus)
+        # werden nur für die Anzeige verfolgt: Ändert sich ihr Zustand, wird
+        # lediglich der Sensorzustand neu geschrieben (extra_state_attributes
+        # liest sie live), die Lüftungslogik wird NICHT neu bewertet. Ohne das
+        # zeigte die Karte ein ein-/ausgeschaltetes Gerät erst bei der nächsten
+        # Neubewertung (bis zu 5 Minuten später), weil z. B. direkt nach dem
+        # eigenen turn_on das Gerät noch "aus" meldet.
+        device_entities = self._device_entities_to_track()
+        if device_entities:
+            self.async_on_remove(
+                async_track_state_change_event(
+                    self.hass, device_entities, self._handle_device_state_change
+                )
+            )
         # Läuft dauerhaft (nicht nur während "Lüften empfohlen" aktiv ist):
         # wird auch für die Geräte-Steuerung benötigt, z. B. um nach
         # unzureichender Einspeiseleistung später erneut zu prüfen.
@@ -992,6 +1006,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         self.async_on_remove(self._stop_tick_timer)
         await self._evaluate()
+
+    def _device_entities_to_track(self) -> list[str]:
+        """Entity-IDs der konfigurierten Geräte (Luftentfeuchter, Klimaanlage,
+        Heizung) und des Tankstatus-Sensors - für die Live-Anzeige."""
+        entities = [
+            self._config.get(CONF_DEHUMIDIFIER_ENTITY),
+            self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
+            self._config.get(CONF_AC_ENTITY),
+            self._get_heating_entity_id(),
+        ]
+        return list(dict.fromkeys(e for e in entities if e))
+
+    @callback
+    def _handle_device_state_change(self, event: Event) -> None:
+        """Zustand einer Geräte-Entität hat sich geändert: nur den eigenen
+        Zustand neu schreiben, damit die Karte das Gerät sofort live zeigt."""
+        self.async_write_ha_state()
 
     @callback
     def _handle_state_change(self, event: Event) -> None:

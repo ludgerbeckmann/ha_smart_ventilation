@@ -987,6 +987,12 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   eigentliche Zielbedingung (Temperatur/Feuchtigkeit) erreicht ist.
 - Wird die Mindest-Einspeiseleistung beim gewünschten Einschalten nicht
   erreicht, wird die Prüfung spätestens alle 5 Minuten automatisch wiederholt.
+- **Live-Anzeige der Geräte (seit 0.92.2)**: Die Integration verfolgt die
+  Geräte-Entitäten (Luftentfeuchter, Klimaanlage, Heizung, Tankstatus-Sensor)
+  und schreibt bei jeder Zustandsänderung sofort den Sensorzustand neu. Die
+  Dashboard-Karte zeigt ein ein- oder ausgeschaltetes Gerät (auch von Hand oder
+  durch eine andere Automation geschaltet) deshalb ohne Verzögerung. Die
+  Lüftungslogik wird dadurch nicht neu bewertet.
 - **Extreme Luftfeuchtigkeit (seit 0.92.0, nur Luftentfeuchter)**: Liegt die
   Luftfeuchtigkeit mindestens bei der Schwelle "Extreme Luftfeuchtigkeit"
   (Standard 80 %, 0 = aus; global, pro Raum überschreibbar), läuft der
