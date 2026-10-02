@@ -1505,8 +1505,12 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
 - **Push-Verlauf und Test-Push** (bei "Ich bekomme keine Push-
   Benachrichtigung"): Jede Lüftungsempfehlung-Entität hat das Attribut
   `push_verlauf` (Entwicklerwerkzeuge → Zustände, sowie in der
-  Diagnose-Datei) mit den letzten acht Push-Entscheidungen, neueste
-  zuerst, jeweils mit Uhrzeit: `gesendet an notify.…`, `FEHLER beim
+  Diagnose-Datei) mit den letzten zwölf Einträgen, neueste
+  zuerst, jeweils mit Uhrzeit. Seit 0.93.1 steht dort auch **jede
+  Sprachausgabe** mit Anlass und Text (z. B. `Sprachausgabe (Empfehlung
+  Öffnen, Grund humidity): …`, `(Erinnerung)`, `(Licht an)`,
+  `(Wassertank)`, `(Duschdauer)`, `(Fenster-Gerät-Konflikt)`) - so lässt sich
+  nachvollziehen, warum eine Ansage kam. Push-Einträge: `gesendet an notify.…`, `FEHLER beim
   Senden an …` (mit der echten Fehlermeldung), `übersprungen …:
   Anwesenheits-Entität steht auf 'not_home'`, `nicht gesendet: App-Push
   ist wirksam deaktiviert`, `nicht gesendet: keine notify-Entität
