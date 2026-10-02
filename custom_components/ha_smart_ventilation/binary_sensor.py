@@ -204,7 +204,7 @@ _TICK_INTERVAL = timedelta(minutes=5)
 _LIGHT_REPEAT_COOLDOWN = timedelta(minutes=5)
 
 # Anzahl der Einträge im Attribut `push_verlauf` (neueste zuerst).
-_PUSH_LOG_SIZE = 8
+_PUSH_LOG_SIZE = 12
 # Anzahl der Einträge im Attribut `dusche_verlauf` (neueste zuerst).
 _SHOWER_LOG_SIZE = 6
 # Rückblick/Obergrenze für die Verlaufsabfrage des Fensterkontakts (siehe
@@ -1098,7 +1098,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if not parts:
             return
         self._light_repeat_last_at = now
-        await self._play_tts(sonos_entities, tts_entity, " ".join(parts))
+        await self._play_tts(
+            sonos_entities, tts_entity, " ".join(parts), "Licht an"
+        )
 
     @callback
     def _handle_device_state_change(self, event: Event) -> None:
@@ -3286,13 +3288,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         "Wiedergabe beendet"-Ereignis (dieselbe Einschränkung, die
         _play_tts() bereits für das nicht automatisch fortgesetzte
         Pausieren dokumentiert) - daher wird die ungefähre Sprechdauer aus
-        der Nachrichtenlänge geschätzt (rund 150 Wörter/Minute plus eine
-        Pufferzeit für TTS-Generierung/Netzwerk) und entsprechend lange
+        der Nachrichtenlänge geschätzt (rund 12 Zeichen/Sekunde plus 5 Sekunden
+        Puffer für TTS-Generierung/Netzwerk) und entsprechend lange
         gewartet, bevor zurückgesetzt wird. Läuft als eigener
         Hintergrund-Task (siehe _play_tts()), damit die Neubewertung nicht
         auf die geschätzte Ansagedauer warten muss."""
-        word_count = len(message.split())
-        estimated_seconds = max(2.0, word_count / 2.5) + 1.5
+        # Nach Zeichen statt Wörtern geschätzt: Zahlen und "%" werden
+        # ausgesprochen ("sechzig Prozent") und sind länger als ihre Wortzahl.
+        # Dazu großzügiger Puffer für TTS-Erzeugung und Lautsprecher-Start -
+        # eine zu späte Rückstellung ist harmlos, eine zu frühe schneidet das
+        # Satzende in der alten Lautstärke ab.
+        estimated_seconds = max(4.0, len(message) / 12) + 5.0
         await asyncio.sleep(estimated_seconds)
         for entity_id, volume in original_volumes.items():
             try:
@@ -3310,7 +3316,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 )
 
     async def _play_tts(
-        self, sonos_entities: list[str], tts_entity: str, message: str
+        self,
+        sonos_entities: list[str],
+        tts_entity: str,
+        message: str,
+        source: str = "",
     ) -> None:
         """Spielt die Ansage ab - inkl. global konfigurierter Lautstärke und
         Pausieren/Überlagern der vorhandenen Wiedergabe.
@@ -3323,6 +3333,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         automatisch fortgesetzt - das ist plattformübergreifend nicht
         zuverlässig lösbar.
         """
+        # Jede Ansage steht im push_verlauf (mit Anlass und Text) - sonst ist
+        # nachträglich nicht erkennbar, WARUM eine Ansage kam.
+        self._log_push(f"Sprachausgabe ({source or 'ohne Angabe'}): {message}")
         volume_percent = self._effective(CONF_TTS_VOLUME, DEFAULT_TTS_VOLUME)
         playback_mode = self._effective(CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE)
         original_volumes = self._get_current_volumes(sonos_entities)
@@ -3418,7 +3431,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                         room,
                     )
                 else:
-                    await self._play_tts(sonos_entities, tts_entity, message)
+                    if reason == "reminder":
+                        source = "Erinnerung"
+                    elif should_ventilate:
+                        source = f"Empfehlung Öffnen, Grund {reason}"
+                    else:
+                        source = f"Empfehlung Schließen, Grund {reason}"
+                    await self._play_tts(
+                        sonos_entities, tts_entity, message, source
+                    )
             else:
                 _LOGGER.warning(
                     "Sprachausgabe-Lautsprecher ausgewählt, aber keine "
@@ -3786,7 +3807,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 template,
             )
             message = template
-        await self._play_tts(sonos_entities, tts_entity, message)
+        await self._play_tts(sonos_entities, tts_entity, message, "Duschdauer")
 
     async def _check_tank_full(self) -> None:
         """Prüft bei jeder Neubewertung, ob sich der Wassertank-Status des
@@ -3866,7 +3887,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 and not self._is_tts_quiet_hours_active()
                 and not self._is_tts_light_off()
             ):
-                await self._play_tts(sonos_entities, tts_entity, message)
+                await self._play_tts(sonos_entities, tts_entity, message, "Wassertank")
 
         if await self._push_to_targets(
             message,
@@ -4023,7 +4044,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 and not self._is_tts_quiet_hours_active()
                 and not self._is_tts_light_off()
             ):
-                await self._play_tts(sonos_entities, tts_entity, message)
+                await self._play_tts(sonos_entities, tts_entity, message, "Fenster-Gerät-Konflikt")
 
         if await self._push_to_targets(
             message,
