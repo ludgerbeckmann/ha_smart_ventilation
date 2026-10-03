@@ -568,6 +568,31 @@ SHOWER_MIN_HISTORY_MINUTES = 3
 # echte Dusche steigt um deutlich mehr (typisch +30 bis 40 Punkte).
 SHOWER_MIN_RISE_POINTS = 8.0
 
+# Ende der Dusche (siehe SmartVentilationBinarySensor._shower_end_reason()):
+# Das 10-Minuten-Fenster der Anstiegs-Rate allein erkennt das Ende erst, wenn
+# der Anstieg aus dem Fenster gerutscht ist (viele Minuten nach dem Ausschalten).
+# Zusätzlich gilt die Dusche als beendet, sobald die Luftfeuchtigkeit nicht
+# mehr steigt (Plateau/Absinken, solange der Sensor nicht gesättigt ist) oder
+# die Raumtemperatur vom Höchstwert fällt. Bewusst fest verdrahtet.
+# Luftfeuchtigkeit gilt als gesättigt (der Sensor kann nicht höher anzeigen und
+# Plateau/Absinken sind dann nicht erkennbar), ab diesem Wert:
+SHOWER_HUMIDITY_SATURATED = 97.0
+# Ende, wenn die Luftfeuchtigkeit so viele %-Punkte unter ihren Höchstwert
+# seit Start der Dusche gefallen ist ...
+SHOWER_END_HUMIDITY_DROP = 2.0
+# ... oder so lange (Minuten) keinen neuen Höchstwert mehr erreicht hat.
+SHOWER_END_NO_PEAK_MINUTES = 3.0
+# Temperatur-Kriterium (hilft, wenn die Luftfeuchtigkeit gesättigt ist): nur
+# gültig, wenn die Temperatur während der Dusche um mindestens diesen Wert (°C)
+# über den Ausgangswert gestiegen ist ...
+SHOWER_MIN_TEMP_RISE = 0.3
+# ... Ende, sobald sie um diesen Wert (°C) unter ihren Höchstwert gefallen ist.
+SHOWER_END_TEMP_DROP = 0.3
+# Während einer laufenden Dusche wird jede Minute neu bewertet (sonst nur bei
+# Sensoränderung bzw. alle 5 Minuten - bei unverändertem Messwert, z. B. auf
+# dem Plateau, käme kein Ereignis).
+SHOWER_TICK_SECONDS = 60
+
 # Konfigurierbare Benachrichtigungstexte (nur in den globalen Einstellungen
 # "Smart Climate Optionen" - {raum} wird durch den jeweiligen Raumnamen
 # ersetzt). Über _effective() aufgelöst wie die anderen Werte - technisch
