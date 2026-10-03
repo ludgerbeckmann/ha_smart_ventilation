@@ -186,9 +186,15 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    SHOWER_END_HUMIDITY_DROP,
+    SHOWER_END_NO_PEAK_MINUTES,
+    SHOWER_END_TEMP_DROP,
+    SHOWER_HUMIDITY_SATURATED,
     SHOWER_MIN_HISTORY_MINUTES,
     SHOWER_MIN_RISE_POINTS,
+    SHOWER_MIN_TEMP_RISE,
     SHOWER_RISE_LOOKBACK_MINUTES,
+    SHOWER_TICK_SECONDS,
     TTS_PLAYBACK_MODE_PAUSE,
     VERSION_KEY,
 )
@@ -410,6 +416,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Duscherkennung - siehe _update_shower_detection().
         self._humidity_samples: deque[tuple] = deque()
         self._showering = False
+        # Ende-Erkennung der Dusche (siehe _shower_end_reason()): Temperatur-
+        # Verlauf im selben Fenster, Höchstwerte seit Start, Ausgangstemperatur
+        # und die schnellere Minuten-Bewertung während einer laufenden Dusche.
+        self._temp_samples: deque[tuple] = deque()
+        self._shower_peak_humidity: float | None = None
+        self._shower_peak_humidity_at = None
+        self._shower_peak_temp: float | None = None
+        self._shower_baseline_temp: float | None = None
+        self._unsub_shower_tick = None
 
         # Seit wann Luftentfeuchter/Klimaanlage/Heizung/Dusche ununterbrochen
         # aktiv sind (Dashboard-Karte, Spalte "Laufzeit") - Luftentfeuchter/
@@ -1022,6 +1037,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self.hass, self._handle_tick, _TICK_INTERVAL
         )
         self.async_on_remove(self._stop_tick_timer)
+        self.async_on_remove(self._stop_shower_tick)
         await self._evaluate()
 
     def _device_entities_to_track(self) -> list[str]:
@@ -1192,6 +1208,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._unsub_tick()
             self._unsub_tick = None
 
+    def _sync_shower_tick(self) -> None:
+        """Startet/stoppt die Minuten-Bewertung während einer laufenden Dusche."""
+        if self._showering and self._unsub_shower_tick is None:
+            self._unsub_shower_tick = async_track_time_interval(
+                self.hass, self._handle_tick, timedelta(seconds=SHOWER_TICK_SECONDS)
+            )
+        elif not self._showering and self._unsub_shower_tick is not None:
+            self._unsub_shower_tick()
+            self._unsub_shower_tick = None
+
+    def _stop_shower_tick(self) -> None:
+        if self._unsub_shower_tick is not None:
+            self._unsub_shower_tick()
+            self._unsub_shower_tick = None
+
     @callback
     def _handle_tick(self, now) -> None:
         self.hass.async_create_task(self._evaluate())
@@ -1303,6 +1334,132 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         return rise_rate >= threshold
 
+    def _update_shower_state(
+        self, humidity: float | None, temperature: float | None, now
+    ) -> None:
+        """Bewertet die Duscherkennung und pflegt Zustand, Start/Ende und
+        Protokoll (aus _evaluate() ausgelagert)."""
+        enabled = self._config.get(
+            CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
+        )
+        end_reason = None
+        if not enabled:
+            detected = False
+        else:
+            cutoff = now - timedelta(minutes=SHOWER_RISE_LOOKBACK_MINUTES)
+            if temperature is not None:
+                self._temp_samples.append((now, temperature))
+            while len(self._temp_samples) > 1 and self._temp_samples[0][0] < cutoff:
+                self._temp_samples.popleft()
+            detected = self._update_shower_detection(humidity, now)
+            if detected and self._shower_on_since is not None:
+                end_reason = self._shower_end_reason(humidity, temperature, now)
+                if end_reason:
+                    detected = False
+                    # Verlauf verwerfen, sonst enthielte das 10-Minuten-Fenster
+                    # noch den Anstieg und die Dusche würde sofort wieder
+                    # "erkannt" - ein neuer Start braucht einen neuen Anstieg.
+                    self._humidity_samples.clear()
+                    self._temp_samples.clear()
+        self._showering = detected
+        if self._showering:
+            if self._shower_on_since is None:
+                self._shower_on_since = now
+                self._shower_last_start = self._shower_on_since
+                self._begin_shower_tracking(humidity, temperature)
+                self._log_shower_start(humidity)
+        else:
+            if self._shower_on_since is not None:
+                self._shower_last_runtime_minutes = int(
+                    (now - self._shower_on_since).total_seconds() / 60
+                )
+                self._log_shower_end(humidity, end_reason)
+            self._shower_on_since = None
+            self._shower_long_announced = False
+            self._shower_peak_humidity = None
+            self._shower_peak_humidity_at = None
+            self._shower_peak_temp = None
+            self._shower_baseline_temp = None
+
+    def _begin_shower_tracking(
+        self, humidity: float | None, temperature: float | None
+    ) -> None:
+        """Startwerte für die Ende-Erkennung: Höchstwerte ab jetzt, Ausgangs-
+        temperatur = ältester Temperaturwert im Beobachtungsfenster (also
+        vor dem Anstieg)."""
+        self._shower_peak_humidity = humidity
+        self._shower_peak_humidity_at = self._shower_on_since
+        self._shower_peak_temp = temperature
+        self._shower_baseline_temp = (
+            self._temp_samples[0][1] if self._temp_samples else temperature
+        )
+
+    def _shower_end_reason(
+        self, humidity: float | None, temperature: float | None, now
+    ) -> str | None:
+        """Prüft während einer laufenden Dusche, ob sie schon vorbei ist -
+        schneller als das 10-Minuten-Fenster der Anstiegs-Rate allein.
+
+        - Luftfeuchtigkeit (nur wenn der Sensor NICHT gesättigt ist, sonst sind
+          Plateau/Absinken nicht erkennbar): seit SHOWER_END_NO_PEAK_MINUTES
+          kein neuer Höchstwert oder SHOWER_END_HUMIDITY_DROP Punkte darunter.
+        - Temperatur (hilft bei gesättigter Luftfeuchtigkeit): gilt nur, wenn
+          sie während der Dusche um mindestens SHOWER_MIN_TEMP_RISE gestiegen
+          ist; Ende, sobald sie SHOWER_END_TEMP_DROP unter den Höchstwert fällt.
+        Liefert den Grund als Text oder None (Dusche läuft weiter)."""
+        if self._shower_peak_humidity is None:
+            self._shower_peak_humidity = humidity
+            self._shower_peak_humidity_at = now
+        if self._shower_peak_temp is None:
+            self._shower_peak_temp = temperature
+        if self._shower_baseline_temp is None and self._temp_samples:
+            self._shower_baseline_temp = self._temp_samples[0][1]
+        if (
+            humidity is not None
+            and self._shower_peak_humidity is not None
+            and humidity > self._shower_peak_humidity
+        ):
+            self._shower_peak_humidity = humidity
+            self._shower_peak_humidity_at = now
+        if (
+            temperature is not None
+            and self._shower_peak_temp is not None
+            and temperature > self._shower_peak_temp
+        ):
+            self._shower_peak_temp = temperature
+
+        if (
+            humidity is not None
+            and self._shower_peak_humidity is not None
+            and self._shower_peak_humidity < SHOWER_HUMIDITY_SATURATED
+        ):
+            if self._shower_peak_humidity - humidity >= SHOWER_END_HUMIDITY_DROP:
+                return (
+                    f"Feuchte {humidity} % fiel unter den Höchstwert "
+                    f"{self._shower_peak_humidity} %"
+                )
+            if (
+                self._shower_peak_humidity_at is not None
+                and (now - self._shower_peak_humidity_at).total_seconds() / 60
+                >= SHOWER_END_NO_PEAK_MINUTES
+            ):
+                return (
+                    f"Feuchte seit {SHOWER_END_NO_PEAK_MINUTES:.0f} min nicht mehr "
+                    f"gestiegen (Höchstwert {self._shower_peak_humidity} %)"
+                )
+        if (
+            temperature is not None
+            and self._shower_peak_temp is not None
+            and self._shower_baseline_temp is not None
+            and self._shower_peak_temp - self._shower_baseline_temp >= SHOWER_MIN_TEMP_RISE
+            and self._shower_peak_temp - temperature >= SHOWER_END_TEMP_DROP - 1e-9
+        ):
+            return (
+                f"Temperatur {temperature} °C fiel unter den Höchstwert "
+                f"{self._shower_peak_temp} °C"
+            )
+        return None
+
     def _shower_log_add(self, text: str) -> None:
         stamp = dt_util.as_local(dt_util.utcnow()).strftime("%d.%m. %H:%M:%S")
         self._shower_log.appendleft(f"{stamp} {text}")
@@ -1330,13 +1487,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         parts.append(f"Verlauf: {samples}")
         self._shower_log_add("; ".join(parts))
 
-    def _log_shower_end(self, humidity: float | None) -> None:
+    def _log_shower_end(self, humidity: float | None, reason: str | None = None) -> None:
         minutes = (
             (dt_util.utcnow() - self._shower_on_since).total_seconds() / 60
             if self._shower_on_since is not None
             else 0
         )
-        self._shower_log_add(f"Ende nach {minutes:.1f} min: Feuchte {humidity} %")
+        text = f"Ende nach {minutes:.1f} min: Feuchte {humidity} %"
+        text += f" ({reason})" if reason else " (Anstieg unter der Schwelle)"
+        self._shower_log_add(text)
 
     def _window_action_needed(self, target_open: bool) -> bool:
         """Prüft, ob eine Benachrichtigung überhaupt nötig ist, oder ob das
@@ -2117,27 +2276,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Luftfeuchtigkeit zurückgehalten - Lüften währenddessen bringt
         # nichts. Optional, Standard aus (siehe _update_shower_detection).
         # Nur pro Raum einstellbar, keine globale Einstellung.
-        shower_detection_enabled = self._config.get(
-            CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
-        )
-        self._showering = (
-            self._update_shower_detection(humidity, dt_util.utcnow())
-            if shower_detection_enabled
-            else False
-        )
-        if self._showering:
-            if self._shower_on_since is None:
-                self._shower_on_since = dt_util.utcnow()
-                self._shower_last_start = self._shower_on_since
-                self._log_shower_start(humidity)
-        else:
-            if self._shower_on_since is not None:
-                self._shower_last_runtime_minutes = int(
-                    (dt_util.utcnow() - self._shower_on_since).total_seconds() / 60
-                )
-                self._log_shower_end(humidity)
-            self._shower_on_since = None
-            self._shower_long_announced = False
+        self._update_shower_state(humidity, indoor_temp, dt_util.utcnow())
+        self._sync_shower_tick()
         await self._check_shower_too_long()
         if self._shower_sensor is not None and self._shower_sensor.hass is not None:
             # hass kann bei der allerersten Bewertung noch None sein, falls

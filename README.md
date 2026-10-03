@@ -716,6 +716,24 @@ Entität "‹Raum› Dusche aktiv" (siehe "Was die Integration macht" oben).
 Rein temperatur- oder anders begründete Öffnen-Empfehlungen (siehe oben)
 sind von der Duscherkennung nicht betroffen.
 
+**Schnelleres Ende der Dusche (seit 0.93.2):** Das 10-Minuten-Fenster allein
+erkennt das Ende erst viele Minuten nach dem Ausschalten (der Anstieg steckt
+noch im Fenster). Deshalb gilt eine laufende Dusche zusätzlich als beendet,
+(a) wenn die Luftfeuchtigkeit seit 3 Minuten keinen neuen Höchstwert mehr
+erreicht hat oder 2 Punkte unter ihren Höchstwert gefallen ist - **nicht**,
+solange der Feuchtesensor gesättigt ist (Höchstwert ab 97 %, typisch
+99 %: dort sind Plateau und Absinken nicht erkennbar) - oder (b) wenn die
+Raumtemperatur, die während der Dusche um mindestens 0,3 °C gestiegen ist,
+0,3 °C unter ihren Höchstwert fällt (hilft bei gesättigtem Feuchtesensor, ein
+Temperatursensor mit grober Auflösung oder ohne erkennbaren Anstieg wird
+dafür nicht genutzt). Ohne eines dieser Signale gilt weiterhin das alte
+Verhalten. Während einer laufenden Dusche wird jede Minute neu bewertet
+(sonst nur bei Sensoränderung bzw. alle 5 Minuten). Nach einem Ende wird
+der Verlauf verworfen; eine neue Dusche braucht wieder einen echten Anstieg.
+Das Protokoll `dusche_verlauf` nennt beim Ende den Grund (z. B. "Temperatur
+22.2 °C fiel unter den Höchstwert 22.5 °C" oder "Anstieg unter der
+Schwelle").
+
 **Duschdauer-Ansage** (seit 0.89.0): Optional (Standard 0 = aus) kann eine
 Sprachansage ausgelöst werden, sobald die erkannte Dusche länger als die
 eingestellte Zeit ununterbrochen läuft. Einstellung "Duschdauer-Ansage ab
