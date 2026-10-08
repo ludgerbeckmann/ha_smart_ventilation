@@ -149,11 +149,17 @@ async def _register_frontend_card(hass: HomeAssistant, integration) -> None:
     nach einem Integrations-Update nicht die alte JS-Datei aus dem Cache
     verwendet - analog zum bereits bestehenden Muster für die Karten-
     Versionsanzeige (VERSION_KEY).
+
+    Die Datei wird mit Cache-Headern ausgeliefert (cache_headers=True):
+    Die URL ändert sich mit jeder Version, daher ist langes Cachen sicher.
+    Ohne Cache musste die App die Karte bei jedem Start neu laden - bei
+    langsamer Verbindung (VPN, Funkloch) schlug das Laden gelegentlich fehl
+    ("Custom element doesn't exist"), siehe CLAUDE.md Lektion 102.
     """
     try:
         js_path = Path(integration.file_path) / "www" / CARD_JS_FILENAME
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(CARD_URL_PATH, str(js_path), cache_headers=False)]
+            [StaticPathConfig(CARD_URL_PATH, str(js_path), cache_headers=True)]
         )
         version = str(integration.version) if integration.version is not None else "0"
         add_extra_js_url(hass, f"{CARD_URL_PATH}?v={version}")
