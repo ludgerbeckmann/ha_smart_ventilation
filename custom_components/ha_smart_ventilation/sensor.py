@@ -12,6 +12,10 @@ Karte) und Automationen zur Verfügung.
   Raum-Einstellungen).
 - Pro Raum: "‹Raum› Taupunkt" (Magnus-Formel, gleiche Eingangswerte wie
   die absolute Luftfeuchtigkeit).
+- Pro Raum: "‹Raum› Raumstatus" (ok / hinweis / handlungsbedarf = 🟢/🟠/🔴),
+  das Ergebnis der Raumstatus-Berechnung des Raum-Binärsensors (siehe
+  SmartVentilationBinarySensor._compute_room_status). Das Symbol wechselt
+  mit dem Zustand.
 - Außen: "Außen Absolute Luftfeuchtigkeit", hängt am Eintrag "Smart Climate
   Optionen" und nutzt den dort konfigurierten Außentemperatur-/
   Außenluftfeuchtigkeitssensor; ebenso "Außen Taupunkt".
@@ -28,6 +32,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 
@@ -43,6 +48,12 @@ from .const import (
     DEFAULT_TEMP_ATTRIBUTE,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    ROOM_STATUS_ACTION,
+    ROOM_STATUS_HINT,
+    ROOM_STATUS_KEY,
+    ROOM_STATUS_OK,
+    ROOM_STATUS_OPTIONS,
+    ROOM_STATUS_SIGNAL,
 )
 
 # Der Außensensor liest seine Quellen aus den globalen Einstellungen, die sich
@@ -114,8 +125,11 @@ async def async_setup_entry(
         async_add_entities(
             [OutdoorAbsoluteHumiditySensor(hass, entry), OutdoorDewPointSensor(hass, entry)]
         )
-    elif entry.data.get(CONF_HUMIDITY_ENTITY):
-        async_add_entities([RoomAbsoluteHumiditySensor(entry), RoomDewPointSensor(entry)])
+    else:
+        entities = [RoomStatusSensor(entry)]
+        if entry.data.get(CONF_HUMIDITY_ENTITY):
+            entities += [RoomAbsoluteHumiditySensor(entry), RoomDewPointSensor(entry)]
+        async_add_entities(entities)
 
 
 class _AbsoluteHumiditySensor(SensorEntity):
@@ -243,3 +257,72 @@ class RoomDewPointSensor(_DewPointMixin, RoomAbsoluteHumiditySensor):
 
 class OutdoorDewPointSensor(_DewPointMixin, OutdoorAbsoluteHumiditySensor):
     """Taupunkt außen."""
+
+
+class RoomStatusSensor(SensorEntity):
+    """Raumstatus (Ampel) eines Raums: ok (🟢), hinweis (🟠) oder
+    handlungsbedarf (🔴).
+
+    Berechnet nichts selbst: Der Raum-Binärsensor legt das Ergebnis in
+    hass.data ab und meldet eine Änderung per Dispatcher (kein Objektverweis
+    zwischen den Plattformen, siehe CLAUDE.md Lektion 25/45). Das Symbol wird
+    vom Sensor je Zustand gewechselt; die Farbe bestimmt das Dashboard.
+    """
+
+    _attr_should_poll = False
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ROOM_STATUS_OPTIONS
+    _attr_translation_key = "raumstatus"
+    _ICONS = {
+        ROOM_STATUS_OK: "mdi:check-circle",
+        ROOM_STATUS_HINT: "mdi:alert-circle",
+        ROOM_STATUS_ACTION: "mdi:alert",
+    }
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        self._entry_id = entry.entry_id
+        self._room_name = entry.data[CONF_ROOM_NAME]
+        self._attr_name = f"{self._room_name} Raumstatus"
+        self._attr_unique_id = f"{entry.entry_id}_raumstatus"
+        self._unsub = None
+
+    def _payload(self) -> dict | None:
+        return self.hass.data.get(DOMAIN, {}).get(ROOM_STATUS_KEY, {}).get(self._entry_id)
+
+    @property
+    def native_value(self) -> str | None:
+        payload = self._payload()
+        return payload["status"] if payload else None
+
+    @property
+    def icon(self) -> str:
+        return self._ICONS.get(self.native_value, "mdi:help-circle")
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        attrs = {"raum": self._room_name}
+        payload = self._payload()
+        if payload:
+            attrs["gruende"] = payload["gruende"]
+            attrs["ausloeser"] = payload["ausloeser"]
+            attrs["lueften_empfohlen"] = payload["lueften_empfohlen"]
+        return attrs
+
+    @callback
+    def _handle_update(self) -> None:
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._unsub = async_dispatcher_connect(
+            self.hass, ROOM_STATUS_SIGNAL.format(self._entry_id), self._handle_update
+        )
+        # Der Raum-Binärsensor kann seinen Status schon vor dem Hinzufügen
+        # dieses Sensors berechnet haben - der abgelegte Wert wird hier
+        # übernommen (Reihenfolge der Plattformen ist nicht garantiert).
+        self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._unsub is not None:
+            self._unsub()
+            self._unsub = None

@@ -597,6 +597,17 @@
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "raumstatus": {
+        "state": {
+          "ok": "OK",
+          "hinweis": "Hinweis",
+          "handlungsbedarf": "Handlungsbedarf"
+        }
+      }
+    }
+  },
   "services": {
     "send_test_push": {
       "name": "Test-Push senden",

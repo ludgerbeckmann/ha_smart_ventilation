@@ -23,6 +23,7 @@ from .const import (
     LEGACY_GLOBAL_ROOM_NAME,
     NOTIFY_METHOD_MOBILE,
     NOTIFY_METHOD_PERSISTENT,
+    ROOM_STATUS_KEY,
     VERSION_KEY,
 )
 
@@ -229,6 +230,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        # Zwischengespeicherten Raumstatus verwerfen (der Sensor würde sonst
+        # nach einem Reload kurz einen veralteten Wert zeigen).
+        hass.data[DOMAIN].get(ROOM_STATUS_KEY, {}).pop(entry.entry_id, None)
     return unload_ok
 
 
