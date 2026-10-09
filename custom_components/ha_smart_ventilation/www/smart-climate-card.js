@@ -25,6 +25,13 @@ const GRUND_TEXT = {
   outdoor_wetter: "Außen feuchter",
 };
 
+// Raumstatus (Attribut `raumstatus`) -> Ampel-Symbol.
+const ROOM_STATUS_ICONS = {
+  ok: "🟢",
+  hinweis: "🟠",
+  handlungsbedarf: "🔴",
+};
+
 const HEATING_MODE_LABEL = {
   comfort: { icon: "🔴", text: "Komfort" },
   night: { icon: "🟡", text: "Eco (Nacht)" },
@@ -316,19 +323,10 @@ class SmartClimateCard extends HTMLElement {
         ["humidity", "temp", "outdoor_warmer", "outdoor_wetter"].includes(highlightCode);
       const noWindowResolved = noWindow && comfortCloseResolvedException;
 
-      // Fehlende Messwerte: ein konfigurierter Sensor des Raums liefert gerade
-      // keinen Wert (Attribut vorhanden, aber null). Der Raum ist dann höchstens
-      // grün-nach-orange angehoben; ein echter Fenster-Mismatch (rot) bleibt rot.
-      const tempMissing = a.innentemperatur === undefined || a.innentemperatur === null;
-      const humMissing = has(a, "luftfeuchtigkeit") && a.luftfeuchtigkeit === null;
-      const co2Missing = has(a, "co2") && a.co2 === null;
-      const hasMissing = tempMissing || humMissing || co2Missing;
-
-      let matchIcon = !hasLiveReason || co2CloseException || noWindowResolved
-        ? "🟢"
-        : noWindow
-        ? "🟠"
-        : "🔴";
+      // Ampel des Raums: kommt fertig berechnet vom Backend (Attribut
+      // `raumstatus`, siehe CLAUDE.md Lektion 103) - dieselbe Quelle wie der
+      // Sensor "‹Raum› Raumstatus".
+      const matchIcon = ROOM_STATUS_ICONS[a.raumstatus] || "🟢";
       let highlightOk = false;
 
       if (windowEntity && states[windowEntity]) {
@@ -345,9 +343,7 @@ class SmartClimateCard extends HTMLElement {
           }
         }
         if (!noWindow && hasLiveReason && !co2CloseException && (w === "on" || w === "off")) {
-          const isMatch = (s.state === "on") === (w === "on");
-          matchIcon = isMatch ? (comfortCloseResolvedException ? "🟢" : "🟠") : "🔴";
-          highlightOk = isMatch;
+          highlightOk = (s.state === "on") === (w === "on");
         }
       }
 
@@ -373,14 +369,6 @@ class SmartClimateCard extends HTMLElement {
       if (outdoor.dew === null && has(a, "aussen_taupunkt") && a.aussen_taupunkt !== null) {
         outdoor.dew = a.aussen_taupunkt;
         outdoor.dewEnt = ents.aussen_taupunkt || "";
-      }
-
-      if (hasMissing && matchIcon === "🟢") matchIcon = "🟠";
-      // Läuft ein Luftentfeuchter oder eine Klimaanlage, braucht der Raum
-      // Aufmerksamkeit (Energie, Einspeisung) - ein sonst grüner Raum wird orange,
-      // rot bleibt rot. Die Heizung zählt nicht dazu.
-      if ((a.luftentfeuchter_an === true || a.klimaanlage_an === true) && matchIcon === "🟢") {
-        matchIcon = "🟠";
       }
 
       if (matchIcon === "🟢") green += 1;

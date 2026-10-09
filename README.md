@@ -857,6 +857,52 @@ Alle sind normale Sensoren (Verlauf, Diagramme, Automationen) und liefern
 JS-Karte zeigt den Taupunkt als eigene Zeile (Raum- und Außen-Tabelle) und öffnet die Sensoren per Klick auf "Abs. Luftfeuchtigkeit" bzw. "Taupunkt". Nach dem Update ist
 ein Neustart von Home Assistant nötig (neue Plattform).
 
+## Raumstatus als Sensor (Ampel 🟢/🟠/🔴)
+
+Zusätzlich zur Karte gibt es je Raum einen eigenen Sensor
+`sensor.<raum>_raumstatus` mit der Ampel des Raums als Zustand:
+
+| Zustand | Ampel | Bedeutung |
+|---|---|---|
+| `ok` | 🟢 | Nichts zu tun (oder ein bereits gelöster Fall) |
+| `hinweis` | 🟠 | Aufmerksamkeit nötig, aber kein Fehler - z. B. Raum ohne Fenster, Fenster passt schon und die Werte normalisieren sich noch, ein Messwert fehlt, ein Luftentfeuchter/eine Klimaanlage läuft |
+| `handlungsbedarf` | 🔴 | Das Fenster passt nicht zur Empfehlung |
+
+Die Ampel wird einmal im Raum-Binärsensor berechnet (Attribut `raumstatus`);
+die Dashboard-Karte und dieser Sensor zeigen nur das Ergebnis - die Farben der
+Karte und des Sensors sind dadurch immer identisch.
+
+- Das **Symbol** wechselt mit dem Zustand (Häkchen / Ausrufezeichen im Kreis /
+  Warndreieck). Eine **Farbe** liefert der Sensor nicht - die bestimmt das
+  Dashboard (siehe unten).
+- Attribute: `raum`, `gruende` (Liste, was die Farbe bestimmt:
+  `fenster_passt_nicht`, `wartet_auf_normalisierung`, `kein_fenster`,
+  `keine_fensterinfo`, `messwert_fehlt`, `geraet_laeuft`), `ausloeser`
+  (aktuell zutreffende Lüftungsgründe, z. B. `temp`, `humidity`, `co2`) und
+  `lueften_empfohlen`.
+- **Antippen:** Auf einem Dashboard öffnet ein Tipp auf die Entität die
+  Standard-Detailansicht (Verlauf und Attribute). Soll ein Tipp stattdessen
+  zu einer Raum-Seite navigieren, stellst du das in der jeweiligen Karte
+  ein (`tap_action: navigate`).
+- Der Sensor ist ein normaler Sensor mit festen Zuständen und lässt sich in
+  Automationen nutzen, z. B. "Push, wenn ein Raum `handlungsbedarf` meldet".
+
+Beispiel mit der Standard-Kachel (die Farbe ist dort fest, nicht pro Zustand):
+
+```yaml
+type: tile
+entity: sensor.bad_raumstatus
+state_content: state
+tap_action:
+  action: more-info
+```
+
+Soll die Kachel je Zustand eine andere Farbe haben, braucht es eine
+Zusatzkarte, die Vorlagen kann (z. B. Mushroom-Template-Karte oder `card-mod`);
+die Farbvorlagen hängen von der jeweiligen Karte ab und sind hier nicht
+mitgeliefert. Nach dem Update ist ein Neustart von Home Assistant nötig (neue
+Entität).
+
 ## Geräte-Steuerung (Luftentfeuchter/Klimaanlage/Heizung/Sommer-/Winterbetrieb)
 
 Optional kann pro Raum ein Luftentfeuchter, eine Klimaanlage und/oder eine
@@ -1084,6 +1130,8 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `offene_gruende` | Liste der aktuell live zutreffenden Öffnen-Gründe (`temp`/`humidity`/`co2`, auch mehrere gleichzeitig möglich) - "liegt der Messwert gerade außerhalb des Normalbereichs" **und** die Außenluft-Prüfung des jeweiligen Grunds (Temperatur: Außen kühler, Luftfeuchtigkeit: Außen absolut trockener, CO2: nicht bei zu warmer Außenluft, außer deutlich erhöht), damit die Karte keinen Auslöser zeigt, der die Empfehlung gar nicht auslöst. Unabhängig vom tatsächlichen `should_open` (das zusätzlich Frost-/Hitzeschutz/Hysterese/Duscherkennung berücksichtigt). Dient der Dashboard-Karte für den Fenster-Mismatch-Abgleich, ohne die Vergleichslogik selbst nachbauen zu müssen |
 | `schliessgrund_live` | wie `offene_gruende`, aber für die Schließen-Seite (dort kann strukturell nur ein Grund gewinnen): `temp`/`humidity`/`co2`/`frost`/`heat`/`outdoor_warmer`/`outdoor_wetter`/`duration`, leerer String falls keiner zutrifft. Berücksichtigt bereits "Schließempfehlung deaktivieren" (reine Komfort-Gründe entfallen dann, Frost-/Hitzeschutz bleiben unberührt) |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
+| `raumstatus` | Ampel des Raums: `ok` (🟢), `hinweis` (🟠) oder `handlungsbedarf` (🔴) - einmal hier berechnet, von der Dashboard-Karte und dem Sensor `sensor.<raum>_raumstatus` nur angezeigt (siehe "Raumstatus als Sensor") |
+| `raumstatus_gruende` | Liste der Gründe, die die Ampel bestimmen (`fenster_passt_nicht`, `wartet_auf_normalisierung`, `kein_fenster`, `keine_fensterinfo`, `messwert_fehlt`, `geraet_laeuft`) |
 | `taupunkt` / `aussen_taupunkt` | Taupunkt in °C (Magnus-Formel), nur wenn Temperatur und Feuchte vorliegen und die Feuchte > 0 % ist - nur für die Anzeige in der JS-Karte |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe "Absolute vs. relative Luftfeuchtigkeit") - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |
@@ -1275,7 +1323,7 @@ Auslöser wird live aus den aktuellen Werten/Schwellen berechnet. Solange dabei 
 zeigt die Empfehlung "Öffnen"/"Schließen" entsprechend dem aktuellen Zustand;
 liegt aktuell **kein** Auslöser vor ("Totzone", siehe
 oben), zeigt die Zeile "Empfehlung" in Status und Uhrzeit "–" statt einer sonst
-nicht mehr begründbaren Empfehlung. Das Icon am Raumnamen richtet sich danach, ob aktuell ein
+nicht mehr begründbaren Empfehlung. Das Icon am Raumnamen (die Ampel selbst wird im Backend berechnet und kommt als Attribut `raumstatus`, siehe "Raumstatus als Sensor") richtet sich danach, ob aktuell ein
 Auslöser vorliegt und, falls ja, ob das Fenster bereits entsprechend
 steht (🔴 bei echtem Fenster-Mismatch, 🟠 wenn das Fenster schon korrekt
 steht, aber die Werte noch außerhalb der Norm liegen, 🟢 bei einem

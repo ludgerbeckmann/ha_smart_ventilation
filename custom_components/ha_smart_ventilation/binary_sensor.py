@@ -21,6 +21,7 @@ from homeassistant.helpers.entity_platform import (
     AddEntitiesCallback,
     async_get_current_platform,
 )
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
@@ -186,6 +187,11 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
+    ROOM_STATUS_ACTION,
+    ROOM_STATUS_HINT,
+    ROOM_STATUS_KEY,
+    ROOM_STATUS_OK,
+    ROOM_STATUS_SIGNAL,
     SHOWER_END_HUMIDITY_DROP,
     SHOWER_END_NO_PEAK_MINUTES,
     SHOWER_END_TEMP_DROP,
@@ -622,6 +628,107 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         return open_reasons, close_reason
 
+    def _compute_room_status(
+        self,
+        attrs: dict,
+        open_reasons: list[str],
+        close_reason: str,
+    ) -> tuple[str, list[str]]:
+        """Raumstatus (Ampel): "ok" (🟢), "hinweis" (🟠) oder "handlungsbedarf"
+        (🔴) plus die Gründe, die die Farbe bestimmen.
+
+        Die Logik stand bis 0.93.x in der Dashboard-Karte und ist unverändert
+        hierher gewandert (CLAUDE.md Lektion 103): Karte und Sensor lesen nur
+        noch das Ergebnis. Eingaben sind die bereits berechneten Attribute
+        (`attrs`), die live berechneten Gründe sowie der Fensterkontakt.
+        """
+        is_on = bool(self._attr_is_on)
+        trigger = (open_reasons[0] if open_reasons else "") if is_on else close_reason
+        has_live_reason = trigger != ""
+        # Schließen wegen CO2 ist unkritisch (CLAUDE.md Lektion 16/17); die
+        # übrigen Komfort-Gründe gelten als "gelöst", sobald das Fenster
+        # bereits passt (Lektion 30/32).
+        co2_close_exception = (not is_on) and trigger == "co2"
+        resolved = (not is_on) and trigger in (
+            "humidity",
+            "temp",
+            "outdoor_warmer",
+            "outdoor_wetter",
+        )
+        no_window = attrs.get("hat_fenster") is False
+
+        reasons: list[str] = []
+        if not has_live_reason or co2_close_exception or (no_window and resolved):
+            status = ROOM_STATUS_OK
+        elif no_window:
+            status = ROOM_STATUS_HINT
+            reasons.append("kein_fenster")
+        else:
+            status = ROOM_STATUS_ACTION
+            reasons.append("keine_fensterinfo")
+
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        window_state = self.hass.states.get(window_entity) if window_entity else None
+        if (
+            window_state is not None
+            and not no_window
+            and has_live_reason
+            and not co2_close_exception
+            and window_state.state in ("on", "off")
+        ):
+            is_match = is_on == (window_state.state == "on")
+            reasons = []
+            if is_match:
+                status = ROOM_STATUS_OK if resolved else ROOM_STATUS_HINT
+                if status == ROOM_STATUS_HINT:
+                    reasons.append("wartet_auf_normalisierung")
+            else:
+                status = ROOM_STATUS_ACTION
+                reasons.append("fenster_passt_nicht")
+
+        # Ein sonst grüner Raum wird orange, wenn ein Messwert fehlt oder ein
+        # Luftentfeuchter/eine Klimaanlage läuft (rot bleibt rot, die Heizung
+        # zählt nicht dazu).
+        if status == ROOM_STATUS_OK:
+            missing = (
+                attrs.get("innentemperatur") is None
+                or ("luftfeuchtigkeit" in attrs and attrs["luftfeuchtigkeit"] is None)
+                or ("co2" in attrs and attrs["co2"] is None)
+            )
+            device_running = (
+                attrs.get("luftentfeuchter_an") is True or attrs.get("klimaanlage_an") is True
+            )
+            if missing:
+                status = ROOM_STATUS_HINT
+                reasons.append("messwert_fehlt")
+            if device_running:
+                status = ROOM_STATUS_HINT
+                reasons.append("geraet_laeuft")
+        return status, reasons
+
+    def _publish_room_status(
+        self, status: str, reasons: list[str], open_reasons: list[str], close_reason: str
+    ) -> None:
+        """Legt den Raumstatus für den Sensor "‹Raum› Raumstatus" ab und meldet
+        ihm per Dispatcher eine Änderung. Gesendet wird nur bei einer echten
+        Änderung, damit das wiederholte Berechnen der Attribute keine
+        unnötigen Zustandsschreibvorgänge auslöst."""
+        triggers = list(open_reasons) if self._attr_is_on else (
+            [close_reason] if close_reason else []
+        )
+        payload = {
+            "status": status,
+            "gruende": list(reasons),
+            "ausloeser": triggers,
+            "lueften_empfohlen": bool(self._attr_is_on),
+        }
+        cache = self.hass.data.setdefault(DOMAIN, {}).setdefault(ROOM_STATUS_KEY, {})
+        entry_id = self._entry.entry_id
+        if cache.get(entry_id) == payload:
+            return
+        cache[entry_id] = payload
+        async_dispatcher_send(self.hass, ROOM_STATUS_SIGNAL.format(entry_id))
+
     @property
     def extra_state_attributes(self) -> dict:
         indoor_temp = self._get_indoor_temperature()
@@ -731,6 +838,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "aussen_absolute_luftfeuchtigkeit",
             ),
             "taupunkt": self._sensor_entity_id(self._entry.entry_id, "taupunkt"),
+            "raumstatus": self._sensor_entity_id(self._entry.entry_id, "raumstatus"),
             "aussen_taupunkt": self._sensor_entity_id(
                 self.hass.data.get(DOMAIN, {}).get(GLOBAL_ENTRY_ID_KEY),
                 "aussen_taupunkt",
@@ -882,6 +990,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         summer_mode_entity = self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None)
         if summer_mode_entity and not self._device_entity_missing(summer_mode_entity):
             attrs["sommermodus_an"] = self._is_summer_mode_active()
+        # Raumstatus (Ampel) - zuletzt, da er die Geräte-/Messwert-Attribute
+        # oben auswertet.
+        room_status, room_status_reasons = self._compute_room_status(
+            attrs, offene_gruende, schliessgrund_live
+        )
+        attrs["raumstatus"] = room_status
+        attrs["raumstatus_gruende"] = room_status_reasons
+        self._publish_room_status(
+            room_status, room_status_reasons, offene_gruende, schliessgrund_live
+        )
         return attrs
 
     async def async_added_to_hass(self) -> None:

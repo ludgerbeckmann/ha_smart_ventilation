@@ -16,6 +16,20 @@ GLOBAL_ENTRY_ID_KEY = "_global_entry_id"
 # wird (siehe __init__.py:async_setup / binary_sensor.py:extra_state_attributes).
 VERSION_KEY = "_integration_version"
 
+# Raumstatus (Ampel 🟢/🟠/🔴): Zustände des Sensors "‹Raum› Raumstatus" und
+# des Attributs `raumstatus` am Raum-Binärsensor. Die Berechnung steht einmal
+# in binary_sensor.py, Sensor und Dashboard-Karte lesen nur das Ergebnis.
+ROOM_STATUS_OK = "ok"
+ROOM_STATUS_HINT = "hinweis"
+ROOM_STATUS_ACTION = "handlungsbedarf"
+ROOM_STATUS_OPTIONS = [ROOM_STATUS_OK, ROOM_STATUS_HINT, ROOM_STATUS_ACTION]
+# Schlüssel in hass.data[DOMAIN]: zuletzt berechneter Raumstatus je entry_id
+# (Zwischenspeicher für den Sensor) sowie das Dispatcher-Signal, mit dem der
+# Raum-Binärsensor dem Sensor eine Änderung meldet (kein Objektverweis
+# zwischen den Plattformen, siehe CLAUDE.md Lektion 25/45).
+ROOM_STATUS_KEY = "_room_status"
+ROOM_STATUS_SIGNAL = DOMAIN + "_room_status_{}"
+
 # Name des automatisch angelegten globalen Eintrags (CONF_ROOM_NAME-Wert,
 # gleichzeitig der angezeigte Entry-Titel). Seit dem Anzeigenamen-Rename auf
 # "Smart Climate" (0.59.0) - siehe __init__.py:_migrate_global_entry_title()
