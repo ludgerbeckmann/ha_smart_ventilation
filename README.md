@@ -1449,6 +1449,35 @@ Lovelace-Ressource von der Integration selbst bereitgestellt und ist dadurch
 immer auf demselben Stand wie die installierte Integration (die Übersicht
 zeigt die Version der Integration).
 
+**Automatischer Ressourcen-Eintrag (ab 0.94.1):** Die Integration lädt die
+Karte weiterhin über Home Assistants Zusatzmodul-Mechanismus, trägt sie nach
+dem Start aber zusätzlich als Lovelace-Ressource ein (Typ „JavaScript-Modul“,
+URL `/ha_smart_ventilation/smart-climate-card.js?v=<Version>`) - so, wie es
+auch HACS für Karten tut. Hintergrund: Karten, die nur als Zusatzmodul geladen
+wurden, meldeten gelegentlich „Custom element doesn't exist:
+smart-climate-card“, bis die App hart beendet wurde. Der Eintrag erscheint unter
+*Einstellungen → Dashboards → ⋮ → Ressourcen* und wird bei jedem Update auf die
+neue Version angepasst. Nur im Storage-Modus (Standard) möglich; bei
+Dashboards im YAML-Modus bleibt es beim bisherigen Zusatzmodul. Einen von Hand
+angelegten Eintrag für denselben Pfad ohne `?v=` lässt die Integration
+unangetastet. Nach dem Update Home Assistant neu starten und die Companion-App
+vollständig beenden und neu öffnen.
+
+**Eintrag von Hand entfernen:** Die Integration entfernt den Eintrag **nie
+selbst** - weder beim Löschen einer Karte (die Ressource gilt für alle
+Dashboards, nicht für eine einzelne Karte) noch beim Deinstallieren (z. B. über
+HACS; darauf kann die Integration nicht reagieren). Zum Entfernen:
+*Einstellungen → Dashboards → ⋮ (oben rechts) → Ressourcen* (die Option
+erscheint nur mit aktiviertem „Erweiterten Modus“ im Profil, sofern die
+Home-Assistant-Version ihn noch kennt), den Eintrag
+`/ha_smart_ventilation/smart-climate-card.js?v=…` öffnen und löschen. Solange
+die Integration installiert ist, wird er beim nächsten Start wieder angelegt.
+Wird nur die Karte nicht mehr gebraucht, genügt es, sie aus den Dashboards zu
+entfernen; ein verwaister Eintrag ist harmlos (lädt nur eine Datei, die dann
+fehlt, und zeigt ggf. einen Ladefehler in der Browser-Konsole). Schlägt der
+automatische Eintrag fehl, steht eine Warnung im Log; dann die Ressource von
+Hand mit obigen Werten anlegen.
+
 **Lange Texte:** Sehr lange Texte in den Tabellen (Auslöser, Grund der
 Geräte, Ziele der Benachrichtigungen) werden nach vier Zeilen automatisch
 mit „…“ gekürzt - die Wörter selbst bleiben unverändert. Ein Tippen auf

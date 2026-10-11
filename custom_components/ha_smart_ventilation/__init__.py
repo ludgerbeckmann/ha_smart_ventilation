@@ -9,6 +9,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
 from .const import (
@@ -135,6 +136,74 @@ def _migrate_global_entry_title(hass: HomeAssistant, entry: ConfigEntry) -> None
     )
 
 
+def _get_lovelace_resources(hass: HomeAssistant):
+    """Liefert die Lovelace-Ressourcen-Sammlung oder None.
+
+    Home Assistant legt sie unter hass.data["lovelace"] ab - in älteren
+    Versionen als Dict (Schlüssel "resources"), in neueren als typisiertes
+    Objekt (Attribut ``resources``). Beides wird defensiv unterstützt."""
+    data = hass.data.get("lovelace")
+    if data is None:
+        return None
+    if isinstance(data, dict):
+        return data.get("resources")
+    return getattr(data, "resources", None)
+
+
+def _split_resource_url(url: str) -> tuple[str, str]:
+    path, _, query = str(url).partition("?")
+    return path, query
+
+
+async def _async_ensure_lovelace_resource(hass: HomeAssistant, version: str) -> None:
+    """Trägt die Karte als Lovelace-Ressource ein (nur Storage-Modus).
+
+    Bewusst NICHT entfernend: Beim Löschen der Integration bleibt der Eintrag
+    stehen und muss von Hand gelöscht werden (siehe README, Abschnitt
+    "Dashboard-Karte"). Ein vom Nutzer selbst angelegter Eintrag für denselben
+    Pfad ohne ``?v=`` bleibt unangetastet. Jeder Fehler wird nur geloggt, da
+    dies auf Home-Assistant-Interna beruht (keine dokumentierte API)."""
+    try:
+        resources = _get_lovelace_resources(hass)
+        # YAML-Modus: Sammlung ist schreibgeschützt (kein async_create_item).
+        if resources is None or not hasattr(resources, "async_create_item"):
+            _LOGGER.debug(
+                "Lovelace-Ressourcen nicht im Storage-Modus - Karte wird nur "
+                "über add_extra_js_url geladen."
+            )
+            return
+        if not getattr(resources, "loaded", True):
+            await resources.async_load()
+            resources.loaded = True
+
+        target_url = f"{CARD_URL_PATH}?v={version}"
+        ours = None
+        for item in resources.async_items() or []:
+            path, query = _split_resource_url(item.get("url", ""))
+            if path != CARD_URL_PATH:
+                continue
+            if not query.startswith("v="):
+                # Vom Nutzer selbst angelegt - nicht anfassen.
+                return
+            if ours is None:
+                ours = item
+        if ours is None:
+            await resources.async_create_item({"res_type": "module", "url": target_url})
+            _LOGGER.info("Dashboard-Karte als Lovelace-Ressource eingetragen: %s", target_url)
+        elif ours.get("url") != target_url:
+            await resources.async_update_item(
+                ours["id"], {"res_type": "module", "url": target_url}
+            )
+            _LOGGER.info("Lovelace-Ressource der Dashboard-Karte aktualisiert: %s", target_url)
+    except Exception:  # noqa: BLE001 - darf das Setup nie verhindern
+        _LOGGER.warning(
+            "Konnte die Dashboard-Karte nicht automatisch als Lovelace-Ressource "
+            "eintragen - bitte von Hand unter Einstellungen > Dashboards > "
+            "Ressourcen hinzufügen (siehe README).",
+            exc_info=True,
+        )
+
+
 async def _register_frontend_card(hass: HomeAssistant, integration) -> None:
     """Registriert die eigenständige JS-Custom-Card (siehe
     custom_components/ha_smart_ventilation/www/smart-climate-card.js)
@@ -164,6 +233,14 @@ async def _register_frontend_card(hass: HomeAssistant, integration) -> None:
         )
         version = str(integration.version) if integration.version is not None else "0"
         add_extra_js_url(hass, f"{CARD_URL_PATH}?v={version}")
+
+        # Zusätzlich als Lovelace-Ressource (nach dem Start, wenn Lovelace
+        # geladen ist) - extra_module_url allein lud die Karte gelegentlich
+        # nicht (CLAUDE.md Lektion 104).
+        async def _ensure(_hass: HomeAssistant) -> None:
+            await _async_ensure_lovelace_resource(hass, version)
+
+        async_at_started(hass, _ensure)
     except Exception:  # noqa: BLE001 - siehe Docstring: darf das Setup nie verhindern
         _LOGGER.warning(
             "Konnte die eigenständige Dashboard-Karte (smart-climate-card.js) "
