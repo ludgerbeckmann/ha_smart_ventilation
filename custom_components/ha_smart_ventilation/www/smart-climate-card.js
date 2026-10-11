@@ -876,7 +876,9 @@ class SmartClimateCard extends HTMLElement {
   }
 }
 
-customElements.define("smart-climate-card", SmartClimateCard);
+if (!customElements.get("smart-climate-card")) {
+  customElements.define("smart-climate-card", SmartClimateCard);
+}
 
 /*
  * Minimaler visueller Editor - optionales title-Feld und die Option
@@ -998,12 +1000,15 @@ class SmartClimateCardEditor extends HTMLElement {
   }
 }
 
-customElements.define("smart-climate-card-editor", SmartClimateCardEditor);
+if (!customElements.get("smart-climate-card-editor")) {
+  customElements.define("smart-climate-card-editor", SmartClimateCardEditor);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "smart-climate-card",
-  name: "Smart Climate Karte",
-  description:
-    "Lüftungsübersicht für Smart Climate (JS-Variante, parallel zur Markdown-Karte nutzbar).",
-});
+if (!window.customCards.some((c) => c.type === "smart-climate-card")) {
+  window.customCards.push({
+    type: "smart-climate-card",
+    name: "Smart Climate Karte",
+    description: "Lüftungsübersicht für Smart Climate.",
+  });
+}
