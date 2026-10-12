@@ -486,6 +486,21 @@ Text einen ungültigen Platzhalter (z. B. Tippfehler wie `{room}` statt
 entsprechender Hinweis erscheint dann im Log) - eine Benachrichtigung geht
 dadurch nie komplett verloren.
 
+**Sprachausgabe ohne Werte (ab 0.95.0):** Die Durchsagen über die
+media_player-Lautsprecher verwenden **nicht** diese einstellbaren Texte,
+sondern allgemeine, fest eingebaute Sätze ohne Messwerte und Schwellen - z. B.
+"Bitte das Fenster im Büro öffnen, weil die Luftfeuchtigkeit zu hoch ist."
+oder "Bitte das Fenster im Büro wegen Frostgefahr wieder schließen." Das gilt
+für alle Anlässe (Öffnen wegen Temperatur/Luftfeuchtigkeit/CO2, die acht
+Schließen-Gründe, Erinnerung) und auch für die wiederholte Ansage beim
+Einschalten des Lichts. App-Push und die dauerhafte Benachrichtigung
+behalten die einstellbaren Texte mit `{wert}`/`{schwelle}`. Unverändert für
+alle Kanäle gleich bleiben die Texte für Wassertank, Fenster-Gerät-Konflikt
+und Duschdauer (diese nennt weiterhin die Minuten). Die allgemeinen
+Sprachtexte sind nicht einstellbar; eigene Anpassungen der Texte oben wirken
+daher nur noch auf Push und persistente Benachrichtigung. Der vollständige
+gesprochene Text steht im Attribut `push_verlauf`.
+
 Alle Zahlenfelder sind immer mit einem sinnvollen Standardwert vorausgefüllt
 – wird ein Feld komplett geleert, greift beim Speichern automatisch wieder
 dieser Standardwert.

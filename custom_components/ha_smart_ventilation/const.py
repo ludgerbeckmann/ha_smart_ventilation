@@ -691,3 +691,52 @@ DEFAULT_MSG_DEVICE_WINDOW_CONFLICT = (
     "Bitte das Fenster im {raum} schließen - {geraet} arbeitet sonst gegen "
     "die einströmende Luft."
 )
+
+# Allgemeine Texte für die SPRACHAUSGABE (nur {raum}, keine Messwerte oder
+# Schwellen) - fest eingebaut, nicht einstellbar. App-Push und persistente
+# Benachrichtigung nutzen weiterhin die einstellbaren Texte oben (mit
+# {wert}/{schwelle}); Wassertank, Fenster-Gerät-Konflikt und Duschdauer
+# bleiben für alle Kanäle gleich.
+DEFAULT_TTS_MSG_OPEN_HUMIDITY = (
+    "Bitte das Fenster im {raum} öffnen, weil die Luftfeuchtigkeit zu hoch ist."
+)
+DEFAULT_TTS_MSG_OPEN_CO2 = (
+    "Bitte das Fenster im {raum} öffnen, weil der CO2-Wert zu hoch ist."
+)
+DEFAULT_TTS_MSG_OPEN_TEMP = (
+    "Bitte das Fenster im {raum} zum Lüften öffnen, weil es drinnen zu warm "
+    "und draußen kühler ist."
+)
+DEFAULT_TTS_MSG_CLOSE_FROST = (
+    "Bitte das Fenster im {raum} wegen Frostgefahr wieder schließen."
+)
+DEFAULT_TTS_MSG_CLOSE_HEAT = (
+    "Bitte das Fenster im {raum} wieder schließen, weil es draußen zu heiß "
+    "ist."
+)
+DEFAULT_TTS_MSG_CLOSE_DURATION = (
+    "Das Fenster im {raum} ist schon lange offen. Bitte wegen der Kälte "
+    "draußen wieder schließen."
+)
+DEFAULT_TTS_MSG_CLOSE_HUMIDITY = (
+    "Die Luftfeuchtigkeit im {raum} ist wieder normal. Das Fenster kann "
+    "geschlossen werden."
+)
+DEFAULT_TTS_MSG_CLOSE_CO2 = (
+    "Der CO2-Wert im {raum} ist wieder normal. Das Fenster kann geschlossen "
+    "werden."
+)
+DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WARMER = (
+    "Draußen ist es jetzt wärmer als im {raum}. Bitte das Fenster wieder "
+    "schließen."
+)
+DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WETTER = (
+    "Draußen ist die Luft jetzt feuchter als im {raum}. Bitte das Fenster "
+    "wieder schließen."
+)
+DEFAULT_TTS_MSG_CLOSE_DEFAULT = (
+    "Bitte das Fenster im {raum} wieder schließen, es ist wieder kühl genug."
+)
+DEFAULT_TTS_MSG_REMINDER = (
+    "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein."
+)

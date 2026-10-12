@@ -163,6 +163,18 @@ from .const import (
     DEFAULT_MSG_CLOSE_OUTDOOR_WARMER,
     DEFAULT_MSG_CLOSE_OUTDOOR_WETTER,
     DEFAULT_MSG_DEVICE_WINDOW_CONFLICT,
+    DEFAULT_TTS_MSG_CLOSE_CO2,
+    DEFAULT_TTS_MSG_CLOSE_DEFAULT,
+    DEFAULT_TTS_MSG_CLOSE_DURATION,
+    DEFAULT_TTS_MSG_CLOSE_FROST,
+    DEFAULT_TTS_MSG_CLOSE_HEAT,
+    DEFAULT_TTS_MSG_CLOSE_HUMIDITY,
+    DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WARMER,
+    DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WETTER,
+    DEFAULT_TTS_MSG_OPEN_CO2,
+    DEFAULT_TTS_MSG_OPEN_HUMIDITY,
+    DEFAULT_TTS_MSG_OPEN_TEMP,
+    DEFAULT_TTS_MSG_REMINDER,
     DEFAULT_MSG_OPEN_CO2,
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
@@ -1184,7 +1196,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self.hass.async_create_task(self._repeat_announcements_on_light())
 
     def _pending_recommendation_message(self) -> str | None:
-        """Text der aktuell noch offenen Lüftungsempfehlung - oder None.
+        """Sprachtext (siehe _speech_message()) der aktuell noch offenen
+        Lüftungsempfehlung - oder None.
 
         Öffnen: Empfehlung aktiv und das Fenster ist (laut Kontakt) noch nicht
         offen (ohne Fensterkontakt zählt die Empfehlung selbst). Schließen:
@@ -1195,7 +1208,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._attr_is_on:
             if not self._window_action_needed(True):
                 return None
-            return self._build_message(True, self._last_reason)
+            return self._speech_message(True, self._last_reason)
         if self._last_reason in (None, "co2") or not self._is_window_confirmed_open():
             return None
         window_state = self.hass.states.get(self._config.get(CONF_WINDOW_ENTITY))
@@ -1205,7 +1218,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             or window_state.last_changed > self._last_state_change_at
         ):
             return None
-        return self._build_message(False, self._last_reason)
+        return self._speech_message(False, self._last_reason)
 
     async def _repeat_announcements_on_light(self) -> None:
         """Sagt bei jedem Einschalten des Lichts (Mindestabstand
@@ -3493,6 +3506,32 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             )
             return template
 
+    def _speech_message(self, should_ventilate: bool, reason: str | None) -> str:
+        """Allgemeiner Text für die SPRACHAUSGABE - ohne Messwerte und
+        Schwellen (z. B. "Bitte das Fenster im Büro öffnen, weil die
+        Luftfeuchtigkeit zu hoch ist."). Fest eingebaut, nicht einstellbar;
+        Push und persistente Benachrichtigung nutzen weiter _build_message()
+        mit den einstellbaren Texten."""
+        room = self._config[CONF_ROOM_NAME]
+        if reason == "reminder":
+            template = DEFAULT_TTS_MSG_REMINDER
+        elif should_ventilate:
+            template = {
+                "humidity": DEFAULT_TTS_MSG_OPEN_HUMIDITY,
+                "co2": DEFAULT_TTS_MSG_OPEN_CO2,
+            }.get(reason, DEFAULT_TTS_MSG_OPEN_TEMP)
+        else:
+            template = {
+                "frost": DEFAULT_TTS_MSG_CLOSE_FROST,
+                "heat": DEFAULT_TTS_MSG_CLOSE_HEAT,
+                "duration": DEFAULT_TTS_MSG_CLOSE_DURATION,
+                "humidity": DEFAULT_TTS_MSG_CLOSE_HUMIDITY,
+                "co2": DEFAULT_TTS_MSG_CLOSE_CO2,
+                "outdoor_warmer": DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WARMER,
+                "outdoor_wetter": DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WETTER,
+            }.get(reason, DEFAULT_TTS_MSG_CLOSE_DEFAULT)
+        return template.format(raum=room)
+
     def _is_present(self, presence_entity: str | None) -> bool:
         """Prüft, ob die zu einem Notify-Ziel gehörende Person/das Gerät
         zuhause ist. Ohne Anwesenheits-Entität ist die Bedingung immer
@@ -3696,7 +3735,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     else:
                         source = f"Empfehlung Schließen, Grund {reason}"
                     await self._play_tts(
-                        sonos_entities, tts_entity, message, source
+                        sonos_entities,
+                        tts_entity,
+                        self._speech_message(should_ventilate, reason),
+                        source,
                     )
             else:
                 _LOGGER.warning(

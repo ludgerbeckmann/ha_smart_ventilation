@@ -557,7 +557,7 @@
           },
           "messages": {
             "name": "Benachrichtigungstexte",
-            "description": "Die Texte, die bei den jeweiligen Empfehlungen verschickt werden. Bei den Texten stehen drei Platzhalter zur Verfügung: ｛raum｝ (Raumname), ｛wert｝ (aktueller Mess- bzw. Ist-Wert inkl. Einheit) und ｛schwelle｝ (zugehöriger Schwellenwert inkl. Einheit).",
+            "description": "Die Texte, die bei den jeweiligen Empfehlungen verschickt werden. Bei den Texten stehen drei Platzhalter zur Verfügung: ｛raum｝ (Raumname), ｛wert｝ (aktueller Mess- bzw. Ist-Wert inkl. Einheit) und ｛schwelle｝ (zugehöriger Schwellenwert inkl. Einheit). Diese Texte (mit Werten) gelten für App-Push und persistente Benachrichtigung. Die Sprachausgabe verwendet dafür allgemeine, fest eingebaute Texte ohne Werte (z. B. \"Bitte das Fenster im Büro öffnen, weil die Luftfeuchtigkeit zu hoch ist.\") - Ausnahmen mit eigenem Text für alle Kanäle: Wassertank, Fenster-Gerät-Konflikt und Duschdauer.",
             "data": {
               "msg_open_humidity": "Öffnen wegen Luftfeuchtigkeit",
               "msg_open_co2": "Öffnen wegen CO2",
