@@ -557,7 +557,7 @@
           },
           "messages": {
             "name": "Notification texts",
-            "description": "The texts sent for the respective recommendations. For the texts, three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit).",
+            "description": "The texts sent for the respective recommendations. For the texts, three placeholders are available: ｛raum｝ (room name), ｛wert｝ (current measured value, including unit) and ｛schwelle｝ (the matching threshold, including unit). These texts (with values) apply to app push and persistent notifications. Voice announcements use general, built-in texts without values instead (e.g. \"Please open the window in the office because the humidity is too high.\") - exceptions with their own text for all channels: water tank, window/device conflict and shower duration.",
             "data": {
               "msg_open_humidity": "Open due to humidity",
               "msg_open_co2": "Open due to CO2",
