@@ -3444,7 +3444,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     def _build_message(self, should_ventilate: bool, reason: str | None) -> str:
         room = self._config[CONF_ROOM_NAME]
 
-        if should_ventilate:
+        if reason == "reminder":
+            # Muss VOR "should_ventilate" geprüft werden: die Erinnerung wird
+            # mit should_ventilate=True gesendet und landete sonst im
+            # Öffnen-Zweig (eigener Erinnerungstext nie verwendet).
+            template = self._effective(CONF_MSG_REMINDER, DEFAULT_MSG_REMINDER)
+            wert, schwelle = self._measurement_context(self._last_reason, opening=True)
+        elif should_ventilate:
             if reason == "humidity":
                 template = self._effective(
                     CONF_MSG_OPEN_HUMIDITY, DEFAULT_MSG_OPEN_HUMIDITY
@@ -3483,9 +3489,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 CONF_MSG_CLOSE_OUTDOOR_WETTER, DEFAULT_MSG_CLOSE_OUTDOOR_WETTER
             )
             wert, schwelle = self._measurement_context("outdoor_wetter", opening=False)
-        elif reason == "reminder":
-            template = self._effective(CONF_MSG_REMINDER, DEFAULT_MSG_REMINDER)
-            wert, schwelle = self._measurement_context(self._last_reason, opening=True)
         else:
             template = self._effective(
                 CONF_MSG_CLOSE_DEFAULT, DEFAULT_MSG_CLOSE_DEFAULT
