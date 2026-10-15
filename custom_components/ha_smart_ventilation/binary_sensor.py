@@ -105,6 +105,7 @@ from .const import (
     CONF_SHOWER_DETECTION_ENABLED,
     CONF_SHOWER_MAX_DURATION,
     CONF_SHOWER_RISE_THRESHOLD,
+    CONF_SHOWER_TEMPERATURE_ENTITY,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENTITY,
     CONF_SUMMER_MODE_FORECAST_ATTRIBUTE,
@@ -1109,6 +1110,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             value = self._config.get(key)
             if value:
                 tracked.append(value)
+        shower_temp_entity = self._config.get(CONF_SHOWER_TEMPERATURE_ENTITY)
+        if shower_temp_entity and self._config.get(
+            CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
+        ):
+            tracked.append(shower_temp_entity)
 
         # Außentemperatur/-luftfeuchtigkeit kommen ausschließlich aus "Smart
         # Climate Optionen" - direkt verfolgen, falls beim Hinzufügen
@@ -1601,6 +1607,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Beobachtungsdauer, Verlauf, Fensterzustand, Zeit seit Start) - für
         die Diagnose von Fehlalarmen (Attribut `dusche_verlauf`)."""
         parts = [f"Start: Feuchte {humidity} %"]
+        shower_temp_entity = self._config.get(CONF_SHOWER_TEMPERATURE_ENTITY)
+        if shower_temp_entity:
+            parts.append(f"Temperatursensor {shower_temp_entity}")
         if self._shower_last_eval is not None:
             rate, elapsed, oldest = self._shower_last_eval
             parts.append(
@@ -1990,8 +1999,21 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return None
         return round(value, decimals) if decimals is not None else value
 
-    def _get_indoor_temperature(self) -> float | None:
-        entity_id = self._config[CONF_TEMP_SOURCE_ENTITY]
+    def _get_shower_temperature(self, indoor_temp: float | None) -> float | None:
+        """Temperatur für die Duscherkennung: der optionale eigene Sensor
+        (CONF_SHOWER_TEMPERATURE_ENTITY), sonst die Raum-Temperatur. Ist ein
+        eigener Sensor gesetzt, aber ohne Wert, gibt es bewusst KEINEN
+        Rückfall auf die Raum-Temperatur (zwei Quellen mit unterschiedlicher
+        Empfindlichkeit würden sich im Verlauf vermischen) - die Temperatur-
+        Kriterien greifen dann einfach nicht."""
+        entity_id = self._config.get(CONF_SHOWER_TEMPERATURE_ENTITY)
+        if not entity_id:
+            return indoor_temp
+        return self._get_indoor_temperature(entity_id)
+
+    def _get_indoor_temperature(self, entity_id: str | None = None) -> float | None:
+        if entity_id is None:
+            entity_id = self._config[CONF_TEMP_SOURCE_ENTITY]
         domain = entity_id.split(".")[0]
         state = self.hass.states.get(entity_id)
         if state is None:
@@ -2407,7 +2429,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Luftfeuchtigkeit zurückgehalten - Lüften währenddessen bringt
         # nichts. Optional, Standard aus (siehe _update_shower_detection).
         # Nur pro Raum einstellbar, keine globale Einstellung.
-        self._update_shower_state(humidity, indoor_temp, dt_util.utcnow())
+        self._update_shower_state(
+            humidity, self._get_shower_temperature(indoor_temp), dt_util.utcnow()
+        )
         self._sync_shower_tick()
         await self._check_shower_too_long()
         if self._shower_sensor is not None and self._shower_sensor.hass is not None:

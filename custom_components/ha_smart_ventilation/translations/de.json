@@ -87,6 +87,7 @@
               "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
               "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit",
               "shower_detection_enabled": "Duscherkennung",
+              "shower_temperature_entity": "Duschtemperatur-Sensor",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
               "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)"
             },
@@ -103,6 +104,7 @@
               "device_max_runtime_high_surplus_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = unbegrenzt. Gilt bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor): erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_high_surplus_minutes}",
               "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}",
               "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den im Abschnitt \"Sensoren\" gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür steht direkt darunter",
+              "shower_temperature_entity": "Optional: ein eigener Temperatursensor nur für die Duscherkennung (z. B. direkt in der Dusche oder am Luftfeuchtigkeitssensor), falls er empfindlicher reagiert als die Raum-Temperatur. Ersetzt dort die Raum-Temperatur; Lüften, Frostschutz und Heizung nutzen weiter den Sensor aus dem Abschnitt \"Sensoren\". Ohne Auswahl wird die Raum-Temperatur verwendet. Fällt der Sensor aus, greifen die Temperatur-Kriterien nicht (kein Rückfall auf die Raum-Temperatur)",
               "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn oben die Duscherkennung aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
               "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}"
             }
@@ -282,6 +284,7 @@
               "device_max_runtime_high_surplus_minutes": "Höchstlaufzeit bei hoher Einspeisung",
               "device_max_runtime_cooldown_minutes": "Ruhezeit nach Höchstlaufzeit",
               "shower_detection_enabled": "Duscherkennung",
+              "shower_temperature_entity": "Duschtemperatur-Sensor",
               "shower_rise_threshold": "Anstiegs-Schwelle Duscherkennung",
               "shower_max_duration_minutes": "Duschdauer-Ansage ab (Minuten)"
             },
@@ -298,6 +301,7 @@
               "device_max_runtime_high_surplus_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Gilt für Luftentfeuchter und Klimaanlage. 0 = unbegrenzt. Gilt bei hoher Einspeiseleistung (mindestens die Mindesteinspeiseleistung, nur mit Leistungssensor): erzwingt ein Abschalten, sobald das Gerät so lange ununterbrochen gelaufen ist. Aktuell global: {global_device_max_runtime_high_surplus_minutes}",
               "device_max_runtime_cooldown_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Mindest-Ruhezeit nach einem Zwangs-Abschalten wegen Höchstlaufzeit, bevor das Gerät wieder einschalten darf. Aktuell global: {global_device_max_runtime_cooldown_minutes}",
               "shower_detection_enabled": "Verzögert die Öffnen-Empfehlung wegen Luftfeuchtigkeit, solange diese gerade schnell ansteigt (typisch beim Duschen) - Lüften währenddessen bringt nichts, da weiter Dampf entsteht. Nur relevant für Räume mit Dusche/Badewanne, kein zusätzlicher Sensor nötig (nutzt den im Abschnitt \"Sensoren\" gewählten Luftfeuchtigkeitssensor). Die Anstiegs-Schwelle dafür steht direkt darunter",
+              "shower_temperature_entity": "Optional: ein eigener Temperatursensor nur für die Duscherkennung (z. B. direkt in der Dusche oder am Luftfeuchtigkeitssensor), falls er empfindlicher reagiert als die Raum-Temperatur. Ersetzt dort die Raum-Temperatur; Lüften, Frostschutz und Heizung nutzen weiter den Sensor aus dem Abschnitt \"Sensoren\". Ohne Auswahl wird die Raum-Temperatur verwendet. Fällt der Sensor aus, greifen die Temperatur-Kriterien nicht (kein Rückfall auf die Raum-Temperatur)",
               "shower_rise_threshold": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur relevant, wenn oben die Duscherkennung aktiviert ist. Aktuell global: {global_shower_rise_threshold}",
               "shower_max_duration_minutes": "Leer = Wert aus den allgemeinen Einstellungen verwenden. 0 = aus. Sprachansage über die Lautsprecher des Raums, sobald die erkannte Dusche so lange ununterbrochen läuft (einmal pro Dusche, nur mit aktivierter Duscherkennung). Aktuell global: {global_shower_max_duration_minutes}"
             }
