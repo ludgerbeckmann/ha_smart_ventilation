@@ -88,6 +88,7 @@ from .const import (
     CONF_SHOWER_DETECTION_ENABLED,
     CONF_SHOWER_MAX_DURATION,
     CONF_SHOWER_RISE_THRESHOLD,
+    CONF_SHOWER_TEMPERATURE_ENTITY,
     CONF_SHUTTER_ENTITY,
     CONF_SONOS_ENTITY,
     CONF_SUMMER_MODE_FORECAST_ATTRIBUTE,
@@ -222,6 +223,7 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_AC_ENTITY,
     CONF_HEATING_ENTITY,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_SHOWER_TEMPERATURE_ENTITY,
 )
 
 # Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
@@ -963,6 +965,11 @@ def _build_room_schema(
         "sensor",
         [defaults.get(CONF_HUMIDITY_ENTITY), defaults.get(CONF_CO2_ENTITY)],
     )
+    shower_temp_include = _area_include_entities(
+        area_entities,
+        TEMP_SOURCE_DOMAINS,
+        defaults.get(CONF_SHOWER_TEMPERATURE_ENTITY),
+    )
     window_include = _area_include_entities(
         area_entities,
         "binary_sensor",
@@ -1187,6 +1194,18 @@ def _build_room_schema(
                         CONF_SHOWER_DETECTION_ENABLED, DEFAULT_SHOWER_DETECTION_ENABLED
                     ),
                 ): selector.BooleanSelector(),
+                _entity_marker(
+                    CONF_SHOWER_TEMPERATURE_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=TEMP_SOURCE_DOMAINS,
+                        **(
+                            {"include_entities": shower_temp_include}
+                            if shower_temp_include
+                            else {}
+                        ),
+                    )
+                ),
                 shower_threshold_marker: shower_threshold_sel,
                 shower_max_marker: shower_max_sel,
             }

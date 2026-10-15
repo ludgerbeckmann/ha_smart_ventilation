@@ -87,6 +87,7 @@
               "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
               "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime",
               "shower_detection_enabled": "Shower detection",
+              "shower_temperature_entity": "Shower temperature sensor",
               "shower_rise_threshold": "Shower detection rise threshold",
               "shower_max_duration_minutes": "Shower announcement after (minutes)"
             },
@@ -103,6 +104,7 @@
               "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
               "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}",
               "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected in the \"Sensors\" section). The rise threshold for this is directly below",
+              "shower_temperature_entity": "Optional: a dedicated temperature sensor used only for shower detection (e.g. in the shower or next to the humidity sensor), in case it reacts more sensitively than the room temperature. It replaces the room temperature there; ventilation, frost protection and heating keep using the sensor from the \"Sensors\" section. Without a selection the room temperature is used. If the sensor fails, the temperature criteria do not apply (no fallback to the room temperature)",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled above. Currently global: {global_shower_rise_threshold}",
               "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}"
             }
@@ -282,6 +284,7 @@
               "device_max_runtime_high_surplus_minutes": "Max. runtime at high surplus power",
               "device_max_runtime_cooldown_minutes": "Cooldown after max. runtime",
               "shower_detection_enabled": "Shower detection",
+              "shower_temperature_entity": "Shower temperature sensor",
               "shower_rise_threshold": "Shower detection rise threshold",
               "shower_max_duration_minutes": "Shower announcement after (minutes)"
             },
@@ -298,6 +301,7 @@
               "device_max_runtime_high_surplus_minutes": "Empty = use the value from the global settings. Applies to dehumidifier and air conditioner. 0 = unlimited. Applies at high surplus power (at least the minimum surplus power, only with a power sensor): forces the device off once it has run this long uninterrupted. Currently global: {global_device_max_runtime_high_surplus_minutes}",
               "device_max_runtime_cooldown_minutes": "Empty = use the value from the global settings. Minimum rest period after a forced shutoff due to max. runtime before the device may turn on again. Currently global: {global_device_max_runtime_cooldown_minutes}",
               "shower_detection_enabled": "Delays the open-window recommendation due to humidity while it is currently rising quickly (typical while showering) - venting during the shower itself doesn't help, since steam keeps being produced. Only relevant for rooms with a shower/bath, no extra sensor needed (uses the humidity sensor selected in the \"Sensors\" section). The rise threshold for this is directly below",
+              "shower_temperature_entity": "Optional: a dedicated temperature sensor used only for shower detection (e.g. in the shower or next to the humidity sensor), in case it reacts more sensitively than the room temperature. It replaces the room temperature there; ventilation, frost protection and heating keep using the sensor from the \"Sensors\" section. Without a selection the room temperature is used. If the sensor fails, the temperature criteria do not apply (no fallback to the room temperature)",
               "shower_rise_threshold": "Empty = use the value from the global settings. Only relevant if shower detection is enabled above. Currently global: {global_shower_rise_threshold}",
               "shower_max_duration_minutes": "Empty = use the value from the global settings. 0 = off. Voice announcement on the room's speakers once the detected shower has run this long uninterrupted (once per shower, only with shower detection enabled). Currently global: {global_shower_max_duration_minutes}"
             }

@@ -28,6 +28,7 @@ from .const import (
     CONF_OUTDOOR_HUMIDITY_ENTITY,
     CONF_OUTDOOR_TEMP_ENTITY,
     CONF_PRESENCE_ENTITY,
+    CONF_SHOWER_TEMPERATURE_ENTITY,
     CONF_TEMP_SOURCE_ENTITY,
     CONF_WINDOW_ENTITY,
     DOMAIN,
@@ -143,6 +144,9 @@ async def async_get_config_entry_diagnostics(
     config = entry.data
     diagnostics["referenced_sensors"] = {
         "temperature_source": _snapshot(hass, config.get(CONF_TEMP_SOURCE_ENTITY)),
+        "shower_temperature": _snapshot(
+            hass, config.get(CONF_SHOWER_TEMPERATURE_ENTITY)
+        ),
         "humidity": _snapshot(hass, config.get(CONF_HUMIDITY_ENTITY)),
         "co2": _snapshot(hass, config.get(CONF_CO2_ENTITY)),
         "window": _snapshot(hass, config.get(CONF_WINDOW_ENTITY)),

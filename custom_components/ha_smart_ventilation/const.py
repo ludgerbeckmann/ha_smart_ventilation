@@ -548,6 +548,9 @@ DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION = True
 # globale Einstellung, da nur für Räume mit Dusche/Badewanne relevant.
 CONF_SHOWER_DETECTION_ENABLED = "shower_detection_enabled"
 CONF_SHOWER_RISE_THRESHOLD = "shower_rise_threshold"
+# Optionaler eigener Temperatursensor NUR für die Duscherkennung (ersetzt dort
+# die Raum-Temperaturquelle; Lüften/Frost/Heizung nutzen sie weiter).
+CONF_SHOWER_TEMPERATURE_ENTITY = "shower_temperature_entity"
 # Sprachansage, wenn die erkannte Dusche länger als diese Zeit (Minuten)
 # ununterbrochen läuft - einmal pro Dusche, nur über die media_player-
 # Lautsprecher des Raums (Sprachausgabe), nur mit aktivierter Duscherkennung.

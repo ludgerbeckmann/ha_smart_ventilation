@@ -180,7 +180,8 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        einstellbar, keine globale Einstellung) – siehe "Duscherkennung"
        unter "Logik im Detail". Die zugehörige **Anstiegs-Schwelle** und
        die **Duschdauer-Ansage** (ab wie vielen Minuten Sprachansage; nur
-       Sprachausgabe) stehen direkt darunter
+       Sprachausgabe) stehen direkt darunter. Optional steht dort ein
+       **Duschtemperatur-Sensor** (seit 0.96.0), siehe "Duscherkennung"
    - **Abschnitt "Heizung"** (Heizungs-Gerät, Presets, Anwesenheit und Sollwerte;
      Sollwerte sind Raum-Overrides mit "Aktuell global: ..."-Hinweistext):
      - **Temperaturquelle auch fürs Heizen** (Checkbox, Standard:
@@ -730,6 +731,20 @@ sobald die Funktion für den Raum aktiviert ist - zusätzlich als eigene
 Entität "‹Raum› Dusche aktiv" (siehe "Was die Integration macht" oben).
 Rein temperatur- oder anders begründete Öffnen-Empfehlungen (siehe oben)
 sind von der Duscherkennung nicht betroffen.
+
+**Eigener Temperatursensor für die Duscherkennung (seit 0.96.0):** Im
+Raum-Formular lässt sich optional ein **Duschtemperatur-Sensor** wählen (z. B.
+direkt in der Dusche oder am Feuchtesensor), falls er empfindlicher reagiert
+als die Raum-Temperatur. Er ersetzt NUR für die Duscherkennung (Temperatur-
+Anstieg und Ende, siehe unten) die Raum-Temperatur; Lüften, Frostschutz und
+Heizung nutzen weiter die Temperaturquelle aus dem Abschnitt "Sensoren". Ohne
+Auswahl ändert sich nichts. Fällt der gewählte Sensor aus, greifen die
+Temperatur-Kriterien nicht (kein Rückfall auf die Raum-Temperatur, damit sich
+zwei Quellen mit unterschiedlicher Empfindlichkeit nicht im Verlauf mischen);
+Feuchte-Kriterien und der Fenster-Rückfall wirken weiter. Die Schwellen (0,3 °C
+Anstieg bzw. Absinken) wurden nicht angepasst - ob sie für den empfindlicheren
+Sensor passen, zeigt der Betrieb (Attribut `dusche_verlauf` nennt den
+verwendeten Sensor).
 
 **Schnelleres Ende der Dusche (seit 0.93.2):** Das 10-Minuten-Fenster allein
 erkennt das Ende erst viele Minuten nach dem Ausschalten (der Anstieg steckt
