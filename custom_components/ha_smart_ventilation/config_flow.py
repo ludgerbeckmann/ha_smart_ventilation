@@ -28,14 +28,12 @@ from .const import (
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
-    CONF_HEATING_COMFORT_END_WEEKDAY,
-    CONF_HEATING_COMFORT_END_WEEKEND,
     CONF_HEATING_COMFORT_START_WEEKDAY,
     CONF_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_STANDBY_START_WEEKDAY,
+    CONF_HEATING_STANDBY_START_WEEKEND,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_ENTITY,
-    CONF_HEATING_NIGHT_END_WEEKDAY,
-    CONF_HEATING_NIGHT_END_WEEKEND,
     CONF_HEATING_NIGHT_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
@@ -121,13 +119,9 @@ from .const import (
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
-    DEFAULT_HEATING_COMFORT_END_WEEKDAY,
-    DEFAULT_HEATING_COMFORT_END_WEEKEND,
     DEFAULT_HEATING_COMFORT_START_WEEKDAY,
     DEFAULT_HEATING_COMFORT_START_WEEKEND,
     DEFAULT_HEATING_COMFORT_TEMP,
-    DEFAULT_HEATING_NIGHT_END_WEEKDAY,
-    DEFAULT_HEATING_NIGHT_END_WEEKEND,
     DEFAULT_HEATING_NIGHT_START_WEEKDAY,
     DEFAULT_HEATING_NIGHT_START_WEEKEND,
     DEFAULT_HEATING_NIGHT_TEMP,
@@ -313,48 +307,44 @@ _THRESHOLD_DROPDOWN_OPTIONS: dict[str, tuple[type, list]] = {
     CONF_HEATING_NIGHT_TEMP: (float, [14, 15, 16, 17]),
 }
 
-# Zeitfelder für den optionalen Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_
-# ENABLED) sowie die Sprachausgabe-Nachtruhe (CONF_TTS_QUIET_HOURS_ENABLED) -
+# Zeitfelder der Sprachausgabe-Nachtruhe (CONF_TTS_QUIET_HOURS_ENABLED) -
 # Werte als "HH:MM:SS"-String (selector.TimeSelector()-Format). Analoges
 # Muster zu _THRESHOLD_FIELDS/_threshold_selector/_override_selector (siehe
 # _time_selector/_time_override_selector unten), nur ohne min/max/step/unit,
-# die ein TimeSelector nicht braucht. Dient ausschließlich den generischen,
-# section-unabhängigen Helfern (_room_override_placeholders(),
-# _apply_threshold_defaults()) - WELCHEM Formular-Abschnitt ein einzelnes
-# Zeitfeld zugeordnet wird, entscheidet sich an der jeweiligen Aufrufstelle
-# in _build_room_schema()/_build_global_edit_schema() (siehe
-# _HEATING_TIME_FIELD_KEYS unten für die Heizungs-Zeitfenster, die
-# Nachtruhe-Felder werden einzeln platziert, analog zu tts_volume_marker).
+# die ein TimeSelector nicht braucht. Dient den generischen, section-
+# unabhängigen Helfern (_room_override_placeholders(),
+# _apply_threshold_defaults()): Diese Felder sind immer vorausgefüllt, ein
+# geleertes Feld bekommt beim Speichern der globalen Einstellungen wieder
+# den Standardwert.
 _TIME_FIELDS = {
-    CONF_HEATING_COMFORT_START_WEEKDAY: DEFAULT_HEATING_COMFORT_START_WEEKDAY,
-    CONF_HEATING_COMFORT_END_WEEKDAY: DEFAULT_HEATING_COMFORT_END_WEEKDAY,
-    CONF_HEATING_COMFORT_START_WEEKEND: DEFAULT_HEATING_COMFORT_START_WEEKEND,
-    CONF_HEATING_COMFORT_END_WEEKEND: DEFAULT_HEATING_COMFORT_END_WEEKEND,
-    CONF_HEATING_NIGHT_START_WEEKDAY: DEFAULT_HEATING_NIGHT_START_WEEKDAY,
-    CONF_HEATING_NIGHT_END_WEEKDAY: DEFAULT_HEATING_NIGHT_END_WEEKDAY,
-    CONF_HEATING_NIGHT_START_WEEKEND: DEFAULT_HEATING_NIGHT_START_WEEKEND,
-    CONF_HEATING_NIGHT_END_WEEKEND: DEFAULT_HEATING_NIGHT_END_WEEKEND,
     CONF_TTS_QUIET_START: DEFAULT_TTS_QUIET_START,
     CONF_TTS_QUIET_END: DEFAULT_TTS_QUIET_END,
 }
 
-# Die acht Heizungs-Zeitfenster-Felder aus _TIME_FIELDS oben, OHNE die beiden
-# Nachtruhe-Felder - für die generische Platzierungs-Schleife in
+# Die sechs Startzeit-Felder des Heizungs-Zeitplans (Comfort/Standby/Nacht,
+# je Werktag und Wochenende). Anders als _TIME_FIELDS bewusst OHNE
+# Auffüllen mit Standardwerten: ein leeres Feld heißt "dieses Profil wird
+# nicht genutzt" und muss auch leer bleiben können. Die Standardwerte für
+# neue Installationen stehen in _INITIAL_HEATING_START_TIMES und werden nur
+# beim Anlegen des globalen Eintrags gesetzt (async_step_import).
+# Die Felder werden für die generische Platzierungs-Schleife in
 # _build_room_schema() bzw. _build_global_edit_schema() (Abschnitt
-# "Heizungs-Zeitplan"), die ALLE hier gelisteten Felder an derselben Stelle
-# im Formular erzeugt. Die Nachtruhe-Felder gehören dagegen zum
-# Abschnitt "Benachrichtigungen" (direkt bei der TTS-Lautstärke) und werden
-# deshalb einzeln, nicht über diese Schleife platziert.
+# "Heizungs-Zeitplan") verwendet.
 _HEATING_TIME_FIELD_KEYS = (
     CONF_HEATING_COMFORT_START_WEEKDAY,
-    CONF_HEATING_COMFORT_END_WEEKDAY,
-    CONF_HEATING_COMFORT_START_WEEKEND,
-    CONF_HEATING_COMFORT_END_WEEKEND,
+    CONF_HEATING_STANDBY_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKDAY,
-    CONF_HEATING_NIGHT_END_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_STANDBY_START_WEEKEND,
     CONF_HEATING_NIGHT_START_WEEKEND,
-    CONF_HEATING_NIGHT_END_WEEKEND,
 )
+
+_INITIAL_HEATING_START_TIMES = {
+    CONF_HEATING_COMFORT_START_WEEKDAY: DEFAULT_HEATING_COMFORT_START_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND: DEFAULT_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_NIGHT_START_WEEKDAY: DEFAULT_HEATING_NIGHT_START_WEEKDAY,
+    CONF_HEATING_NIGHT_START_WEEKEND: DEFAULT_HEATING_NIGHT_START_WEEKEND,
+}
 
 
 # Die zehn Schwellenwert-/Lüftungs-Parameter des Abschnitts "Fenster &
@@ -490,11 +480,17 @@ def _override_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, obj
 
 
 def _time_selector(key: str, defaults: dict | None) -> tuple[vol.Marker, object]:
-    """Immer vorausgefüllt (mit aktuellem Wert oder Standardwert) - für die
-    globalen Einstellungen, analog zu _threshold_selector()."""
+    """Für die globalen Einstellungen, analog zu _threshold_selector():
+    Nachtruhe-Felder sind immer vorausgefüllt (aktueller Wert oder
+    Standardwert); die Heizungs-Startzeiten (_HEATING_TIME_FIELD_KEYS)
+    zeigen nur einen gesetzten Wert und bleiben sonst leer (= Profil nicht
+    genutzt)."""
     defaults = defaults or {}
-    current = defaults.get(key) or _TIME_FIELDS[key]
-    marker = vol.Optional(key, description={"suggested_value": current})
+    current = defaults.get(key) or _TIME_FIELDS.get(key)
+    if current:
+        marker = vol.Optional(key, description={"suggested_value": current})
+    else:
+        marker = vol.Optional(key)
     return marker, selector.TimeSelector()
 
 
@@ -614,6 +610,9 @@ def _room_override_placeholders(hass) -> dict[str, str]:
     for key, default_value in _TIME_FIELDS.items():
         value = global_data.get(key) or default_value
         placeholders[f"global_{key}"] = value[:5]
+    for key in _HEATING_TIME_FIELD_KEYS:
+        value = global_data.get(key)
+        placeholders[f"global_{key}"] = value[:5] if value else "nicht genutzt"
     for key, default_value in (
         (CONF_MOBILE_ENABLED, False),
         (CONF_PERSISTENT_ENABLED, False),
@@ -1828,7 +1827,11 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         data = _apply_threshold_defaults(
-            {CONF_IS_GLOBAL: True, CONF_ROOM_NAME: GLOBAL_ROOM_NAME}
+            {
+                CONF_IS_GLOBAL: True,
+                CONF_ROOM_NAME: GLOBAL_ROOM_NAME,
+                **_INITIAL_HEATING_START_TIMES,
+            }
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
 

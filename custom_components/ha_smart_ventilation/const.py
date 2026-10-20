@@ -265,8 +265,8 @@ CONF_HEATING_STANDBY_TEMP = "heating_standby_temp"
 # abschalten). Ohne konfigurierte Entität keine Auswirkung (wie bisher).
 CONF_HEATING_PRESENCE_ENTITIES = "heating_presence_entities"
 # Standard False. True = die Heizung folgt zusätzlich einem Zeitplan
-# (Comfort-/Nacht-Zeitfenster, siehe die acht CONF_HEATING_*_START_*/
-# CONF_HEATING_*_END_*-Felder unten) statt ausschließlich der reinen
+# (Comfort-/Standby-/Nacht-Profile, siehe die sechs
+# CONF_HEATING_*_START_*-Felder unten) statt ausschließlich der reinen
 # Schwellenwert-Logik (CONF_HEATING_THRESHOLD_TEMP). Bewusst als eigener
 # Schalter mit Standard False, nicht implizit über gesetzte Zeitfelder
 # aktiv - macht die Umstellung für bestehende Installationen komplett
@@ -279,24 +279,23 @@ CONF_HEATING_SCHEDULE_ENABLED = "heating_schedule_enabled"
 # nachts i. d. R. weder Komfort- noch Grundwärme in vollem Umfang nötig
 # ist. Nur relevant, wenn CONF_HEATING_SCHEDULE_ENABLED aktiv ist.
 CONF_HEATING_NIGHT_TEMP = "heating_night_temp"
-# Zeitfenster für Comfort/Nacht, je Werktag UND Wochenende getrennt (acht
-# Felder) - Nutzeranforderung, da sich z. B. der Aufstehzeitpunkt am
-# Wochenende typischerweise verschiebt. Werte als "HH:MM:SS"-String
-# (Format von selector.TimeSelector). Außerhalb aller Zeitfenster gilt
-# Standby. Bei einander widersprechender Konfiguration (z. B. sich
-# überlappende Comfort-/Nacht-Fenster) hat das Nacht-Fenster Vorrang vor
-# Comfort, siehe binary_sensor.py:_get_scheduled_heating_mode().
-# Comfort-Fenster kann über Mitternacht hinaus NICHT sinnvoll konfiguriert
-# werden (siehe README) - anders als das Nacht-Fenster, das das per
-# Definition (Start abends, Ende morgens) fast immer tut.
+# Heizungs-Zeitplan: drei gleichwertige Profile (Comfort/Standby/Nacht), je
+# Werktag UND Wochenende getrennt (sechs Felder) - Nutzeranforderung, da sich
+# z. B. der Aufstehzeitpunkt am Wochenende typischerweise verschiebt. Jedes
+# Profil hat nur eine STARTZEIT; das Ende ergibt sich dadurch, dass ein
+# anderes Profil startet (es gilt immer das Profil mit der zuletzt
+# erreichten Startzeit, vor der ersten Startzeit des Tages das letzte Profil
+# vom Vortag). Ein leeres Feld heißt: dieses Profil wird nicht genutzt.
+# Werte als "HH:MM:SS"-String (Format von selector.TimeSelector), siehe
+# binary_sensor.py:_get_scheduled_heating_mode(). Frühere Endzeit-Felder
+# (heating_*_end_*) werden nicht mehr gelesen und bleiben ungenutzt in
+# bestehenden Einträgen stehen.
 CONF_HEATING_COMFORT_START_WEEKDAY = "heating_comfort_start_weekday"
-CONF_HEATING_COMFORT_END_WEEKDAY = "heating_comfort_end_weekday"
 CONF_HEATING_COMFORT_START_WEEKEND = "heating_comfort_start_weekend"
-CONF_HEATING_COMFORT_END_WEEKEND = "heating_comfort_end_weekend"
+CONF_HEATING_STANDBY_START_WEEKDAY = "heating_standby_start_weekday"
+CONF_HEATING_STANDBY_START_WEEKEND = "heating_standby_start_weekend"
 CONF_HEATING_NIGHT_START_WEEKDAY = "heating_night_start_weekday"
-CONF_HEATING_NIGHT_END_WEEKDAY = "heating_night_end_weekday"
 CONF_HEATING_NIGHT_START_WEEKEND = "heating_night_start_weekend"
-CONF_HEATING_NIGHT_END_WEEKEND = "heating_night_end_weekend"
 # Presets/Betriebsarten statt Sollwert-Steuerung (0.64.0) - manche
 # climate-Integrationen (z. B. KNX) bilden Comfort/Standby/Nacht/
 # Gebäudeschutz nativ als preset_mode ab, nicht nur als Zahlen-Sollwert.
@@ -510,21 +509,22 @@ COMMON_HEATING_PRESET_MODES = [
     "none",
 ]
 
-# Standard-Zeitfenster für den optionalen Heizungs-Zeitplan (siehe
-# CONF_HEATING_SCHEDULE_ENABLED oben) - Comfort tagsüber, Nacht-Absenkung
-# ab spätem Abend, Wochenende mit üblichem späterem Aufsteh-/
-# Schlafengehzeitpunkt. Comfort- und Nacht-Fenster ergänzen sich pro
-# Wochentyp bewusst lückenlos zu 24 Stunden (kein "dazwischen" nötig -
-# Standby gilt ohnehin nur außerhalb BEIDER Fenster, siehe
-# binary_sensor.py:_get_scheduled_heating_mode()).
+# Standard-Startzeiten für neue Installationen des optionalen Heizungs-
+# Zeitplans (siehe CONF_HEATING_SCHEDULE_ENABLED oben) - Comfort ab dem
+# Morgen, Nacht-Absenkung ab spätem Abend, Wochenende mit üblichem späterem
+# Aufsteh-/Schlafengehzeitpunkt. Standby hat bewusst keinen Standardwert
+# (leer = Profil nicht genutzt). Die Werte werden nur beim Anlegen des
+# globalen Eintrags gesetzt, nicht beim Speichern aufgefüllt - sonst ließe
+# sich eine Startzeit nie leeren.
 DEFAULT_HEATING_COMFORT_START_WEEKDAY = "06:00:00"
-DEFAULT_HEATING_COMFORT_END_WEEKDAY = "22:00:00"
 DEFAULT_HEATING_COMFORT_START_WEEKEND = "08:00:00"
-DEFAULT_HEATING_COMFORT_END_WEEKEND = "23:00:00"
 DEFAULT_HEATING_NIGHT_START_WEEKDAY = "22:00:00"
-DEFAULT_HEATING_NIGHT_END_WEEKDAY = "06:00:00"
 DEFAULT_HEATING_NIGHT_START_WEEKEND = "23:00:00"
-DEFAULT_HEATING_NIGHT_END_WEEKEND = "08:00:00"
+
+# Manuelle Übersteuerung der Heizung: ein von Hand (oder durch eine andere
+# Automation) geänderter Preset/Sollwert bleibt bis zum nächsten
+# Moduswechsel der Regeln erhalten, höchstens aber so viele Stunden.
+HEATING_MANUAL_OVERRIDE_MAX_HOURS = 24
 
 # Übliche Heizgrenztemperatur (klassischer HVAC-Richtwert, "heating degree
 # day"-Basistemperatur) - ab einer Tages-Vorhersage von/über diesem Wert
