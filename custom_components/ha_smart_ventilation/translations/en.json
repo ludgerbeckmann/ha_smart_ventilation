@@ -136,35 +136,31 @@
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state - set exclusively while the window is confirmed open (replaces standby for that case). Without an entered name, the standby setpoint is used instead. Currently global: {global_heating_preset_building_protection}",
               "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set.",
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
             }
           },
           "heating_schedule": {
             "name": "Heating schedule",
-            "description": "Time windows in which comfort or night is enforced (separate for weekdays and weekends). Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "description": "Start times of the Comfort, Standby and Night profiles (separate for weekdays and weekends). A profile stays active until another one starts; an empty field means this profile is not used. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
-              "heating_comfort_end_weekday": "Comfort end (weekday)",
-              "heating_comfort_start_weekend": "Comfort start (weekend)",
-              "heating_comfort_end_weekend": "Comfort end (weekend)",
+              "heating_standby_start_weekday": "Standby start (weekday)",
               "heating_night_start_weekday": "Night start (weekday)",
-              "heating_night_end_weekday": "Night end (weekday)",
-              "heating_night_start_weekend": "Night start (weekend)",
-              "heating_night_end_weekend": "Night end (weekend)"
+              "heating_comfort_start_weekend": "Comfort start (weekend)",
+              "heating_standby_start_weekend": "Standby start (weekend)",
+              "heating_night_start_weekend": "Night start (weekend)"
             },
             "data_description": {
-              "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
-              "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
-              "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
-              "heating_comfort_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_start_weekend}",
-              "heating_comfort_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekend}",
-              "heating_night_start_weekday": "Empty = use the value from the global settings. If the comfort/night windows overlap, the night window takes priority. Currently global: {global_heating_night_start_weekday}",
-              "heating_night_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekday}",
-              "heating_night_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}"
+              "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled: the plain threshold logic still applies (heating threshold in the \"Heating\" section). Currently global: {global_heating_schedule_enabled}",
+              "heating_comfort_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
+              "heating_standby_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_standby_start_weekday}",
+              "heating_night_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekday}",
+              "heating_comfort_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekend}",
+              "heating_standby_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_standby_start_weekend}",
+              "heating_night_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekend}"
             }
           },
           "notify": {
@@ -333,35 +329,31 @@
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state - set exclusively while the window is confirmed open (replaces standby for that case). Without an entered name, the standby setpoint is used instead. Currently global: {global_heating_preset_building_protection}",
               "heating_presence_entities": "Optional: one or more person or device_tracker entities. If at least one is set, heating pauses (standby) as long as ALL of them confirm \"away\" - if at least one reports \"home\", or if any of their states is unknown/unavailable, heating continues normally. No effect without an entity set.",
               "heating_threshold_temp": "Empty = use the value from the global settings. Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF. Currently global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window. Currently global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint outside comfort/night, e.g. while the window is open or nobody is home. Currently global: {global_heating_standby_temp}",
-              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied during the night time window (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
+              "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule. Currently global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
+              "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}"
             }
           },
           "heating_schedule": {
             "name": "Heating schedule",
-            "description": "Time windows in which comfort or night is enforced (separate for weekdays and weekends). Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
+            "description": "Start times of the Comfort, Standby and Night profiles (separate for weekdays and weekends). A profile stays active until another one starts; an empty field means this profile is not used. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
-              "heating_comfort_end_weekday": "Comfort end (weekday)",
-              "heating_comfort_start_weekend": "Comfort start (weekend)",
-              "heating_comfort_end_weekend": "Comfort end (weekend)",
+              "heating_standby_start_weekday": "Standby start (weekday)",
               "heating_night_start_weekday": "Night start (weekday)",
-              "heating_night_end_weekday": "Night end (weekday)",
-              "heating_night_start_weekend": "Night start (weekend)",
-              "heating_night_end_weekend": "Night end (weekend)"
+              "heating_comfort_start_weekend": "Comfort start (weekend)",
+              "heating_standby_start_weekend": "Standby start (weekend)",
+              "heating_night_start_weekend": "Night start (weekend)"
             },
             "data_description": {
-              "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled: the plain threshold logic above still applies. Currently global: {global_heating_schedule_enabled}",
-              "heating_comfort_start_weekday": "Empty = use the value from the global settings. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
-              "heating_comfort_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekday}",
-              "heating_comfort_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_start_weekend}",
-              "heating_comfort_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_comfort_end_weekend}",
-              "heating_night_start_weekday": "Empty = use the value from the global settings. If the comfort/night windows overlap, the night window takes priority. Currently global: {global_heating_night_start_weekday}",
-              "heating_night_end_weekday": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekday}",
-              "heating_night_start_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Empty = use the value from the global settings. Currently global: {global_heating_night_end_weekend}"
+              "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled: the plain threshold logic still applies (heating threshold in the \"Heating\" section). Currently global: {global_heating_schedule_enabled}",
+              "heating_comfort_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekday}",
+              "heating_standby_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_standby_start_weekday}",
+              "heating_night_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekday}",
+              "heating_comfort_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekend}",
+              "heating_standby_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_standby_start_weekend}",
+              "heating_night_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekend}"
             }
           },
           "notify": {
@@ -504,9 +496,9 @@
               "heating_preset_night": "Like \"Preset name Comfort\", for the night state (called \"Eco\" on many devices).",
               "heating_preset_building_protection": "Like \"Preset name Comfort\", for the building-protection state (set while a window is confirmed open). Without an entered name, the standby setpoint is used instead.",
               "heating_threshold_temp": "Below this indoor temperature, heating switches to the comfort setpoint; once threshold + tolerance margin is reached again, it switches back to standby. Only effective while \"Enable heating schedule\" below is OFF.",
-              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or during the comfort time window",
-              "heating_standby_temp": "Setpoint outside comfort/night, e.g. while the window is open or nobody is home",
-              "heating_night_temp": "Setpoint applied during the night time window (only if the heating schedule is enabled)",
+              "heating_comfort_temp": "Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule",
+              "heating_standby_temp": "Setpoint for standby (standby profile of the schedule, summer mode, nobody home)",
+              "heating_night_temp": "Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled)",
               "summer_mode_forecast_entity": "A sensor or weather entity with a temperature forecast (e.g. your own template sensor with the daily forecast) - automatically controls the summer/winter mode switch selected below. Without this entity, the switch remains purely manual.",
               "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (above) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
               "summer_mode_switch_entity": "Optional. An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (summer mode threshold further down) again. Without a configured entity, summer/winter mode has no effect.",
@@ -515,22 +507,24 @@
           },
           "heating_schedule": {
             "name": "Heating schedule",
-            "description": "Time windows in which comfort or night is enforced (separate for weekdays and weekends), as the room-wide default.",
+            "description": "Start times of the Comfort, Standby and Night profiles (separate for weekdays and weekends) as the room-wide default. A profile stays active until another one starts; an empty field means this profile is not used.",
             "data": {
               "heating_schedule_enabled": "Enable heating schedule",
               "heating_comfort_start_weekday": "Comfort start (weekday)",
-              "heating_comfort_end_weekday": "Comfort end (weekday)",
-              "heating_comfort_start_weekend": "Comfort start (weekend)",
-              "heating_comfort_end_weekend": "Comfort end (weekend)",
+              "heating_standby_start_weekday": "Standby start (weekday)",
               "heating_night_start_weekday": "Night start (weekday)",
-              "heating_night_end_weekday": "Night end (weekday)",
-              "heating_night_start_weekend": "Night start (weekend)",
-              "heating_night_end_weekend": "Night end (weekend)"
+              "heating_comfort_start_weekend": "Comfort start (weekend)",
+              "heating_standby_start_weekend": "Standby start (weekend)",
+              "heating_night_start_weekend": "Night start (weekend)"
             },
             "data_description": {
-              "heating_schedule_enabled": "Enabled: the matching time window below forces the setpoint regardless of the indoor temperature; standby applies outside all windows. Disabled (default): the plain threshold logic above still applies",
-              "heating_comfort_start_weekday": "Only effective while the heating schedule is enabled",
-              "heating_night_start_weekday": "If the comfort/night windows overlap, the night window takes priority"
+              "heating_schedule_enabled": "Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled (default): the plain threshold logic still applies (heating threshold in the \"Heating\" section)",
+              "heating_comfort_start_weekday": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
+              "heating_standby_start_weekday": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
+              "heating_night_start_weekday": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
+              "heating_comfort_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
+              "heating_standby_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
+              "heating_night_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled"
             }
           },
           "notify": {

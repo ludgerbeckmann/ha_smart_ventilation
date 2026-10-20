@@ -136,35 +136,31 @@
               "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand - wird ausschließlich gesetzt, solange das Fenster bestätigt offen ist (ersetzt dafür Standby). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet. Aktuell global: {global_heating_preset_building_protection}",
               "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung.",
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist. Aktuell global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans. Aktuell global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit). Aktuell global: {global_heating_standby_temp}",
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
             }
           },
           "heating_schedule": {
             "name": "Heizungs-Zeitplan",
-            "description": "Zeitfenster, in denen Comfort bzw. Nacht erzwungen wird (getrennt für Werktage und Wochenende). Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "description": "Startzeiten der Profile Comfort, Standby und Nacht (getrennt für Werktage und Wochenende). Ein Profil gilt, bis ein anderes startet; ein leeres Feld heißt: dieses Profil wird nicht genutzt. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
             "data": {
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
-              "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
-              "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
-              "heating_comfort_end_weekend": "Comfort-Ende (Wochenende)",
+              "heating_standby_start_weekday": "Standby-Start (Werktag)",
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
-              "heating_night_end_weekday": "Nacht-Ende (Werktag)",
-              "heating_night_start_weekend": "Nacht-Start (Wochenende)",
-              "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
+              "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
+              "heating_standby_start_weekend": "Standby-Start (Wochenende)",
+              "heating_night_start_weekend": "Nacht-Start (Wochenende)"
             },
             "data_description": {
-              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
-              "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
-              "heating_comfort_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekday}",
-              "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_start_weekend}",
-              "heating_comfort_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekend}",
-              "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang. Aktuell global: {global_heating_night_start_weekday}",
-              "heating_night_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekday}",
-              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}"
+              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweils aktive Profil (Comfort/Standby/Nacht, siehe Startzeiten unten) den Sollwert unabhängig von der Innentemperatur. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
+              "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
+              "heating_standby_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_standby_start_weekday}",
+              "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekday}",
+              "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekend}",
+              "heating_standby_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_standby_start_weekend}",
+              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekend}"
             }
           },
           "notify": {
@@ -333,35 +329,31 @@
               "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand - wird ausschließlich gesetzt, solange das Fenster bestätigt offen ist (ersetzt dafür Standby). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet. Aktuell global: {global_heating_preset_building_protection}",
               "heating_presence_entities": "Optional: eine oder mehrere person- oder device_tracker-Entitäten. Ist mindestens eine hinterlegt, pausiert die Heizung (Standby), solange ALLE davon bestätigt \"nicht zuhause\" melden - meldet mindestens eine \"zuhause\", oder ist der Zustand einer von ihnen unbekannt/nicht verfügbar, heizt der Raum normal weiter. Ohne hinterlegte Entität keine Auswirkung.",
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist. Aktuell global: {global_heating_threshold_temp}",
-              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster. Aktuell global: {global_heating_comfort_temp}",
-              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit. Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+              "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans. Aktuell global: {global_heating_comfort_temp}",
+              "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit). Aktuell global: {global_heating_standby_temp}",
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
             }
           },
           "heating_schedule": {
             "name": "Heizungs-Zeitplan",
-            "description": "Zeitfenster, in denen Comfort bzw. Nacht erzwungen wird (getrennt für Werktage und Wochenende). Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
+            "description": "Startzeiten der Profile Comfort, Standby und Nacht (getrennt für Werktage und Wochenende). Ein Profil gilt, bis ein anderes startet; ein leeres Feld heißt: dieses Profil wird nicht genutzt. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
             "data": {
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
-              "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
-              "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
-              "heating_comfort_end_weekend": "Comfort-Ende (Wochenende)",
+              "heating_standby_start_weekday": "Standby-Start (Werktag)",
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
-              "heating_night_end_weekday": "Nacht-Ende (Werktag)",
-              "heating_night_start_weekend": "Nacht-Start (Wochenende)",
-              "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
+              "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
+              "heating_standby_start_weekend": "Standby-Start (Wochenende)",
+              "heating_night_start_weekend": "Nacht-Start (Wochenende)"
             },
             "data_description": {
-              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
-              "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
-              "heating_comfort_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekday}",
-              "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_start_weekend}",
-              "heating_comfort_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_comfort_end_weekend}",
-              "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang. Aktuell global: {global_heating_night_start_weekday}",
-              "heating_night_end_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekday}",
-              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_start_weekend}",
-              "heating_night_end_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Aktuell global: {global_heating_night_end_weekend}"
+              "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweils aktive Profil (Comfort/Standby/Nacht, siehe Startzeiten unten) den Sollwert unabhängig von der Innentemperatur. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
+              "heating_comfort_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekday}",
+              "heating_standby_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_standby_start_weekday}",
+              "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekday}",
+              "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekend}",
+              "heating_standby_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_standby_start_weekend}",
+              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekend}"
             }
           },
           "notify": {
@@ -504,9 +496,9 @@
               "heating_preset_night": "Wie \"Preset-Name Komfort\", für den Nacht-Zustand (auf vielen Geräten \"Eco\" genannt).",
               "heating_preset_building_protection": "Wie \"Preset-Name Komfort\", für den Gebäudeschutz-Zustand (wird gesetzt, solange ein Fenster bestätigt offen ist). Ohne eingetragenen Namen wird stattdessen der Standby-Sollwert verwendet.",
               "heating_threshold_temp": "Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist.",
-              "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Zeitfenster",
-              "heating_standby_temp": "Sollwert außerhalb von Comfort/Nacht, z. B. bei offenem Fenster oder Abwesenheit",
-              "heating_night_temp": "Sollwert, der im Nacht-Zeitfenster gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)",
+              "heating_comfort_temp": "Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans",
+              "heating_standby_temp": "Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit)",
+              "heating_night_temp": "Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan)",
               "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den weiter unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
               "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (oben), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
               "summer_mode_switch_entity": "Optional. Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Sommermodus-Schwelle weiter unten) wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
@@ -515,22 +507,24 @@
           },
           "heating_schedule": {
             "name": "Heizungs-Zeitplan",
-            "description": "Zeitfenster, in denen Comfort bzw. Nacht erzwungen wird (getrennt für Werktage und Wochenende), als raumweiter Standard.",
+            "description": "Startzeiten der Profile Comfort, Standby und Nacht (getrennt für Werktage und Wochenende) als raumübergreifender Standard. Ein Profil gilt, bis ein anderes startet; ein leeres Feld heißt: dieses Profil wird nicht genutzt.",
             "data": {
               "heating_schedule_enabled": "Heizungs-Zeitplan aktivieren",
               "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
-              "heating_comfort_end_weekday": "Comfort-Ende (Werktag)",
-              "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
-              "heating_comfort_end_weekend": "Comfort-Ende (Wochenende)",
+              "heating_standby_start_weekday": "Standby-Start (Werktag)",
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
-              "heating_night_end_weekday": "Nacht-Ende (Werktag)",
-              "heating_night_start_weekend": "Nacht-Start (Wochenende)",
-              "heating_night_end_weekend": "Nacht-Ende (Wochenende)"
+              "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
+              "heating_standby_start_weekend": "Standby-Start (Wochenende)",
+              "heating_night_start_weekend": "Nacht-Start (Wochenende)"
             },
             "data_description": {
-              "heating_schedule_enabled": "Aktiviert erzwingt das jeweilige Zeitfenster unten den Sollwert unabhängig von der Innentemperatur; außerhalb aller Fenster gilt Standby. Deaktiviert (Standard) gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\")",
-              "heating_comfort_start_weekday": "Nur wirksam bei aktiviertem Heizungs-Zeitplan",
-              "heating_night_start_weekday": "Bei sich überlappenden Comfort-/Nacht-Fenstern hat das Nacht-Fenster Vorrang"
+              "heating_schedule_enabled": "Aktiviert erzwingt das jeweils aktive Profil (Comfort/Standby/Nacht, siehe Startzeiten unten) den Sollwert unabhängig von der Innentemperatur. Deaktiviert (Standard) gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\")",
+              "heating_comfort_start_weekday": "Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Leer = Profil nicht genutzt. Nur wirksam bei aktiviertem Heizungs-Zeitplan",
+              "heating_standby_start_weekday": "Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Leer = Profil nicht genutzt. Nur wirksam bei aktiviertem Heizungs-Zeitplan",
+              "heating_night_start_weekday": "Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Leer = Profil nicht genutzt. Nur wirksam bei aktiviertem Heizungs-Zeitplan",
+              "heating_comfort_start_weekend": "Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Leer = Profil nicht genutzt. Nur wirksam bei aktiviertem Heizungs-Zeitplan",
+              "heating_standby_start_weekend": "Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Leer = Profil nicht genutzt. Nur wirksam bei aktiviertem Heizungs-Zeitplan",
+              "heating_night_start_weekend": "Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Leer = Profil nicht genutzt. Nur wirksam bei aktiviertem Heizungs-Zeitplan"
             }
           },
           "notify": {

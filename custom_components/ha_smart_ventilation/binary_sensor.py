@@ -47,14 +47,12 @@ from .const import (
     CONF_DISABLE_CLOSE_RECOMMENDATION,
     CONF_FROST_DEBOUNCE_MINUTES,
     CONF_FROST_PROTECTION_TEMP,
-    CONF_HEATING_COMFORT_END_WEEKDAY,
-    CONF_HEATING_COMFORT_END_WEEKEND,
     CONF_HEATING_COMFORT_START_WEEKDAY,
     CONF_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_STANDBY_START_WEEKDAY,
+    CONF_HEATING_STANDBY_START_WEEKEND,
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_ENTITY,
-    CONF_HEATING_NIGHT_END_WEEKDAY,
-    CONF_HEATING_NIGHT_END_WEEKEND,
     CONF_HEATING_NIGHT_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
@@ -136,15 +134,7 @@ from .const import (
     DEFAULT_DEVICE_WINDOW_CONFLICT_NOTIFICATION_ENABLED,
     DEFAULT_FROST_DEBOUNCE_MINUTES,
     DEFAULT_FROST_PROTECTION_TEMP,
-    DEFAULT_HEATING_COMFORT_END_WEEKDAY,
-    DEFAULT_HEATING_COMFORT_END_WEEKEND,
-    DEFAULT_HEATING_COMFORT_START_WEEKDAY,
-    DEFAULT_HEATING_COMFORT_START_WEEKEND,
     DEFAULT_HEATING_COMFORT_TEMP,
-    DEFAULT_HEATING_NIGHT_END_WEEKDAY,
-    DEFAULT_HEATING_NIGHT_END_WEEKEND,
-    DEFAULT_HEATING_NIGHT_START_WEEKDAY,
-    DEFAULT_HEATING_NIGHT_START_WEEKEND,
     DEFAULT_HEATING_NIGHT_TEMP,
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
@@ -199,6 +189,7 @@ from .const import (
     DEFAULT_TTS_VOLUME,
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
+    HEATING_MANUAL_OVERRIDE_MAX_HOURS,
     GLOBAL_ENTRY_ID_KEY,
     ROOM_STATUS_ACTION,
     ROOM_STATUS_HINT,
@@ -402,6 +393,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # gesetzter Sollwert bzw. Preset, None = noch nicht initial
         # synchronisiert - siehe _update_heating().
         self._heating_state: str | None = None
+        # Manuelle Übersteuerung (siehe _resolve_heating_override()): True,
+        # sobald das Gerät den zuletzt kommandierten Wert live bestätigt
+        # hat (erst dann gilt eine spätere Abweichung als Handeingriff und
+        # nicht als nie angekommener Befehl); Zeitpunkt und Regel-Zielmodus
+        # ("Basis") der aktuellen Übersteuerung, None = keine aktiv.
+        self._heating_confirmed = False
+        self._heating_override_since: datetime | None = None
+        self._heating_override_baseline: str | None = None
 
         # Rein informativer Ein-/Ausschalt-Grund für die Dashboard-Karte
         # (neue Geräte-Tabelle, siehe README) - live bei jeder Neubewertung
@@ -1000,6 +999,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
+            if self._heating_override_since is not None:
+                attrs["heizung_uebersteuert"] = True
+                attrs["heizung_uebersteuerung_seit"] = (
+                    self._heating_override_since.isoformat()
+                )
+                if self._heating_override_baseline:
+                    attrs["heizung_uebersteuerung_basis"] = (
+                        self._heating_override_baseline
+                    )
         summer_mode_entity = self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None)
         if summer_mode_entity and not self._device_entity_missing(summer_mode_entity):
             attrs["sommermodus_an"] = self._is_summer_mode_active()
@@ -1064,6 +1072,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "building_protection",
             ):
                 self._heating_state = attrs["heizung_modus"]
+            if attrs.get("heizung_uebersteuerung_seit"):
+                self._heating_override_since = dt_util.parse_datetime(
+                    attrs["heizung_uebersteuerung_seit"]
+                )
+                self._heating_override_baseline = attrs.get(
+                    "heizung_uebersteuerung_basis"
+                )
             # Laufzeit-Zeitstempel wiederherstellen (sonst zeigt die
             # Dashboard-Karte nach jedem Neustart fälschlich "0 Min", obwohl
             # das Gerät schon länger läuft) - werden beim nächsten Lesen von
@@ -1744,57 +1759,55 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         state = self.hass.states.get(light_entity)
         return state is not None and state.state == "off"
 
-    def _get_scheduled_heating_mode(self) -> str:
+    def _get_scheduled_heating_mode(self) -> str | None:
         """Bestimmt den vom Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_ENABLED)
-        für den aktuellen Zeitpunkt erzwungenen Modus - "comfort", "night"
-        oder "standby" (außerhalb beider Fenster). Nur relevant, wenn der
-        Zeitplan aktiv ist (siehe _evaluate()) - dort ersetzt das Ergebnis
-        dann die reine Schwellenwert-Logik aus Lektion 40 vollständig, das
-        Zeitfenster erzwingt den Sollwert unabhängig von der Innentemperatur
-        (Nutzerentscheidung, siehe CLAUDE.md Lektion 44).
+        für den aktuellen Zeitpunkt erzwungenen Modus - "comfort",
+        "standby" oder "night" - bzw. None, wenn keine einzige Startzeit
+        konfiguriert ist. Nur relevant, wenn der Zeitplan aktiv ist (siehe
+        _evaluate()) - dort ersetzt das Ergebnis die reine Schwellenwert-
+        Logik aus Lektion 40 vollständig, das Profil erzwingt den Sollwert
+        unabhängig von der Innentemperatur (CLAUDE.md Lektion 44).
 
-        Werktag/Wochenende getrennt (dt_util.now().weekday() >= 5 = Samstag/
-        Sonntag), da sich z. B. der Aufstehzeitpunkt am Wochenende typisch
-        verschiebt. Bei sich überlappender (fehlerhafter) Konfiguration hat
-        das Nacht- vor dem Comfort-Fenster Vorrang - im Regelfall ergänzen
-        sich beide Fenster pro Wochentyp ohnehin lückenlos zu 24 Stunden
-        (siehe die DEFAULT_HEATING_*-Zeitwerte in const.py)."""
+        Jedes Profil hat nur eine STARTZEIT (je Werktag/Wochenende, ein
+        leeres Feld = Profil nicht genutzt); das Ende ergibt sich dadurch,
+        dass ein anderes Profil startet. Es gilt das Profil mit der zuletzt
+        erreichten Startzeit des heutigen Tages; vor der ersten Startzeit
+        des Tages gilt das zuletzt gestartete Profil des Vortags (mit dessen
+        Wochentyp - z. B. gilt in der Nacht auf Samstag noch der Freitag).
+        Gibt es für den Vortag kein Profil, wird das zuletzt startende
+        Profil des heutigen Tages genommen (Umlauf)."""
         now = dt_util.now()
+        today = self._scheduled_profile_starts(now.weekday() >= 5)
         current_time = now.time()
-        is_weekend = now.weekday() >= 5
+        started = [(start, order, mode) for start, order, mode in today if start <= current_time]
+        if started:
+            return max(started)[2]
+        yesterday = self._scheduled_profile_starts((now.weekday() - 1) % 7 >= 5)
+        if yesterday:
+            return max(yesterday)[2]
+        if today:
+            return max(today)[2]
+        return None
 
-        if is_weekend:
-            night_start = self._effective(
-                CONF_HEATING_NIGHT_START_WEEKEND, DEFAULT_HEATING_NIGHT_START_WEEKEND
-            )
-            night_end = self._effective(
-                CONF_HEATING_NIGHT_END_WEEKEND, DEFAULT_HEATING_NIGHT_END_WEEKEND
-            )
-            comfort_start = self._effective(
-                CONF_HEATING_COMFORT_START_WEEKEND, DEFAULT_HEATING_COMFORT_START_WEEKEND
-            )
-            comfort_end = self._effective(
-                CONF_HEATING_COMFORT_END_WEEKEND, DEFAULT_HEATING_COMFORT_END_WEEKEND
-            )
-        else:
-            night_start = self._effective(
-                CONF_HEATING_NIGHT_START_WEEKDAY, DEFAULT_HEATING_NIGHT_START_WEEKDAY
-            )
-            night_end = self._effective(
-                CONF_HEATING_NIGHT_END_WEEKDAY, DEFAULT_HEATING_NIGHT_END_WEEKDAY
-            )
-            comfort_start = self._effective(
-                CONF_HEATING_COMFORT_START_WEEKDAY, DEFAULT_HEATING_COMFORT_START_WEEKDAY
-            )
-            comfort_end = self._effective(
-                CONF_HEATING_COMFORT_END_WEEKDAY, DEFAULT_HEATING_COMFORT_END_WEEKDAY
-            )
-
-        if self._time_in_window(current_time, night_start, night_end):
-            return "night"
-        if self._time_in_window(current_time, comfort_start, comfort_end):
-            return "comfort"
-        return "standby"
+    def _scheduled_profile_starts(self, is_weekend: bool) -> list:
+        """Liefert die konfigurierten Profil-Startzeiten für Werktag bzw.
+        Wochenende als Liste von (Startzeit, Reihenfolge, Modus) - nur
+        Profile mit gültiger Startzeit. Die Reihenfolge entscheidet nur bei
+        exakt gleicher Startzeit (später in der Liste gewinnt: Nacht vor
+        Standby vor Comfort)."""
+        suffix = "WEEKEND" if is_weekend else "WEEKDAY"
+        keys = (
+            ("comfort", {"WEEKDAY": CONF_HEATING_COMFORT_START_WEEKDAY, "WEEKEND": CONF_HEATING_COMFORT_START_WEEKEND}),
+            ("standby", {"WEEKDAY": CONF_HEATING_STANDBY_START_WEEKDAY, "WEEKEND": CONF_HEATING_STANDBY_START_WEEKEND}),
+            ("night", {"WEEKDAY": CONF_HEATING_NIGHT_START_WEEKDAY, "WEEKEND": CONF_HEATING_NIGHT_START_WEEKEND}),
+        )
+        result = []
+        for order, (mode, by_suffix) in enumerate(keys):
+            raw = self._effective(by_suffix[suffix], None)
+            start = dt_util.parse_time(raw) if raw else None
+            if start is not None:
+                result.append((start, order, mode))
+        return result
 
     def _is_summer_mode_active(self) -> bool:
         """Liefert den aktuellen Live-Zustand des unter
@@ -2309,6 +2322,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if heating_presence_blocked_comfort:
             heating_target_mode = "standby"
 
+        # Manuelle Übersteuerung: ein von Hand (oder einer anderen
+        # Automation) geänderter Preset/Sollwert bleibt bis zum nächsten
+        # Moduswechsel der Regeln erhalten - die Integration schickt dann
+        # keinen Befehl (heating_target_mode = None). Fenster offen und
+        # Sommerbetrieb beenden sie immer.
+        heating_overridden = self._resolve_heating_override(
+            heating_target_mode,
+            window_confirmed_open or heating_summer_mode_active,
+        )
+        if heating_overridden:
+            heating_target_mode = None
+
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -
         # spiegeln dieselbe Priorität wie want_on/want_off in
@@ -2376,16 +2401,20 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if self._get_heating_entity_id():
             if window_confirmed_open:
                 self._heating_reason = "pausiert: Fenster offen"
+            elif heating_overridden:
+                self._heating_reason = (
+                    "manuell geändert (bleibt bis zum nächsten Moduswechsel)"
+                )
             elif heating_presence_blocked_comfort:
                 self._heating_reason = "pausiert: niemand zuhause (kein Comfort)"
             elif heating_summer_mode_active:
                 self._heating_reason = "pausiert: Sommerbetrieb aktiv"
             elif heating_schedule_enabled:
                 self._heating_reason = {
-                    "comfort": "Zeitfenster: Comfort",
-                    "night": "Zeitfenster: Nacht",
-                    "standby": "Zeitfenster: Standby",
-                }[heating_target_mode]
+                    "comfort": "Zeitplan: Comfort",
+                    "night": "Zeitplan: Nacht",
+                    "standby": "Zeitplan: Standby",
+                }.get(heating_target_mode, "Zeitplan: keine Startzeit konfiguriert")
             elif heating_target_mode == "comfort":
                 self._heating_reason = "Innentemperatur unter Schwelle, Comfort"
             elif heating_target_mode == "standby":
@@ -3197,6 +3226,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     return
                 await self._set_heating_preset_mode(entity_id, preset_name)
                 self._heating_state = target_mode
+                self._heating_confirmed = False
                 return
             # Kein Preset-Name für diesen einzelnen Modus hinterlegt - fällt
             # NUR für diesen Aufruf auf die Sollwert-Steuerung unten zurück.
@@ -3222,6 +3252,101 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         await self._set_heating_temperature(entity_id, temperature)
         self._heating_state = target_mode
+        self._heating_confirmed = False
+
+    def _heating_live_matches(self, entity_id: str, mode: str) -> bool | None:
+        """True/False: meldet das Heizungs-Gerät live den Preset bzw.
+        Sollwert, den _update_heating() für `mode` setzen würde? None, wenn
+        der Live-Wert gerade nicht lesbar ist. Gleiche Zuordnung wie in
+        _update_heating() (Preset-Name, sonst Sollwert mit 0,05 °C
+        Toleranz)."""
+        if self._heating_preset_mode_effective(entity_id):
+            preset_name = self._get_heating_preset_name(mode)
+            if preset_name:
+                live = self._get_heating_live_preset_mode(entity_id)
+                return None if live is None else live == preset_name
+        temperature = self._effective(
+            {
+                "comfort": CONF_HEATING_COMFORT_TEMP,
+                "standby": CONF_HEATING_STANDBY_TEMP,
+                "night": CONF_HEATING_NIGHT_TEMP,
+                "building_protection": CONF_HEATING_STANDBY_TEMP,
+            }[mode],
+            {
+                "comfort": DEFAULT_HEATING_COMFORT_TEMP,
+                "standby": DEFAULT_HEATING_STANDBY_TEMP,
+                "night": DEFAULT_HEATING_NIGHT_TEMP,
+                "building_protection": DEFAULT_HEATING_STANDBY_TEMP,
+            }[mode],
+        )
+        live_temp = self._get_heating_target_temperature(entity_id)
+        return None if live_temp is None else abs(live_temp - temperature) < 0.05
+
+    def _clear_heating_override(self) -> None:
+        self._heating_override_since = None
+        self._heating_override_baseline = None
+        # Nach dem Ende wieder Regel-Befehl senden und erst nach neuer
+        # Live-Bestätigung wieder auf Handeingriffe achten.
+        self._heating_confirmed = False
+
+    def _resolve_heating_override(
+        self, rule_target: str | None, pause_active: bool
+    ) -> bool:
+        """Manuelle Übersteuerung der Heizung. Gibt True zurück, solange ein
+        Handeingriff gilt - _evaluate() sendet dann keinen Befehl.
+
+        Erkennung: Das Gerät hatte den zuletzt von der Integration
+        kommandierten Wert live bestätigt (_heating_confirmed) und meldet
+        jetzt einen anderen. Ohne vorherige Bestätigung gilt eine Abweichung
+        als nie angekommener Befehl (Lektion 47) und wird wie bisher
+        wiederholt. Eine Abweichung, die genau dem Regel-Zielmodus
+        entspricht, ist kein Eingriff.
+
+        Ende: Fenster offen/Sommerbetrieb (pause_active), der Regel-
+        Zielmodus wechselt gegenüber dem Zeitpunkt des Eingriffs, das Gerät
+        erreicht von selbst den Regel-Zielmodus, oder nach
+        HEATING_MANUAL_OVERRIDE_MAX_HOURS. Ein Regel-Zielmodus None
+        (Totzone der Schwellenwert-Logik) beendet nichts."""
+        entity_id = self._get_heating_entity_id()
+        if not entity_id or self._device_entity_missing(entity_id):
+            self._heating_override_since = None
+            self._heating_override_baseline = None
+            return False
+
+        if self._heating_override_since is not None:
+            expired = dt_util.utcnow() - self._heating_override_since > timedelta(
+                hours=HEATING_MANUAL_OVERRIDE_MAX_HOURS
+            )
+            rule_changed = (
+                rule_target is not None
+                and self._heating_override_baseline is not None
+                and rule_target != self._heating_override_baseline
+            )
+            reached_rule = (
+                rule_target is not None
+                and self._heating_live_matches(entity_id, rule_target) is True
+            )
+            if pause_active or expired or rule_changed or reached_rule:
+                self._clear_heating_override()
+            else:
+                return True
+
+        if pause_active or rule_target is None or self._heating_state is None:
+            return False
+
+        matches = self._heating_live_matches(entity_id, self._heating_state)
+        if matches is True:
+            self._heating_confirmed = True
+            return False
+        if matches is False and self._heating_confirmed:
+            if self._heating_live_matches(entity_id, rule_target) is True:
+                self._heating_state = rule_target
+                return False
+            self._heating_override_since = dt_util.utcnow()
+            self._heating_override_baseline = rule_target
+            self._heating_confirmed = False
+            return True
+        return False
 
     async def _update_summer_mode(self, *, want_summer_mode: bool) -> None:
         """Schaltet den unter CONF_SUMMER_MODE_SWITCH_ENTITY ausgewählten,

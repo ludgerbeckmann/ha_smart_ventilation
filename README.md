@@ -245,12 +245,13 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        weiterhin frei editierbar
    - **Abschnitt "Heizungs-Zeitplan"** (Raum-Override, leer = globaler Wert):
      - **Heizungs-Zeitplan aktivieren** (Ja/Nein/leer) - aktiviert, erzwingt
-       ein Comfort- bzw. Nacht-Zeitfenster (je acht Zeitfelder: Start/Ende,
-       getrennt nach Werktag und Wochenende) den jeweiligen Sollwert
-       unabhängig von der Innentemperatur; außerhalb aller Zeitfenster gilt
-       Standby. Deaktiviert (Standard) gilt weiterhin die reine
-       Schwellenwert-Logik des Abschnitts "Heizung". Details siehe "Geräte-Steuerung" weiter
-       unten
+       das jeweils aktive Profil (Comfort, Standby oder Nacht; je Profil nur
+       eine **Startzeit**, getrennt nach Werktag und Wochenende, also sechs
+       Zeitfelder) den jeweiligen Sollwert unabhängig von der Innentemperatur.
+       Ein Profil gilt, bis ein anderes startet; ein leeres Feld heißt, dass
+       dieses Profil nicht genutzt wird. Deaktiviert (Standard) gilt
+       weiterhin die reine Schwellenwert-Logik des Abschnitts "Heizung".
+       Details siehe "Geräte-Steuerung" weiter unten
    - **Abschnitt "Benachrichtigungen"** (Sprachausgabe, App-Push, persistente
      Benachrichtigung und Erinnerung; die Anwesenheits-Entitäten für die
      Heizung stehen dagegen im Abschnitt "Heizung"):
@@ -430,9 +431,11 @@ Danach folgen sieben Abschnitte in derselben Gliederung wie im Raum-Formular
 
 **Abschnitt "Heizungs-Zeitplan"**:
 - **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
-  Standard Nein) sowie acht Zeitfelder (Comfort-/Nacht-Start/-Ende, je
+  Standard Nein) sowie sechs Startzeiten (Comfort/Standby/Nacht, je
   getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
-  überschreibbar wie jeder andere Parameter
+  überschreibbar wie jeder andere Parameter. Neue Installationen starten mit
+  Comfort 06:00/08:00 und Nacht 22:00/23:00 (Werktag/Wochenende), Standby
+  ist leer (nicht genutzt)
 
 **Abschnitt "Benachrichtigungen"**:
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität
@@ -1003,16 +1006,34 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   bewusst **nichts** geändert (kein sicherheits-, nur komfortrelevanter
   Fall).
 
-  Ist der Zeitplan **aktiviert**, erzwingt stattdessen ein Zeitfenster den
-  Sollwert **unabhängig von der Innentemperatur**: Innerhalb des
-  Comfort-Zeitfensters (Start/Ende) gilt der **Comfort-Sollwert**, innerhalb
-  des Nacht-Zeitfensters der **Nacht-Sollwert**, außerhalb beider Fenster
-  der **Standby-Sollwert**. Beide Zeitfenster sind je einmal für Werktage
-  und einmal fürs Wochenende konfigurierbar (acht Zeitfelder insgesamt), da
-  sich z. B. der Aufstehzeitpunkt am Wochenende typischerweise verschiebt.
-  Überlappen sich beide Fenster versehentlich, hat das Nacht-Fenster
-  Vorrang. Die "Heizungs-Schwelle" selbst bleibt bei aktiviertem Zeitplan
-  ohne Wirkung.
+  Ist der Zeitplan **aktiviert**, erzwingt stattdessen das aktuell aktive
+  **Profil** den Sollwert **unabhängig von der Innentemperatur**: Comfort
+  setzt den **Comfort-Sollwert**, Standby den **Standby-Sollwert**, Nacht den
+  **Nacht-Sollwert**. Jedes Profil hat nur eine **Startzeit** (je einmal für
+  Werktage und einmal fürs Wochenende, da sich z. B. der Aufstehzeitpunkt am
+  Wochenende typischerweise verschiebt); das Ende ergibt sich dadurch, dass
+  ein anderes Profil startet. Es gilt das Profil mit der zuletzt erreichten
+  Startzeit, vor der ersten Startzeit des Tages das zuletzt gestartete Profil
+  vom Vortag (in der Nacht auf Samstag also noch das der Freitag-Zeiten). Ein
+  leeres Feld heißt: Dieses Profil wird nicht genutzt; ist gar keine
+  Startzeit gesetzt, ändert der Zeitplan nichts. Beim Update bleiben die
+  bisherigen Comfort-/Nacht-Startzeiten erhalten, die früheren Endzeiten
+  werden nicht mehr gelesen (hatte jemand eine Lücke zwischen zwei Fenstern,
+  die bisher Standby war, gilt dort jetzt das vorherige Profil weiter - dafür
+  eine Standby-Startzeit setzen). Die "Heizungs-Schwelle" selbst bleibt bei
+  aktiviertem Zeitplan ohne Wirkung.
+
+  **Manuelle Übersteuerung:** Ändert jemand den Preset bzw. Sollwert von Hand
+  (oder eine andere Automation tut es), behält die Integration diesen Wert, bis
+  die Regeln einen anderen Modus verlangen (z. B. das nächste Zeitplan-Profil
+  startet), längstens 24 Stunden. Ein Handeingriff wird nur erkannt, wenn das
+  Gerät den zuletzt von der Integration gesendeten Wert vorher bestätigt hatte
+  - ein nie angekommener Funkbefehl wird weiter wiederholt. Fenster offen und
+  Sommerbetrieb beenden die Übersteuerung sofort. Anwesenheit (kein Comfort)
+  hebt eine bewusste manuelle Wahl nicht auf. Die Erkennung erfolgt bei der
+  nächsten Neubewertung (spätestens nach 5 Minuten). Das Attribut
+  `heizung_uebersteuert` zeigt den Zustand, `heizung_grund` den Text
+  "manuell geändert (bleibt bis zum nächsten Moduswechsel)".
 
   Die Heizung setzt voraus, dass die gewählte `climate`-Entität bereits im
   gewünschten Heiz-Betriebsmodus steht (z. B. "Heizen"/"Auto") - diese
@@ -1178,8 +1199,9 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_an` | nur vorhanden, falls eine Heizung konfiguriert ist UND ihre Entität aktuell im Zustandsautomaten existiert. Anders als `luftentfeuchter_an`/`klimaanlage_an` kein reines Ein/Aus, sondern `true` genau bei Comfort - erkennt daher auch, wenn der Sollwert/Preset manuell oder von einer anderen Automation geändert wurde |
 | `heizung_modus` | wie `heizung_an`, aber alle vier Stufen: `"comfort"`/`"standby"`/`"night"`/`"building_protection"` (bzw. `null`, falls sich der aktuelle Zustand nicht ablesen/zuordnen lässt). Bei aktiver Preset-Steuerung direkt aus dem live gemeldeten `preset_mode` zurückgemappt, sonst aus der Näherung zum aktuellen Zahlen-Sollwert (kennt dabei kein `"building_protection"`, da es dafür keinen eigenen Sollwert gibt) |
 | `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen, unabhängig von Preset- oder Sollwert-Steuerung), `null` falls (noch) nicht ablesbar |
-| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitfenster: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
+| `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitplan: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
+| `heizung_uebersteuert` | nur vorhanden (`true`), solange ein manueller Eingriff in Preset/Sollwert gilt (siehe "Manuelle Übersteuerung"); `heizung_uebersteuerung_seit` (Zeitpunkt) und `heizung_uebersteuerung_basis` (Regel-Zielmodus zum Zeitpunkt des Eingriffs) dienen der Wiederherstellung nach einem Neustart |
 | `heizung_letzte_laufzeit` | wie `luftentfeuchter_letzte_laufzeit`/`klimaanlage_letzte_laufzeit`, nur für die Heizung |
 | `sommermodus_an` | nur vorhanden, falls in "- Smart Climate Optionen -" ein Sommer-/Winterbetrieb-Schalter hinterlegt ist UND diese Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen. Identisch für jeden Raum, da es sich um eine hausweite, nicht raumspezifische Einstellung handelt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
@@ -1373,13 +1395,13 @@ live aus `luftentfeuchter_seit`/`klimaanlage_seit`/`heizung_seit`/
 `dusche_seit` berechnet), sonst "–"; die Spalte "Status/Grund" zeigt bei Luftentfeuchter/
 Klimaanlage/Heizung eine rein informative, live bei jeder Neubewertung
 berechnete Kurzbeschreibung, warum das Gerät gerade an/aus (bzw. bei der
-Heizung: Comfort/Standby/Nacht bzw. "Zeitfenster: …" bei aktiviertem
+Heizung: Comfort/Standby/Nacht bzw. "Zeitplan: …" bei aktiviertem
 Heizungs-Zeitplan) ist bzw. pausiert (u. a. auch "Sommerbetrieb aktiv" - der Vorsatz
 "pausiert: " des Attributs wird in der Karte weggelassen, das Status-Icon zeigt
 es bereits), ohne selbst Einfluss auf die Steuerung zu haben - siehe
 `binary_sensor.py`; bei der Heizung ergänzt um die aktuelle Sollstellung in
 Klammern (z. B. "Innentemperatur unter Schwelle, Comfort (Sollstellung: 21.0 °C)" oder
-"Zeitfenster: Nacht (Sollstellung: 16.0 °C)"); bei Dusche entsprechend, ob und warum die
+"Zeitplan: Nacht (Sollstellung: 16.0 °C)"); bei Dusche entsprechend, ob und warum die
 Duscherkennung aktuell anschlägt; seit 0.92.3 steht jeder Text in Klammern - Sollstellung,
 "(Einspeiseleistung zu gering)", "(kein Comfort)", "(Start 07:42)" - in einer eigenen Zeile
 unter dem Grund) → **Benachrichtigungen**
