@@ -252,6 +252,11 @@ Entität für Dashboards/Automationen) - Symbol `mdi:shower` bei **on**,
        dieses Profil nicht genutzt wird. Deaktiviert (Standard) gilt
        weiterhin die reine Schwellenwert-Logik des Abschnitts "Heizung".
        Details siehe "Geräte-Steuerung" weiter unten
+     - **Dynamischer Auslöser** (nur pro Raum, ein Auslöser): eine Licht-,
+       Schalter-, Binärsensor-, input_boolean-, Person- oder Geräte-Tracker-
+       Entität, dazu **Profil bei Auslöser** (Standard Comfort),
+       **Einschalt-Verzögerung** (Standard 5 min) und **Nachlaufzeit**
+       (Standard 15 min). Siehe "Geräte-Steuerung" weiter unten
    - **Abschnitt "Benachrichtigungen"** (Sprachausgabe, App-Push, persistente
      Benachrichtigung und Erinnerung; die Anwesenheits-Entitäten für die
      Heizung stehen dagegen im Abschnitt "Heizung"):
@@ -1034,6 +1039,17 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   nächsten Neubewertung (spätestens nach 5 Minuten). Das Attribut
   `heizung_uebersteuert` zeigt den Zustand, `heizung_grund` den Text
   "manuell geändert (bleibt bis zum nächsten Moduswechsel)".
+
+  **Dynamischer Auslöser:** Ist für den Raum eine Auslöser-Entität gewählt (z. B.
+  das Licht im Homeoffice-Büro oder die Person im Schlafzimmer), gilt das
+  gewählte Profil, solange sie "an" bzw. "zuhause" ist - und **ersetzt** dabei
+  Zeitplan bzw. Schwellenwert-Logik. Er greift erst, wenn er die
+  Einschalt-Verzögerung lang ununterbrochen aktiv war, und wirkt nach seinem
+  Ende noch für die Nachlaufzeit (gegen Flackern). Unbekannt/nicht verfügbar
+  zählt als nicht aktiv. Rangfolge: Fenster offen/Sommerbetrieb, dann manuelle
+  Übersteuerung, dann Auslöser, dann Zeitplan/Schwelle; "niemand zuhause" macht
+  weiterhin aus Comfort ein Standby. Nach einem Neustart beginnt die
+  Einschalt-Verzögerung neu. `heizung_grund` zeigt "Auslöser aktiv: Comfort".
 
   Die Heizung setzt voraus, dass die gewählte `climate`-Entität bereits im
   gewünschten Heiz-Betriebsmodus steht (z. B. "Heizen"/"Auto") - diese

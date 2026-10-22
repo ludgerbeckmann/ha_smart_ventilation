@@ -24,6 +24,7 @@ from homeassistant.helpers.entity_platform import (
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_state_change_event,
+    async_call_later,
     async_track_time_interval,
 )
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -62,6 +63,13 @@ from .const import (
     CONF_HEATING_PRESET_NIGHT,
     CONF_HEATING_PRESET_STANDBY,
     CONF_HEATING_SCHEDULE_ENABLED,
+    CONF_HEATING_TRIGGER_ENTITY,
+    CONF_HEATING_TRIGGER_PROFILE,
+    CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
+    CONF_HEATING_TRIGGER_HOLD_MINUTES,
+    DEFAULT_HEATING_TRIGGER_PROFILE,
+    DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES,
+    DEFAULT_HEATING_TRIGGER_HOLD_MINUTES,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_PRESET_MODE,
@@ -401,6 +409,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heating_confirmed = False
         self._heating_override_since: datetime | None = None
         self._heating_override_baseline: str | None = None
+        # Dynamischer Auslöser (siehe _heating_trigger_engaged()): seit wann
+        # er ununterbrochen aktiv ist, wann er zuletzt aktiv war, ob er
+        # greift; nicht über Neustarts wiederhergestellt (die
+        # Einschalt-Verzögerung beginnt danach neu).
+        self._trigger_active_since: datetime | None = None
+        self._trigger_last_active: datetime | None = None
+        self._trigger_engaged = False
+        self._trigger_timer = None
 
         # Rein informativer Ein-/Ausschalt-Grund für die Dashboard-Karte
         # (neue Geräte-Tabelle, siehe README) - live bei jeder Neubewertung
@@ -1131,6 +1147,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         ):
             tracked.append(shower_temp_entity)
 
+        trigger_entity = self._config.get(CONF_HEATING_TRIGGER_ENTITY)
+        if trigger_entity and self._get_heating_entity_id():
+            tracked.append(trigger_entity)
+
         # Außentemperatur/-luftfeuchtigkeit kommen ausschließlich aus "Smart
         # Climate Optionen" - direkt verfolgen, falls beim Hinzufügen
         # bereits gesetzt (siehe Hinweis in der README zur Reaktivität bei
@@ -1189,6 +1209,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         self.async_on_remove(self._stop_tick_timer)
         self.async_on_remove(self._stop_shower_tick)
+        self.async_on_remove(self._stop_trigger_timer)
         await self._evaluate()
 
     def _device_entities_to_track(self) -> list[str]:
@@ -1759,6 +1780,72 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         state = self.hass.states.get(light_entity)
         return state is not None and state.state == "off"
 
+    def _heating_trigger_engaged(self) -> bool:
+        """Dynamischer Auslöser (CONF_HEATING_TRIGGER_ENTITY): True, wenn er
+        seit mindestens der Einschalt-Verzögerung ununterbrochen aktiv ("on"
+        bzw. "home") ist, und nach seinem Ende noch für die Nachlaufzeit.
+        Unbekannt/nicht verfügbar zählt als nicht aktiv. Plant bei einer
+        noch laufenden Verzögerung eine Neubewertung zum Ablauf ein."""
+        entity_id = self._config.get(CONF_HEATING_TRIGGER_ENTITY)
+        if not entity_id:
+            self._trigger_engaged = False
+            return False
+        now = dt_util.utcnow()
+        state = self.hass.states.get(entity_id)
+        raw = state is not None and state.state in ("on", "home")
+        on_delay = timedelta(
+            minutes=float(
+                self._config.get(
+                    CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
+                    DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES,
+                )
+            )
+        )
+        hold = timedelta(
+            minutes=float(
+                self._config.get(
+                    CONF_HEATING_TRIGGER_HOLD_MINUTES,
+                    DEFAULT_HEATING_TRIGGER_HOLD_MINUTES,
+                )
+            )
+        )
+        wait = None
+        if raw:
+            if self._trigger_active_since is None:
+                self._trigger_active_since = now
+            self._trigger_last_active = now
+            if now - self._trigger_active_since >= on_delay:
+                self._trigger_engaged = True
+            else:
+                wait = on_delay - (now - self._trigger_active_since)
+        else:
+            self._trigger_active_since = None
+            if self._trigger_engaged:
+                if self._trigger_last_active is None or now - self._trigger_last_active >= hold:
+                    self._trigger_engaged = False
+                else:
+                    wait = hold - (now - self._trigger_last_active)
+        if self._trigger_timer is not None:
+            self._trigger_timer()
+            self._trigger_timer = None
+        if wait is not None:
+            self._trigger_timer = async_call_later(
+                self.hass,
+                wait.total_seconds() + 1,
+                self._handle_trigger_timer,
+            )
+        return self._trigger_engaged
+
+    def _stop_trigger_timer(self) -> None:
+        if self._trigger_timer is not None:
+            self._trigger_timer()
+            self._trigger_timer = None
+
+    async def _handle_trigger_timer(self, _now) -> None:
+        self._trigger_timer = None
+        await self._evaluate()
+        self.async_write_ha_state()
+
     def _get_scheduled_heating_mode(self) -> str | None:
         """Bestimmt den vom Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_ENABLED)
         für den aktuellen Zeitpunkt erzwungenen Modus - "comfort",
@@ -2295,6 +2382,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         window_confirmed_open = self._is_window_confirmed_open()
         heating_presence_away = self._is_heating_presence_away()
         heating_schedule_enabled = self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)
+        heating_trigger_engaged = (
+            bool(self._get_heating_entity_id()) and self._heating_trigger_engaged()
+        )
+        heating_trigger_mode = self._config.get(
+            CONF_HEATING_TRIGGER_PROFILE, DEFAULT_HEATING_TRIGGER_PROFILE
+        )
         # "Gebäudeschutz" (Preset, kein eigener Zahlen-Sollwert) ersetzt
         # Standby bewusst NUR beim Pausier-Grund "Fenster offen" - bei
         # aktivem Sommerbetrieb bleibt es bei Standby (Nutzerentscheidung).
@@ -2302,6 +2395,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             heating_target_mode = "building_protection"
         elif heating_summer_mode_active:
             heating_target_mode = "standby"
+        elif heating_trigger_engaged:
+            heating_target_mode = heating_trigger_mode
         elif heating_schedule_enabled:
             heating_target_mode = self._get_scheduled_heating_mode()
         elif indoor_temp is not None and indoor_temp < heating_threshold:
@@ -2409,6 +2504,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._heating_reason = "pausiert: niemand zuhause (kein Comfort)"
             elif heating_summer_mode_active:
                 self._heating_reason = "pausiert: Sommerbetrieb aktiv"
+            elif heating_trigger_engaged:
+                self._heating_reason = "Auslöser aktiv: " + {
+                    "comfort": "Comfort",
+                    "standby": "Standby",
+                    "night": "Nacht",
+                }.get(heating_target_mode, "Comfort")
             elif heating_schedule_enabled:
                 self._heating_reason = {
                     "comfort": "Zeitplan: Comfort",

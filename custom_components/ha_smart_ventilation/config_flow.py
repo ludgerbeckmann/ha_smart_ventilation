@@ -38,6 +38,13 @@ from .const import (
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_HEATING_TRIGGER_ENTITY,
+    CONF_HEATING_TRIGGER_PROFILE,
+    CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
+    CONF_HEATING_TRIGGER_HOLD_MINUTES,
+    DEFAULT_HEATING_TRIGGER_PROFILE,
+    DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES,
+    DEFAULT_HEATING_TRIGGER_HOLD_MINUTES,
     CONF_HEATING_PRESET_BUILDING_PROTECTION,
     CONF_HEATING_PRESET_COMFORT,
     CONF_HEATING_PRESET_NIGHT,
@@ -217,8 +224,11 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_AC_ENTITY,
     CONF_HEATING_ENTITY,
     CONF_HEATING_PRESENCE_ENTITIES,
+    CONF_HEATING_TRIGGER_ENTITY,
     CONF_SHOWER_TEMPERATURE_ENTITY,
 )
+
+TRIGGER_DOMAINS = ["light", "switch", "binary_sensor", "input_boolean", "person", "device_tracker"]
 
 # Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
 # async_step_global) - wird nie in den Config-Entry übernommen, sondern vor
@@ -1257,6 +1267,52 @@ def _build_room_schema(
         vol.Schema(
             {
                 heating_schedule_marker: heating_schedule_sel,
+                _entity_marker(
+                    CONF_HEATING_TRIGGER_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=TRIGGER_DOMAINS,
+                    )
+                ),
+                vol.Optional(
+                    CONF_HEATING_TRIGGER_PROFILE,
+                    default=defaults.get(
+                        CONF_HEATING_TRIGGER_PROFILE, DEFAULT_HEATING_TRIGGER_PROFILE
+                    ),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            {"value": "comfort", "label": "Comfort"},
+                            {"value": "standby", "label": "Standby"},
+                            {"value": "night", "label": "Nacht"},
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional(
+                    CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
+                    default=defaults.get(
+                        CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
+                        DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES,
+                    ),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        min=0, max=240, step=1, unit_of_measurement="min",
+                    )
+                ),
+                vol.Optional(
+                    CONF_HEATING_TRIGGER_HOLD_MINUTES,
+                    default=defaults.get(
+                        CONF_HEATING_TRIGGER_HOLD_MINUTES,
+                        DEFAULT_HEATING_TRIGGER_HOLD_MINUTES,
+                    ),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        min=0, max=720, step=1, unit_of_measurement="min",
+                    )
+                ),
                 **{
                     marker: sel
                     for marker, sel in time_field_markers.values()

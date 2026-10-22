@@ -151,7 +151,11 @@
               "heating_night_start_weekday": "Night start (weekday)",
               "heating_comfort_start_weekend": "Comfort start (weekend)",
               "heating_standby_start_weekend": "Standby start (weekend)",
-              "heating_night_start_weekend": "Night start (weekend)"
+              "heating_night_start_weekend": "Night start (weekend)",
+              "heating_trigger_entity": "Dynamic trigger",
+              "heating_trigger_profile": "Profile on trigger",
+              "heating_trigger_on_delay_minutes": "Trigger: on-delay",
+              "heating_trigger_hold_minutes": "Trigger: hold time"
             },
             "data_description": {
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled: the plain threshold logic still applies (heating threshold in the \"Heating\" section). Currently global: {global_heating_schedule_enabled}",
@@ -160,7 +164,11 @@
               "heating_night_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekday}",
               "heating_comfort_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekend}",
               "heating_standby_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_standby_start_weekend}",
-              "heating_night_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekend}"
+              "heating_night_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekend}",
+              "heating_trigger_entity": "Optional, this room only: light, switch, binary sensor, input_boolean, person or device tracker. While it is on/home (after the on-delay), the chosen profile applies and replaces the schedule or threshold logic (e.g. home office via light, bedroom via person). Open window, summer mode, manual change and \"nobody home\" (no comfort) take precedence. Unknown/unavailable counts as inactive.",
+              "heating_trigger_profile": "Profile applied while the trigger is active (default Comfort; for a person, home means Comfort).",
+              "heating_trigger_on_delay_minutes": "Minutes the trigger must stay active before it applies (default 5, 0 = immediately).",
+              "heating_trigger_hold_minutes": "Minutes the profile still applies after the trigger ends (default 15, 0 = revert immediately)."
             }
           },
           "notify": {
@@ -344,7 +352,11 @@
               "heating_night_start_weekday": "Night start (weekday)",
               "heating_comfort_start_weekend": "Comfort start (weekend)",
               "heating_standby_start_weekend": "Standby start (weekend)",
-              "heating_night_start_weekend": "Night start (weekend)"
+              "heating_night_start_weekend": "Night start (weekend)",
+              "heating_trigger_entity": "Dynamic trigger",
+              "heating_trigger_profile": "Profile on trigger",
+              "heating_trigger_on_delay_minutes": "Trigger: on-delay",
+              "heating_trigger_hold_minutes": "Trigger: hold time"
             },
             "data_description": {
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled: the plain threshold logic still applies (heating threshold in the \"Heating\" section). Currently global: {global_heating_schedule_enabled}",
@@ -353,7 +365,11 @@
               "heating_night_start_weekday": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekday}",
               "heating_comfort_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_comfort_start_weekend}",
               "heating_standby_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_standby_start_weekend}",
-              "heating_night_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekend}"
+              "heating_night_start_weekend": "Empty = use the value from the global settings. The profile starts at this time and stays active until another profile starts. Only effective while the heating schedule is enabled. Currently global: {global_heating_night_start_weekend}",
+              "heating_trigger_entity": "Optional, this room only: light, switch, binary sensor, input_boolean, person or device tracker. While it is on/home (after the on-delay), the chosen profile applies and replaces the schedule or threshold logic (e.g. home office via light, bedroom via person). Open window, summer mode, manual change and \"nobody home\" (no comfort) take precedence. Unknown/unavailable counts as inactive.",
+              "heating_trigger_profile": "Profile applied while the trigger is active (default Comfort; for a person, home means Comfort).",
+              "heating_trigger_on_delay_minutes": "Minutes the trigger must stay active before it applies (default 5, 0 = immediately).",
+              "heating_trigger_hold_minutes": "Minutes the profile still applies after the trigger ends (default 15, 0 = revert immediately)."
             }
           },
           "notify": {

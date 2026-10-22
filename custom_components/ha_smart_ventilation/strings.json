@@ -151,7 +151,11 @@
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
               "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
               "heating_standby_start_weekend": "Standby-Start (Wochenende)",
-              "heating_night_start_weekend": "Nacht-Start (Wochenende)"
+              "heating_night_start_weekend": "Nacht-Start (Wochenende)",
+              "heating_trigger_entity": "Dynamischer Auslöser",
+              "heating_trigger_profile": "Profil bei Auslöser",
+              "heating_trigger_on_delay_minutes": "Auslöser: Einschalt-Verzögerung",
+              "heating_trigger_hold_minutes": "Auslöser: Nachlaufzeit"
             },
             "data_description": {
               "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweils aktive Profil (Comfort/Standby/Nacht, siehe Startzeiten unten) den Sollwert unabhängig von der Innentemperatur. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
@@ -160,7 +164,11 @@
               "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekday}",
               "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekend}",
               "heating_standby_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_standby_start_weekend}",
-              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekend}"
+              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekend}",
+              "heating_trigger_entity": "Optional, nur für diesen Raum: Licht, Schalter, Binärsensor, input_boolean, Person oder Geräte-Tracker. Ist sie \"an\" bzw. \"zuhause\" (nach der Einschalt-Verzögerung), gilt das gewählte Profil und ersetzt den Zeitplan bzw. die Schwellenwert-Logik (z. B. Homeoffice per Licht, Schlafzimmer per Person). Fenster offen, Sommerbetrieb, manuelle Änderung und \"niemand zuhause\" (kein Comfort) haben Vorrang. Unbekannt/nicht verfügbar zählt als nicht aktiv.",
+              "heating_trigger_profile": "Profil, das bei aktivem Auslöser gilt (Standard Comfort; bei einer Person bedeutet \"zuhause\" Comfort).",
+              "heating_trigger_on_delay_minutes": "Minuten, die der Auslöser ununterbrochen aktiv sein muss, bevor er greift (Standard 5, 0 = sofort).",
+              "heating_trigger_hold_minutes": "Minuten, die das Profil nach dem Ende des Auslösers noch gilt (Standard 15, 0 = sofort zurück)."
             }
           },
           "notify": {
@@ -344,7 +352,11 @@
               "heating_night_start_weekday": "Nacht-Start (Werktag)",
               "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
               "heating_standby_start_weekend": "Standby-Start (Wochenende)",
-              "heating_night_start_weekend": "Nacht-Start (Wochenende)"
+              "heating_night_start_weekend": "Nacht-Start (Wochenende)",
+              "heating_trigger_entity": "Dynamischer Auslöser",
+              "heating_trigger_profile": "Profil bei Auslöser",
+              "heating_trigger_on_delay_minutes": "Auslöser: Einschalt-Verzögerung",
+              "heating_trigger_hold_minutes": "Auslöser: Nachlaufzeit"
             },
             "data_description": {
               "heating_schedule_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Aktiviert erzwingt das jeweils aktive Profil (Comfort/Standby/Nacht, siehe Startzeiten unten) den Sollwert unabhängig von der Innentemperatur. Deaktiviert gilt weiterhin die reine Schwellenwert-Logik (Heizungs-Schwelle im Abschnitt \"Heizung\"). Aktuell global: {global_heating_schedule_enabled}",
@@ -353,7 +365,11 @@
               "heating_night_start_weekday": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekday}",
               "heating_comfort_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_comfort_start_weekend}",
               "heating_standby_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_standby_start_weekend}",
-              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekend}"
+              "heating_night_start_weekend": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Profil beginnt zu dieser Uhrzeit und gilt bis zur Startzeit eines anderen Profils. Nur wirksam bei aktiviertem Heizungs-Zeitplan. Aktuell global: {global_heating_night_start_weekend}",
+              "heating_trigger_entity": "Optional, nur für diesen Raum: Licht, Schalter, Binärsensor, input_boolean, Person oder Geräte-Tracker. Ist sie \"an\" bzw. \"zuhause\" (nach der Einschalt-Verzögerung), gilt das gewählte Profil und ersetzt den Zeitplan bzw. die Schwellenwert-Logik (z. B. Homeoffice per Licht, Schlafzimmer per Person). Fenster offen, Sommerbetrieb, manuelle Änderung und \"niemand zuhause\" (kein Comfort) haben Vorrang. Unbekannt/nicht verfügbar zählt als nicht aktiv.",
+              "heating_trigger_profile": "Profil, das bei aktivem Auslöser gilt (Standard Comfort; bei einer Person bedeutet \"zuhause\" Comfort).",
+              "heating_trigger_on_delay_minutes": "Minuten, die der Auslöser ununterbrochen aktiv sein muss, bevor er greift (Standard 5, 0 = sofort).",
+              "heating_trigger_hold_minutes": "Minuten, die das Profil nach dem Ende des Auslösers noch gilt (Standard 15, 0 = sofort zurück)."
             }
           },
           "notify": {
