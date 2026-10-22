@@ -1353,6 +1353,8 @@ function scCloseRoomDialog() {
   if (!scRoomDialog) return;
   clearInterval(scRoomDialog.timer);
   document.removeEventListener("keydown", scRoomDialog.onKey, true);
+  document.documentElement.style.overflow = scRoomDialog.prevHtmlOverflow;
+  document.body.style.overflow = scRoomDialog.prevBodyOverflow;
   scRoomDialog.overlay.remove();
   scRoomDialog = null;
 }
@@ -1369,10 +1371,15 @@ function openRoomDialog(key) {
   overlay.setAttribute("aria-modal", "true");
   overlay.innerHTML =
     "<style>" +
-    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);padding:8px;box-sizing:border-box}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:100%;overflow:hidden;border-radius:24px;background:var(--ha-card-background,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box}" +
-    ".sc-room-scroll{overflow:auto;min-height:0}" +
-    ".sc-room-bar{position:absolute;top:8px;right:8px;z-index:1}" +
+    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - 16px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out;will-change:transform}" +
+    "@media (min-width:700px){.sc-room-dialog{align-items:center;padding:16px}.sc-room-panel{border-radius:24px;max-height:100%;padding-bottom:0}}" +
+    "@keyframes sc-up{from{transform:translateY(100%)}to{transform:none}}" +
+    "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
+    ".sc-room-grip{flex:none;height:20px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
+    ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
+    ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
+    ".sc-room-bar{position:absolute;top:6px;right:8px;z-index:1}" +
     ".sc-room-close{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--secondary-text-color,#727272);font-size:20px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
     "</style>";
@@ -1387,6 +1394,9 @@ function openRoomDialog(key) {
   bar.className = "sc-room-bar";
   bar.appendChild(close);
   panel.appendChild(bar);
+  const grip = document.createElement("div");
+  grip.className = "sc-room-grip";
+  panel.appendChild(grip);
   const scroll = document.createElement("div");
   scroll.className = "sc-room-scroll";
   panel.appendChild(scroll);
@@ -1435,7 +1445,69 @@ function openRoomDialog(key) {
     const current = root.hass;
     if (card && current && current !== card._hass) card.hass = current;
   }, 2000);
-  scRoomDialog = { overlay, timer, onKey };
+  // Seite dahinter sperren, solange der Dialog offen ist.
+  const prevHtmlOverflow = document.documentElement.style.overflow;
+  const prevBodyOverflow = document.body.style.overflow;
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+
+  // Nach unten wegwischen: am Griff immer, im Inhalt nur wenn er oben steht.
+  let startY = null;
+  let dy = 0;
+  let startT = 0;
+  panel.addEventListener(
+    "touchstart",
+    (ev) => {
+      if (ev.touches.length !== 1) return;
+      const fromGrip = grip.contains(ev.target) || bar.contains(ev.target);
+      if (!fromGrip && scroll.scrollTop > 0) return;
+      startY = ev.touches[0].clientY;
+      startT = Date.now();
+      dy = 0;
+      panel.style.animation = "none";
+    },
+    { passive: true }
+  );
+  panel.addEventListener(
+    "touchmove",
+    (ev) => {
+      if (startY === null) return;
+      dy = ev.touches[0].clientY - startY;
+      if (dy <= 0) {
+        // Nach oben: normales Scrollen des Inhalts.
+        dy = 0;
+        panel.style.transform = "";
+        return;
+      }
+      if (ev.cancelable) ev.preventDefault();
+      panel.style.transform = `translateY(${dy}px)`;
+    },
+    { passive: false }
+  );
+  const endDrag = () => {
+    if (startY === null) return;
+    const fast = dy > 40 && Date.now() - startT < 250;
+    startY = null;
+    if (dy > 110 || fast) {
+      panel.style.transition = "transform .18s ease-in";
+      panel.style.transform = "translateY(100%)";
+      setTimeout(scCloseRoomDialog, 180);
+    } else {
+      panel.style.transition = "transform .18s ease-out";
+      panel.style.transform = "";
+    }
+  };
+  panel.addEventListener("touchend", endDrag);
+  panel.addEventListener("touchcancel", endDrag);
+  // Wischgesten außerhalb des Panels dürfen die Seite nicht bewegen.
+  overlay.addEventListener(
+    "touchmove",
+    (ev) => {
+      if (!panel.contains(ev.target) && ev.cancelable) ev.preventDefault();
+    },
+    { passive: false }
+  );
+  scRoomDialog = { overlay, timer, onKey, prevHtmlOverflow, prevBodyOverflow };
 }
 
 if (!window.__smartClimateRoomDialog) {
