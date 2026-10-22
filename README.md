@@ -1632,8 +1632,15 @@ tap_action:
   smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID des Binärsensors
 ```
 
-Der Dialog enthält die Tabellen des Raums (ohne Übersicht und Außen-Messwerte), der
-Raum ist aufgeklappt. Er schließt per Kreuz, Tippen neben den Dialog oder Esc, und
+Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
+und Außen-Messwerte): Titel mit Status-Chip (OK/Hinweis/Handlungsbedarf), dann die Abschnitte
+**Lüften** (Fenster, Empfehlung mit Begründung), **Messwerte** (Temperatur, Luftfeuchtigkeit,
+CO2 mit Balken für den Normalbereich, darunter abs. Luftfeuchtigkeit und Taupunkt), **Geräte**
+(Luftentfeuchter, Klimaanlage, Heizung, Dusche, jeweils mit Zustand, Grund und Laufzeit - ein
+voller Wassertank steht beim Luftentfeuchter) und **Benachrichtigungen** (aufklappbar). Die
+Symbole sind MDI-Symbole, die Farben kommen aus dem Theme (`--success-color`, `--warning-color`,
+`--error-color`, `--info-color`). Die normale Raumansicht der Karte bleibt unverändert (Tabellen).
+Der Dialog ist nicht einklappbar; ein langer Inhalt scrollt im Dialog, das Kreuz bleibt stehen. Er schließt per Kreuz, Tippen neben den Dialog oder Esc, und
 übernimmt Zustandsänderungen, solange er offen ist. Anders als ein Pop-up je Raum wird
 der Inhalt erst beim Tippen erzeugt und beim Schließen entfernt - es läuft nichts im
 Hintergrund mit (wichtig auf schwachen Tablets). Dafür muss die Karte als
@@ -1645,8 +1652,8 @@ der Entität, und der Raum-Dialog schließt sich dabei. Funktioniert die Tipp-Ak
 Browser (F12, Konsole) `window.__smartClimateRoomDialog` prüfen (`true` = Karte ab 0.98.0 geladen)
 und mit `window.dispatchEvent(new CustomEvent('ll-custom', {detail: {smart_climate_room: 'badezimmer'}}))`
 testen.
-Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum, immer
-aufgeklappt).
+Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum in der kompakten
+Ansicht).
 
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
