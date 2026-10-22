@@ -634,8 +634,12 @@ class SmartClimateCard extends HTMLElement {
       // nur weil er vorher mal grün und manuell eingeklappt wurde.
       // Option expand_attention_rooms (Editor, Standard true): false = auch
       // 🟠/🔴 starten eingeklappt.
+      // compact_room (vom Raum-Dialog gesetzt, siehe openRoomDialog): der
+      // einzelne Raum startet immer aufgeklappt - im Dialog will man ja
+      // gerade die Details sehen.
+      const compact = this._config.compact_room === true;
       const defaultOpen =
-        statusClass !== "status-green" && this._config.expand_attention_rooms !== false;
+        compact || (statusClass !== "status-green" && this._config.expand_attention_rooms !== false);
       const storedRoomState = this._roomOpenState.get(a.raum);
       const isOpen =
         storedRoomState && storedRoomState.statusClass === statusClass
@@ -696,7 +700,11 @@ class SmartClimateCard extends HTMLElement {
 
     const roomsHtml = entries.map((e) => e.html).join("");
 
-    this._content.innerHTML = `<div class="overview-wrap">${overviewTable}${outdoorTable}</div>${roomsHtml}`;
+    // compact_room: nur der Raum, ohne Übersicht und Außen-Messwerte.
+    this._content.innerHTML =
+      this._config.compact_room === true
+        ? roomsHtml
+        : `<div class="overview-wrap">${overviewTable}${outdoorTable}</div>${roomsHtml}`;
   }
 
   static _css() {
@@ -1002,6 +1010,127 @@ class SmartClimateCardEditor extends HTMLElement {
 
 if (!customElements.get("smart-climate-card-editor")) {
   customElements.define("smart-climate-card-editor", SmartClimateCardEditor);
+}
+
+/*
+ * Raum-Dialog: Tippen auf einen Raumnamen im Dashboard öffnet die Details
+ * dieses einen Raums. Auslöser ist die Standard-Tipp-Aktion `fire-dom-event`
+ * (Home Assistant sendet dafür das Ereignis "ll-custom" mit der
+ * Aktions-Konfiguration als detail), z. B. an einer Mushroom-/Bubble-Karte:
+ *
+ *   tap_action:
+ *     action: fire-dom-event
+ *     smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID
+ *
+ * Gegenüber einem Pop-up je Raum wird der Inhalt erst beim Tippen erzeugt und
+ * beim Schließen wieder entfernt - es läuft nichts im Hintergrund mit.
+ */
+function scSlug(text) {
+  return String(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function scFindRoomEntity(hass, key) {
+  const states = hass.states;
+  const raw = String(key).trim();
+  if (raw.includes(".")) return states[raw] ? raw : null;
+  const slug = scSlug(raw);
+  for (const id of Object.keys(states)) {
+    if (!id.startsWith("binary_sensor.")) continue;
+    const attrs = states[id].attributes;
+    if (!attrs || !has(attrs, "raum")) continue;
+    if (scSlug(attrs.raum) === slug) return id;
+  }
+  return null;
+}
+
+let scRoomDialog = null;
+
+function scCloseRoomDialog() {
+  if (!scRoomDialog) return;
+  clearInterval(scRoomDialog.timer);
+  document.removeEventListener("keydown", scRoomDialog.onKey, true);
+  scRoomDialog.overlay.remove();
+  scRoomDialog = null;
+}
+
+function openRoomDialog(key) {
+  const root = document.querySelector("home-assistant");
+  const hass = root && root.hass;
+  if (!hass) return;
+  scCloseRoomDialog();
+
+  const overlay = document.createElement("div");
+  overlay.className = "sc-room-dialog";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.innerHTML =
+    "<style>" +
+    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);padding:8px;box-sizing:border-box}" +
+    ".sc-room-panel{display:flex;flex-direction:column;width:100%;max-width:600px;max-height:100%;overflow:auto;border-radius:12px;background:var(--card-background-color,#fff);color:var(--primary-text-color,#000);box-sizing:border-box}" +
+    ".sc-room-bar{position:sticky;top:0;z-index:1;display:flex;justify-content:flex-end;background:var(--card-background-color,#fff)}" +
+    ".sc-room-close{width:44px;height:44px;border:0;background:transparent;color:var(--primary-text-color,#000);font-size:22px;cursor:pointer}" +
+    ".sc-room-missing{padding:8px 16px 24px}" +
+    "</style>";
+  const panel = document.createElement("div");
+  panel.className = "sc-room-panel";
+  const close = document.createElement("button");
+  close.className = "sc-room-close";
+  close.type = "button";
+  close.setAttribute("aria-label", "Schließen");
+  close.textContent = "✕";
+  const bar = document.createElement("div");
+  bar.className = "sc-room-bar";
+  bar.appendChild(close);
+  panel.appendChild(bar);
+
+  const entityId = scFindRoomEntity(hass, key);
+  let card = null;
+  if (entityId) {
+    card = document.createElement("smart-climate-card");
+    card.setConfig({ entities: [entityId], compact_room: true });
+    card.hass = hass;
+    panel.appendChild(card);
+  } else {
+    const missing = document.createElement("div");
+    missing.className = "sc-room-missing";
+    missing.textContent = `Raum nicht gefunden: ${key}`;
+    panel.appendChild(missing);
+  }
+  overlay.appendChild(panel);
+
+  // Innerhalb von <home-assistant> einhängen, damit Ereignisse der Karte
+  // (z. B. hass-more-info beim Tippen auf eine Bezeichnung) dort ankommen.
+  (root || document.body).appendChild(overlay);
+
+  const onKey = (ev) => {
+    if (ev.key === "Escape") scCloseRoomDialog();
+  };
+  document.addEventListener("keydown", onKey, true);
+  close.addEventListener("click", scCloseRoomDialog);
+  overlay.addEventListener("click", (ev) => {
+    if (ev.target === overlay) scCloseRoomDialog();
+  });
+  // Bei offenem Dialog neue Zustände übernehmen (die Karte selbst bekommt
+  // hass sonst nur vom Dashboard).
+  const timer = setInterval(() => {
+    const current = root.hass;
+    if (card && current && current !== card._hass) card.hass = current;
+  }, 2000);
+  scRoomDialog = { overlay, timer, onKey };
+}
+
+if (!window.__smartClimateRoomDialog) {
+  window.__smartClimateRoomDialog = true;
+  window.addEventListener("ll-custom", (ev) => {
+    const detail = ev && ev.detail;
+    if (detail && detail.smart_climate_room) openRoomDialog(detail.smart_climate_room);
+  });
 }
 
 window.customCards = window.customCards || [];

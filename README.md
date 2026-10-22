@@ -1606,6 +1606,27 @@ grüne Räume sind ohnehin eingeklappt. Ein von Hand geänderter Zustand bleibt
 erhalten, solange sich der Status des Raums nicht ändert; wird die Option
 umgeschaltet, gilt sie sofort für alle Räume.
 
+**Raum-Dialog (Tippen auf einen Raumnamen):** Die Karte zeigt auf Wunsch die Details
+**eines** Raums in einem Dialog, ausgelöst über die Standard-Tipp-Aktion `fire-dom-event`
+(z. B. an einer Mushroom-/Bubble-Karte, die den Raumnamen zeigt):
+
+```yaml
+tap_action:
+  action: fire-dom-event
+  smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID des Binärsensors
+```
+
+Der Dialog enthält die Tabellen des Raums (ohne Übersicht und Außen-Messwerte), der
+Raum ist aufgeklappt. Er schließt per Kreuz, Tippen neben den Dialog oder Esc, und
+übernimmt Zustandsänderungen, solange er offen ist. Anders als ein Pop-up je Raum wird
+der Inhalt erst beim Tippen erzeugt und beim Schließen entfernt - es läuft nichts im
+Hintergrund mit (wichtig auf schwachen Tablets). Dafür muss die Karte als
+Lovelace-Ressource geladen sein (macht die Integration selbst); eine Karte auf dem
+Dashboard braucht es nicht. Ein unbekannter Raum zeigt "Raum nicht gefunden". Ob die
+Bubble Card `fire-dom-event` an Home Assistant durchreicht, ist nicht geprüft.
+Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum, immer
+aufgeklappt).
+
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
 simulierte DOM-Umgebung (jsdom) mit Beispieldaten gegen die dokumentierten
