@@ -756,3 +756,48 @@ DEFAULT_TTS_MSG_CLOSE_DEFAULT = (
 DEFAULT_TTS_MSG_REMINDER = (
     "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein."
 )
+
+# --- Dashboard-Darstellung (nur globale Einstellungen, Bubble-Card-Modul
+# "climate_status", siehe dashboard.py und CLAUDE.md Lektion 111) ---
+# Werte stehen als Attribute am Sensor "Smart Climate Darstellung", das
+# Modul liest sie live; fehlt ein Wert, gilt der jeweilige Standard.
+CONF_DASH_TINT = "dash_tint"  # farbiger Hintergrund nach Raumstatus
+CONF_DASH_HEAT_BAR = "dash_heat_bar"  # Preset-/Ventilbalken
+CONF_DASH_COVER_BAR = "dash_cover_bar"  # Rollladenbalken
+CONF_DASH_HEAT_SIDE = "dash_heat_side"  # "left" | "right"
+CONF_DASH_COVER_SIDE = "dash_cover_side"  # "left" | "right"
+CONF_DASH_BAR_WIDTH = "dash_bar_width"  # px
+CONF_DASH_BORDER_WIDTH = "dash_border_width"  # px
+CONF_DASH_LINE_HEIGHT = "dash_line_height"  # px
+CONF_DASH_EXTRA_SIZE = "dash_extra_size"  # % der Schriftgröße
+CONF_DASH_CYCLE = "dash_cycle"  # Sekunden
+CONF_DASH_EXTRA_1 = "dash_extra_1"  # erster Wechselwert
+CONF_DASH_EXTRA_2 = "dash_extra_2"  # zweiter Wechselwert
+CONF_DASH_COLOR_COMFORT = "dash_color_comfort"
+CONF_DASH_COLOR_STANDBY = "dash_color_standby"
+CONF_DASH_COLOR_ECO = "dash_color_eco"
+CONF_DASH_COLOR_PROTECTION = "dash_color_protection"
+CONF_DASH_COLOR_SUMMER = "dash_color_summer"
+CONF_DASH_COLOR_HOT = "dash_color_hot"
+CONF_DASH_COLOR_WARM = "dash_color_warm"
+CONF_DASH_COLOR_COLD = "dash_color_cold"
+CONF_DASH_COLOR_COVER = "dash_color_cover"
+CONF_DASH_COLOR_TINT_HINT = "dash_color_tint_hint"
+CONF_DASH_COLOR_TINT_ACTION = "dash_color_tint_action"
+
+DEFAULT_DASH_TINT = True
+DEFAULT_DASH_HEAT_BAR = True
+DEFAULT_DASH_COVER_BAR = True
+DEFAULT_DASH_HEAT_SIDE = "left"
+DEFAULT_DASH_COVER_SIDE = "right"
+DEFAULT_DASH_BAR_WIDTH = 8
+DEFAULT_DASH_BORDER_WIDTH = 1
+DEFAULT_DASH_LINE_HEIGHT = 50
+DEFAULT_DASH_EXTRA_SIZE = 80
+DEFAULT_DASH_CYCLE = 12
+DEFAULT_DASH_EXTRA_1 = "humidity"
+DEFAULT_DASH_EXTRA_2 = "co2"
+DASH_EXTRA_OPTIONS = ("humidity", "co2", "dewpoint", "off")
+DASH_SIDE_OPTIONS = ("left", "right")
+
+DASHBOARD_SIGNAL = "ha_smart_ventilation_dashboard_update"

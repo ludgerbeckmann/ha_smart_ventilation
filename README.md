@@ -1652,6 +1652,54 @@ Laufzeit-Formatierung) verifizieren - echtes Home-Assistant-Frontend-
 Verhalten (Rendering-Details, Registrierung als Lovelace-Ressource) bleibt
 bis zu einer Rückmeldung aus der echten Oberfläche ungewiss.
 
+## Bubble-Card-Modul "climate_status" und Dashboard-Darstellung
+
+Für Dashboards mit der [Bubble Card](https://github.com/Clooos/Bubble-Card)
+liefert die Integration das Modul **`climate_status`** mit (Preset- und
+Ventilbalken, Rollladenbalken, farbiger Hintergrund nach Raumstatus,
+Wechselanzeige der Zusatzwerte). Es wird für `climate`-Entitäten verwendet.
+
+**Wo das Modul liegt:** Ist [Bubble Card Tools](https://github.com/Clooos/Bubble-Card-Tools)
+installiert (Ordner `/config/bubble_card/modules`), schreibt die Integration
+beim Start die Datei `climate_status.yaml` dorthin - aber nur, wenn sie noch
+fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig als
+`/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
+"Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
+Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
+"Module" mit der Version `v3.0` zu sehen. Eigene Änderungen am Modulcode gehen
+bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
+Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
+Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
+from YAML" im Bubble-Card-Editor eingefügt werden.
+
+**Einstellungen:** In den allgemeinen Einstellungen ("- Smart Climate Optionen -"
+→ Konfigurieren) gibt es den Abschnitt **"Dashboard-Darstellung"**:
+- **Farbiger Hintergrund** (an/aus), **Heizungsbalken** und **Rollladenbalken**
+  (an/aus) jeweils mit **Seite** (links/rechts; liegen beide auf derselben Seite,
+  steht der Rollladenbalken neben dem Heizungsbalken).
+- **Wechselwert 1/2:** welche Zusatzwerte im Wechsel mit der Temperatur laufen
+  (absolute Luftfeuchtigkeit, CO2, Taupunkt oder aus). Die Reihenfolge ergibt
+  sich aus 1 und 2.
+- **Wechselintervall**, **Balkenbreite**, **Rahmenbreite**, **Zeilenhöhe** des
+  Namens, **Schriftgröße** der Wechselwerte.
+- **Farben:** Komfort, Standby, Eco, Gebäudeschutz, Sommerbetrieb, heiß/warm/kalt
+  (Zahlenfarbe), Rollladenbalken sowie Hintergrund bei Hinweis und bei
+  Handlungsbedarf. Leer = Standardfarbe (die Home-Assistant-Farben wie bisher).
+
+Die Werte stehen als fertige CSS-Werte in den Attributen des Sensors
+**"Smart Climate Darstellung"** (`sensor.smart_climate_darstellung`, Kategorie
+Diagnose, Zustand = Modulversion). Das Modul liest sie live aus den Zuständen,
+Änderungen wirken also sofort ohne Neuschreiben der Datei. Fehlt der Sensor oder
+ein Wert, gelten die Standards im Modul. Der Schalter für den Sommerbetrieb
+kommt aus der globalen Einstellung ("Sommer-/Winterbetrieb-Schalter").
+
+**Voraussetzungen im Modul:** Der Raum-Binärsensor heißt
+`binary_sensor.luften_empfohlen_<raum>` und der Raumstatus
+`sensor.<raum>_raumstatus` (Standardnamen der Integration). Der Rollladen wird
+als `cover.<raum>_rollladen` abgeleitet (Ausnahme im Modul: `climate.buro` →
+`cover.rollo_buro`) oder über `climate_status: { cover_entity: ... }` an der
+Karte gesetzt.
+
 ## Fehlersuche / Diagnose
 
 Drei Bordmittel helfen bei der Fehlersuche, ohne dass Werte oder
