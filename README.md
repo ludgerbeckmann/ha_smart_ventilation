@@ -1671,7 +1671,7 @@ fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig al
 `/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
 "Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
 Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
-"Module" mit der Version `v3.2` zu sehen. Eigene Änderungen am Modulcode gehen
+"Module" mit der Version `v3.3` zu sehen. Eigene Änderungen am Modulcode gehen
 bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
 Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
 Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
@@ -1706,7 +1706,9 @@ kommt aus der globalen Einstellung ("Sommer-/Winterbetrieb-Schalter").
 
 **Fenster-Button bei Handlungsbedarf:** Der Fenster-Sub-Button der Karte (Standard:
 der 2. Sub-Button, anderer Platz über `climate_status: { window_button: N }`) wird
-rot, solange der Raumstatus `handlungsbedarf` meldet; sonst bleibt er unverändert.
+rot, solange der Raumstatus `handlungsbedarf` meldet. Bei `hinweis` wird nur das
+Symbol in der Warnfarbe (`--warning-color`) dargestellt, die Fläche bleibt wie
+bisher; sonst bleibt der Button unverändert.
 Das Symbol (Fenster offen/zu) kommt vom Fensterkontakt. Damit der Button auch bei
 geschlossenem Fenster und Empfehlung "Öffnen" erscheint, braucht seine
 `visibility` eine Oder-Bedingung, z. B.:

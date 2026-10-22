@@ -1,6 +1,6 @@
 climate_status:
   name: Klima-Status (Preset-Balken, Textfarbe, Raumstatus, Rollladen, Wechselanzeige)
-  version: v3.2
+  version: v3.3
   creator: Smart Climate
   supported:
     - climate
@@ -91,8 +91,8 @@ climate_status:
       ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] && !((hass.states[(hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.sommerbetrieb_schalter] || {}).state === 'on') ? ((p, m) => "content: ''; position: absolute; z-index: 1; inset: calc(-1 * var(--sc-ring-outset)); border-radius: inherit; pointer-events: none; opacity: var(--sc-heat-on); background: linear-gradient(to top, var(--sc-cur, var(--sc-border-neutral)) " + p + "%, color-mix(in srgb, var(--sc-cur, var(--sc-border-neutral)) var(--sc-track-a, var(--sc-track-alpha-normal)), var(--sc-track-base)) " + p + "%); -webkit-mask-image: " + m + "; mask-image: " + m + ";")(hass.states[entity].attributes['hvac_action'] === 'heating' ? Math.max(8, hass.states[entity].attributes['command_value'] != null ? hass.states[entity].attributes['command_value'] : 100) : 0, ((s, k) => 'linear-gradient(to ' + (s === 'right' ? 'left' : 'right') + ', transparent calc(' + k + ' * var(--sc-bar-thickness)), #000 calc(' + k + ' * var(--sc-bar-thickness)), #000 calc(' + (k + 1) + ' * var(--sc-bar-thickness)), transparent calc(' + (k + 1) + ' * var(--sc-bar-thickness)))')(((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_heizung_seite === 'rechts' ? 'right' : 'left'), 0)) : ''}
     }
 
-    /* Fenster-Button (Standard: 2. Sub-Button, einstellbar über climate_status: { window_button: N }): rot bei Handlungsbedarf, sonst unverändert */
-    ${(() => { const n = (this && this.config && this.config.climate_status && this.config.climate_status.window_button) || 2; const s = entity ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] : null; return s && s.state === 'handlungsbedarf' ? '.bubble-sub-button-' + n + ' { background-color: var(--error-color, rgb(244, 67, 54)) !important; } .bubble-sub-button-' + n + ' .bubble-sub-button-icon, .bubble-sub-button-' + n + ' ha-icon { color: var(--text-primary-color, #fff) !important; }' : ''; })()}
+    /* Fenster-Button (Standard: 2. Sub-Button, einstellbar über climate_status: { window_button: N }): rot bei Handlungsbedarf, bei Hinweis nur das Symbol in Warnfarbe, sonst unverändert */
+    ${(() => { const n = (this && this.config && this.config.climate_status && this.config.climate_status.window_button) || 2; const s = entity ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] : null; const sel = '.bubble-sub-button-' + n; const icon = sel + ' .bubble-sub-button-icon, ' + sel + ' ha-icon'; return s && s.state === 'handlungsbedarf' ? sel + ' { background-color: var(--error-color, rgb(244, 67, 54)) !important; } ' + icon + ' { color: var(--text-primary-color, #fff) !important; }' : s && s.state === 'hinweis' ? icon + ' { color: var(--warning-color, rgb(255, 193, 7)) !important; }' : ''; })()}
 
     /* Wechselanzeige (Werte und Animationen kommen als Variablen aus dem ha-card-Block oben) */
     @keyframes sc-t-2 { 0%, 65% { visibility: visible; } 66%, 98% { visibility: hidden; } 99%, 100% { visibility: visible; } }
