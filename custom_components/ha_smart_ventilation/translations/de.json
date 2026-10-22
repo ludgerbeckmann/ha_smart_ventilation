@@ -571,7 +571,7 @@
           },
           "dashboard": {
             "name": "Dashboard-Darstellung",
-            "description": "Einstellungen für das Bubble-Card-Modul \"climate_status\". Die Integration liefert das Modul mit (Ordner bubble_card/modules, falls Bubble Card Tools installiert ist) und stellt diese Werte im Sensor \"Smart Climate Darstellung\" bereit. Das Modul liest sie live. Farben leer lassen = Standardfarbe.",
+            "description": "Einstellungen für das Bubble-Card-Modul \"climate_status\". Die Integration liefert das Modul mit (Ordner bubble_card/modules, falls Bubble Card Tools installiert ist) und stellt diese Werte im Sensor \"Smart Climate Darstellung\" bereit. Das Modul liest sie live.",
             "data": {
               "dash_tint": "Farbiger Hintergrund",
               "dash_heat_bar": "Heizungsbalken anzeigen",
@@ -584,18 +584,7 @@
               "dash_bar_width": "Balkenbreite",
               "dash_border_width": "Rahmenbreite",
               "dash_line_height": "Zeilenhöhe des Namens",
-              "dash_extra_size": "Schriftgröße der Wechselwerte",
-              "dash_color_comfort": "Farbe Komfort",
-              "dash_color_standby": "Farbe Standby",
-              "dash_color_eco": "Farbe Eco",
-              "dash_color_protection": "Farbe Gebäudeschutz",
-              "dash_color_summer": "Farbe Sommerbetrieb",
-              "dash_color_hot": "Farbe heiß",
-              "dash_color_warm": "Farbe warm",
-              "dash_color_cold": "Farbe kalt",
-              "dash_color_cover": "Farbe Rollladenbalken",
-              "dash_color_tint_hint": "Hintergrund bei Hinweis",
-              "dash_color_tint_action": "Hintergrund bei Handlungsbedarf"
+              "dash_extra_size": "Schriftgröße der Wechselwerte"
             },
             "data_description": {
               "dash_tint": "Färbt die Kachel je nach Raumstatus (Hinweis/Handlungsbedarf).",
@@ -609,18 +598,7 @@
               "dash_bar_width": "Breite der Balken in Pixel.",
               "dash_border_width": "Breite des neutralen Rahmens in Pixel.",
               "dash_line_height": "Zeilenhöhe des Raumnamens in Pixel (nicht für Räume, deren ID mit climate.flur beginnt).",
-              "dash_extra_size": "Größe der Wechselwerte in Prozent der Schrift (Standard 80).",
-              "dash_color_comfort": "Leer = Home-Assistant-Farbe für Heizen.",
-              "dash_color_standby": "Leer = Gelb.",
-              "dash_color_eco": "Leer = Home-Assistant-Farbe für Auto (Grün).",
-              "dash_color_protection": "Leer = Home-Assistant-Farbe für Kühlen (Blau).",
-              "dash_color_summer": "Leer = Grau.",
-              "dash_color_hot": "Zahl bei zu hoher Temperatur. Leer = Orange.",
-              "dash_color_warm": "Zahl bei warmer Temperatur. Leer = Gelb.",
-              "dash_color_cold": "Zahl bei zu niedriger Temperatur. Leer = Blau.",
-              "dash_color_cover": "Leer = Home-Assistant-Farbe für offene Rollläden.",
-              "dash_color_tint_hint": "Leer = Gelb.",
-              "dash_color_tint_action": "Leer = Rot."
+              "dash_extra_size": "Größe der Wechselwerte in Prozent der Schrift (Standard 80)."
             }
           },
           "messages": {

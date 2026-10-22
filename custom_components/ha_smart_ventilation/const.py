@@ -773,17 +773,6 @@ CONF_DASH_EXTRA_SIZE = "dash_extra_size"  # % der Schriftgröße
 CONF_DASH_CYCLE = "dash_cycle"  # Sekunden
 CONF_DASH_EXTRA_1 = "dash_extra_1"  # erster Wechselwert
 CONF_DASH_EXTRA_2 = "dash_extra_2"  # zweiter Wechselwert
-CONF_DASH_COLOR_COMFORT = "dash_color_comfort"
-CONF_DASH_COLOR_STANDBY = "dash_color_standby"
-CONF_DASH_COLOR_ECO = "dash_color_eco"
-CONF_DASH_COLOR_PROTECTION = "dash_color_protection"
-CONF_DASH_COLOR_SUMMER = "dash_color_summer"
-CONF_DASH_COLOR_HOT = "dash_color_hot"
-CONF_DASH_COLOR_WARM = "dash_color_warm"
-CONF_DASH_COLOR_COLD = "dash_color_cold"
-CONF_DASH_COLOR_COVER = "dash_color_cover"
-CONF_DASH_COLOR_TINT_HINT = "dash_color_tint_hint"
-CONF_DASH_COLOR_TINT_ACTION = "dash_color_tint_action"
 
 DEFAULT_DASH_TINT = True
 DEFAULT_DASH_HEAT_BAR = True

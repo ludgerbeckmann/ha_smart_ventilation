@@ -1,10 +1,10 @@
 climate_status:
   name: Klima-Status (Preset-Balken, Textfarbe, Raumstatus, Rollladen, Wechselanzeige)
-  version: v3.0
+  version: v3.1
   creator: Smart Climate
   supported:
     - climate
-  description: Wird von der Integration Smart Climate mitgeliefert und aktualisiert. Alle Einstellungen (Farben, Balken, Anordnung, Wechselwerte) werden in den Smart Climate Optionen unter Dashboard-Darstellung gepflegt und hier live aus sensor.smart_climate_darstellung gelesen - Änderungen direkt im Modul gehen beim nächsten Update verloren.
+  description: Wird von der Integration Smart Climate mitgeliefert und aktualisiert. Die Farben folgen dem Home-Assistant-Theme; Balken, Anordnung und Wechselwerte werden in den Smart Climate Optionen unter Dashboard-Darstellung gepflegt und hier live aus sensor.smart_climate_darstellung gelesen - Änderungen direkt im Modul gehen beim nächsten Update verloren.
   code: |-
     ha-card {
       /* Feste Werte (nicht einstellbar) */
@@ -22,23 +22,24 @@ climate_status:
       --bubble-state-climate-heat-color: transparent;
       --state-climate-active-color: ff6f22;
       --state-active-color: #FFDEAD;
+      /* Farben: feste Theme-Variablen von Home Assistant (Rückfall = bisherige Farbe) */
+      --sc-border-comfort: var(--state-climate-heat-color, rgb(255, 99, 71));
+      --sc-border-standby: var(--warning-color, rgb(255, 193, 7));
+      --sc-border-eco: var(--state-climate-auto-color, rgb(102, 187, 106));
+      --sc-border-protection: var(--state-climate-cool-color, rgb(75, 177, 254));
+      --sc-border-summer: var(--disabled-color, grey);
+      --sc-tint-hint: color-mix(in srgb, var(--warning-color, rgb(255, 193, 7)) 20%, transparent);
+      --sc-tint-action: color-mix(in srgb, var(--error-color, rgb(244, 67, 54)) 25%, transparent);
+      --sc-temp-hot: var(--error-color, rgb(255, 94, 7));
+      --sc-temp-cold: var(--state-climate-cool-color, rgb(75, 177, 254));
+      --sc-temp-warm: var(--warning-color, rgb(255, 193, 7));
+      --sc-cover-bar: var(--state-cover-open-color, #8E6CC3);
       /* Einstellbare Werte aus sensor.smart_climate_darstellung, sonst Standard */
       ${((a, d) => Object.keys(d).map((k) => k + ': ' + (a[d[k][0]] != null && a[d[k][0]] !== '' ? a[d[k][0]] : d[k][1]) + ';').join(' '))((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes, {
-          '--sc-border-comfort': ['farbe_komfort', 'var(--state-climate-heat-color, rgb(255, 99, 71))'],
-          '--sc-border-standby': ['farbe_standby', 'rgb(255, 193, 7)'],
-          '--sc-border-eco': ['farbe_eco', 'var(--state-climate-auto-color, rgb(102, 187, 106))'],
-          '--sc-border-protection': ['farbe_gebaeudeschutz', 'var(--state-climate-cool-color, rgb(75, 177, 254))'],
-          '--sc-border-summer': ['farbe_sommer', 'grey'],
           '--sc-border-width': ['rahmenbreite', '1px'],
           '--sc-tint-on': ['hintergrund', '1'],
-          '--sc-tint-hint': ['farbe_hinweis', 'rgba(255, 193, 7, 0.2)'],
-          '--sc-tint-action': ['farbe_handlungsbedarf', 'rgba(244, 67, 54, 0.25)'],
-          '--sc-temp-hot': ['farbe_heiss', 'rgb(255, 94, 7)'],
-          '--sc-temp-cold': ['farbe_kalt', 'rgb(75, 177, 254)'],
-          '--sc-temp-warm': ['farbe_warm', 'rgb(255, 193, 7)'],
           '--sc-heat-on': ['balken_heizung', '1'],
           '--sc-cover-on': ['balken_rollladen', '1'],
-          '--sc-cover-bar': ['farbe_rollladen', 'var(--state-cover-open-color, #8E6CC3)'],
           '--sc-bar-thickness': ['balkenbreite', '8px'],
           '--sc-cycle': ['wechselintervall', '12s'],
           '--sc-line-height': ['zeilenhoehe', '50px'],

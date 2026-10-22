@@ -18,17 +18,6 @@ from homeassistant.core import HomeAssistant
 from .const import (
     CONF_DASH_BAR_WIDTH,
     CONF_DASH_BORDER_WIDTH,
-    CONF_DASH_COLOR_COLD,
-    CONF_DASH_COLOR_COMFORT,
-    CONF_DASH_COLOR_COVER,
-    CONF_DASH_COLOR_ECO,
-    CONF_DASH_COLOR_HOT,
-    CONF_DASH_COLOR_PROTECTION,
-    CONF_DASH_COLOR_STANDBY,
-    CONF_DASH_COLOR_SUMMER,
-    CONF_DASH_COLOR_TINT_ACTION,
-    CONF_DASH_COLOR_TINT_HINT,
-    CONF_DASH_COLOR_WARM,
     CONF_DASH_COVER_BAR,
     CONF_DASH_COVER_SIDE,
     CONF_DASH_CYCLE,
@@ -62,41 +51,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v3.0"
-
-# Deckkraft des Hintergrunds (fest, wie im bisherigen Modul)
-_TINT_HINT_ALPHA = 0.2
-_TINT_ACTION_ALPHA = 0.25
-
-# Farbfeld -> (Attributname, Deckkraft oder None)
-_COLOR_ATTRS = (
-    (CONF_DASH_COLOR_COMFORT, "farbe_komfort", None),
-    (CONF_DASH_COLOR_STANDBY, "farbe_standby", None),
-    (CONF_DASH_COLOR_ECO, "farbe_eco", None),
-    (CONF_DASH_COLOR_PROTECTION, "farbe_gebaeudeschutz", None),
-    (CONF_DASH_COLOR_SUMMER, "farbe_sommer", None),
-    (CONF_DASH_COLOR_HOT, "farbe_heiss", None),
-    (CONF_DASH_COLOR_WARM, "farbe_warm", None),
-    (CONF_DASH_COLOR_COLD, "farbe_kalt", None),
-    (CONF_DASH_COLOR_COVER, "farbe_rollladen", None),
-    (CONF_DASH_COLOR_TINT_HINT, "farbe_hinweis", _TINT_HINT_ALPHA),
-    (CONF_DASH_COLOR_TINT_ACTION, "farbe_handlungsbedarf", _TINT_ACTION_ALPHA),
-)
-
-
-def _css_color(value, alpha: float | None) -> str | None:
-    """Wandelt einen Farbwähler-Wert ([r, g, b]) in einen CSS-Wert um;
-    None bei leer/ungültig (dann gilt der Standard des Moduls)."""
-    if not isinstance(value, (list, tuple)) or len(value) != 3:
-        return None
-    try:
-        r, g, b = (max(0, min(255, int(round(float(v))))) for v in value)
-    except (TypeError, ValueError):
-        return None
-    if alpha is None:
-        return f"rgb({r}, {g}, {b})"
-    return f"rgba({r}, {g}, {b}, {alpha})"
-
+MODULE_VERSION_LABEL = "v3.1"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
@@ -113,7 +68,7 @@ def _fmt(number: float) -> str:
 def build_dashboard_attributes(data: dict) -> dict:
     """Baut die Attribute des Darstellungs-Sensors aus den allgemeinen
     Einstellungen. Alle Werte sind fertige CSS-Werte bzw. Schlüsselwörter
-    (Booleans als "1"/"0"); nicht gesetzte Farben fehlen komplett."""
+    (Booleans als "1"/"0"); ."""
     heat_side = data.get(CONF_DASH_HEAT_SIDE, DEFAULT_DASH_HEAT_SIDE)
     cover_side = data.get(CONF_DASH_COVER_SIDE, DEFAULT_DASH_COVER_SIDE)
     if heat_side not in DASH_SIDE_OPTIONS:
@@ -148,10 +103,6 @@ def build_dashboard_attributes(data: dict) -> dict:
         "wechselwert_1": extra_1,
         "wechselwert_2": extra_2,
     }
-    for key, attr, alpha in _COLOR_ATTRS:
-        css = _css_color(data.get(key), alpha)
-        if css:
-            attrs[attr] = css
     summer = data.get(CONF_SUMMER_MODE_SWITCH_ENTITY)
     if summer:
         attrs["sommerbetrieb_schalter"] = summer

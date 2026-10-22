@@ -51,17 +51,6 @@ from .const import (
     CONF_DASH_CYCLE,
     CONF_DASH_EXTRA_1,
     CONF_DASH_EXTRA_2,
-    CONF_DASH_COLOR_COMFORT,
-    CONF_DASH_COLOR_STANDBY,
-    CONF_DASH_COLOR_ECO,
-    CONF_DASH_COLOR_PROTECTION,
-    CONF_DASH_COLOR_SUMMER,
-    CONF_DASH_COLOR_HOT,
-    CONF_DASH_COLOR_WARM,
-    CONF_DASH_COLOR_COLD,
-    CONF_DASH_COLOR_COVER,
-    CONF_DASH_COLOR_TINT_HINT,
-    CONF_DASH_COLOR_TINT_ACTION,
     DEFAULT_DASH_TINT,
     DEFAULT_DASH_HEAT_BAR,
     DEFAULT_DASH_COVER_BAR,
@@ -1446,15 +1435,6 @@ def _dash_number(min_v: float, max_v: float, unit: str):
     )
 
 
-def _dash_color_marker(key: str, defaults: dict | None) -> vol.Marker:
-    """Optionales Farbfeld: leer = Standardfarbe des Moduls. Wie bei den
-    Entity-Feldern nur suggested_value, nie default= (CLAUDE.md Lektion 28)."""
-    value = (defaults or {}).get(key)
-    if isinstance(value, (list, tuple)) and len(value) == 3:
-        return vol.Optional(key, description={"suggested_value": list(value)})
-    return vol.Optional(key)
-
-
 def _build_dashboard_section(defaults: dict) -> dict:
     """Felder des Abschnitts "Dashboard-Darstellung" (nur globale
     Einstellungen, siehe dashboard.py)."""
@@ -1513,20 +1493,6 @@ def _build_dashboard_section(defaults: dict) -> dict:
             default=defaults.get(CONF_DASH_EXTRA_SIZE, DEFAULT_DASH_EXTRA_SIZE),
         ): _dash_number(40, 150, "%"),
     }
-    for key in (
-        CONF_DASH_COLOR_COMFORT,
-        CONF_DASH_COLOR_STANDBY,
-        CONF_DASH_COLOR_ECO,
-        CONF_DASH_COLOR_PROTECTION,
-        CONF_DASH_COLOR_SUMMER,
-        CONF_DASH_COLOR_HOT,
-        CONF_DASH_COLOR_WARM,
-        CONF_DASH_COLOR_COLD,
-        CONF_DASH_COLOR_COVER,
-        CONF_DASH_COLOR_TINT_HINT,
-        CONF_DASH_COLOR_TINT_ACTION,
-    ):
-        fields[_dash_color_marker(key, defaults)] = selector.ColorRGBSelector()
     return fields
 
 
