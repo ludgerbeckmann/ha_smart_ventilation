@@ -29,7 +29,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -37,6 +37,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .binary_sensor import SmartVentilationBinarySensor
+from .dashboard import MODULE_VERSION_LABEL, build_dashboard_attributes
 from .const import (
     CONF_HUMIDITY_ENTITY,
     CONF_IS_GLOBAL,
@@ -45,6 +46,7 @@ from .const import (
     CONF_ROOM_NAME,
     CONF_TEMP_ATTRIBUTE,
     CONF_TEMP_SOURCE_ENTITY,
+    DASHBOARD_SIGNAL,
     DEFAULT_TEMP_ATTRIBUTE,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
@@ -123,7 +125,11 @@ async def async_setup_entry(
     Einstellungen (Außen) den Sensor für die absolute Luftfeuchtigkeit an."""
     if entry.data.get(CONF_IS_GLOBAL):
         async_add_entities(
-            [OutdoorAbsoluteHumiditySensor(hass, entry), OutdoorDewPointSensor(hass, entry)]
+            [
+                OutdoorAbsoluteHumiditySensor(hass, entry),
+                OutdoorDewPointSensor(hass, entry),
+                DashboardSettingsSensor(entry),
+            ]
         )
     else:
         entities = [RoomStatusSensor(entry)]
@@ -321,6 +327,47 @@ class RoomStatusSensor(SensorEntity):
         # dieses Sensors berechnet haben - der abgelegte Wert wird hier
         # übernommen (Reihenfolge der Plattformen ist nicht garantiert).
         self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._unsub is not None:
+            self._unsub()
+            self._unsub = None
+
+
+class DashboardSettingsSensor(SensorEntity):
+    """Darstellungs-Einstellungen für das Bubble-Card-Modul
+    "climate_status" (Abschnitt "Dashboard-Darstellung" in den allgemeinen
+    Einstellungen). Der Zustand ist die Version des mitgelieferten Moduls,
+    die Einstellungen stehen als fertige CSS-Werte in den Attributen (siehe
+    dashboard.build_dashboard_attributes). Das Modul liest sie live."""
+
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:palette"
+    _attr_name = "Smart Climate Darstellung"
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_darstellung"
+        self._unsub = None
+
+    @property
+    def native_value(self) -> str:
+        return MODULE_VERSION_LABEL
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return build_dashboard_attributes(dict(self._entry.data))
+
+    @callback
+    def _handle_update(self) -> None:
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._unsub = async_dispatcher_connect(
+            self.hass, DASHBOARD_SIGNAL, self._handle_update
+        )
 
     async def async_will_remove_from_hass(self) -> None:
         if self._unsub is not None:

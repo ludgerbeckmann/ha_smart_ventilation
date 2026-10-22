@@ -1,0 +1,135 @@
+climate_status:
+  name: Klima-Status (Preset-Balken, Textfarbe, Raumstatus, Rollladen, Wechselanzeige)
+  version: v3.0
+  creator: Smart Climate
+  supported:
+    - climate
+  description: Wird von der Integration Smart Climate mitgeliefert und aktualisiert. Alle Einstellungen (Farben, Balken, Anordnung, Wechselwerte) werden in den Smart Climate Optionen unter Dashboard-Darstellung gepflegt und hier live aus sensor.smart_climate_darstellung gelesen - Änderungen direkt im Modul gehen beim nächsten Update verloren.
+  code: |-
+    ha-card {
+      /* Feste Werte (nicht einstellbar) */
+      --sc-border-neutral: var(--divider-color, #9e9e9e);
+      --sc-track-alpha-normal: 55%;
+      --sc-track-alpha-other: 55%;
+      --sc-track-base: var(--ha-card-background, var(--card-background-color, #ffffff));
+      --sc-temp-hot-tinted-light: #C62828;
+      --sc-temp-hot-tinted-dark: #FF8A80;
+      --sc-temp-cold-tinted-light: #1565C0;
+      --sc-temp-cold-tinted-dark: #82B1FF;
+      --sc-cover-track: color-mix(in srgb, var(--sc-cover-bar) 55%, var(--sc-track-base));
+      --sc-ring-outset: 2px;
+
+      --bubble-state-climate-heat-color: transparent;
+      --state-climate-active-color: ff6f22;
+      --state-active-color: #FFDEAD;
+      /* Einstellbare Werte aus sensor.smart_climate_darstellung, sonst Standard */
+      ${((a, d) => Object.keys(d).map((k) => k + ': ' + (a[d[k][0]] != null && a[d[k][0]] !== '' ? a[d[k][0]] : d[k][1]) + ';').join(' '))((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes, {
+          '--sc-border-comfort': ['farbe_komfort', 'var(--state-climate-heat-color, rgb(255, 99, 71))'],
+          '--sc-border-standby': ['farbe_standby', 'rgb(255, 193, 7)'],
+          '--sc-border-eco': ['farbe_eco', 'var(--state-climate-auto-color, rgb(102, 187, 106))'],
+          '--sc-border-protection': ['farbe_gebaeudeschutz', 'var(--state-climate-cool-color, rgb(75, 177, 254))'],
+          '--sc-border-summer': ['farbe_sommer', 'grey'],
+          '--sc-border-width': ['rahmenbreite', '1px'],
+          '--sc-tint-on': ['hintergrund', '1'],
+          '--sc-tint-hint': ['farbe_hinweis', 'rgba(255, 193, 7, 0.2)'],
+          '--sc-tint-action': ['farbe_handlungsbedarf', 'rgba(244, 67, 54, 0.25)'],
+          '--sc-temp-hot': ['farbe_heiss', 'rgb(255, 94, 7)'],
+          '--sc-temp-cold': ['farbe_kalt', 'rgb(75, 177, 254)'],
+          '--sc-temp-warm': ['farbe_warm', 'rgb(255, 193, 7)'],
+          '--sc-heat-on': ['balken_heizung', '1'],
+          '--sc-cover-on': ['balken_rollladen', '1'],
+          '--sc-cover-bar': ['farbe_rollladen', 'var(--state-cover-open-color, #8E6CC3)'],
+          '--sc-bar-thickness': ['balkenbreite', '8px'],
+          '--sc-cycle': ['wechselintervall', '12s'],
+          '--sc-line-height': ['zeilenhoehe', '50px'],
+          '--sc-extra-size': ['schrift_zusatz', '0.8em']
+      })}
+      --sc-tint-raw: ${!entity ? 'transparent' :
+                   (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'handlungsbedarf' ? 'var(--sc-tint-action)' :
+                   (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'hinweis' ? 'var(--sc-tint-hint)' : 'transparent'};
+      --sc-tint: color-mix(in srgb, var(--sc-tint-raw) calc(var(--sc-tint-on) * 100%), transparent);
+      ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] ? ((t, a, r, hot) => ((items) => t == null ? "--sc-rot-t: none; --sc-c-text: '-'; --sc-c-opacity: 1; --sc-rot-c: none; --sc-c-color: var(--primary-text-color);" : "--sc-rot-t: " + (items.length === 2 ? 'sc-t-2' : items.length === 1 ? 'sc-t-1' : 'none') + "; " + (items[0] ? "--sc-h-text: '" + items[0].text + "'; --sc-h-color: " + items[0].color + "; --sc-rot-h: " + (items.length === 2 ? 'sc-x-a' : 'sc-x-s') + "; " : "") + (items[1] ? "--sc-c-text: '" + items[1].text + "'; --sc-c-color: " + items[1].color + "; --sc-rot-c: sc-x-b;" : ""))(((k) => [a.wechselwert_1 || 'humidity', a.wechselwert_2 || 'co2'].map((n) => k[n]).filter((x) => x))({
+            humidity: r.absolute_luftfeuchtigkeit != null ? {text: String(r.absolute_luftfeuchtigkeit).replace('.', ',') + ' g/m³', color: (r.aussen_absolute_luftfeuchtigkeit != null && r.aussen_absolute_luftfeuchtigkeit > r.absolute_luftfeuchtigkeit) ? hot : 'var(--primary-text-color)'} : null,
+            co2: r.co2 != null ? {text: r.co2 + ' ppm', color: (r.schwelle_co2_oeffnen != null && r.co2 > r.schwelle_co2_oeffnen) ? hot : 'var(--primary-text-color)'} : null,
+            dewpoint: r.taupunkt != null ? {text: String(r.taupunkt).replace('.', ',') + ' °C', color: 'var(--primary-text-color)'} : null
+          })))(
+          hass.states[entity].attributes['current_temperature'],
+          (hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes,
+          hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]] ? hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]].attributes : {},
+          ((n, d) => n ? (d ? 'var(--sc-temp-hot-tinted-dark)' : 'var(--sc-temp-hot-tinted-light)') : 'var(--sc-temp-hot)')((hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'handlungsbedarf' || (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'hinweis', (hass.themes && hass.themes.darkMode) === true)) : ''}
+    }
+    ha-card, .bubble-background {
+      background-image: linear-gradient(var(--sc-tint), var(--sc-tint));
+    }
+
+    /* Name: Zeilenhöhe (nicht für die Flure) und kein Abschneiden */
+    .bubble-name-container {
+      ${entity && entity.indexOf('climate.') === 0 ? 'overflow: visible !important;' : ''}
+      ${entity && entity.indexOf('climate.') === 0 && entity.indexOf('climate.flur') !== 0 ? 'line-height: var(--sc-line-height);' : ''}
+    }
+
+    /* Rahmen neutral; die Seiten für Preset/Ventil und Rollladen übernehmen die Balken */
+    .bubble-climate-container {
+      position: relative;
+      ${!entity || !hass.states[entity] ? '' : ((k) => 'border-color: var(--sc-border-neutral) !important; border-width: var(--sc-border-width) !important;' + (k ? ' --sc-cur: var(--sc-border-' + k + ');' : '') + ' --sc-track-a: var(--sc-track-alpha-' + (k === 'standby' || k === 'eco' || k === 'protection' ? 'other' : 'normal') + ');')(((hass.states[(hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.sommerbetrieb_schalter] || {}).state === 'on') ? 'summer' :
+                      hass.states[entity].attributes['preset_mode'] === 'comfort' ? 'comfort' :
+                      hass.states[entity].attributes['preset_mode'] === 'standby' ? 'standby' :
+                      hass.states[entity].attributes['preset_mode'] === 'economy' ? 'eco' :
+                      hass.states[entity].attributes['preset_mode'] === 'building_protection' ? 'protection' : '')}
+      ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] && !((hass.states[(hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.sommerbetrieb_schalter] || {}).state === 'on') ? 'border-' + ((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_heizung_seite === 'rechts' ? 'right' : 'left') + '-color: color-mix(in srgb, transparent calc(var(--sc-heat-on) * 100%), var(--sc-border-neutral)) !important;' : ''}
+      ${!entity ? '' : (hass.states[(this && this.config && this.config.climate_status && this.config.climate_status.cover_entity) ? this.config.climate_status.cover_entity : (entity.split('.')[1] === 'buro' ? 'cover.rollo_buro' : 'cover.' + entity.split('.')[1] + '_rollladen')] ? 'border-' + ((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_rollladen_seite === 'links' ? 'left' : 'right') + '-color: color-mix(in srgb, transparent calc(var(--sc-cover-on) * 100%), var(--sc-border-neutral)) !important;' : '')}
+    }
+
+    /* Rollladen: Balken auf der gewählten Seite, von oben nach unten gefüllt (Entität automatisch abgeleitet); liegt Heizung auf derselben Seite, steht er daneben; z-index: über dem Schleier */
+    .bubble-climate-container::before {
+      ${!entity ? '' : ((e) => (e && hass.states[e]) ? ((c, m) => "content: ''; position: absolute; z-index: 1; inset: calc(-1 * var(--sc-ring-outset)); border-radius: inherit; pointer-events: none; opacity: var(--sc-cover-on); background: linear-gradient(to bottom, var(--sc-cover-bar) " + c + "%, var(--sc-cover-track) " + c + "%); -webkit-mask-image: " + m + "; mask-image: " + m + ";")(hass.states[e].attributes['current_position'] != null ? 100 - hass.states[e].attributes['current_position'] : (hass.states[e].state === 'closed' ? 100 : 0), ((s, k) => 'linear-gradient(to ' + (s === 'right' ? 'left' : 'right') + ', transparent calc(' + k + ' * var(--sc-bar-thickness)), #000 calc(' + k + ' * var(--sc-bar-thickness)), #000 calc(' + (k + 1) + ' * var(--sc-bar-thickness)), transparent calc(' + (k + 1) + ' * var(--sc-bar-thickness)))')(((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_rollladen_seite === 'links' ? 'left' : 'right'), ((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_rollladen_seite === 'links' ? 'left' : 'right') === ((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_heizung_seite === 'rechts' ? 'right' : 'left') ? 1 : 0)) : '')((this && this.config && this.config.climate_status && this.config.climate_status.cover_entity) ? this.config.climate_status.cover_entity : (entity.split('.')[1] === 'buro' ? 'cover.rollo_buro' : 'cover.' + entity.split('.')[1] + '_rollladen'))}
+    }
+
+    /* Preset + Ventil: Balken auf der gewählten Seite, nicht im Sommerbetrieb. Farbe = Preset, Rest = dunklerer Ton derselben Farbe (deckend), gefüllter Teil = Ventilöffnung von unten nach oben; z-index: über dem Schleier */
+    .bubble-climate-container::after {
+      ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] && !((hass.states[(hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.sommerbetrieb_schalter] || {}).state === 'on') ? ((p, m) => "content: ''; position: absolute; z-index: 1; inset: calc(-1 * var(--sc-ring-outset)); border-radius: inherit; pointer-events: none; opacity: var(--sc-heat-on); background: linear-gradient(to top, var(--sc-cur, var(--sc-border-neutral)) " + p + "%, color-mix(in srgb, var(--sc-cur, var(--sc-border-neutral)) var(--sc-track-a, var(--sc-track-alpha-normal)), var(--sc-track-base)) " + p + "%); -webkit-mask-image: " + m + "; mask-image: " + m + ";")(hass.states[entity].attributes['hvac_action'] === 'heating' ? Math.max(8, hass.states[entity].attributes['command_value'] != null ? hass.states[entity].attributes['command_value'] : 100) : 0, ((s, k) => 'linear-gradient(to ' + (s === 'right' ? 'left' : 'right') + ', transparent calc(' + k + ' * var(--sc-bar-thickness)), #000 calc(' + k + ' * var(--sc-bar-thickness)), #000 calc(' + (k + 1) + ' * var(--sc-bar-thickness)), transparent calc(' + (k + 1) + ' * var(--sc-bar-thickness)))')(((hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes.balken_heizung_seite === 'rechts' ? 'right' : 'left'), 0)) : ''}
+    }
+
+    /* Wechselanzeige (Werte und Animationen kommen als Variablen aus dem ha-card-Block oben) */
+    @keyframes sc-t-2 { 0%, 65% { visibility: visible; } 66%, 98% { visibility: hidden; } 99%, 100% { visibility: visible; } }
+    @keyframes sc-t-1 { 0%, 73% { visibility: visible; } 74%, 98% { visibility: hidden; } 99%, 100% { visibility: visible; } }
+    @keyframes sc-x-a { 0%, 66% { opacity: 0; } 68%, 81% { opacity: 1; } 83%, 100% { opacity: 0; } }
+    @keyframes sc-x-b { 0%, 82% { opacity: 0; } 84%, 97% { opacity: 1; } 99%, 100% { opacity: 0; } }
+    @keyframes sc-x-s { 0%, 74% { opacity: 0; } 76%, 97% { opacity: 1; } 99%, 100% { opacity: 0; } }
+    .bubble-state {
+      ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] ? (hass.states[entity].attributes['current_temperature'] == null ? 'position: relative; color: transparent !important; overflow: visible !important;' : 'position: relative; overflow: visible !important;') : ''}
+      animation: var(--sc-rot-t, none) var(--sc-cycle) infinite;
+      color: ${!entity || !hass.states[entity] || hass.states[entity].attributes['current_temperature'] == null ? '' :
+               ((n, d, t, o, c) => o != null && c != null ? (t > o ? (n ? (d ? 'var(--sc-temp-hot-tinted-dark)' : 'var(--sc-temp-hot-tinted-light)') : 'var(--sc-temp-hot)') : t < c ? (n ? (d ? 'var(--sc-temp-cold-tinted-dark)' : 'var(--sc-temp-cold-tinted-light)') : 'var(--sc-temp-cold)') : '') : (t > 27 ? (n ? (d ? 'var(--sc-temp-hot-tinted-dark)' : 'var(--sc-temp-hot-tinted-light)') : 'var(--sc-temp-hot)') : t > 23 ? (n ? '' : 'var(--sc-temp-warm)') : t <= 18 ? (n ? (d ? 'var(--sc-temp-cold-tinted-dark)' : 'var(--sc-temp-cold-tinted-light)') : 'var(--sc-temp-cold)') : ''))(
+                 (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'handlungsbedarf' || (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'hinweis',
+                 (hass.themes && hass.themes.darkMode) === true,
+                 hass.states[entity].attributes['current_temperature'],
+                 hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]] ? hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]].attributes['schwelle_temperatur_oeffnen'] : null,
+                 hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]] ? hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]].attributes['schwelle_temperatur_schliessen'] : null) } !important;
+    }
+    .bubble-state::before {
+      content: var(--sc-h-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      white-space: nowrap;
+      visibility: visible;
+      font-size: var(--sc-extra-size, 1em);
+      color: var(--sc-h-color, var(--primary-text-color));
+      animation: var(--sc-rot-h, none) var(--sc-cycle) infinite;
+    }
+    .bubble-state::after {
+      content: var(--sc-c-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: var(--sc-c-opacity, 0);
+      white-space: nowrap;
+      visibility: visible;
+      font-size: var(--sc-extra-size, 1em);
+      color: var(--sc-c-color, var(--primary-text-color));
+      animation: var(--sc-rot-c, none) var(--sc-cycle) infinite;
+    }
+  editor: []
+  is_global: true

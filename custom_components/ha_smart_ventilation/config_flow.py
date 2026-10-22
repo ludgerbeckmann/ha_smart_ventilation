@@ -37,6 +37,43 @@ from .const import (
     CONF_HEATING_NIGHT_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
+    CONF_DASH_TINT,
+    DASH_EXTRA_OPTIONS,
+    DASH_SIDE_OPTIONS,
+    CONF_DASH_HEAT_BAR,
+    CONF_DASH_COVER_BAR,
+    CONF_DASH_HEAT_SIDE,
+    CONF_DASH_COVER_SIDE,
+    CONF_DASH_BAR_WIDTH,
+    CONF_DASH_BORDER_WIDTH,
+    CONF_DASH_LINE_HEIGHT,
+    CONF_DASH_EXTRA_SIZE,
+    CONF_DASH_CYCLE,
+    CONF_DASH_EXTRA_1,
+    CONF_DASH_EXTRA_2,
+    CONF_DASH_COLOR_COMFORT,
+    CONF_DASH_COLOR_STANDBY,
+    CONF_DASH_COLOR_ECO,
+    CONF_DASH_COLOR_PROTECTION,
+    CONF_DASH_COLOR_SUMMER,
+    CONF_DASH_COLOR_HOT,
+    CONF_DASH_COLOR_WARM,
+    CONF_DASH_COLOR_COLD,
+    CONF_DASH_COLOR_COVER,
+    CONF_DASH_COLOR_TINT_HINT,
+    CONF_DASH_COLOR_TINT_ACTION,
+    DEFAULT_DASH_TINT,
+    DEFAULT_DASH_HEAT_BAR,
+    DEFAULT_DASH_COVER_BAR,
+    DEFAULT_DASH_HEAT_SIDE,
+    DEFAULT_DASH_COVER_SIDE,
+    DEFAULT_DASH_BAR_WIDTH,
+    DEFAULT_DASH_BORDER_WIDTH,
+    DEFAULT_DASH_LINE_HEIGHT,
+    DEFAULT_DASH_EXTRA_SIZE,
+    DEFAULT_DASH_CYCLE,
+    DEFAULT_DASH_EXTRA_1,
+    DEFAULT_DASH_EXTRA_2,
     CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_TRIGGER_ENTITY,
     CONF_HEATING_TRIGGER_PROFILE,
@@ -200,6 +237,7 @@ SECTION_DEVICES = "devices"  # Luftentfeuchter, Klima & Dusche
 SECTION_HEATING = "heating"  # Heizung (Gerät, Sollwerte, Presets, Sommermodus)
 SECTION_HEATING_SCHEDULE = "heating_schedule"  # Heizungs-Zeitplan
 SECTION_NOTIFY = "notify"  # Benachrichtigungen (Sprache, Push, Web, Erinnerung)
+SECTION_DASHBOARD = "dashboard"  # Dashboard-Darstellung (nur global, Bubble-Card-Modul)
 SECTION_MESSAGES = "messages"  # Benachrichtigungstexte (nur global)
 
 # Alle im Raum-Formular über _entity_marker(..., required=False) erzeugten
@@ -725,6 +763,7 @@ def _flatten_step_data(data: dict) -> dict:
         SECTION_HEATING,
         SECTION_HEATING_SCHEDULE,
         SECTION_NOTIFY,
+        SECTION_DASHBOARD,
         SECTION_MESSAGES,
     )
     flat = {k: v for k, v in data.items() if k not in section_keys}
@@ -1386,6 +1425,111 @@ def _build_room_schema(
     return vol.Schema(fields)
 
 
+def _dash_select(options: tuple[str, ...], labels: dict):
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[{"value": o, "label": labels[o]} for o in options],
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _dash_number(min_v: float, max_v: float, unit: str):
+    return selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            mode=selector.NumberSelectorMode.BOX,
+            min=min_v,
+            max=max_v,
+            step=1,
+            unit_of_measurement=unit,
+        )
+    )
+
+
+def _dash_color_marker(key: str, defaults: dict | None) -> vol.Marker:
+    """Optionales Farbfeld: leer = Standardfarbe des Moduls. Wie bei den
+    Entity-Feldern nur suggested_value, nie default= (CLAUDE.md Lektion 28)."""
+    value = (defaults or {}).get(key)
+    if isinstance(value, (list, tuple)) and len(value) == 3:
+        return vol.Optional(key, description={"suggested_value": list(value)})
+    return vol.Optional(key)
+
+
+def _build_dashboard_section(defaults: dict) -> dict:
+    """Felder des Abschnitts "Dashboard-Darstellung" (nur globale
+    Einstellungen, siehe dashboard.py)."""
+    side_labels = {"left": "links", "right": "rechts"}
+    extra_labels = {
+        "humidity": "Absolute Luftfeuchtigkeit",
+        "co2": "CO2",
+        "dewpoint": "Taupunkt",
+        "off": "Aus",
+    }
+    fields: dict = {
+        vol.Required(
+            CONF_DASH_TINT, default=defaults.get(CONF_DASH_TINT, DEFAULT_DASH_TINT)
+        ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_DASH_HEAT_BAR,
+            default=defaults.get(CONF_DASH_HEAT_BAR, DEFAULT_DASH_HEAT_BAR),
+        ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_DASH_HEAT_SIDE,
+            default=defaults.get(CONF_DASH_HEAT_SIDE, DEFAULT_DASH_HEAT_SIDE),
+        ): _dash_select(DASH_SIDE_OPTIONS, side_labels),
+        vol.Required(
+            CONF_DASH_COVER_BAR,
+            default=defaults.get(CONF_DASH_COVER_BAR, DEFAULT_DASH_COVER_BAR),
+        ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_DASH_COVER_SIDE,
+            default=defaults.get(CONF_DASH_COVER_SIDE, DEFAULT_DASH_COVER_SIDE),
+        ): _dash_select(DASH_SIDE_OPTIONS, side_labels),
+        vol.Required(
+            CONF_DASH_EXTRA_1,
+            default=defaults.get(CONF_DASH_EXTRA_1, DEFAULT_DASH_EXTRA_1),
+        ): _dash_select(DASH_EXTRA_OPTIONS, extra_labels),
+        vol.Required(
+            CONF_DASH_EXTRA_2,
+            default=defaults.get(CONF_DASH_EXTRA_2, DEFAULT_DASH_EXTRA_2),
+        ): _dash_select(DASH_EXTRA_OPTIONS, extra_labels),
+        vol.Required(
+            CONF_DASH_CYCLE, default=defaults.get(CONF_DASH_CYCLE, DEFAULT_DASH_CYCLE)
+        ): _dash_number(4, 60, "s"),
+        vol.Required(
+            CONF_DASH_BAR_WIDTH,
+            default=defaults.get(CONF_DASH_BAR_WIDTH, DEFAULT_DASH_BAR_WIDTH),
+        ): _dash_number(2, 24, "px"),
+        vol.Required(
+            CONF_DASH_BORDER_WIDTH,
+            default=defaults.get(CONF_DASH_BORDER_WIDTH, DEFAULT_DASH_BORDER_WIDTH),
+        ): _dash_number(0, 6, "px"),
+        vol.Required(
+            CONF_DASH_LINE_HEIGHT,
+            default=defaults.get(CONF_DASH_LINE_HEIGHT, DEFAULT_DASH_LINE_HEIGHT),
+        ): _dash_number(20, 120, "px"),
+        vol.Required(
+            CONF_DASH_EXTRA_SIZE,
+            default=defaults.get(CONF_DASH_EXTRA_SIZE, DEFAULT_DASH_EXTRA_SIZE),
+        ): _dash_number(40, 150, "%"),
+    }
+    for key in (
+        CONF_DASH_COLOR_COMFORT,
+        CONF_DASH_COLOR_STANDBY,
+        CONF_DASH_COLOR_ECO,
+        CONF_DASH_COLOR_PROTECTION,
+        CONF_DASH_COLOR_SUMMER,
+        CONF_DASH_COLOR_HOT,
+        CONF_DASH_COLOR_WARM,
+        CONF_DASH_COLOR_COLD,
+        CONF_DASH_COLOR_COVER,
+        CONF_DASH_COLOR_TINT_HINT,
+        CONF_DASH_COLOR_TINT_ACTION,
+    ):
+        fields[_dash_color_marker(key, defaults)] = selector.ColorRGBSelector()
+    return fields
+
+
 def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     """Formular zum nachträglichen Bearbeiten der allgemeinen Einstellungen
     (Options-Flow): dieselben Abschnitte wie im Raum-Formular (siehe
@@ -1649,6 +1793,9 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                     }
                 ),
                 {"collapsed": True},
+            ),
+            vol.Required(SECTION_DASHBOARD): section(
+                vol.Schema(_build_dashboard_section(defaults)), {"collapsed": True}
             ),
             vol.Required(SECTION_MESSAGES): section(
                 vol.Schema(

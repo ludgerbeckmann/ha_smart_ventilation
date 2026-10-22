@@ -9,6 +9,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
@@ -18,6 +19,7 @@ from .const import (
     CONF_NOTIFY_METHOD,
     CONF_PERSISTENT_ENABLED,
     CONF_ROOM_NAME,
+    DASHBOARD_SIGNAL,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     GLOBAL_ROOM_NAME,
@@ -27,6 +29,7 @@ from .const import (
     ROOM_STATUS_KEY,
     VERSION_KEY,
 )
+from .dashboard import async_install_bubble_module
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -263,6 +266,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     if integration.version is not None:
         hass.data[DOMAIN][VERSION_KEY] = str(integration.version)
     await _register_frontend_card(hass, integration)
+    # Bubble-Card-Modul "climate_status" mitliefern/aktualisieren (nur wenn
+    # Bubble Card Tools seinen Modul-Ordner angelegt hat).
+    hass.async_create_task(async_install_bubble_module(hass))
     _create_global_settings_entry(hass)
     return True
 
@@ -339,5 +345,7 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     """
     if entry.data.get(CONF_IS_GLOBAL):
         hass.data[DOMAIN][entry.entry_id] = entry.data
+        # Darstellungs-Sensor (Bubble-Card-Modul) neu schreiben lassen.
+        async_dispatcher_send(hass, DASHBOARD_SIGNAL)
         return
     await hass.config_entries.async_reload(entry.entry_id)
