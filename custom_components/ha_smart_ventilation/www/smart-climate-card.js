@@ -1104,9 +1104,20 @@ function openRoomDialog(key) {
   }
   overlay.appendChild(panel);
 
-  // Innerhalb von <home-assistant> einhängen, damit Ereignisse der Karte
-  // (z. B. hass-more-info beim Tippen auf eine Bezeichnung) dort ankommen.
-  (root || document.body).appendChild(overlay);
+  // In <body> einhängen: <home-assistant> hat ein eigenes Shadow-DOM ohne
+  // Platz für Kinder, ein dort angehängter Dialog würde nie gezeichnet.
+  document.body.appendChild(overlay);
+  // Damit erreicht hass-more-info (Tippen auf eine Bezeichnung) die
+  // Dialogverwaltung von Home Assistant nicht mehr von selbst: Ereignis auf
+  // <home-assistant> weiterleiten und den Raum-Dialog dabei schließen.
+  overlay.addEventListener("hass-more-info", (ev) => {
+    ev.stopPropagation();
+    const detail = ev.detail;
+    scCloseRoomDialog();
+    root.dispatchEvent(
+      new CustomEvent("hass-more-info", { detail, bubbles: true, composed: true })
+    );
+  });
 
   const onKey = (ev) => {
     if (ev.key === "Escape") scCloseRoomDialog();

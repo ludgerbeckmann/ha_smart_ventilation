@@ -1640,6 +1640,11 @@ Hintergrund mit (wichtig auf schwachen Tablets). Dafür muss die Karte als
 Lovelace-Ressource geladen sein (macht die Integration selbst); eine Karte auf dem
 Dashboard braucht es nicht. Ein unbekannter Raum zeigt "Raum nicht gefunden". Ob die
 Bubble Card `fire-dom-event` an Home Assistant durchreicht, ist nicht geprüft.
+Tippt man im Dialog auf eine Bezeichnung (z. B. "Temperatur"), öffnet sich die Detailansicht
+der Entität, und der Raum-Dialog schließt sich dabei. Funktioniert die Tipp-Aktion nicht, im
+Browser (F12, Konsole) `window.__smartClimateRoomDialog` prüfen (`true` = Karte ab 0.98.0 geladen)
+und mit `window.dispatchEvent(new CustomEvent('ll-custom', {detail: {smart_climate_room: 'badezimmer'}}))`
+testen.
 Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum, immer
 aufgeklappt).
 
