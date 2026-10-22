@@ -571,7 +571,7 @@
           },
           "dashboard": {
             "name": "Dashboard appearance",
-            "description": "Settings for the Bubble Card module \"climate_status\". The integration ships the module (folder bubble_card/modules, if Bubble Card Tools is installed) and exposes these values in the sensor \"Smart Climate Darstellung\". The module reads them live. Leave colors empty for the default color.",
+            "description": "Settings for the Bubble Card module \"climate_status\". The integration ships the module (folder bubble_card/modules, if Bubble Card Tools is installed) and exposes these values in the sensor \"Smart Climate Darstellung\". The module reads them live.",
             "data": {
               "dash_tint": "Colored background",
               "dash_heat_bar": "Show heating bar",
@@ -584,18 +584,7 @@
               "dash_bar_width": "Bar width",
               "dash_border_width": "Border width",
               "dash_line_height": "Line height of the name",
-              "dash_extra_size": "Font size of alternating values",
-              "dash_color_comfort": "Color comfort",
-              "dash_color_standby": "Color standby",
-              "dash_color_eco": "Color eco",
-              "dash_color_protection": "Color building protection",
-              "dash_color_summer": "Color summer mode",
-              "dash_color_hot": "Color hot",
-              "dash_color_warm": "Color warm",
-              "dash_color_cold": "Color cold",
-              "dash_color_cover": "Color shutter bar",
-              "dash_color_tint_hint": "Background for hint",
-              "dash_color_tint_action": "Background for action needed"
+              "dash_extra_size": "Font size of alternating values"
             },
             "data_description": {
               "dash_tint": "Tints the tile according to the room status (hint/action needed).",
@@ -609,18 +598,7 @@
               "dash_bar_width": "Width of the bars in pixels.",
               "dash_border_width": "Width of the neutral border in pixels.",
               "dash_line_height": "Line height of the room name in pixels (not for rooms whose ID starts with climate.flur).",
-              "dash_extra_size": "Size of the alternating values in percent of the font (default 80).",
-              "dash_color_comfort": "Empty = Home Assistant color for heating.",
-              "dash_color_standby": "Empty = yellow.",
-              "dash_color_eco": "Empty = Home Assistant color for auto (green).",
-              "dash_color_protection": "Empty = Home Assistant color for cooling (blue).",
-              "dash_color_summer": "Empty = grey.",
-              "dash_color_hot": "Number when the temperature is too high. Empty = orange.",
-              "dash_color_warm": "Number when the temperature is warm. Empty = yellow.",
-              "dash_color_cold": "Number when the temperature is too low. Empty = blue.",
-              "dash_color_cover": "Empty = Home Assistant color for open covers.",
-              "dash_color_tint_hint": "Empty = yellow.",
-              "dash_color_tint_action": "Empty = red."
+              "dash_extra_size": "Size of the alternating values in percent of the font (default 80)."
             }
           },
           "messages": {
