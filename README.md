@@ -1632,6 +1632,11 @@ tap_action:
   smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID des Binärsensors
 ```
 
+Der Dialog erscheint wie ein Bottom-Sheet am unteren Bildschirmrand (am Tablet/PC mittig),
+mit der Dashboard-Hintergrundfarbe und unscharf abgedunkeltem Hintergrund. Die Seite dahinter
+scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog, Esc oder nach unten wegwischen
+(am Griff oben oder im Inhalt, wenn er ganz oben steht).
+
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
 und Außen-Messwerte): Titel mit Status-Chip (OK/Hinweis/Handlungsbedarf), dann die Abschnitte
 **Lüften** (Fenster, Empfehlung mit Begründung), **Messwerte** (Temperatur, Luftfeuchtigkeit,
