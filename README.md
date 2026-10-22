@@ -1704,12 +1704,12 @@ Diagnose, Zustand = Modulversion). Das Modul liest sie live aus den Zuständen,
 ein Wert, gelten die Standards im Modul. Der Schalter für den Sommerbetrieb
 kommt aus der globalen Einstellung ("Sommer-/Winterbetrieb-Schalter").
 
-**Fenster-Button bei Handlungsbedarf:** Der Fenster-Sub-Button der Karte (Standard:
-der 2. Sub-Button, anderer Platz über `climate_status: { window_button: N }`) wird
-rot, solange der Raumstatus `handlungsbedarf` meldet. Bei `hinweis` wird nur das
-Symbol in der Warnfarbe (`--warning-color`) dargestellt, die Fläche bleibt wie
-bisher; sonst bleibt der Button unverändert.
-Das Symbol (Fenster offen/zu) kommt vom Fensterkontakt. Damit der Button auch bei
+**Fenster-Button bei Hinweis/Handlungsbedarf:** Der Fenster-Sub-Button der Karte (Standard:
+der 2. Sub-Button, anderer Platz über `climate_status: { window_button: N }`) ändert sich
+mit dem Raumstatus: bei `hinweis` dunkleres Blau (`#1565C0`) mit hellgelbem Symbol
+(`#FFEB3B`), bei `handlungsbedarf` rot (`#E53935`) mit weißem Symbol; sonst bleibt er
+unverändert. Die Regel ist spezifischer als die des Moduls `subbutton_typfarben` und
+überschreibt dessen Farben. Das Symbol (Fenster offen/zu) kommt vom Fensterkontakt. Damit der Button auch bei
 geschlossenem Fenster und Empfehlung "Öffnen" erscheint, braucht seine
 `visibility` eine Oder-Bedingung, z. B.:
 
