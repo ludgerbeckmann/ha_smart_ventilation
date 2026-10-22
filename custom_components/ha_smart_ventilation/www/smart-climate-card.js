@@ -105,6 +105,233 @@ function has(attrs, key) {
   return Object.prototype.hasOwnProperty.call(attrs, key);
 }
 
+// ---------------------------------------------------------------------------
+// Kompakte Raumansicht für den Raum-Dialog (compact_room): Home-Assistant-Stil
+// mit Abschnitten, Zeilen (Symbol, Name, Zweitzeile, Wert) und Balken für den
+// Normalbereich statt Tabellen. Nutzt dieselben, in _render() berechneten Werte.
+// ---------------------------------------------------------------------------
+const SC_COLOR = {
+  green: "var(--success-color, #4caf50)",
+  orange: "var(--warning-color, #ff9800)",
+  red: "var(--error-color, #f44336)",
+  blue: "var(--info-color, #2196f3)",
+  grey: "var(--secondary-text-color, #727272)",
+};
+const SC_HL_COLOR = { "hl-green": SC_COLOR.green, "hl-orange": SC_COLOR.orange, "hl-red": SC_COLOR.red };
+const SC_STATUS_LABEL = { ok: "OK", hinweis: "Hinweis", handlungsbedarf: "Handlungsbedarf" };
+const SC_STATUS_COLOR = { ok: SC_COLOR.green, hinweis: SC_COLOR.orange, handlungsbedarf: SC_COLOR.red };
+const SC_HEATING_COLOR = {
+  comfort: "var(--state-climate-heat-color, #ff8100)",
+  night: SC_COLOR.orange,
+  building_protection: "var(--state-climate-cool-color, #2b9af9)",
+  standby: SC_COLOR.grey,
+};
+
+// Geräte-Grund als reiner Text (ohne Zeilenumbrüche), ohne Vorsatz "pausiert: ".
+function plainReason(value) {
+  const text = String(value);
+  const rest = text.startsWith("pausiert: ") ? text.slice("pausiert: ".length) : text;
+  return esc(rest.charAt(0).toUpperCase() + rest.slice(1));
+}
+
+function crFmt(n) {
+  const num = Number(n);
+  return Number.isInteger(num) ? String(num) : num.toFixed(1);
+}
+
+function crCompactRoom(c) {
+  const { a, ents, ent, expandedCells } = c;
+  const icon = (name, color) =>
+    `<div class="cr-ico" style="--c:${color}"><ha-icon icon="${name}"></ha-icon></div>`;
+  const named = (entityId, html) => (entityId ? ent(entityId, html) : html);
+  const clamp = (key, html) =>
+    `<div class="cr-s cr-clamp${expandedCells.has(key) ? " expanded" : ""}" data-cell="${esc(key)}" title="${String(html).replace(/<[^>]*>/g, "")}">${html}</div>`;
+
+  const row = (o) => {
+    const sub = o.sub
+      ? o.clampKey
+        ? clamp(o.clampKey, o.sub)
+        : `<div class="cr-s">${o.sub}</div>`
+      : "";
+    let right = "";
+    if (o.chip) right = `<span class="cr-chip" style="--c:${o.chipColor}">${o.chip}</span>`;
+    else if (o.right) right = `<span class="cr-v"${o.rightColor ? ` style="color:${o.rightColor}"` : ""}>${o.right}</span>`;
+    return `<div class="cr-row">${icon(o.icon, o.color)}<div class="cr-t"><div class="cr-p">${named(o.entityId, o.title)}${o.titleExtra ? ` <span class="cr-s">${o.titleExtra}</span>` : ""}</div>${sub}</div>${right}</div>`;
+  };
+
+  // Zeile mit Normalbereich-Balken: Bereich grün hinterlegt, Punkt = aktueller Wert.
+  const gauge = (o) => {
+    const v = o.value === null || o.value === undefined ? NaN : Number(o.value);
+    const rangeOk = Number.isFinite(o.lo) && Number.isFinite(o.hi);
+    const span = Math.max(o.hi - o.lo, 0.0001);
+    let bar = "";
+    let color = o.color;
+    if (!Number.isNaN(v) && rangeOk) {
+      const min = Math.min(o.lo - span * 0.8, v - span * 0.2);
+      const max = Math.max(o.hi + span * 0.8, v + span * 0.2);
+      const pos = (x) => Math.max(2, Math.min(98, ((x - min) / (max - min)) * 100));
+      bar = `<div class="cr-bar"><div class="cr-band" style="left:${pos(o.lo)}%;width:${pos(o.hi) - pos(o.lo)}%"></div><div class="cr-mk" style="left:${pos(v)}%;--c:${color}"></div></div>`;
+    } else if (Number.isNaN(v)) {
+      color = SC_COLOR.orange;
+    }
+    const rangeText = rangeOk ? `<span class="cr-s">${crFmt(o.lo)} – ${crFmt(o.hi)} ${o.unit}</span>` : "";
+    const valueHtml = Number.isNaN(v) ? "–" : esc(o.valueText);
+    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}</div><span class="cr-v" style="color:${color}">${valueHtml}</span></div>`;
+  };
+
+  const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
+  const status = c.status;
+  let html = `<div class="cr-top"><h1>${esc(a.raum)}</h1><span class="cr-hchip" style="--c:${SC_STATUS_COLOR[status] || SC_COLOR.green}"><i></i>${SC_STATUS_LABEL[status] || "OK"}</span></div>`;
+
+  // --- Lüften ---------------------------------------------------------------
+  let vent = "";
+  if (!c.noWindow) {
+    const w = c.windowState;
+    const open = w === "on";
+    const known = w === "on" || w === "off";
+    vent += row({
+      icon: open ? "mdi:window-open-variant" : "mdi:window-closed-variant",
+      color: open ? SC_COLOR.blue : SC_COLOR.grey,
+      title: "Fenster",
+      entityId: c.windowEntity,
+      sub: known ? `${open ? "geöffnet" : "geschlossen"}${c.windowChangedTime !== "–" ? ` seit ${esc(c.windowChangedTime)}` : ""}` : "unbekannt",
+      right: known ? (open ? "Offen" : "Zu") : "–",
+    });
+    vent += row({
+      icon: "mdi:bell-outline",
+      color: c.hasLiveReason ? hlColor : SC_COLOR.grey,
+      title: "Empfehlung",
+      entityId: c.id,
+      titleExtra: c.hasLiveReason && c.changedTime !== "–" ? `seit ${esc(c.changedTime)}` : "",
+      sub: c.hasLiveReason ? c.reasonText : "Aktuell keine Empfehlung",
+      clampKey: c.hasLiveReason ? `${a.raum}|reason` : "",
+      chip: c.hasLiveReason ? esc(c.statusText) : "",
+      chipColor: hlColor,
+    });
+  }
+  if (vent) html += `<h2 class="cr-h">Lüften</h2><div class="cr-sec">${vent}</div>`;
+
+  // --- Messwerte ------------------------------------------------------------
+  let vals = "";
+  const tempVal = a.innentemperatur === undefined ? null : a.innentemperatur;
+  const colorFor = (on, v, lo, hi) =>
+    on ? hlColor : v !== null && v !== undefined && !Number.isNaN(Number(v)) && v >= lo && v <= hi ? SC_COLOR.green : SC_COLOR.grey;
+  vals += gauge({
+    icon: "mdi:thermometer", label: "Temperatur", entityId: ents.innentemperatur,
+    value: tempVal, valueText: `${roundStr(tempVal, 1)} °C`, lo: c.tempLo, hi: c.tempHi, unit: "°C",
+    color: colorFor(c.highlightTemp, tempVal, c.tempLo, c.tempHi),
+  });
+  if (has(a, "luftfeuchtigkeit")) {
+    const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
+    const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
+    vals += gauge({
+      icon: "mdi:water-percent", label: "Luftfeuchtigkeit", entityId: ents.luftfeuchtigkeit,
+      value: a.luftfeuchtigkeit, valueText: `${roundStr(a.luftfeuchtigkeit, 0)} %`, lo, hi, unit: "%",
+      color: colorFor(c.highlightHum, a.luftfeuchtigkeit, lo, hi),
+    });
+  }
+  if (has(a, "co2")) {
+    const lo = Math.min(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
+    const hi = Math.max(a.schwelle_co2_schliessen, a.schwelle_co2_oeffnen);
+    vals += gauge({
+      icon: "mdi:molecule-co2", label: "CO2", entityId: ents.co2,
+      value: a.co2, valueText: `${roundStr(a.co2, 0)} ppm`, lo, hi, unit: "ppm",
+      color: colorFor(c.highlightCo2, a.co2, lo, hi),
+    });
+  }
+  const cells = [];
+  if (has(a, "luftfeuchtigkeit")) {
+    const absText = has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null ? `${a.absolute_luftfeuchtigkeit} g/m³` : "–";
+    cells.push(
+      `<div class="cr-cell"><div class="cr-s">${named(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit")}</div><div class="cr-v"${c.absOpenGate ? ` style="color:${hlColor}"` : ""}>${absText}</div></div>`
+    );
+  }
+  if (has(a, "luftfeuchtigkeit") && has(a, "taupunkt") && a.taupunkt !== null) {
+    cells.push(
+      `<div class="cr-cell"><div class="cr-s">${named(ents.taupunkt, "Taupunkt")}</div><div class="cr-v">${roundStr(a.taupunkt, 1)} °C</div></div>`
+    );
+  }
+  if (cells.length) vals += `<div class="cr-two">${cells.join("")}</div>`;
+  html += `<h2 class="cr-h">Messwerte</h2><div class="cr-sec">${vals}</div>`;
+
+  // --- Geräte ---------------------------------------------------------------
+  const runtime = (on, since, last) => {
+    if (on && since) return fmtDuration((Date.now() - new Date(since).getTime()) / 60000);
+    if (last !== undefined && last !== null) return fmtDuration(last);
+    return "–";
+  };
+  let dev = "";
+  if (has(a, "luftentfeuchter_an")) {
+    const parts = [a.luftentfeuchter_an ? "Läuft" : "Aus"];
+    if (has(a, "luftentfeuchter_grund") && a.luftentfeuchter_grund) parts.push(plainReason(a.luftentfeuchter_grund));
+    if (has(a, "luftentfeuchter_tank_fehler") && a.luftentfeuchter_tank_fehler) {
+      parts.push(`<span style="color:${SC_COLOR.red}">Tank voll</span>`);
+    }
+    dev += row({
+      icon: "mdi:air-humidifier", color: a.luftentfeuchter_an ? SC_COLOR.blue : SC_COLOR.grey,
+      title: "Luftentfeuchter", entityId: ents.luftentfeuchter, sub: parts.join(" · "),
+      clampKey: `${a.raum}|dehum`,
+      right: runtime(a.luftentfeuchter_an, a.luftentfeuchter_seit, a.luftentfeuchter_letzte_laufzeit),
+    });
+  }
+  if (has(a, "klimaanlage_an")) {
+    const parts = [a.klimaanlage_an ? "Läuft" : "Aus"];
+    if (has(a, "klimaanlage_grund") && a.klimaanlage_grund) parts.push(plainReason(a.klimaanlage_grund));
+    dev += row({
+      icon: "mdi:air-conditioner", color: a.klimaanlage_an ? SC_COLOR.blue : SC_COLOR.grey,
+      title: "Klimaanlage", entityId: ents.klimaanlage, sub: parts.join(" · "),
+      clampKey: `${a.raum}|ac`,
+      right: runtime(a.klimaanlage_an, a.klimaanlage_seit, a.klimaanlage_letzte_laufzeit),
+    });
+  }
+  if (has(a, "heizung_an")) {
+    const mode = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
+    const parts = [];
+    if (has(a, "heizung_grund") && a.heizung_grund) parts.push(plainReason(a.heizung_grund));
+    if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
+      parts.push(`Sollstellung ${roundStr(a.heizung_zieltemperatur, 1)} °C`);
+    }
+    dev += row({
+      icon: "mdi:radiator", color: SC_HEATING_COLOR[a.heizung_modus] || (a.heizung_an ? SC_COLOR.orange : SC_COLOR.grey),
+      title: "Heizung", titleExtra: mode ? esc(mode.text) : "", entityId: ents.heizung, sub: parts.join(" · "),
+      clampKey: `${a.raum}|heat`,
+      right: runtime(a.heizung_an, a.heizung_seit, a.heizung_letzte_laufzeit),
+    });
+  }
+  if (has(a, "duschen_erkannt")) {
+    let sub = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "";
+    if (has(a, "dusche_letzter_start") && a.dusche_letzter_start) {
+      const t = `Start ${shortTimeStr(new Date(a.dusche_letzter_start), c.todayStr)}`;
+      sub = a.duschen_erkannt ? `${sub} · ${t}` : `Letzter ${t}`;
+    }
+    dev += row({
+      icon: "mdi:shower-head", color: a.duschen_erkannt ? SC_COLOR.blue : SC_COLOR.grey,
+      title: "Dusche", entityId: ents.dusche, sub,
+      right: runtime(a.duschen_erkannt, a.dusche_seit, a.dusche_letzte_laufzeit),
+    });
+  }
+  if (dev) html += `<h2 class="cr-h">Geräte</h2><div class="cr-sec">${dev}</div>`;
+
+  // --- Benachrichtigungen (aufklappbar, Zustand je Raum) ---------------------
+  const targets = (list) =>
+    list && list.length ? list.map((t) => ent(t, breakable(esc(t)))).join("<br>") : "";
+  const nrow = (iconName, title, activeKey, list) => {
+    const on = has(a, activeKey);
+    return row({
+      icon: iconName, color: on ? SC_COLOR.green : SC_COLOR.grey, title,
+      sub: targets(list), right: on ? "Aktiv" : "Aus", rightColor: on ? SC_COLOR.green : SC_COLOR.grey,
+    });
+  };
+  html +=
+    `<h2 class="cr-h">Benachrichtigungen</h2><div class="cr-sec"><details class="cr-notify" data-notify-room="${esc(a.raum)}"${c.notifyOpen ? " open" : ""}>` +
+    `<summary class="cr-fold">${icon("mdi:bell-outline", SC_COLOR.grey)}<span class="cr-ft">Methoden und Ziele</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></summary>` +
+    nrow("mdi:speaker", "Sprachausgabe", "sprachausgabe_aktiv", a.sprachausgabe_lautsprecher) +
+    nrow("mdi:cellphone", "Push-Benachrichtigung", "app_aktiv", a.app_ziele) +
+    nrow("mdi:message-text-outline", "Persistente Benachrichtigung", "persistent_aktiv", null) +
+    `</details></div>`;
+  return html;
+}
+
 class SmartClimateCard extends HTMLElement {
   setConfig(config) {
     const previous = this._config || {};
@@ -244,6 +471,7 @@ class SmartClimateCard extends HTMLElement {
     // Home Assistants Standard-Karten aussieht. Leer/nicht gesetzt = kein
     // Header, wie bisher.
     this._card.header = this._config.title || undefined;
+    this._card.classList.toggle("sc-compact", this._config.compact_room === true);
 
     if (!entityIds.length) {
       this._content.innerHTML =
@@ -425,6 +653,7 @@ class SmartClimateCard extends HTMLElement {
       }
 
       let absRow = "";
+      let absOpenGate = false;
       if (has(a, "luftfeuchtigkeit")) {
         let absIn =
           has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null
@@ -435,7 +664,7 @@ class SmartClimateCard extends HTMLElement {
         // Öffnen wegen Luftfeuchtigkeit: die absolute Luftfeuchtigkeit gibt das
         // Öffnen frei (Außenluft trockener) und wird wie der Auslöser
         // hervorgehoben - innen und außen, sofern beide Werte vorliegen.
-        const absOpenGate =
+        absOpenGate =
           s.state === "on" && openReasons.includes("humidity") && absIn !== "–" && absOutAvailable;
         absIn = wrap(absIn, absOpenGate);
         absRow = `<tr><td>${wrapLabel(ent(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit"), absOpenGate, false)}</td><td class="nw">${absIn}</td><td class="nw">–</td></tr>`;
@@ -515,8 +744,8 @@ class SmartClimateCard extends HTMLElement {
       // stehen untereinander). Zahlen nur, soweit die Karte sie als Attribut hat.
       const numTxt = (v, d, unit) =>
         v === undefined || v === null || Number.isNaN(Number(v)) ? null : `${roundStr(v, d)} ${unit}`;
-      const reasonSentence = (code, isOpen) => {
-        const label = `<span class="${highlightClass}">${esc(GRUND_TEXT[code] || code)}:</span>`;
+      const reasonSentence = (code, isOpen, withLabel = true) => {
+        const label = withLabel ? `<span class="${highlightClass}">${esc(GRUND_TEXT[code] || code)}:</span>` : "";
         const tIn = numTxt(a.innentemperatur, 1, "°C");
         const tOut = numTxt(a.aussentemperatur, 1, "°C");
         const hIn = numTxt(a.luftfeuchtigkeit, 0, "%");
@@ -565,7 +794,7 @@ class SmartClimateCard extends HTMLElement {
           default:
             text = "";
         }
-        return text ? `${label} ${esc(text)}` : label;
+        return text ? (withLabel ? `${label} ${esc(text)}` : esc(text)) : label;
       };
       const reasonCodes = !hasLiveReason ? [] : s.state === "on" ? openReasons : [highlightCode];
       const reasonRow = reasonCodes.length
@@ -646,6 +875,21 @@ class SmartClimateCard extends HTMLElement {
           ? storedRoomState.open
           : defaultOpen;
       this._roomOpenState.set(a.raum, { statusClass, open: isOpen });
+
+      if (compact) {
+        entries.push({
+          sortKey: `0${a.raum}`,
+          html: crCompactRoom({
+            a, ents, ent, id, expandedCells: this._expandedCells, todayStr,
+            status: a.raumstatus, noWindow, windowEntity,
+            windowState: windowEntity && states[windowEntity] ? states[windowEntity].state : "",
+            windowChangedTime, hasLiveReason, statusText, changedTime, highlightClass,
+            reasonText: reasonCodes.map((cd) => reasonSentence(cd, s.state === "on", false)).join(" "),
+            highlightTemp, highlightHum, highlightCo2, absOpenGate, tempLo, tempHi, notifyOpen,
+          }),
+        });
+        continue;
+      }
 
       const header = `<summary class="room-header"><span class="room-icon">${matchIcon}</span><h3>${esc(a.raum)}</h3></summary>`;
       let body = empfTable;
@@ -876,6 +1120,60 @@ class SmartClimateCard extends HTMLElement {
       .olabel { font-size: 1em; opacity: 0.85; }
       .ovalue { font-weight: 600; white-space: nowrap; }
       .empty { padding: 8px; opacity: 0.7; }
+
+      /* Kompakte Raumansicht (Raum-Dialog, compact_room): Home-Assistant-Stil */
+      ha-card.sc-compact { box-shadow: none; border: none; background: transparent; }
+      ha-card.sc-compact .smart-climate-card-content { padding: 14px 12px 10px; }
+      .cr-top { display: flex; align-items: center; gap: 8px; margin: 0 4px 4px; padding-right: 40px; }
+      .cr-top h1 { flex: 1; margin: 0; font-size: 1.35em; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+      .cr-hchip {
+        display: inline-flex; align-items: center; gap: 6px; flex: none;
+        border-radius: 999px; padding: 3px 10px 3px 7px; font-size: 0.85em; font-weight: 500;
+        color: var(--c); background: rgba(127, 127, 127, 0.18);
+        background: color-mix(in srgb, var(--c) 18%, transparent);
+      }
+      .cr-hchip i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); display: block; }
+      .cr-h {
+        margin: 12px 4px 4px; font-size: 0.78em; font-weight: 500; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--secondary-text-color, #727272);
+      }
+      .cr-sec { background: var(--secondary-background-color, rgba(127, 127, 127, 0.08)); border-radius: 14px; padding: 0 10px; }
+      .cr-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
+      .cr-row:last-child { border-bottom: 0; }
+      .cr-ico {
+        width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
+        color: var(--c); background: rgba(127, 127, 127, 0.18);
+        background: color-mix(in srgb, var(--c) 20%, transparent);
+        --mdc-icon-size: 20px;
+      }
+      .cr-t { flex: 1; min-width: 0; }
+      .cr-p { font-size: 1em; }
+      .cr-s { font-size: 0.85em; color: var(--secondary-text-color, #727272); }
+      .cr-v { font-weight: 500; white-space: nowrap; }
+      .cr-chip {
+        border-radius: 999px; padding: 2px 11px; font-size: 0.88em; font-weight: 500; white-space: nowrap;
+        color: var(--c); background: rgba(127, 127, 127, 0.18);
+        background: color-mix(in srgb, var(--c) 20%, transparent);
+      }
+      .cr-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; cursor: pointer; }
+      .cr-clamp.expanded { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+      .cr-gl { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+      .cr-bar { position: relative; height: 5px; border-radius: 3px; background: var(--divider-color, #cfcfcf); margin: 6px 0 2px; }
+      .cr-band { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: var(--success-color, #4caf50); opacity: 0.55; }
+      .cr-mk {
+        position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; background: var(--c);
+        transform: translate(-50%, -50%); border: 2px solid var(--secondary-background-color, #fff); box-sizing: content-box;
+      }
+      .cr-two { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--divider-color, #e0e0e0); }
+      .cr-cell { padding: 7px 0; }
+      .cr-cell + .cr-cell { border-left: 1px solid var(--divider-color, #e0e0e0); padding-left: 10px; }
+      .cr-notify > summary { list-style: none; cursor: pointer; }
+      .cr-notify > summary::-webkit-details-marker { display: none; }
+      .cr-fold { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+      .cr-ft { flex: 1; }
+      .cr-chev { color: var(--secondary-text-color, #727272); transition: transform 0.15s ease; }
+      .cr-notify[open] .cr-chev { transform: rotate(90deg); }
+      .cr-notify .cr-row { border-top: 1px solid var(--divider-color, #e0e0e0); border-bottom: 0; }
     `;
   }
 
@@ -1072,9 +1370,10 @@ function openRoomDialog(key) {
   overlay.innerHTML =
     "<style>" +
     ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);padding:8px;box-sizing:border-box}" +
-    ".sc-room-panel{display:flex;flex-direction:column;width:100%;max-width:600px;max-height:100%;overflow:auto;border-radius:12px;background:var(--card-background-color,#fff);color:var(--primary-text-color,#000);box-sizing:border-box}" +
-    ".sc-room-bar{position:sticky;top:0;z-index:1;display:flex;justify-content:flex-end;background:var(--card-background-color,#fff)}" +
-    ".sc-room-close{width:44px;height:44px;border:0;background:transparent;color:var(--primary-text-color,#000);font-size:22px;cursor:pointer}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:100%;overflow:hidden;border-radius:24px;background:var(--ha-card-background,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box}" +
+    ".sc-room-scroll{overflow:auto;min-height:0}" +
+    ".sc-room-bar{position:absolute;top:8px;right:8px;z-index:1}" +
+    ".sc-room-close{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--secondary-text-color,#727272);font-size:20px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
     "</style>";
   const panel = document.createElement("div");
@@ -1088,6 +1387,9 @@ function openRoomDialog(key) {
   bar.className = "sc-room-bar";
   bar.appendChild(close);
   panel.appendChild(bar);
+  const scroll = document.createElement("div");
+  scroll.className = "sc-room-scroll";
+  panel.appendChild(scroll);
 
   const entityId = scFindRoomEntity(hass, key);
   let card = null;
@@ -1095,12 +1397,12 @@ function openRoomDialog(key) {
     card = document.createElement("smart-climate-card");
     card.setConfig({ entities: [entityId], compact_room: true });
     card.hass = hass;
-    panel.appendChild(card);
+    scroll.appendChild(card);
   } else {
     const missing = document.createElement("div");
     missing.className = "sc-room-missing";
     missing.textContent = `Raum nicht gefunden: ${key}`;
-    panel.appendChild(missing);
+    scroll.appendChild(missing);
   }
   overlay.appendChild(panel);
 
