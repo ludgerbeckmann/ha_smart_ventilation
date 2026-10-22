@@ -273,6 +273,19 @@ CONF_HEATING_PRESENCE_ENTITIES = "heating_presence_entities"
 # rückwärtskompatibel (ohne Aktivierung ändert sich am Verhalten aus
 # Lektion 40 nichts) und erlaubt, den Zeitplan jederzeit ohne Datenverlust
 # der Zeitfelder wieder zu deaktivieren.
+# Dynamischer Auslöser für die Heizung (nur pro Raum, ein Auslöser): eine
+# light-/switch-/binary_sensor-/input_boolean-/person-/device_tracker-
+# Entität, die bei "on"/"home" das gewählte Profil erzwingt und dabei
+# Zeitplan bzw. Schwellenwert-Logik ersetzt (Pausen, manuelle Übersteuerung
+# und "niemand zuhause" stehen darüber). Mit Einschalt-Verzögerung und
+# Nachlaufzeit gegen Flackern.
+CONF_HEATING_TRIGGER_ENTITY = "heating_trigger_entity"
+CONF_HEATING_TRIGGER_PROFILE = "heating_trigger_profile"
+CONF_HEATING_TRIGGER_ON_DELAY_MINUTES = "heating_trigger_on_delay_minutes"
+CONF_HEATING_TRIGGER_HOLD_MINUTES = "heating_trigger_hold_minutes"
+DEFAULT_HEATING_TRIGGER_PROFILE = "comfort"
+DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES = 5
+DEFAULT_HEATING_TRIGGER_HOLD_MINUTES = 15
 CONF_HEATING_SCHEDULE_ENABLED = "heating_schedule_enabled"
 # Dritter Sollwert (neben Comfort/Standby) für das Nacht-Zeitfenster -
 # typischerweise die tiefste der drei Stufen (tiefer als Standby), da
