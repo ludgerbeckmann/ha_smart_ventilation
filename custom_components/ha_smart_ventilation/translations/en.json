@@ -570,8 +570,8 @@
             }
           },
           "dashboard": {
-            "name": "Dashboard appearance",
-            "description": "Settings for the Bubble Card module \"climate_status\". The integration ships the module (folder bubble_card/modules, if Bubble Card Tools is installed) and exposes these values in the sensor \"Smart Climate Darstellung\". The module reads them live.",
+            "name": "Dashboard: Bubble Card",
+            "description": "Settings for the Bubble Card module \"climate_status\" (the room tile). The integration ships the module (folder bubble_card/modules, if Bubble Card Tools is installed) and provides the values in the sensor \"Smart Climate Darstellung\". The module reads them live.\n\n![Bubble Card preview](/ha_smart_ventilation/bubble-card-vorschau.png)",
             "data": {
               "dash_tint": "Colored background",
               "dash_heat_bar": "Show heating bar",
@@ -584,8 +584,6 @@
               "dash_border_width": "Border width",
               "dash_line_height": "Line height of the name",
               "dash_extra_size": "Font size of alternating values",
-              "dash_window_signal": "Window signal",
-              "dash_window_ring_width": "Window signal ring/bar width",
               "dash_temp_time": "Display time temperature",
               "dash_extra_time": "Display time alternating values"
             },
@@ -601,10 +599,20 @@
               "dash_border_width": "Width of the neutral border in pixels.",
               "dash_line_height": "Line height of the room name in pixels (not for rooms whose ID starts with climate.flur).",
               "dash_extra_size": "Size of the alternating values in percent of the font (default 80).",
-              "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
-              "dash_window_ring_width": "Width in pixels (1-5); for variants with a ring or bar (A, B, C, E, F, J, L, M, N).",
               "dash_temp_time": "Seconds the temperature is shown per cycle.",
               "dash_extra_time": "Seconds each alternating value is shown."
+            }
+          },
+          "dashboard_button": {
+            "name": "Dashboard: Window button",
+            "description": "Signal on the window button of the Bubble Card: shows the room status (notice orange, action needed red). The letters of the variants are in the preview.\n\n![Window signal preview](/ha_smart_ventilation/fenster-signal.png)",
+            "data": {
+              "dash_window_signal": "Window signal",
+              "dash_window_ring_width": "Window signal ring/bar width"
+            },
+            "data_description": {
+              "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
+              "dash_window_ring_width": "Width in pixels (1-5); for variants with a ring or bar (A, B, C, E, F, J, L, M, N, S, T)."
             }
           },
           "messages": {

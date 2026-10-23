@@ -233,7 +233,8 @@ SECTION_DEVICES = "devices"  # Luftentfeuchter, Klima & Dusche
 SECTION_HEATING = "heating"  # Heizung (Gerät, Sollwerte, Presets, Sommermodus)
 SECTION_HEATING_SCHEDULE = "heating_schedule"  # Heizungs-Zeitplan
 SECTION_NOTIFY = "notify"  # Benachrichtigungen (Sprache, Push, Web, Erinnerung)
-SECTION_DASHBOARD = "dashboard"  # Dashboard-Darstellung (nur global, Bubble-Card-Modul)
+SECTION_DASHBOARD = "dashboard"  # Dashboard: Bubble-Card (nur global, Bubble-Card-Modul)
+SECTION_DASHBOARD_BUTTON = "dashboard_button"  # Dashboard: Fenster-Button (nur global)
 SECTION_MESSAGES = "messages"  # Benachrichtigungstexte (nur global)
 
 # Alle im Raum-Formular über _entity_marker(..., required=False) erzeugten
@@ -760,6 +761,7 @@ def _flatten_step_data(data: dict) -> dict:
         SECTION_HEATING_SCHEDULE,
         SECTION_NOTIFY,
         SECTION_DASHBOARD,
+        SECTION_DASHBOARD_BUTTON,
         SECTION_MESSAGES,
     )
     flat = {k: v for k, v in data.items() if k not in section_keys}
@@ -1453,23 +1455,6 @@ def _build_dashboard_section(defaults: dict) -> dict:
         "dewpoint": "Taupunkt",
         "off": "Aus",
     }
-    window_labels = {
-        "off": "Aus",
-        "a": "A: Ring innen",
-        "b": "B: Ring außen",
-        "c": "C: Ring außen mit Lücke",
-        "d": "D: Leuchten außen",
-        "e": "E: Ring innen + Leuchten außen",
-        "f": "F: Ring innen mit dunklem Abstand",
-        "g": "G: Weicher Innenschein",
-        "h": "H: Stärkerer Innenschein",
-        "i": "I: Verlauf Rand zur Mitte",
-        "j": "J: Dünner Ring + Innenschein",
-        "k": "K: Verlauf von oben",
-        "l": "L: Balken links",
-        "m": "M: Balken rechts",
-        "n": "N: Balken links und rechts",
-    }
     fields: dict = {
         vol.Required(
             CONF_DASH_TINT, default=defaults.get(CONF_DASH_TINT, DEFAULT_DASH_TINT)
@@ -1522,6 +1507,38 @@ def _build_dashboard_section(defaults: dict) -> dict:
             CONF_DASH_EXTRA_SIZE,
             default=defaults.get(CONF_DASH_EXTRA_SIZE, DEFAULT_DASH_EXTRA_SIZE),
         ): _dash_number(40, 150, "%"),
+    }
+    return fields
+
+
+def _build_dashboard_button_section(defaults: dict) -> dict:
+    """Felder des Abschnitts "Dashboard: Fenster-Button" (Signal am
+    Fenster-Button der Bubble Card, siehe dashboard.py)."""
+    window_labels = {
+        "off": "Aus",
+        "a": "A: Ring innen",
+        "b": "B: Ring außen",
+        "c": "C: Ring außen mit Lücke",
+        "d": "D: Leuchten außen",
+        "e": "E: Ring innen + Leuchten außen",
+        "f": "F: Ring innen mit dunklem Abstand",
+        "g": "G: Weicher Innenschein",
+        "h": "H: Stärkerer Innenschein",
+        "i": "I: Verlauf Rand zur Mitte",
+        "j": "J: Dünner Ring + Innenschein",
+        "k": "K: Verlauf von oben",
+        "l": "L: Balken links",
+        "m": "M: Balken rechts",
+        "n": "N: Balken links und rechts",
+        "o": "O: Obere Hälfte",
+        "p": "P: Untere Hälfte",
+        "q": "Q: Linke Hälfte",
+        "r": "R: Rechte Hälfte",
+        "s": "S: Balken oben",
+        "t": "T: Balken unten",
+        "u": "U: Ecke oben rechts",
+    }
+    fields: dict = {
         vol.Required(
             CONF_DASH_WINDOW_SIGNAL,
             default=defaults.get(CONF_DASH_WINDOW_SIGNAL, DEFAULT_DASH_WINDOW_SIGNAL),
@@ -1802,6 +1819,10 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             ),
             vol.Required(SECTION_DASHBOARD): section(
                 vol.Schema(_build_dashboard_section(defaults)), {"collapsed": True}
+            ),
+            vol.Required(SECTION_DASHBOARD_BUTTON): section(
+                vol.Schema(_build_dashboard_button_section(defaults)),
+                {"collapsed": True},
             ),
             vol.Required(SECTION_MESSAGES): section(
                 vol.Schema(
