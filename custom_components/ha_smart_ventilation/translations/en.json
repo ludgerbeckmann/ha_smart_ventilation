@@ -580,13 +580,14 @@
               "dash_cover_side": "Side of the shutter bar",
               "dash_extra_1": "Alternating value 1",
               "dash_extra_2": "Alternating value 2",
-              "dash_cycle": "Alternating interval",
               "dash_bar_width": "Bar width",
               "dash_border_width": "Border width",
               "dash_line_height": "Line height of the name",
               "dash_extra_size": "Font size of alternating values",
               "dash_window_signal": "Window signal",
-              "dash_window_ring_width": "Window signal ring width"
+              "dash_window_ring_width": "Window signal ring width",
+              "dash_temp_time": "Display time temperature",
+              "dash_extra_time": "Display time alternating values"
             },
             "data_description": {
               "dash_tint": "Tints the tile according to the room status (hint/action needed).",
@@ -596,13 +597,14 @@
               "dash_cover_side": "Side of the shutter bar.",
               "dash_extra_1": "First value alternating with the temperature. Off = not shown.",
               "dash_extra_2": "Second alternating value. The same value as in alternating value 1 is only shown once.",
-              "dash_cycle": "Duration of one full cycle in seconds.",
               "dash_bar_width": "Width of the bars in pixels.",
               "dash_border_width": "Width of the neutral border in pixels.",
               "dash_line_height": "Line height of the room name in pixels (not for rooms whose ID starts with climate.flur).",
               "dash_extra_size": "Size of the alternating values in percent of the font (default 80).",
               "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
-              "dash_window_ring_width": "Width in pixels (1-5); only for variants with a ring (A, B, C, E, F, J)."
+              "dash_window_ring_width": "Width in pixels (1-5); only for variants with a ring (A, B, C, E, F, J).",
+              "dash_temp_time": "Seconds the temperature is shown per cycle.",
+              "dash_extra_time": "Seconds each alternating value is shown."
             }
           },
           "messages": {

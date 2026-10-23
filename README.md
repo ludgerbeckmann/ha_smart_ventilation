@@ -1683,7 +1683,7 @@ fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig al
 `/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
 "Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
 Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
-"Module" mit der Version `v3.6` zu sehen. Eigene Änderungen am Modulcode gehen
+"Module" mit der Version `v3.7` zu sehen. Eigene Änderungen am Modulcode gehen
 bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
 Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
 Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
@@ -1695,9 +1695,10 @@ from YAML" im Bubble-Card-Editor eingefügt werden.
   (an/aus) jeweils mit **Seite** (links/rechts; liegen beide auf derselben Seite,
   steht der Rollladenbalken neben dem Heizungsbalken).
 - **Wechselwert 1/2:** welche Zusatzwerte im Wechsel mit der Temperatur laufen
-  (absolute Luftfeuchtigkeit, CO2, Taupunkt oder aus). Die Reihenfolge ergibt
+  (absolute oder relative Luftfeuchtigkeit, CO2, Taupunkt oder aus). Die Reihenfolge ergibt
   sich aus 1 und 2.
-- **Wechselintervall**, **Balkenbreite**, **Rahmenbreite**, **Zeilenhöhe** des
+- **Anzeigedauer Temperatur** (Standard 8 s) und **Anzeigedauer Wechselwerte** (Standard 2 s je Wert;
+  ein Durchlauf dauert Temperatur + Anzeige je Wechselwert), **Balkenbreite**, **Rahmenbreite**, **Zeilenhöhe** des
   Namens, **Schriftgröße** der Wechselwerte.
 - **Farben** sind nicht einstellbar: Das Modul nutzt feste Theme-Variablen von
   Home Assistant und folgt damit deinem Theme (auch Hell/Dunkel). Komfort =

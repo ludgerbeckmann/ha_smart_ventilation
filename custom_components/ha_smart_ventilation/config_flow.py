@@ -53,7 +53,8 @@ from .const import (
     CONF_DASH_BORDER_WIDTH,
     CONF_DASH_LINE_HEIGHT,
     CONF_DASH_EXTRA_SIZE,
-    CONF_DASH_CYCLE,
+    CONF_DASH_EXTRA_TIME,
+    CONF_DASH_TEMP_TIME,
     CONF_DASH_EXTRA_1,
     CONF_DASH_EXTRA_2,
     DEFAULT_DASH_TINT,
@@ -65,7 +66,8 @@ from .const import (
     DEFAULT_DASH_BORDER_WIDTH,
     DEFAULT_DASH_LINE_HEIGHT,
     DEFAULT_DASH_EXTRA_SIZE,
-    DEFAULT_DASH_CYCLE,
+    DEFAULT_DASH_EXTRA_TIME,
+    DEFAULT_DASH_TEMP_TIME,
     DEFAULT_DASH_EXTRA_1,
     DEFAULT_DASH_EXTRA_2,
     CONF_HEATING_PRESENCE_ENTITIES,
@@ -1446,6 +1448,7 @@ def _build_dashboard_section(defaults: dict) -> dict:
     side_labels = {"left": "links", "right": "rechts"}
     extra_labels = {
         "humidity": "Absolute Luftfeuchtigkeit",
+        "relative": "Relative Luftfeuchtigkeit",
         "co2": "CO2",
         "dewpoint": "Taupunkt",
         "off": "Aus",
@@ -1493,8 +1496,13 @@ def _build_dashboard_section(defaults: dict) -> dict:
             default=defaults.get(CONF_DASH_EXTRA_2, DEFAULT_DASH_EXTRA_2),
         ): _dash_select(DASH_EXTRA_OPTIONS, extra_labels),
         vol.Required(
-            CONF_DASH_CYCLE, default=defaults.get(CONF_DASH_CYCLE, DEFAULT_DASH_CYCLE)
-        ): _dash_number(4, 60, "s"),
+            CONF_DASH_TEMP_TIME,
+            default=defaults.get(CONF_DASH_TEMP_TIME, DEFAULT_DASH_TEMP_TIME),
+        ): _dash_number(1, 30, "s"),
+        vol.Required(
+            CONF_DASH_EXTRA_TIME,
+            default=defaults.get(CONF_DASH_EXTRA_TIME, DEFAULT_DASH_EXTRA_TIME),
+        ): _dash_number(1, 15, "s"),
         vol.Required(
             CONF_DASH_BAR_WIDTH,
             default=defaults.get(CONF_DASH_BAR_WIDTH, DEFAULT_DASH_BAR_WIDTH),
