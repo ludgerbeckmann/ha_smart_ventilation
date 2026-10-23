@@ -1683,7 +1683,7 @@ fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig al
 `/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
 "Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
 Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
-"Module" mit der Version `v3.7` zu sehen. Eigene Änderungen am Modulcode gehen
+"Module" mit der Version `v3.8` zu sehen. Eigene Änderungen am Modulcode gehen
 bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
 Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
 Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
@@ -1726,8 +1726,8 @@ Warnfarbe (`--warning-color`), bei `handlungsbedarf` rot (`#E53935`); sonst gibt
 Darstellung wählst du in den allgemeinen Einstellungen im Abschnitt "Dashboard-Darstellung" unter
 **Fenster-Signal**: Aus, A Ring innen, B Ring außen, C Ring außen mit Lücke, D Leuchten außen, E Ring
 innen + Leuchten, F Ring innen mit dunklem Abstand, G weicher Innenschein, H stärkerer Innenschein,
-I Verlauf Rand zur Mitte, **J dünner Ring + Innenschein (Standard)**, K Verlauf von oben. Die
-**Ringbreite** (1-5 px, Standard 2) gilt für die Varianten mit Ring (A, B, C, E, F, J). Die Verläufe I/K
+I Verlauf Rand zur Mitte, **J dünner Ring + Innenschein (Standard)**, K Verlauf von oben, L Balken links, M Balken rechts, N Balken links und rechts (wie die Balken für Heizung und Rollladen, nur Status ohne Füllhöhe). Die
+**Ring-/Balkenbreite** (1-5 px, Standard 2) gilt für die Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N). Die Verläufe I/K
 setzen ein Hintergrundbild auf den Button; außen liegende Varianten (B, C, D, E) können vom Container
 abgeschnitten werden. Die
 Reihenfolge der Buttons ist egal. Steht der Fensterkontakt nicht in den Sub-Buttons (oder hat der Raum

@@ -1466,6 +1466,9 @@ def _build_dashboard_section(defaults: dict) -> dict:
         "i": "I: Verlauf Rand zur Mitte",
         "j": "J: Dünner Ring + Innenschein",
         "k": "K: Verlauf von oben",
+        "l": "L: Balken links",
+        "m": "M: Balken rechts",
+        "n": "N: Balken links und rechts",
     }
     fields: dict = {
         vol.Required(

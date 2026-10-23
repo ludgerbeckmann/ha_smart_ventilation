@@ -585,7 +585,7 @@
               "dash_line_height": "Zeilenhöhe des Namens",
               "dash_extra_size": "Schriftgröße der Wechselwerte",
               "dash_window_signal": "Fenster-Signal",
-              "dash_window_ring_width": "Ringbreite Fenster-Signal",
+              "dash_window_ring_width": "Ring-/Balkenbreite Fenster-Signal",
               "dash_temp_time": "Anzeigedauer Temperatur",
               "dash_extra_time": "Anzeigedauer Wechselwerte"
             },
@@ -602,7 +602,7 @@
               "dash_line_height": "Zeilenhöhe des Raumnamens in Pixel (nicht für Räume, deren ID mit climate.flur beginnt).",
               "dash_extra_size": "Größe der Wechselwerte in Prozent der Schrift (Standard 80).",
               "dash_window_signal": "Wie der Raumstatus am Fenster-Button gezeigt wird (Farbe: Hinweis orange, Handlungsbedarf rot). Aus = kein Signal.",
-              "dash_window_ring_width": "Breite in Pixel (1-5); gilt nur für Varianten mit Ring (A, B, C, E, F, J).",
+              "dash_window_ring_width": "Breite in Pixel (1-5); gilt für Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N).",
               "dash_temp_time": "Sekunden, die die Temperatur je Durchlauf angezeigt wird.",
               "dash_extra_time": "Sekunden, die jeder Wechselwert angezeigt wird."
             }
