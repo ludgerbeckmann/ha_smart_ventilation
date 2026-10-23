@@ -1632,7 +1632,7 @@ tap_action:
   smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID des Binärsensors
 ```
 
-Der Dialog erscheint wie ein Bottom-Sheet am unteren Bildschirmrand (am Tablet/PC mittig),
+Der Dialog erscheint wie ein Bottom-Sheet am unteren Bildschirmrand (auf jeder Breite unten anliegend, am Tablet/PC bis 600 px breit und horizontal zentriert),
 mit der Dashboard-Hintergrundfarbe und unscharf abgedunkeltem Hintergrund. Die Seite dahinter
 scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog, Esc oder nach unten wegwischen
 (am Griff oben oder im Inhalt, wenn er ganz oben steht).
@@ -1683,7 +1683,7 @@ fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig al
 `/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
 "Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
 Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
-"Module" mit der Version `v3.4` zu sehen. Eigene Änderungen am Modulcode gehen
+"Module" mit der Version `v3.5` zu sehen. Eigene Änderungen am Modulcode gehen
 bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
 Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
 Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
@@ -1720,7 +1720,7 @@ kommt aus der globalen Einstellung ("Sommer-/Winterbetrieb-Schalter").
 Karte automatisch: Es sucht in den Sub-Buttons (`main`, dann `bottom`) den, dessen `entity` der
 Fensterkontakt des Raums ist (`entitaeten.fenster`). Fläche und Symbol bleiben unverändert (die Farbe
 kommt vom Fensterzustand, z. B. aus deinem Modul `subbutton_typfarben`: blau = offen). Der Raumstatus
-wird nur als **3-px-Ring nach innen** gezeichnet (ändert die Größe nicht): bei `hinweis` in der
+wird nur als **5-px-Ring nach innen** gezeichnet (ändert die Größe nicht): bei `hinweis` in der
 Warnfarbe (`--warning-color`), bei `handlungsbedarf` rot (`#E53935`); sonst gibt es keinen Ring. Die
 Reihenfolge der Buttons ist egal. Steht der Fensterkontakt nicht in den Sub-Buttons (oder hat der Raum
 keinen), passiert nichts - außer `climate_status: { window_button: N }` ist gesetzt, dann gilt dieser Platz
