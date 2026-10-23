@@ -40,6 +40,11 @@ from .const import (
     CONF_DASH_TINT,
     DASH_EXTRA_OPTIONS,
     DASH_SIDE_OPTIONS,
+    DASH_WINDOW_SIGNAL_OPTIONS,
+    CONF_DASH_WINDOW_SIGNAL,
+    CONF_DASH_WINDOW_RING_WIDTH,
+    DEFAULT_DASH_WINDOW_SIGNAL,
+    DEFAULT_DASH_WINDOW_RING_WIDTH,
     CONF_DASH_HEAT_BAR,
     CONF_DASH_COVER_BAR,
     CONF_DASH_HEAT_SIDE,
@@ -1445,6 +1450,20 @@ def _build_dashboard_section(defaults: dict) -> dict:
         "dewpoint": "Taupunkt",
         "off": "Aus",
     }
+    window_labels = {
+        "off": "Aus",
+        "a": "A: Ring innen",
+        "b": "B: Ring außen",
+        "c": "C: Ring außen mit Lücke",
+        "d": "D: Leuchten außen",
+        "e": "E: Ring innen + Leuchten außen",
+        "f": "F: Ring innen mit dunklem Abstand",
+        "g": "G: Weicher Innenschein",
+        "h": "H: Stärkerer Innenschein",
+        "i": "I: Verlauf Rand zur Mitte",
+        "j": "J: Dünner Ring + Innenschein",
+        "k": "K: Verlauf von oben",
+    }
     fields: dict = {
         vol.Required(
             CONF_DASH_TINT, default=defaults.get(CONF_DASH_TINT, DEFAULT_DASH_TINT)
@@ -1492,6 +1511,16 @@ def _build_dashboard_section(defaults: dict) -> dict:
             CONF_DASH_EXTRA_SIZE,
             default=defaults.get(CONF_DASH_EXTRA_SIZE, DEFAULT_DASH_EXTRA_SIZE),
         ): _dash_number(40, 150, "%"),
+        vol.Required(
+            CONF_DASH_WINDOW_SIGNAL,
+            default=defaults.get(CONF_DASH_WINDOW_SIGNAL, DEFAULT_DASH_WINDOW_SIGNAL),
+        ): _dash_select(DASH_WINDOW_SIGNAL_OPTIONS, window_labels),
+        vol.Required(
+            CONF_DASH_WINDOW_RING_WIDTH,
+            default=defaults.get(
+                CONF_DASH_WINDOW_RING_WIDTH, DEFAULT_DASH_WINDOW_RING_WIDTH
+            ),
+        ): _dash_number(1, 5, "px"),
     }
     return fields
 

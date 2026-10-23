@@ -28,9 +28,12 @@ from .const import (
     CONF_DASH_HEAT_SIDE,
     CONF_DASH_LINE_HEIGHT,
     CONF_DASH_TINT,
+    CONF_DASH_WINDOW_RING_WIDTH,
+    CONF_DASH_WINDOW_SIGNAL,
     CONF_SUMMER_MODE_SWITCH_ENTITY,
     DASH_EXTRA_OPTIONS,
     DASH_SIDE_OPTIONS,
+    DASH_WINDOW_SIGNAL_OPTIONS,
     DEFAULT_DASH_BAR_WIDTH,
     DEFAULT_DASH_BORDER_WIDTH,
     DEFAULT_DASH_COVER_BAR,
@@ -43,6 +46,8 @@ from .const import (
     DEFAULT_DASH_HEAT_SIDE,
     DEFAULT_DASH_LINE_HEIGHT,
     DEFAULT_DASH_TINT,
+    DEFAULT_DASH_WINDOW_RING_WIDTH,
+    DEFAULT_DASH_WINDOW_SIGNAL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,7 +56,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v3.5"
+MODULE_VERSION_LABEL = "v3.6"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
@@ -86,6 +91,10 @@ def build_dashboard_attributes(data: dict) -> dict:
         # derselbe Wert zweimal ergäbe zwei identische Phasen
         extra_2 = "off"
 
+    window_signal = data.get(CONF_DASH_WINDOW_SIGNAL, DEFAULT_DASH_WINDOW_SIGNAL)
+    if window_signal not in DASH_WINDOW_SIGNAL_OPTIONS:
+        window_signal = DEFAULT_DASH_WINDOW_SIGNAL
+
     def flag(key: str, default: bool) -> str:
         return "1" if data.get(key, default) else "0"
 
@@ -102,6 +111,8 @@ def build_dashboard_attributes(data: dict) -> dict:
         "wechselintervall": f"{_fmt(_num(data.get(CONF_DASH_CYCLE), DEFAULT_DASH_CYCLE, 4, 60))}s",
         "wechselwert_1": extra_1,
         "wechselwert_2": extra_2,
+        "fenster_signal": window_signal,
+        "fenster_signal_breite": f"{_fmt(_num(data.get(CONF_DASH_WINDOW_RING_WIDTH), DEFAULT_DASH_WINDOW_RING_WIDTH, 1, 5))}px",
     }
     summer = data.get(CONF_SUMMER_MODE_SWITCH_ENTITY)
     if summer:

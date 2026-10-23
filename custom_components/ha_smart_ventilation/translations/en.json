@@ -584,7 +584,9 @@
               "dash_bar_width": "Bar width",
               "dash_border_width": "Border width",
               "dash_line_height": "Line height of the name",
-              "dash_extra_size": "Font size of alternating values"
+              "dash_extra_size": "Font size of alternating values",
+              "dash_window_signal": "Window signal",
+              "dash_window_ring_width": "Window signal ring width"
             },
             "data_description": {
               "dash_tint": "Tints the tile according to the room status (hint/action needed).",
@@ -598,7 +600,9 @@
               "dash_bar_width": "Width of the bars in pixels.",
               "dash_border_width": "Width of the neutral border in pixels.",
               "dash_line_height": "Line height of the room name in pixels (not for rooms whose ID starts with climate.flur).",
-              "dash_extra_size": "Size of the alternating values in percent of the font (default 80)."
+              "dash_extra_size": "Size of the alternating values in percent of the font (default 80).",
+              "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
+              "dash_window_ring_width": "Width in pixels (1-5); only for variants with a ring (A, B, C, E, F, J)."
             }
           },
           "messages": {

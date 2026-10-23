@@ -788,5 +788,10 @@ DEFAULT_DASH_EXTRA_1 = "humidity"
 DEFAULT_DASH_EXTRA_2 = "co2"
 DASH_EXTRA_OPTIONS = ("humidity", "co2", "dewpoint", "off")
 DASH_SIDE_OPTIONS = ("left", "right")
+CONF_DASH_WINDOW_SIGNAL = "dash_window_signal"  # Darstellung des Raumstatus am Fenster-Button
+CONF_DASH_WINDOW_RING_WIDTH = "dash_window_ring_width"  # Ringbreite in px
+DEFAULT_DASH_WINDOW_SIGNAL = "j"
+DEFAULT_DASH_WINDOW_RING_WIDTH = 2
+DASH_WINDOW_SIGNAL_OPTIONS = ("off", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
 
 DASHBOARD_SIGNAL = "ha_smart_ventilation_dashboard_update"
