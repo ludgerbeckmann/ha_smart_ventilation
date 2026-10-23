@@ -1353,6 +1353,9 @@ function scCloseRoomDialog() {
   if (!scRoomDialog) return;
   clearInterval(scRoomDialog.timer);
   document.removeEventListener("keydown", scRoomDialog.onKey, true);
+  document.removeEventListener("wheel", scRoomDialog.onWheel, true);
+  document.removeEventListener("touchstart", scRoomDialog.onLockStart, true);
+  document.removeEventListener("touchmove", scRoomDialog.onLockMove, true);
   document.documentElement.style.overflow = scRoomDialog.prevHtmlOverflow;
   document.body.style.overflow = scRoomDialog.prevBodyOverflow;
   scRoomDialog.overlay.remove();
@@ -1373,7 +1376,6 @@ function openRoomDialog(key) {
     "<style>" +
     ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
     ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - 16px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out;will-change:transform}" +
-    "@media (min-width:700px){.sc-room-dialog{align-items:center;padding:16px}.sc-room-panel{border-radius:24px;max-height:100%;padding-bottom:0}}" +
     "@keyframes sc-up{from{transform:translateY(100%)}to{transform:none}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
     ".sc-room-grip{flex:none;height:20px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
@@ -1499,15 +1501,37 @@ function openRoomDialog(key) {
   };
   panel.addEventListener("touchend", endDrag);
   panel.addEventListener("touchcancel", endDrag);
-  // Wischgesten außerhalb des Panels dürfen die Seite nicht bewegen.
-  overlay.addEventListener(
-    "touchmove",
-    (ev) => {
-      if (!panel.contains(ev.target) && ev.cancelable) ev.preventDefault();
-    },
-    { passive: false }
-  );
-  scRoomDialog = { overlay, timer, onKey, prevHtmlOverflow, prevBodyOverflow };
+  // Seite dahinter sperren: Mausrad und Wischgesten auf Dokumentebene
+  // abfangen. Home Assistant scrollt in einem eigenen inneren Container, den
+  // overflow auf html/body nicht erreicht. Erlaubt ist nur das Scrollen im
+  // Inhalt des Dialogs, solange dort noch etwas zu scrollen ist.
+  const canScroll = (dy) => {
+    if (scroll.scrollHeight <= scroll.clientHeight + 1) return false;
+    if (dy > 0) return scroll.scrollTop > 0;
+    if (dy < 0) return scroll.scrollTop + scroll.clientHeight < scroll.scrollHeight - 1;
+    return false;
+  };
+  const inScroll = (ev) => ev.composedPath().includes(scroll);
+  const onWheel = (ev) => {
+    if (!(inScroll(ev) && canScroll(-ev.deltaY)) && ev.cancelable) ev.preventDefault();
+  };
+  let lockY = null;
+  const onLockStart = (ev) => {
+    lockY = ev.touches.length ? ev.touches[0].clientY : null;
+  };
+  const onLockMove = (ev) => {
+    if (!ev.touches.length || lockY === null) return;
+    const y = ev.touches[0].clientY;
+    const dy = y - lockY;
+    lockY = y;
+    // Nach unten ziehen am Anfang des Inhalts schließt den Dialog (oben).
+    if (inScroll(ev) && canScroll(dy)) return;
+    if (ev.cancelable) ev.preventDefault();
+  };
+  document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+  document.addEventListener("touchstart", onLockStart, { capture: true, passive: true });
+  document.addEventListener("touchmove", onLockMove, { capture: true, passive: false });
+  scRoomDialog = { overlay, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
 }
 
 if (!window.__smartClimateRoomDialog) {
