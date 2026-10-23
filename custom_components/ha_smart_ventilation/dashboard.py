@@ -20,7 +20,8 @@ from .const import (
     CONF_DASH_BORDER_WIDTH,
     CONF_DASH_COVER_BAR,
     CONF_DASH_COVER_SIDE,
-    CONF_DASH_CYCLE,
+    CONF_DASH_EXTRA_TIME,
+    CONF_DASH_TEMP_TIME,
     CONF_DASH_EXTRA_1,
     CONF_DASH_EXTRA_2,
     CONF_DASH_EXTRA_SIZE,
@@ -38,7 +39,8 @@ from .const import (
     DEFAULT_DASH_BORDER_WIDTH,
     DEFAULT_DASH_COVER_BAR,
     DEFAULT_DASH_COVER_SIDE,
-    DEFAULT_DASH_CYCLE,
+    DEFAULT_DASH_EXTRA_TIME,
+    DEFAULT_DASH_TEMP_TIME,
     DEFAULT_DASH_EXTRA_1,
     DEFAULT_DASH_EXTRA_2,
     DEFAULT_DASH_EXTRA_SIZE,
@@ -56,7 +58,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v3.6"
+MODULE_VERSION_LABEL = "v3.7"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
@@ -108,7 +110,8 @@ def build_dashboard_attributes(data: dict) -> dict:
         "rahmenbreite": f"{_fmt(_num(data.get(CONF_DASH_BORDER_WIDTH), DEFAULT_DASH_BORDER_WIDTH, 0, 6))}px",
         "zeilenhoehe": f"{_fmt(_num(data.get(CONF_DASH_LINE_HEIGHT), DEFAULT_DASH_LINE_HEIGHT, 20, 120))}px",
         "schrift_zusatz": f"{_fmt(_num(data.get(CONF_DASH_EXTRA_SIZE), DEFAULT_DASH_EXTRA_SIZE, 40, 150) / 100)}em",
-        "wechselintervall": f"{_fmt(_num(data.get(CONF_DASH_CYCLE), DEFAULT_DASH_CYCLE, 4, 60))}s",
+        "anzeigedauer_temperatur": _fmt(_num(data.get(CONF_DASH_TEMP_TIME), DEFAULT_DASH_TEMP_TIME, 1, 30)),
+        "anzeigedauer_wechselwerte": _fmt(_num(data.get(CONF_DASH_EXTRA_TIME), DEFAULT_DASH_EXTRA_TIME, 1, 15)),
         "wechselwert_1": extra_1,
         "wechselwert_2": extra_2,
         "fenster_signal": window_signal,

@@ -1,6 +1,6 @@
 climate_status:
   name: Klima-Status (Preset-Balken, Textfarbe, Raumstatus, Rollladen, Wechselanzeige)
-  version: v3.6
+  version: v3.7
   creator: Smart Climate
   supported:
     - climate
@@ -41,7 +41,6 @@ climate_status:
           '--sc-heat-on': ['balken_heizung', '1'],
           '--sc-cover-on': ['balken_rollladen', '1'],
           '--sc-bar-thickness': ['balkenbreite', '8px'],
-          '--sc-cycle': ['wechselintervall', '12s'],
           '--sc-line-height': ['zeilenhoehe', '50px'],
           '--sc-extra-size': ['schrift_zusatz', '0.8em']
       })}
@@ -49,15 +48,17 @@ climate_status:
                    (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'handlungsbedarf' ? 'var(--sc-tint-action)' :
                    (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'hinweis' ? 'var(--sc-tint-hint)' : 'transparent'};
       --sc-tint: color-mix(in srgb, var(--sc-tint-raw) calc(var(--sc-tint-on) * 100%), transparent);
-      ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] ? ((t, a, r, hot) => ((items) => t == null ? "--sc-rot-t: none; --sc-c-text: '-'; --sc-c-opacity: 1; --sc-rot-c: none; --sc-c-color: var(--primary-text-color);" : "--sc-rot-t: " + (items.length === 2 ? 'sc-t-2' : items.length === 1 ? 'sc-t-1' : 'none') + "; " + (items[0] ? "--sc-h-text: '" + items[0].text + "'; --sc-h-color: " + items[0].color + "; --sc-rot-h: " + (items.length === 2 ? 'sc-x-a' : 'sc-x-s') + "; " : "") + (items[1] ? "--sc-c-text: '" + items[1].text + "'; --sc-c-color: " + items[1].color + "; --sc-rot-c: sc-x-b;" : ""))(((k) => [a.wechselwert_1 || 'humidity', a.wechselwert_2 || 'co2'].map((n) => k[n]).filter((x) => x))({
+      ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] ? ((t, a, r, hot, a2) => ((items) => t == null ? "--sc-rot-t: none; --sc-c-text: '-'; --sc-c-opacity: 1; --sc-rot-c: none; --sc-c-color: var(--primary-text-color);" : "--sc-cycle: " + (((d) => (parseFloat(d.anzeigedauer_temperatur) || 8) + items.length * (parseFloat(d.anzeigedauer_wechselwerte) || 2))(a2)) + "s; --sc-rot-t: " + (items.length === 2 ? 'sc-t-2' : items.length === 1 ? 'sc-t-1' : 'none') + "; " + (items[0] ? "--sc-h-text: '" + items[0].text + "'; --sc-h-color: " + items[0].color + "; --sc-rot-h: " + (items.length === 2 ? 'sc-x-a' : 'sc-x-s') + "; " : "") + (items[1] ? "--sc-c-text: '" + items[1].text + "'; --sc-c-color: " + items[1].color + "; --sc-rot-c: sc-x-b;" : ""))(((k) => [a.wechselwert_1 || 'humidity', a.wechselwert_2 || 'co2'].map((n) => k[n]).filter((x) => x))({
             humidity: r.absolute_luftfeuchtigkeit != null ? {text: String(r.absolute_luftfeuchtigkeit).replace('.', ',') + ' g/m³', color: (r.aussen_absolute_luftfeuchtigkeit != null && r.aussen_absolute_luftfeuchtigkeit > r.absolute_luftfeuchtigkeit) ? hot : 'var(--primary-text-color)'} : null,
+            relative: r.luftfeuchtigkeit != null ? {text: Math.round(r.luftfeuchtigkeit) + ' %', color: (r.schwelle_feuchtigkeit_oeffnen != null && r.luftfeuchtigkeit > r.schwelle_feuchtigkeit_oeffnen) ? hot : 'var(--primary-text-color)'} : null,
             co2: r.co2 != null ? {text: r.co2 + ' ppm', color: (r.schwelle_co2_oeffnen != null && r.co2 > r.schwelle_co2_oeffnen) ? hot : 'var(--primary-text-color)'} : null,
             dewpoint: r.taupunkt != null ? {text: String(r.taupunkt).replace('.', ',') + ' °C', color: 'var(--primary-text-color)'} : null
           })))(
           hass.states[entity].attributes['current_temperature'],
           (hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes,
           hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]] ? hass.states['binary_sensor.luften_empfohlen_' + entity.split('.')[1]].attributes : {},
-          ((n, d) => n ? (d ? 'var(--sc-temp-hot-tinted-dark)' : 'var(--sc-temp-hot-tinted-light)') : 'var(--sc-temp-hot)')((hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'handlungsbedarf' || (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'hinweis', (hass.themes && hass.themes.darkMode) === true)) : ''}
+          ((n, d) => n ? (d ? 'var(--sc-temp-hot-tinted-dark)' : 'var(--sc-temp-hot-tinted-light)') : 'var(--sc-temp-hot)')((hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'handlungsbedarf' || (hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'] ? hass.states['sensor.' + entity.split('.')[1] + '_raumstatus'].state : '') === 'hinweis', (hass.themes && hass.themes.darkMode) === true),
+          (hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes) : ''}
     }
     ha-card, .bubble-background {
       background-image: linear-gradient(var(--sc-tint), var(--sc-tint));
@@ -95,11 +96,7 @@ climate_status:
     ${(() => { if (!entity) return ''; const slug = entity.split('.')[1]; const cs = (this && this.config && this.config.climate_status) || {}; const sb = (this && this.config && this.config.sub_button) || {}; const list = (sb.main || []).concat(sb.bottom || []); const ls = hass.states['binary_sensor.luften_empfohlen_' + slug]; const we = ls && ls.attributes && ls.attributes.entitaeten ? ls.attributes.entitaeten.fenster : null; const i = we ? list.findIndex((x) => x && x.entity === we) : -1; const n = i >= 0 ? i + 1 : cs.window_button; if (!n) return ''; const s = hass.states['sensor.' + slug + '_raumstatus']; const st = s ? s.state : ''; const c = st === 'handlungsbedarf' ? '#E53935' : st === 'hinweis' ? 'var(--warning-color, #FFA600)' : null; if (!c) return ''; const da = (hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes; const v = da.fenster_signal || 'j'; if (v === 'off') return ''; const w = parseFloat(da.fenster_signal_breite) || 2; const px = (x) => x + 'px'; const sh = {a: 'inset 0 0 0 ' + px(w) + ' ' + c, b: '0 0 0 ' + px(w) + ' ' + c, c: '0 0 0 2px var(--primary-background-color, #111), 0 0 0 ' + px(w + 2) + ' ' + c, d: '0 0 8px 2px ' + c, e: 'inset 0 0 0 ' + px(w) + ' ' + c + ', 0 0 8px 2px ' + c, f: 'inset 0 0 0 ' + px(w) + ' ' + c + ', inset 0 0 0 ' + px(w + 2) + ' rgba(0, 0, 0, 0.45)', g: 'inset 0 0 10px 2px ' + c, h: 'inset 0 0 14px 5px ' + c, j: 'inset 0 0 0 ' + px(w) + ' ' + c + ', inset 0 0 12px 3px ' + c}[v]; const bg = {i: 'radial-gradient(circle, transparent 45%, ' + c + ' 100%)', k: 'linear-gradient(to bottom, ' + c + ', transparent 70%)'}[v]; const k = '.bubble-sub-button-' + n; const b = k + k + k; return [b, b + '.background-on', b + ' .background-on'].join(', ') + ' { ' + (sh ? 'box-shadow: ' + sh + ' !important; ' : '') + (bg ? 'background-image: ' + bg + ' !important; ' : '') + '}'; })()}
 
     /* Wechselanzeige (Werte und Animationen kommen als Variablen aus dem ha-card-Block oben) */
-    @keyframes sc-t-2 { 0%, 65% { visibility: visible; } 66%, 98% { visibility: hidden; } 99%, 100% { visibility: visible; } }
-    @keyframes sc-t-1 { 0%, 73% { visibility: visible; } 74%, 98% { visibility: hidden; } 99%, 100% { visibility: visible; } }
-    @keyframes sc-x-a { 0%, 66% { opacity: 0; } 68%, 81% { opacity: 1; } 83%, 100% { opacity: 0; } }
-    @keyframes sc-x-b { 0%, 82% { opacity: 0; } 84%, 97% { opacity: 1; } 99%, 100% { opacity: 0; } }
-    @keyframes sc-x-s { 0%, 74% { opacity: 0; } 76%, 97% { opacity: 1; } 99%, 100% { opacity: 0; } }
+    ${(() => { const d = (hass.states['sensor.smart_climate_darstellung'] || {attributes: {}}).attributes; const T = parseFloat(d.anzeigedauer_temperatur) || 8; const E = parseFloat(d.anzeigedauer_wechselwerte) || 2; const e = Math.min(0.12, E / 4); const f = Math.min(0.25, E / 4); const p = (x, S) => (x / S * 100).toFixed(2) + '%'; const S2 = T + 2 * E; const S1 = T + E; return '@keyframes sc-t-2 { 0%, ' + p(T, S2) + ' { visibility: visible; } ' + p(T + e, S2) + ', ' + p(S2 - e, S2) + ' { visibility: hidden; } 100% { visibility: visible; } } @keyframes sc-t-1 { 0%, ' + p(T, S1) + ' { visibility: visible; } ' + p(T + e, S1) + ', ' + p(S1 - e, S1) + ' { visibility: hidden; } 100% { visibility: visible; } } @keyframes sc-x-a { 0%, ' + p(T, S2) + ' { opacity: 0; } ' + p(T + f, S2) + ', ' + p(T + E - f, S2) + ' { opacity: 1; } ' + p(T + E, S2) + ', 100% { opacity: 0; } } @keyframes sc-x-b { 0%, ' + p(T + E, S2) + ' { opacity: 0; } ' + p(T + E + f, S2) + ', ' + p(S2 - f, S2) + ' { opacity: 1; } 100% { opacity: 0; } } @keyframes sc-x-s { 0%, ' + p(T, S1) + ' { opacity: 0; } ' + p(T + f, S1) + ', ' + p(S1 - f, S1) + ' { opacity: 1; } 100% { opacity: 0; } }'; })()}
     .bubble-state {
       ${entity && entity.indexOf('climate.') === 0 && hass.states[entity] ? (hass.states[entity].attributes['current_temperature'] == null ? 'position: relative; color: transparent !important; overflow: visible !important;' : 'position: relative; overflow: visible !important;') : ''}
       animation: var(--sc-rot-t, none) var(--sc-cycle) infinite;

@@ -580,13 +580,14 @@
               "dash_cover_side": "Seite des Rollladenbalkens",
               "dash_extra_1": "Wechselwert 1",
               "dash_extra_2": "Wechselwert 2",
-              "dash_cycle": "Wechselintervall",
               "dash_bar_width": "Balkenbreite",
               "dash_border_width": "Rahmenbreite",
               "dash_line_height": "Zeilenhöhe des Namens",
               "dash_extra_size": "Schriftgröße der Wechselwerte",
               "dash_window_signal": "Fenster-Signal",
-              "dash_window_ring_width": "Ringbreite Fenster-Signal"
+              "dash_window_ring_width": "Ringbreite Fenster-Signal",
+              "dash_temp_time": "Anzeigedauer Temperatur",
+              "dash_extra_time": "Anzeigedauer Wechselwerte"
             },
             "data_description": {
               "dash_tint": "Färbt die Kachel je nach Raumstatus (Hinweis/Handlungsbedarf).",
@@ -596,13 +597,14 @@
               "dash_cover_side": "Seite, auf der der Rollladenbalken steht.",
               "dash_extra_1": "Erster Wert im Wechsel mit der Temperatur. Aus = nicht anzeigen.",
               "dash_extra_2": "Zweiter Wert im Wechsel. Derselbe Wert wie bei Wechselwert 1 wird nur einmal gezeigt.",
-              "dash_cycle": "Dauer eines kompletten Durchlaufs in Sekunden.",
               "dash_bar_width": "Breite der Balken in Pixel.",
               "dash_border_width": "Breite des neutralen Rahmens in Pixel.",
               "dash_line_height": "Zeilenhöhe des Raumnamens in Pixel (nicht für Räume, deren ID mit climate.flur beginnt).",
               "dash_extra_size": "Größe der Wechselwerte in Prozent der Schrift (Standard 80).",
               "dash_window_signal": "Wie der Raumstatus am Fenster-Button gezeigt wird (Farbe: Hinweis orange, Handlungsbedarf rot). Aus = kein Signal.",
-              "dash_window_ring_width": "Breite in Pixel (1-5); gilt nur für Varianten mit Ring (A, B, C, E, F, J)."
+              "dash_window_ring_width": "Breite in Pixel (1-5); gilt nur für Varianten mit Ring (A, B, C, E, F, J).",
+              "dash_temp_time": "Sekunden, die die Temperatur je Durchlauf angezeigt wird.",
+              "dash_extra_time": "Sekunden, die jeder Wechselwert angezeigt wird."
             }
           },
           "messages": {
