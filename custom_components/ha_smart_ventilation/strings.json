@@ -612,7 +612,7 @@
             },
             "data_description": {
               "dash_window_signal": "Wie der Raumstatus am Fenster-Button gezeigt wird (Farbe: Hinweis orange, Handlungsbedarf rot). Aus = kein Signal.",
-              "dash_window_ring_width": "Breite in Pixel (1-5); gilt für Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N, S, T)."
+              "dash_window_ring_width": "Breite in Pixel (1-12); gilt für Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N, S, T, V)."
             }
           },
           "messages": {

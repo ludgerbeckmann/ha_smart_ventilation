@@ -58,7 +58,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v4.0"
+MODULE_VERSION_LABEL = "v4.1"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
@@ -115,7 +115,7 @@ def build_dashboard_attributes(data: dict) -> dict:
         "wechselwert_1": extra_1,
         "wechselwert_2": extra_2,
         "fenster_signal": window_signal,
-        "fenster_signal_breite": f"{_fmt(_num(data.get(CONF_DASH_WINDOW_RING_WIDTH), DEFAULT_DASH_WINDOW_RING_WIDTH, 1, 5))}px",
+        "fenster_signal_breite": f"{_fmt(_num(data.get(CONF_DASH_WINDOW_RING_WIDTH), DEFAULT_DASH_WINDOW_RING_WIDTH, 1, 12))}px",
     }
     summer = data.get(CONF_SUMMER_MODE_SWITCH_ENTITY)
     if summer:

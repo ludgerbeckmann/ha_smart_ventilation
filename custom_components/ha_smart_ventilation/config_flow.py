@@ -1537,6 +1537,7 @@ def _build_dashboard_button_section(defaults: dict) -> dict:
         "s": "S: Balken oben",
         "t": "T: Balken unten",
         "u": "U: Ecke oben rechts",
+        "v": "V: Balken an allen vier Seiten",
     }
     fields: dict = {
         vol.Required(
@@ -1548,7 +1549,7 @@ def _build_dashboard_button_section(defaults: dict) -> dict:
             default=defaults.get(
                 CONF_DASH_WINDOW_RING_WIDTH, DEFAULT_DASH_WINDOW_RING_WIDTH
             ),
-        ): _dash_number(1, 5, "px"),
+        ): _dash_number(1, 12, "px"),
     }
     return fields
 
