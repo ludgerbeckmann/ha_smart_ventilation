@@ -612,7 +612,7 @@
             },
             "data_description": {
               "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
-              "dash_window_ring_width": "Width in pixels (1-5); for variants with a ring or bar (A, B, C, E, F, J, L, M, N, S, T)."
+              "dash_window_ring_width": "Width in pixels (1-12); for variants with a ring or bar (A, B, C, E, F, J, L, M, N, S, T, V)."
             }
           },
           "messages": {

@@ -794,6 +794,6 @@ CONF_DASH_WINDOW_SIGNAL = "dash_window_signal"  # Darstellung des Raumstatus am 
 CONF_DASH_WINDOW_RING_WIDTH = "dash_window_ring_width"  # Ringbreite in px
 DEFAULT_DASH_WINDOW_SIGNAL = "j"
 DEFAULT_DASH_WINDOW_RING_WIDTH = 2
-DASH_WINDOW_SIGNAL_OPTIONS = ("off", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u")
+DASH_WINDOW_SIGNAL_OPTIONS = ("off", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v")
 
 DASHBOARD_SIGNAL = "ha_smart_ventilation_dashboard_update"
