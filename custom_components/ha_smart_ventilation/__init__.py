@@ -44,8 +44,6 @@ GLOBAL_PLATFORMS: list[str] = ["sensor"]
 # eintragen muss.
 CARD_JS_FILENAME = "smart-climate-card.js"
 CARD_URL_PATH = f"/{DOMAIN}/{CARD_JS_FILENAME}"
-# Vorschaubilder für die Beschreibungen im Einstellungsdialog
-PREVIEW_IMAGES = ("fenster-signal.png", "bubble-card-vorschau.png")
 
 # Diese Integration lässt sich ausschließlich über den Config-Flow (UI)
 # einrichten, nicht über configuration.yaml - hassfest verlangt trotzdem
@@ -235,14 +233,6 @@ async def _register_frontend_card(hass: HomeAssistant, integration) -> None:
         js_path = Path(integration.file_path) / "www" / CARD_JS_FILENAME
         await hass.http.async_register_static_paths(
             [StaticPathConfig(CARD_URL_PATH, str(js_path), cache_headers=True)]
-            + [
-                StaticPathConfig(
-                    f"/{DOMAIN}/{name}",
-                    str(Path(integration.file_path) / "www" / name),
-                    cache_headers=True,
-                )
-                for name in PREVIEW_IMAGES
-            ]
         )
         version = str(integration.version) if integration.version is not None else "0"
         add_extra_js_url(hass, f"{CARD_URL_PATH}?v={version}")
