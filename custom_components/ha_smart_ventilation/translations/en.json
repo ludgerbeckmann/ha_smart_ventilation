@@ -571,7 +571,7 @@
           },
           "dashboard": {
             "name": "Dashboard: Bubble Card",
-            "description": "Settings for the Bubble Card module \"climate_status\" (the room tile). The integration ships the module (folder bubble_card/modules, if Bubble Card Tools is installed) and provides the values in the sensor \"Smart Climate Darstellung\". The module reads them live.\n\n![Bubble Card preview](/ha_smart_ventilation/bubble-card-vorschau.png)",
+            "description": "Settings for the Bubble Card module \"climate_status\" (the room tile). The integration ships the module (folder bubble_card/modules, if Bubble Card Tools is installed) and provides the values in the sensor \"Smart Climate Darstellung\". The module reads them live.",
             "data": {
               "dash_tint": "Colored background",
               "dash_heat_bar": "Show heating bar",
@@ -605,7 +605,7 @@
           },
           "dashboard_button": {
             "name": "Dashboard: Window button",
-            "description": "Signal on the window button of the Bubble Card: shows the room status (notice orange, action needed red). The letters of the variants are in the preview.\n\n![Window signal preview](/ha_smart_ventilation/fenster-signal.png)",
+            "description": "Signal on the window button of the Bubble Card: shows the room status (notice orange, action needed red). The variants (letters) are described in the README with a preview image.",
             "data": {
               "dash_window_signal": "Window signal",
               "dash_window_ring_width": "Window signal ring/bar width"

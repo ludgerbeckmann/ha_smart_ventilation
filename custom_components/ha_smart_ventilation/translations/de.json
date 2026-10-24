@@ -571,7 +571,7 @@
           },
           "dashboard": {
             "name": "Dashboard: Bubble-Card",
-            "description": "Einstellungen für das Bubble-Card-Modul \"climate_status\" (Kachel des Raums). Die Integration liefert das Modul mit (Ordner bubble_card/modules, falls Bubble Card Tools installiert ist) und stellt die Werte im Sensor \"Smart Climate Darstellung\" bereit. Das Modul liest sie live.\n\n![Vorschau Bubble-Card](/ha_smart_ventilation/bubble-card-vorschau.png)",
+            "description": "Einstellungen für das Bubble-Card-Modul \"climate_status\" (Kachel des Raums). Die Integration liefert das Modul mit (Ordner bubble_card/modules, falls Bubble Card Tools installiert ist) und stellt die Werte im Sensor \"Smart Climate Darstellung\" bereit. Das Modul liest sie live.",
             "data": {
               "dash_tint": "Farbiger Hintergrund",
               "dash_heat_bar": "Heizungsbalken anzeigen",
@@ -605,7 +605,7 @@
           },
           "dashboard_button": {
             "name": "Dashboard: Fenster-Button",
-            "description": "Signal am Fenster-Button der Bubble Card: zeigt den Raumstatus (Hinweis orange, Handlungsbedarf rot). Die Buchstaben der Varianten stehen in der Vorschau.\n\n![Vorschau Fenster-Signal](/ha_smart_ventilation/fenster-signal.png)",
+            "description": "Signal am Fenster-Button der Bubble Card: zeigt den Raumstatus (Hinweis orange, Handlungsbedarf rot). Die Varianten (Buchstaben) sind in der README mit Vorschaubild beschrieben.",
             "data": {
               "dash_window_signal": "Fenster-Signal",
               "dash_window_ring_width": "Ring-/Balkenbreite Fenster-Signal"
