@@ -275,7 +275,9 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_SHOWER_TEMPERATURE_ENTITY,
 )
 
-TRIGGER_DOMAINS = ["light", "switch", "binary_sensor", "input_boolean", "person", "device_tracker"]
+TRIGGER_DOMAINS = ["light", "switch", "binary_sensor", "input_boolean", "person"]
+# Davon bereichsgebunden (Personen sind es nicht, Lektion 9):
+TRIGGER_AREA_DOMAINS = ["light", "switch", "binary_sensor", "input_boolean"]
 
 # Reine Flow-interne Checkbox in den globalen Einstellungen (siehe
 # async_step_global) - wird nie in den Config-Entry übernommen, sondern vor
@@ -990,7 +992,7 @@ def _build_room_schema(
     heating_free_day_marker, heating_free_day_sel = _tri_state_bool_selector(
         CONF_HEATING_FREE_DAY_ENABLED,
         defaults,
-        yes_label="Ja – freier Tag: nur Standby statt Comfort",
+        yes_label="Ja – Sensor kann Comfort sperren (nur Standby)",
         no_label="Nein – Sensor nicht berücksichtigen",
     )
     time_field_markers = {
@@ -1056,6 +1058,19 @@ def _build_room_schema(
     heating_include = _area_include_entities(
         area_entities, HEATING_DOMAINS, defaults.get(CONF_HEATING_ENTITY)
     )
+    trigger_include = _area_include_entities(
+        area_entities,
+        TRIGGER_AREA_DOMAINS,
+        defaults.get(CONF_HEATING_TRIGGER_ENTITY),
+    )
+    if trigger_include is not None:
+        # Personen sind nicht bereichsgebunden und bleiben immer wählbar.
+        trigger_include = list(
+            dict.fromkeys(
+                trigger_include
+                + (list(hass.states.async_entity_ids("person")) if hass else [])
+            )
+        )
 
     # Für die vier Preset-Auswahlfelder unten: die tatsächlich konfigurierte
     # Heizungs-Entität live auflösen (analog zu binary_sensor.py:
@@ -1307,7 +1322,7 @@ def _build_room_schema(
                     CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(
-                        domain=PRESENCE_DOMAINS,
+                        domain="person",
                         multiple=True,
                     )
                 ),
@@ -1330,6 +1345,7 @@ def _build_room_schema(
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(
                         domain=TRIGGER_DOMAINS,
+                        include_entities=trigger_include,
                     )
                 ),
                 vol.Optional(
@@ -1427,7 +1443,7 @@ def _build_room_schema(
                                 "required": False,
                                 "selector": selector.EntitySelector(
                                     selector.EntitySelectorConfig(
-                                        domain=PRESENCE_DOMAINS
+                                        domain="person"
                                     )
                                 ),
                             },
@@ -1719,10 +1735,10 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         selector.SelectSelectorConfig(
             options=[
                 selector.SelectOptionDict(
-                    value="on", label="An – Sensor an = freier Tag"
+                    value="on", label="An – Sensor an = Comfort erlaubt (Ferien-Sensor)"
                 ),
                 selector.SelectOptionDict(
-                    value="off", label="Aus – Sensor aus = freier Tag"
+                    value="off", label="Aus – Sensor aus = Comfort erlaubt (Werktag-Sensor)"
                 ),
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
@@ -1868,7 +1884,7 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
                                         "required": False,
                                         "selector": selector.EntitySelector(
                                             selector.EntitySelectorConfig(
-                                                domain=PRESENCE_DOMAINS
+                                                domain="person"
                                             )
                                         ),
                                     },

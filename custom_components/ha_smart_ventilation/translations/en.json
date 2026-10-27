@@ -125,7 +125,7 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "heating_free_day_enabled": "Consider free days"
+              "heating_free_day_enabled": "Use holiday/workday sensor"
             },
             "data_description": {
               "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
@@ -140,7 +140,7 @@
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a free-day sensor is set globally and reports a free day, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}"
+              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}"
             }
           },
           "heating_schedule": {
@@ -328,7 +328,7 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "heating_free_day_enabled": "Consider free days"
+              "heating_free_day_enabled": "Use holiday/workday sensor"
             },
             "data_description": {
               "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
@@ -343,7 +343,7 @@
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a free-day sensor is set globally and reports a free day, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}"
+              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}"
             }
           },
           "heating_schedule": {
@@ -508,9 +508,9 @@
               "summer_mode_forecast_attribute": "Forecast attribute (optional)",
               "summer_mode_switch_entity": "Summer/winter mode switch",
               "summer_mode_threshold_temp": "Summer mode threshold (forecast)",
-              "heating_free_day_entity": "Free-day sensor",
-              "heating_free_day_state": "Free day when sensor is",
-              "heating_free_day_enabled": "Free days for all rooms"
+              "heating_free_day_entity": "Holiday/workday sensor",
+              "heating_free_day_state": "Comfort allowed when sensor is",
+              "heating_free_day_enabled": "Use sensor for all rooms"
             },
             "data_description": {
               "heating_use_preset_mode": "Default Yes (opt-out): heating entities that support preset_mode (e.g. KNX) are controlled/shown via presets automatically instead of a numeric setpoint. Without support, it automatically stays on setpoint control - overridable per room to \"No\" to avoid using presets despite support.",
@@ -526,9 +526,9 @@
               "summer_mode_forecast_attribute": "Name of an attribute on the forecast entity (above) to read the forecast value from (e.g. \"temperature\"). Empty = read the entity's state directly as a number.",
               "summer_mode_switch_entity": "Optional. An already existing switch entity (NOT created by this integration) - on = summer mode (heating paused in all rooms), off = winter mode (heating runs normally). Switched automatically based on the forecast source above, but remains manually operable at any time - a manual toggle is kept until the forecast clearly crosses the threshold (summer mode threshold further down) again. Without a configured entity, summer/winter mode has no effect.",
               "summer_mode_threshold_temp": "Once the forecast temperature reaches this value (+/- tolerance margin), the summer/winter mode switch is turned on automatically (summer mode), and off again below it (winter mode) - only effective if both a forecast source and the switch to control are configured above",
-              "heating_free_day_entity": "Optional: binary sensor, input_boolean or schedule for workday or holidays. Unknown/unavailable is ignored (heating continues normally). Only applies to rooms that consider it.",
-              "heating_free_day_state": "Sensor state that marks a free day: On for a holiday sensor, Off for a workday sensor.",
-              "heating_free_day_enabled": "Default for all rooms (Off): when the free-day sensor is considered, rooms only heat in standby instead of comfort on a free day. Each room can override this in its \"Heating\" section."
+              "heating_free_day_entity": "Optional: binary sensor, input_boolean or schedule for holidays or workdays. Unknown/unavailable is ignored (heating continues normally). Only applies to rooms that consider it.",
+              "heating_free_day_state": "Sensor state in which comfort is allowed (otherwise standby only): On for a holiday sensor (holiday = on), Off for a workday sensor (workday = on blocks comfort).",
+              "heating_free_day_enabled": "Default for all rooms (Off): when the holiday/workday sensor is considered, rooms only heat in standby instead of comfort if it blocks comfort. Each room can override this in its \"Heating\" section."
             }
           },
           "heating_schedule": {
