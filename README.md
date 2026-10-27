@@ -1701,7 +1701,7 @@ fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig al
 `/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
 "Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
 Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
-"Module" mit der Version `v4.1` zu sehen. Eigene Änderungen am Modulcode gehen
+"Module" mit der Version `v4.2` zu sehen. Eigene Änderungen am Modulcode gehen
 bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
 Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
 Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
@@ -1712,6 +1712,15 @@ from YAML" im Bubble-Card-Editor eingefügt werden.
 - **Farbiger Hintergrund** (an/aus), **Heizungsbalken** und **Rollladenbalken**
   (an/aus) jeweils mit **Seite** (links/rechts; liegen beide auf derselben Seite,
   steht der Rollladenbalken neben dem Heizungsbalken).
+- **Heizungsbalken/Rollladenbalken: Ecken einbeziehen** (jeweils an/aus, Standard
+  **aus**) mit **Eckenradius der Balken** (px, Standard 14): Aus füllt der Balken anteilig
+  über die gesamte Kachelhöhe, wodurch kleine Werte komplett in der Rundung
+  verschwinden. An: Beim Heizungsbalken ist die untere Rundung dunkel, sobald das Ventil
+  offen ist (heizt das Gerät, zählt das auch bei `command_value` 0), der Ventilwert füllt
+  dann die gerade Kante von unten, bei 100 % geht der Balken bis ganz oben durch. Der
+  Rollladenbalken arbeitet gespiegelt von oben: sobald der Rollladen nicht ganz offen ist, ist die
+  obere Rundung dunkel, bei ganz geschlossen geht der Balken bis ganz unten. Passt die Rundung
+  optisch nicht, den Eckenradius an den Radius deiner Kacheln anpassen.
 - **Wechselwert 1/2:** welche Zusatzwerte im Wechsel mit der Temperatur laufen
   (absolute oder relative Luftfeuchtigkeit, CO2, Taupunkt oder aus). Die Reihenfolge ergibt
   sich aus 1 und 2.

@@ -59,6 +59,12 @@ from .const import (
     CONF_DASH_EXTRA_2,
     DEFAULT_DASH_TINT,
     DEFAULT_DASH_HEAT_BAR,
+    DEFAULT_DASH_HEAT_CORNERS,
+    DEFAULT_DASH_COVER_CORNERS,
+    CONF_DASH_COVER_CORNERS,
+    DEFAULT_DASH_HEAT_RADIUS,
+    CONF_DASH_HEAT_CORNERS,
+    CONF_DASH_HEAT_RADIUS,
     DEFAULT_DASH_COVER_BAR,
     DEFAULT_DASH_HEAT_SIDE,
     DEFAULT_DASH_COVER_SIDE,
@@ -1479,12 +1485,24 @@ def _build_dashboard_section(defaults: dict) -> dict:
             default=defaults.get(CONF_DASH_HEAT_BAR, DEFAULT_DASH_HEAT_BAR),
         ): selector.BooleanSelector(),
         vol.Required(
+            CONF_DASH_HEAT_CORNERS,
+            default=defaults.get(CONF_DASH_HEAT_CORNERS, DEFAULT_DASH_HEAT_CORNERS),
+        ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_DASH_HEAT_RADIUS,
+            default=defaults.get(CONF_DASH_HEAT_RADIUS, DEFAULT_DASH_HEAT_RADIUS),
+        ): _dash_number(0, 40, "px"),
+        vol.Required(
             CONF_DASH_HEAT_SIDE,
             default=defaults.get(CONF_DASH_HEAT_SIDE, DEFAULT_DASH_HEAT_SIDE),
         ): _dash_select(DASH_SIDE_OPTIONS, side_labels),
         vol.Required(
             CONF_DASH_COVER_BAR,
             default=defaults.get(CONF_DASH_COVER_BAR, DEFAULT_DASH_COVER_BAR),
+        ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_DASH_COVER_CORNERS,
+            default=defaults.get(CONF_DASH_COVER_CORNERS, DEFAULT_DASH_COVER_CORNERS),
         ): selector.BooleanSelector(),
         vol.Required(
             CONF_DASH_COVER_SIDE,

@@ -595,7 +595,10 @@
               "dash_line_height": "Line height of the name",
               "dash_extra_size": "Font size of alternating values",
               "dash_temp_time": "Display time temperature",
-              "dash_extra_time": "Display time alternating values"
+              "dash_extra_time": "Display time alternating values",
+              "dash_heat_corners": "Heating bar: include corners",
+              "dash_heat_radius": "Bar corner radius",
+              "dash_cover_corners": "Shutter bar: include corners"
             },
             "data_description": {
               "dash_tint": "Tints the tile according to the room status (hint/action needed).",
@@ -610,7 +613,10 @@
               "dash_line_height": "Line height of the room name in pixels (not for rooms whose ID starts with climate.flur).",
               "dash_extra_size": "Size of the alternating values in percent of the font (default 80).",
               "dash_temp_time": "Seconds the temperature is shown per cycle.",
-              "dash_extra_time": "Seconds each alternating value is shown."
+              "dash_extra_time": "Seconds each alternating value is shown.",
+              "dash_heat_corners": "Off (default): the bar fills proportionally over the whole tile height. On: when the valve is open the lower corner is dark immediately, the valve value then fills the straight edge, up to the very top at 100 %.",
+              "dash_heat_radius": "Corner radius of the tile in pixels. Only used with \"include corners\" (heating and shutter bar); adjust if the curves look misaligned.",
+              "dash_cover_corners": "Off (default): the bar fills proportionally over the whole tile height. On: once the shutter is partly closed the upper corner is dark immediately, the value then fills the straight edge, down to the very bottom when fully closed."
             }
           },
           "dashboard_button": {

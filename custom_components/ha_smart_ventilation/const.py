@@ -778,6 +778,9 @@ DEFAULT_TTS_MSG_REMINDER = (
 # Modul liest sie live; fehlt ein Wert, gilt der jeweilige Standard.
 CONF_DASH_TINT = "dash_tint"  # farbiger Hintergrund nach Raumstatus
 CONF_DASH_HEAT_BAR = "dash_heat_bar"  # Preset-/Ventilbalken
+CONF_DASH_HEAT_CORNERS = "dash_heat_corners"  # Ventilwert nur auf der geraden Kante, Rundungen als Kappen
+CONF_DASH_HEAT_RADIUS = "dash_heat_radius"  # Eckenradius der Kachel in px (nur mit den Ecken-Schaltern, gilt für beide Balken)
+CONF_DASH_COVER_CORNERS = "dash_cover_corners"  # wie dash_heat_corners, für den Rollladenbalken
 CONF_DASH_COVER_BAR = "dash_cover_bar"  # Rollladenbalken
 CONF_DASH_HEAT_SIDE = "dash_heat_side"  # "left" | "right"
 CONF_DASH_COVER_SIDE = "dash_cover_side"  # "left" | "right"
@@ -792,6 +795,9 @@ CONF_DASH_EXTRA_2 = "dash_extra_2"  # zweiter Wechselwert
 
 DEFAULT_DASH_TINT = True
 DEFAULT_DASH_HEAT_BAR = True
+DEFAULT_DASH_HEAT_CORNERS = False
+DEFAULT_DASH_COVER_CORNERS = False
+DEFAULT_DASH_HEAT_RADIUS = 14
 DEFAULT_DASH_COVER_BAR = True
 DEFAULT_DASH_HEAT_SIDE = "left"
 DEFAULT_DASH_COVER_SIDE = "right"

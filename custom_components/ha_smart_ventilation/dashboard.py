@@ -45,6 +45,12 @@ from .const import (
     DEFAULT_DASH_EXTRA_2,
     DEFAULT_DASH_EXTRA_SIZE,
     DEFAULT_DASH_HEAT_BAR,
+    DEFAULT_DASH_HEAT_CORNERS,
+    DEFAULT_DASH_COVER_CORNERS,
+    CONF_DASH_COVER_CORNERS,
+    DEFAULT_DASH_HEAT_RADIUS,
+    CONF_DASH_HEAT_CORNERS,
+    CONF_DASH_HEAT_RADIUS,
     DEFAULT_DASH_HEAT_SIDE,
     DEFAULT_DASH_LINE_HEIGHT,
     DEFAULT_DASH_TINT,
@@ -58,7 +64,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v4.1"
+MODULE_VERSION_LABEL = "v4.2"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
@@ -104,6 +110,9 @@ def build_dashboard_attributes(data: dict) -> dict:
         "hintergrund": flag(CONF_DASH_TINT, DEFAULT_DASH_TINT),
         "balken_heizung": flag(CONF_DASH_HEAT_BAR, DEFAULT_DASH_HEAT_BAR),
         "balken_rollladen": flag(CONF_DASH_COVER_BAR, DEFAULT_DASH_COVER_BAR),
+        "balken_heizung_ecken": flag(CONF_DASH_HEAT_CORNERS, DEFAULT_DASH_HEAT_CORNERS),
+        "balken_rollladen_ecken": flag(CONF_DASH_COVER_CORNERS, DEFAULT_DASH_COVER_CORNERS),
+        "balken_heizung_radius": f"{_fmt(_num(data.get(CONF_DASH_HEAT_RADIUS), DEFAULT_DASH_HEAT_RADIUS, 0, 40))}px",
         "balken_heizung_seite": "rechts" if heat_side == "right" else "links",
         "balken_rollladen_seite": "rechts" if cover_side == "right" else "links",
         "balkenbreite": f"{_fmt(_num(data.get(CONF_DASH_BAR_WIDTH), DEFAULT_DASH_BAR_WIDTH, 2, 24))}px",
