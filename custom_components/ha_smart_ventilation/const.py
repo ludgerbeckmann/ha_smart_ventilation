@@ -264,6 +264,21 @@ CONF_HEATING_STANDBY_TEMP = "heating_standby_temp"
 # (permissiv - ein GPS-Aussetzer soll nicht fälschlich die Heizung
 # abschalten). Ohne konfigurierte Entität keine Auswirkung (wie bisher).
 CONF_HEATING_PRESENCE_ENTITIES = "heating_presence_entities"
+# Freier-Tag-/Ferien-Sensor (nur global): Binärsensor (auch input_boolean
+# oder schedule). CONF_HEATING_FREE_DAY_STATE legt fest, bei welchem
+# Zustand ("on"/"off") der Tag als frei gilt - so passt sowohl ein
+# Ferien-Sensor (an = frei) als auch ein Arbeitstag-Sensor (aus = frei).
+# CONF_HEATING_FREE_DAY_ENABLED (global Standard False, pro Raum
+# überschreibbar) entscheidet, ob ein Raum den Sensor berücksichtigt. An
+# einem freien Tag wird nur Comfort zu Standby herabgestuft (wie bei der
+# Anwesenheit); Nacht/Standby/Gebäudeschutz bleiben unberührt. Unbekannter/
+# nicht verfügbarer Zustand: permissiv, die Heizung läuft normal weiter.
+CONF_HEATING_FREE_DAY_ENTITY = "heating_free_day_entity"
+CONF_HEATING_FREE_DAY_STATE = "heating_free_day_state"
+CONF_HEATING_FREE_DAY_ENABLED = "heating_free_day_enabled"
+DEFAULT_HEATING_FREE_DAY_STATE = "on"
+DEFAULT_HEATING_FREE_DAY_ENABLED = False
+FREE_DAY_DOMAINS = ["binary_sensor", "input_boolean", "schedule"]
 # Standard False. True = die Heizung folgt zusätzlich einem Zeitplan
 # (Comfort-/Standby-/Nacht-Profile, siehe die sechs
 # CONF_HEATING_*_START_*-Felder unten) statt ausschließlich der reinen

@@ -168,6 +168,12 @@ from .const import (
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
     DEFAULT_HEATING_USE_PRESET_MODE,
+    DEFAULT_HEATING_FREE_DAY_ENABLED,
+    DEFAULT_HEATING_FREE_DAY_STATE,
+    FREE_DAY_DOMAINS,
+    CONF_HEATING_FREE_DAY_ENABLED,
+    CONF_HEATING_FREE_DAY_ENTITY,
+    CONF_HEATING_FREE_DAY_STATE,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
     DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
@@ -663,6 +669,7 @@ def _room_override_placeholders(hass) -> dict[str, str]:
         (CONF_PERSISTENT_ENABLED, False),
         (CONF_HUMIDITY_PRIORITY_OVER_DURATION, DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION),
         (CONF_HEATING_SCHEDULE_ENABLED, False),
+        (CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED),
         (CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
         (CONF_TTS_QUIET_HOURS_ENABLED, DEFAULT_TTS_QUIET_HOURS_ENABLED),
     ):
@@ -775,6 +782,7 @@ def _flatten_step_data(data: dict) -> dict:
         CONF_MOBILE_ENABLED,
         CONF_PERSISTENT_ENABLED,
         CONF_HEATING_SCHEDULE_ENABLED,
+        CONF_HEATING_FREE_DAY_ENABLED,
         CONF_TTS_QUIET_HOURS_ENABLED,
     ):
         value = flat.get(tri_state_key)
@@ -972,6 +980,12 @@ def _build_room_schema(
         defaults,
         yes_label="Ja – Zeitfenster erzwingen den Sollwert",
         no_label="Nein – reine Schwellenwert-Logik",
+    )
+    heating_free_day_marker, heating_free_day_sel = _tri_state_bool_selector(
+        CONF_HEATING_FREE_DAY_ENABLED,
+        defaults,
+        yes_label="Ja – freier Tag: nur Standby statt Comfort",
+        no_label="Nein – Sensor nicht berücksichtigen",
     )
     time_field_markers = {
         key: _time_override_selector(key, defaults) for key in _HEATING_TIME_FIELD_KEYS
@@ -1291,6 +1305,7 @@ def _build_room_schema(
                         multiple=True,
                     )
                 ),
+                heating_free_day_marker: heating_free_day_sel,
                 heating_threshold_marker: heating_threshold_sel,
                 heating_comfort_marker: heating_comfort_sel,
                 heating_standby_marker: heating_standby_sel,
@@ -1670,6 +1685,39 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         CONF_SUMMER_MODE_THRESHOLD_TEMP, defaults
     )
     heating_fields[summer_threshold_marker] = summer_threshold_sel
+    heating_fields[
+        _entity_marker(CONF_HEATING_FREE_DAY_ENTITY, defaults, required=False)
+    ] = selector.EntitySelector(
+        selector.EntitySelectorConfig(domain=FREE_DAY_DOMAINS)
+    )
+    heating_fields[
+        vol.Required(
+            CONF_HEATING_FREE_DAY_STATE,
+            default=defaults.get(
+                CONF_HEATING_FREE_DAY_STATE, DEFAULT_HEATING_FREE_DAY_STATE
+            ),
+        )
+    ] = selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[
+                selector.SelectOptionDict(
+                    value="on", label="An – Sensor an = freier Tag"
+                ),
+                selector.SelectOptionDict(
+                    value="off", label="Aus – Sensor aus = freier Tag"
+                ),
+            ],
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+    heating_fields[
+        vol.Required(
+            CONF_HEATING_FREE_DAY_ENABLED,
+            default=defaults.get(
+                CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED
+            ),
+        )
+    ] = selector.BooleanSelector()
 
     schedule_fields = {
         vol.Required(

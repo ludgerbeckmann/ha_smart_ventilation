@@ -124,7 +124,8 @@
               "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert"
+              "heating_night_temp": "Heizung Nacht-Sollwert",
+              "heating_free_day_enabled": "Freie Tage berücksichtigen"
             },
             "data_description": {
               "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
@@ -138,7 +139,8 @@
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist. Aktuell global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit). Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
+              "heating_free_day_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Ja: Ist global ein Freie-Tage-Sensor hinterlegt und meldet er einen freien Tag, heizt dieser Raum nur im Standby statt im Comfort (Nacht, Standby und Gebäudeschutz bleiben unverändert). Aktuell global: {global_heating_free_day_enabled}"
             }
           },
           "heating_schedule": {
@@ -325,7 +327,8 @@
               "heating_threshold_temp": "Heizungs-Schwelle (Innentemperatur)",
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
-              "heating_night_temp": "Heizung Nacht-Sollwert"
+              "heating_night_temp": "Heizung Nacht-Sollwert",
+              "heating_free_day_enabled": "Freie Tage berücksichtigen"
             },
             "data_description": {
               "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
@@ -339,7 +342,8 @@
               "heating_threshold_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Unterhalb dieser Innentemperatur schaltet die Heizung auf den Comfort-Sollwert; ab Schwelle + Toleranz-Marge wieder auf Standby. Nur wirksam, wenn \"Heizungs-Zeitplan aktivieren\" im Abschnitt \"Heizungs-Zeitplan\" AUS ist. Aktuell global: {global_heating_threshold_temp}",
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit). Aktuell global: {global_heating_standby_temp}",
-              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}"
+              "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
+              "heating_free_day_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Ja: Ist global ein Freie-Tage-Sensor hinterlegt und meldet er einen freien Tag, heizt dieser Raum nur im Standby statt im Comfort (Nacht, Standby und Gebäudeschutz bleiben unverändert). Aktuell global: {global_heating_free_day_enabled}"
             }
           },
           "heating_schedule": {
@@ -503,7 +507,10 @@
               "summer_mode_forecast_entity": "Sommermodus-Vorhersagequelle (optional)",
               "summer_mode_forecast_attribute": "Vorhersage-Attribut (optional)",
               "summer_mode_switch_entity": "Sommer-/Winterbetrieb-Schalter",
-              "summer_mode_threshold_temp": "Sommermodus-Schwelle (Vorhersage)"
+              "summer_mode_threshold_temp": "Sommermodus-Schwelle (Vorhersage)",
+              "heating_free_day_entity": "Freie-Tage-Sensor",
+              "heating_free_day_state": "Freier Tag, wenn Sensor",
+              "heating_free_day_enabled": "Freie Tage für alle Räume"
             },
             "data_description": {
               "heating_use_preset_mode": "Standard Ja (Opt-out): Heizungen, deren Entität preset_mode unterstützt (z. B. KNX), werden automatisch darüber statt über einen Zahlen-Sollwert gesteuert/angezeigt. Ohne Unterstützung bleibt es automatisch bei der Sollwert-Steuerung - pro Raum auf \"Nein\" überschreibbar, um Presets trotz Unterstützung nicht zu nutzen.",
@@ -518,7 +525,10 @@
               "summer_mode_forecast_entity": "Eine sensor- oder weather-Entität mit einer Temperatur-Vorhersage (z. B. ein eigener Template-Sensor mit der Tagesvorhersage) - steuert damit automatisch den weiter unten hinterlegten Sommer-/Winterbetrieb-Schalter. Ohne diese Entität bleibt der Schalter rein manuell bedienbar.",
               "summer_mode_forecast_attribute": "Name eines Attributs der Vorhersage-Entität (oben), aus dem der Vorhersagewert gelesen wird (z. B. \"temperature\"). Leer = state der Entität direkt als Zahl lesen.",
               "summer_mode_switch_entity": "Optional. Eine bereits vorhandene switch-Entität (wird NICHT von dieser Integration angelegt) - An = Sommerbetrieb (Heizung aller Räume pausiert), Aus = Winterbetrieb (Heizung läuft normal). Wird automatisch anhand der obigen Vorhersage-Quelle geschaltet, bleibt aber jederzeit auch manuell bedienbar - ein manueller Schaltvorgang bleibt bestehen, bis die Vorhersage die Schwelle (Sommermodus-Schwelle weiter unten) wieder eindeutig über-/unterschreitet. Ohne konfigurierte Entität hat der Sommer-/Winterbetrieb keine Wirkung.",
-              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind"
+              "summer_mode_threshold_temp": "Ab dieser Vorhersage-Temperatur (+/- Toleranz-Marge) wird der Sommer-/Winterbetrieb-Schalter automatisch eingeschaltet (Sommerbetrieb), darunter automatisch wieder ausgeschaltet (Winterbetrieb) - nur wirksam, wenn oben sowohl eine Vorhersage-Quelle als auch der zu steuernde Schalter konfiguriert sind",
+              "heating_free_day_entity": "Optional: Binärsensor, input_boolean oder schedule für Arbeitstag bzw. Ferien. Unbekannt/nicht verfügbar wird ignoriert (die Heizung läuft normal weiter). Gilt nur für Räume, die ihn berücksichtigen.",
+              "heating_free_day_state": "Bei welchem Sensorzustand der Tag als frei gilt: An für einen Ferien-Sensor, Aus für einen Arbeitstag-Sensor.",
+              "heating_free_day_enabled": "Standard für alle Räume (Aus): ist der Freie-Tage-Sensor berücksichtigt, heizen Räume an einem freien Tag nur im Standby statt im Comfort. Jeder Raum kann das in seinem Abschnitt \"Heizung\" überschreiben."
             }
           },
           "heating_schedule": {
