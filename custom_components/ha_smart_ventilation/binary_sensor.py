@@ -57,6 +57,9 @@ from .const import (
     CONF_HEATING_NIGHT_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND,
     CONF_HEATING_NIGHT_TEMP,
+    CONF_HEATING_FREE_DAY_ENABLED,
+    CONF_HEATING_FREE_DAY_ENTITY,
+    CONF_HEATING_FREE_DAY_STATE,
     CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_PRESET_BUILDING_PROTECTION,
     CONF_HEATING_PRESET_COMFORT,
@@ -146,6 +149,8 @@ from .const import (
     DEFAULT_HEATING_NIGHT_TEMP,
     DEFAULT_HEATING_STANDBY_TEMP,
     DEFAULT_HEATING_THRESHOLD_TEMP,
+    DEFAULT_HEATING_FREE_DAY_ENABLED,
+    DEFAULT_HEATING_FREE_DAY_STATE,
     DEFAULT_HEATING_USE_PRESET_MODE,
     DEFAULT_HEAT_PROTECTION_TEMP,
     DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION,
@@ -1015,6 +1020,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
+            if self._effective(
+                CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED
+            ) and self._global_config().get(CONF_HEATING_FREE_DAY_ENTITY):
+                attrs["heizung_freier_tag"] = self._is_heating_free_day()
             if self._heating_override_since is not None:
                 attrs["heizung_uebersteuert"] = True
                 attrs["heizung_uebersteuerung_seit"] = (
@@ -1729,6 +1738,30 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 return False
         return True
 
+    def _is_heating_free_day(self) -> bool:
+        """True nur, wenn für diesen Raum der Freie-Tage-Sensor berücksichtigt
+        wird (CONF_HEATING_FREE_DAY_ENABLED, global Standard aus, pro Raum
+        überschreibbar), global ein Sensor hinterlegt ist UND dieser
+        bestätigt den unter CONF_HEATING_FREE_DAY_STATE gewählten Zustand
+        meldet ("on" für einen Ferien-Sensor, "off" für einen Arbeitstag-
+        Sensor). Unbekannter/nicht verfügbarer Zustand oder fehlende Entität:
+        permissiv False - die Heizung läuft dann normal weiter."""
+        if not self._effective(
+            CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED
+        ):
+            return False
+        global_config = self._global_config()
+        entity_id = global_config.get(CONF_HEATING_FREE_DAY_ENTITY)
+        if not entity_id:
+            return False
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state not in ("on", "off"):
+            return False
+        free_state = global_config.get(
+            CONF_HEATING_FREE_DAY_STATE, DEFAULT_HEATING_FREE_DAY_STATE
+        )
+        return state.state == free_state
+
     @staticmethod
     def _time_in_window(current, start_str: str, end_str: str) -> bool:
         """Prüft, ob "current" (datetime.time) innerhalb des Zeitfensters
@@ -2381,6 +2414,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
         window_confirmed_open = self._is_window_confirmed_open()
         heating_presence_away = self._is_heating_presence_away()
+        heating_free_day = self._is_heating_free_day()
         heating_schedule_enabled = self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)
         heating_trigger_engaged = (
             bool(self._get_heating_entity_id()) and self._heating_trigger_engaged()
@@ -2415,6 +2449,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             heating_presence_away and heating_target_mode == "comfort"
         )
         if heating_presence_blocked_comfort:
+            heating_target_mode = "standby"
+        # Freier Tag (Ferien/kein Arbeitstag): wie die Anwesenheit nur ein
+        # Comfort-Verhinderer. Ist Comfort schon durch die Anwesenheit
+        # herabgestuft, ist hier nichts mehr zu tun (Grund: Anwesenheit).
+        heating_free_day_blocked_comfort = (
+            heating_free_day and heating_target_mode == "comfort"
+        )
+        if heating_free_day_blocked_comfort:
             heating_target_mode = "standby"
 
         # Manuelle Übersteuerung: ein von Hand (oder einer anderen
@@ -2502,6 +2544,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 )
             elif heating_presence_blocked_comfort:
                 self._heating_reason = "pausiert: niemand zuhause (kein Comfort)"
+            elif heating_free_day_blocked_comfort:
+                self._heating_reason = "pausiert: freier Tag (kein Comfort)"
             elif heating_summer_mode_active:
                 self._heating_reason = "pausiert: Sommerbetrieb aktiv"
             elif heating_trigger_engaged:
