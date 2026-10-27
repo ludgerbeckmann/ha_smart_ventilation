@@ -595,7 +595,10 @@
               "dash_line_height": "Zeilenhöhe des Namens",
               "dash_extra_size": "Schriftgröße der Wechselwerte",
               "dash_temp_time": "Anzeigedauer Temperatur",
-              "dash_extra_time": "Anzeigedauer Wechselwerte"
+              "dash_extra_time": "Anzeigedauer Wechselwerte",
+              "dash_heat_corners": "Heizungsbalken: Ecken einbeziehen",
+              "dash_heat_radius": "Eckenradius der Balken",
+              "dash_cover_corners": "Rollladenbalken: Ecken einbeziehen"
             },
             "data_description": {
               "dash_tint": "Färbt die Kachel je nach Raumstatus (Hinweis/Handlungsbedarf).",
@@ -610,7 +613,10 @@
               "dash_line_height": "Zeilenhöhe des Raumnamens in Pixel (nicht für Räume, deren ID mit climate.flur beginnt).",
               "dash_extra_size": "Größe der Wechselwerte in Prozent der Schrift (Standard 80).",
               "dash_temp_time": "Sekunden, die die Temperatur je Durchlauf angezeigt wird.",
-              "dash_extra_time": "Sekunden, die jeder Wechselwert angezeigt wird."
+              "dash_extra_time": "Sekunden, die jeder Wechselwert angezeigt wird.",
+              "dash_heat_corners": "Aus (Standard): der Balken füllt anteilig über die ganze Kachelhöhe. An: Ist das Ventil offen, ist die untere Rundung sofort dunkel, der Ventilwert füllt danach die gerade Kante, bei 100 % bis ganz oben.",
+              "dash_heat_radius": "Eckenradius der Kachel in Pixel. Wirkt nur mit \"Ecken einbeziehen\" (Heizungs- und Rollladenbalken); bei sichtbarem Versatz an den Rundungen anpassen.",
+              "dash_cover_corners": "Aus (Standard): der Balken füllt anteilig über die ganze Kachelhöhe. An: Ist der Rollladen etwas geschlossen, ist die obere Rundung sofort dunkel, der Wert füllt danach die gerade Kante, bei ganz geschlossen bis ganz unten."
             }
           },
           "dashboard_button": {
