@@ -1081,23 +1081,26 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   Comfort-Modus nehmen). Ohne konfigurierte Entität entfällt diese
   Bedingung komplett.
 
-  **Freie Tage (Ferien/kein Arbeitstag) - ebenfalls nur ein Comfort-
-  Verbot:** In den globalen Einstellungen (Abschnitt "Heizung") kann ein
-  **Freie-Tage-Sensor** (`binary_sensor`, `input_boolean` oder `schedule`)
-  hinterlegt werden. **"Freier Tag, wenn Sensor"** (An/Aus) legt fest, bei
-  welchem Zustand der Tag als frei gilt: **An** für einen Ferien-Sensor,
-  **Aus** für einen Arbeitstag-Sensor. **"Freie Tage für alle Räume"**
-  (global, Standard Nein) und die Raum-Option **"Freie Tage
-  berücksichtigen"** (Ja/Nein/leer = global) bestimmen, welche Räume den
-  Sensor beachten - nur dort wird an einem freien Tag ein ermittelter
-  Comfort-Zielmodus auf Standby herabgestuft; Nacht, Standby und
+  **Ferien-/Werktagssensor - ebenfalls nur ein Comfort-Verbot:** In den
+  globalen Einstellungen (Abschnitt "Heizung") kann ein
+  **Ferien-/Werktagssensor** (`binary_sensor`, `input_boolean` oder
+  `schedule`) hinterlegt werden. **"Comfort erlaubt, wenn Sensor"** (An/Aus)
+  legt fest, bei welchem Zustand Comfort normal genutzt wird: **An** für
+  einen Ferien-Sensor (Ferien = an: Comfort normal, Ferien = aus: nur
+  Standby), **Aus** für einen Werktag-Sensor (Werktag = an: kein Comfort,
+  Werktag = aus: Comfort normal). **"Sensor für alle Räume nutzen"**
+  (global, Standard Nein) und die Raum-Option **"Ferien-/Werktagssensor
+  nutzen"** (Ja/Nein/leer = global) bestimmen, welche Räume den Sensor
+  beachten - nur dort wird ein ermittelter Comfort-Zielmodus auf Standby
+  herabgestuft, wenn der Sensor Comfort sperrt; Nacht, Standby und
   Gebäudeschutz laufen unverändert (auch eine per Hand gesetzte Comfort-
   Wahl bleibt bestehen, wie bei der Anwesenheit). Das gilt auch für
   Auslöser und Zeitplan. Ist der Sensor unbekannt/nicht verfügbar, heizt der
-  Raum normal weiter. `heizung_grund` zeigt "Freier Tag (kein Comfort)",
-  das Attribut `heizung_freier_tag` den aktuellen Stand (nur gesetzt, wenn
-  der Raum den Sensor berücksichtigt). Die Auswertung läuft bei jeder
-  Neubewertung (spätestens im 5-Minuten-Takt).
+  Raum normal weiter. `heizung_grund` zeigt "Ferien-/Werktagssensor (kein
+  Comfort)", das Attribut `heizung_comfort_gesperrt` den aktuellen Stand
+  (nur gesetzt, wenn der Raum den Sensor berücksichtigt). Die Auswertung
+  läuft bei jeder Neubewertung (spätestens im 5-Minuten-Takt).
+
 - **Sommer-/Winterbetrieb**: **kein** eigenes, von dieser Integration
   angelegtes Gerät, sondern eine bereits **vorhandene** `switch`-Entität,
   die in "- Smart Climate Optionen -" hinterlegt und von dieser Integration
