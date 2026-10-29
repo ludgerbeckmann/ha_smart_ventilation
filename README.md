@@ -1237,6 +1237,9 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_modus` | wie `heizung_an`, aber alle vier Stufen: `"comfort"`/`"standby"`/`"night"`/`"building_protection"` (bzw. `null`, falls sich der aktuelle Zustand nicht ablesen/zuordnen lässt). Bei aktiver Preset-Steuerung direkt aus dem live gemeldeten `preset_mode` zurückgemappt, sonst aus der Näherung zum aktuellen Zahlen-Sollwert (kennt dabei kein `"building_protection"`, da es dafür keinen eigenen Sollwert gibt) |
 | `heizung_zieltemperatur` | aktuell am Heizungs-Gerät eingestellter Sollwert (live gelesen, unabhängig von Preset- oder Sollwert-Steuerung), `null` falls (noch) nicht ablesbar |
 | `heizung_grund` | wie `luftentfeuchter_grund`/`klimaanlage_grund`, nur für die Heizung (z. B. "Innentemperatur unter Schwelle, Comfort", "Zeitplan: Nacht", "pausiert: Fenster offen", "pausiert: Sommerbetrieb aktiv") |
+| `heizung_soll_modus` | der von der Integration gewollte Modus (`"comfort"`/`"standby"`/`"night"`/`"building_protection"`) - im Unterschied zu `heizung_modus`, das den Gerätezustand live liest. Bleibt bei einer manuellen Übersteuerung auf dem zuletzt gewollten Wert |
+| `heizung_modus_seit` | Zeitpunkt, seit dem `heizung_soll_modus` gilt (Wechsel des gewollten Modus, per Neubewertung erkannt, also auf wenige Minuten genau; über Neustarts erhalten). Nach dem Update gilt zunächst der Zeitpunkt der ersten Auswertung |
+| `heizung_verhindert` | nur vorhanden, wenn ein sonst gewollter Comfort herabgestuft wurde: `"anwesenheit"` oder `"ferien"` (Ferien-/Werktagssensor) |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `heizung_uebersteuert` | nur vorhanden (`true`), solange ein manueller Eingriff in Preset/Sollwert gilt (siehe "Manuelle Übersteuerung"); `heizung_uebersteuerung_seit` (Zeitpunkt) und `heizung_uebersteuerung_basis` (Regel-Zielmodus zum Zeitpunkt des Eingriffs) dienen der Wiederherstellung nach einem Neustart |
 | `heizung_letzte_laufzeit` | wie `luftentfeuchter_letzte_laufzeit`/`klimaanlage_letzte_laufzeit`, nur für die Heizung |
@@ -1680,6 +1683,31 @@ und mit `window.dispatchEvent(new CustomEvent('ll-custom', {detail: {smart_clima
 testen.
 Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum in der kompakten
 Ansicht).
+
+**Raum-Dialog statt Standard-more-info (ab 1.12.0):** Die Karte fängt außerdem das
+Standard-Ereignis `hass-more-info` ab: Öffnet etwas (z. B. eine Bubble-Kachel mit
+`tap_action: more-info`) die Detailansicht eines **Raum-Sensors dieser Integration**, erscheint
+statt des Standard-Fensters der Raum-Dialog. Für die Kachel genügt:
+
+```yaml
+button_action:
+  tap_action:
+    action: more-info
+    entity: binary_sensor.badezimmer_lueftungsempfehlung   # Raum-Sensor der Integration
+```
+
+Die Kachel behält ihre Hauptentität (`climate.<raum>`). Das gilt überall, wo der Raum-Sensor
+angetippt wird (Suche, andere Karten, Logbuch), nicht für andere Entitäten. Das Standard-Fenster
+(Verlauf, Rohattribute) bleibt über den Link **Standardansicht** oben im Dialog erreichbar.
+Hat der Raum eine Heizung, steht oben im Dialog Home Assistants eigene **Thermostat-Karte**
+(Regler, Modus, Voreinstellung; die Auswahl nutzt die von der Entität gemeldeten
+`hvac_modes`/`preset_modes`) - schlägt das Einbetten fehl, erscheint ein Knopf "Heizung
+steuern". Die Heizungszeile zeigt darunter Modus, Grund und **seit wann** der gewollte Modus
+gilt ("Soll Standby seit 22:14 (vor 3h 20 Min)"), ggf. "Comfort verhindert: niemand zuhause"
+und "Manuell übersteuert seit ..."; Antippen klappt den ganzen Text auf. Dieselben Zeilen
+stehen in der Spalte "Status/Grund" der Geräte-Tabelle der normalen Karte. Eine Änderung am
+Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "Manuelle
+Übersteuerung").
 
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
