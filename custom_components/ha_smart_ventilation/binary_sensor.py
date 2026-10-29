@@ -429,6 +429,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._dehumidifier_reason = ""
         self._ac_reason = ""
         self._heating_reason = ""
+        # Von der Integration gewollter Heizungs-Modus und seit wann er gilt
+        # (nicht der Gerätezustand), sowie ein ggf. verhinderter Comfort.
+        self._heating_mode_wanted: str | None = None
+        self._heating_mode_since = None
+        self._heating_prevented: str | None = None
 
         # Seit wann die Einspeiseleistung ununterbrochen zu niedrig ist,
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
@@ -1020,6 +1025,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
+            if self._heating_mode_wanted is not None:
+                attrs["heizung_soll_modus"] = self._heating_mode_wanted
+                if self._heating_mode_since is not None:
+                    attrs["heizung_modus_seit"] = self._heating_mode_since.isoformat()
+            if self._heating_prevented:
+                attrs["heizung_verhindert"] = self._heating_prevented
             if self._effective(
                 CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED
             ) and self._global_config().get(CONF_HEATING_FREE_DAY_ENTITY):
@@ -1097,6 +1108,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "building_protection",
             ):
                 self._heating_state = attrs["heizung_modus"]
+            if attrs.get("heizung_soll_modus") in (
+                "comfort",
+                "standby",
+                "night",
+                "building_protection",
+            ):
+                self._heating_mode_wanted = attrs["heizung_soll_modus"]
+                if attrs.get("heizung_modus_seit"):
+                    self._heating_mode_since = dt_util.parse_datetime(
+                        attrs["heizung_modus_seit"]
+                    )
             if attrs.get("heizung_uebersteuerung_seit"):
                 self._heating_override_since = dt_util.parse_datetime(
                     attrs["heizung_uebersteuerung_seit"]
@@ -2472,6 +2494,19 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         if heating_overridden:
             heating_target_mode = None
+        self._heating_prevented = (
+            "anwesenheit"
+            if heating_presence_blocked_comfort
+            else "ferien"
+            if heating_free_day_blocked_comfort
+            else None
+        )
+        if (
+            heating_target_mode is not None
+            and heating_target_mode != self._heating_mode_wanted
+        ):
+            self._heating_mode_wanted = heating_target_mode
+            self._heating_mode_since = dt_util.utcnow()
 
         # --- Rein informative Ein-/Ausschalt-Gründe für Luftentfeuchter/
         # Klimaanlage (Dashboard-Karte, neue Geräte-Tabelle, siehe README) -

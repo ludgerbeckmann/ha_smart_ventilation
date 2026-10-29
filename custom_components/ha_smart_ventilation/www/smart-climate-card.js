@@ -101,6 +101,30 @@ function fmtDuration(minutes) {
   return `${Math.floor(m / 60)}h ${m % 60} Min`;
 }
 
+// Infos zum gewollten Heizungs-Modus für Tabelle und Raum-Dialog:
+// "Soll Standby seit 22:14 (vor 3h 20 Min)", ein verhinderter Comfort und
+// eine manuelle Übersteuerung. Alles bereits escaped; fehlende Attribute
+// (ältere Integration) ergeben leere Teile.
+function heatingInfo(a, todayStr) {
+  const out = { since: "", prevented: "", override: "" };
+  const wanted = has(a, "heizung_soll_modus") ? HEATING_MODE_LABEL[a.heizung_soll_modus] : undefined;
+  if (wanted && has(a, "heizung_modus_seit") && a.heizung_modus_seit) {
+    const d = new Date(a.heizung_modus_seit);
+    if (!Number.isNaN(d.getTime())) {
+      out.since = `Soll ${esc(wanted.text)} seit ${esc(shortTimeStr(d, todayStr))} (vor ${esc(fmtDuration((Date.now() - d.getTime()) / 60000))})`;
+    }
+  } else if (wanted) {
+    out.since = `Soll ${esc(wanted.text)}`;
+  }
+  if (a.heizung_verhindert === "anwesenheit") out.prevented = "Comfort verhindert: niemand zuhause";
+  else if (a.heizung_verhindert === "ferien") out.prevented = "Comfort verhindert: Ferien-/Werktagssensor";
+  if (a.heizung_uebersteuert && a.heizung_uebersteuerung_seit) {
+    const d = new Date(a.heizung_uebersteuerung_seit);
+    if (!Number.isNaN(d.getTime())) out.override = `Manuell übersteuert seit ${esc(shortTimeStr(d, todayStr))}`;
+  }
+  return out;
+}
+
 function has(attrs, key) {
   return Object.prototype.hasOwnProperty.call(attrs, key);
 }
@@ -287,7 +311,11 @@ function crCompactRoom(c) {
   if (has(a, "heizung_an")) {
     const mode = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
     const parts = [];
+    const hi = heatingInfo(a, c.todayStr);
+    if (hi.since) parts.push(hi.since);
     if (has(a, "heizung_grund") && a.heizung_grund) parts.push(plainReason(a.heizung_grund));
+    if (hi.prevented) parts.push(hi.prevented);
+    if (hi.override) parts.push(hi.override);
     if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
       parts.push(`Sollstellung ${roundStr(a.heizung_zieltemperatur, 1)} °C`);
     }
@@ -713,6 +741,10 @@ class SmartClimateCard extends HTMLElement {
           laufzeit = fmtDuration(a.heizung_letzte_laufzeit);
         }
         let grund = has(a, "heizung_grund") ? deviceReason(a.heizung_grund) : "–";
+        const hInfo = heatingInfo(a, todayStr);
+        for (const extra of [hInfo.since, hInfo.prevented, hInfo.override]) {
+          if (extra) grund += ` <br>${parenBreak(extra)}`;
+        }
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
           grund += ` <br>(Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
@@ -1349,6 +1381,76 @@ function scFindRoomEntity(hass, key) {
 
 let scRoomDialog = null;
 
+// Home Assistants Thermostat-Karte der Heizung einbetten (Regler, Modus,
+// Voreinstellung). Modus-/Preset-Auswahl als Karten-Funktionen mit den von der
+// Entität gemeldeten Listen. Schlägt etwas fehl: Knopf zum Standard-Fenster.
+async function scEmbedThermostat(container, hass, heatingId, root) {
+  const fallback = () => {
+    container.innerHTML = "";
+    const fb = document.createElement("div");
+    fb.className = "sc-room-thermo-fb";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Heizung steuern";
+    btn.addEventListener("click", () => {
+      scCloseRoomDialog();
+      root.dispatchEvent(
+        new CustomEvent("hass-more-info", { detail: { entityId: heatingId, scBypass: true }, bubbles: true, composed: true })
+      );
+    });
+    fb.appendChild(btn);
+    container.appendChild(fb);
+  };
+  try {
+    if (!window.loadCardHelpers) return fallback();
+    const helpers = await window.loadCardHelpers();
+    const attrs = hass.states[heatingId].attributes || {};
+    const features = [];
+    if (Array.isArray(attrs.hvac_modes) && attrs.hvac_modes.length > 1) {
+      features.push({ type: "climate-hvac-modes", hvac_modes: attrs.hvac_modes });
+    }
+    if (Array.isArray(attrs.preset_modes) && attrs.preset_modes.length > 0) {
+      features.push({ type: "climate-preset-modes", style: "dropdown", preset_modes: attrs.preset_modes });
+    }
+    const config = { type: "thermostat", entity: heatingId };
+    if (features.length) config.features = features;
+    const el = await helpers.createCardElement(config);
+    el.hass = hass;
+    if (!scRoomDialog || scRoomDialog.thermo !== container) return;
+    container.innerHTML = "";
+    container.appendChild(el);
+  } catch (err) {
+    fallback();
+  }
+}
+
+// Eine more-info-Anfrage für einen Raum-Sensor dieser Integration öffnet statt
+// des Standard-Fensters den Raum-Dialog. Das Standard-Fenster bleibt über den
+// Link "Standardansicht" (scBypass) erreichbar.
+function scInterceptMoreInfo(ev) {
+  const detail = ev && ev.detail;
+  if (!detail || detail.scBypass || !detail.entityId) return;
+  const root = document.querySelector("home-assistant");
+  const hass = root && root.hass;
+  if (!hass) return;
+  const state = hass.states[detail.entityId];
+  if (
+    !state ||
+    !String(detail.entityId).startsWith("binary_sensor.") ||
+    !state.attributes ||
+    !has(state.attributes, "raum") ||
+    !has(state.attributes, "integration_version")
+  ) {
+    return;
+  }
+  // Anfragen aus dem Raum-Dialog selbst (Bezeichnungen) gehen unverändert durch.
+  const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
+  if (path.some((n) => n && n.classList && n.classList.contains("sc-room-dialog"))) return;
+  ev.stopImmediatePropagation();
+  ev.stopPropagation();
+  openRoomDialog(detail.entityId);
+}
+
 function scCloseRoomDialog() {
   if (!scRoomDialog) return;
   clearInterval(scRoomDialog.timer);
@@ -1383,6 +1485,12 @@ function openRoomDialog(key) {
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
     ".sc-room-bar{position:absolute;top:6px;right:8px;z-index:1}" +
     ".sc-room-close{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--secondary-text-color,#727272);font-size:20px;cursor:pointer}" +
+    ".sc-room-bar{display:flex;align-items:center;gap:4px}" +
+    ".sc-room-std{border:0;border-radius:16px;background:transparent;color:var(--secondary-text-color,#727272);font-size:13px;padding:6px 10px;cursor:pointer}" +
+    ".sc-room-thermo{padding:0 8px}" +
+    ".sc-room-thermo:empty{display:none}" +
+    ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
+    ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
     "</style>";
   const panel = document.createElement("div");
@@ -1394,6 +1502,11 @@ function openRoomDialog(key) {
   close.textContent = "✕";
   const bar = document.createElement("div");
   bar.className = "sc-room-bar";
+  const std = document.createElement("button");
+  std.className = "sc-room-std";
+  std.type = "button";
+  std.textContent = "Standardansicht";
+  bar.appendChild(std);
   bar.appendChild(close);
   panel.appendChild(bar);
   const grip = document.createElement("div");
@@ -1405,6 +1518,9 @@ function openRoomDialog(key) {
 
   const entityId = scFindRoomEntity(hass, key);
   let card = null;
+  const thermo = document.createElement("div");
+  thermo.className = "sc-room-thermo";
+  scroll.appendChild(thermo);
   if (entityId) {
     card = document.createElement("smart-climate-card");
     card.setConfig({ entities: [entityId], compact_room: true });
@@ -1418,6 +1534,16 @@ function openRoomDialog(key) {
   }
   overlay.appendChild(panel);
 
+  // Thermostat der Heizung: Home Assistants eigene Thermostat-Karte (Regler,
+  // Modus, Voreinstellung) über die Karten-Helfer einbetten. Ohne Helfer/bei
+  // einem Fehler bleibt ein Knopf, der das Standard-Fenster der Heizung öffnet.
+  const heatingId = entityId && hass.states[entityId] && hass.states[entityId].attributes.entitaeten
+    ? hass.states[entityId].attributes.entitaeten.heizung
+    : null;
+  if (heatingId && hass.states[heatingId]) {
+    scEmbedThermostat(thermo, hass, heatingId, root);
+  }
+
   // In <body> einhängen: <home-assistant> hat ein eigenes Shadow-DOM ohne
   // Platz für Kinder, ein dort angehängter Dialog würde nie gezeichnet.
   document.body.appendChild(overlay);
@@ -1426,7 +1552,7 @@ function openRoomDialog(key) {
   // <home-assistant> weiterleiten und den Raum-Dialog dabei schließen.
   overlay.addEventListener("hass-more-info", (ev) => {
     ev.stopPropagation();
-    const detail = ev.detail;
+    const detail = Object.assign({}, ev.detail, { scBypass: true });
     scCloseRoomDialog();
     root.dispatchEvent(
       new CustomEvent("hass-more-info", { detail, bubbles: true, composed: true })
@@ -1438,6 +1564,18 @@ function openRoomDialog(key) {
   };
   document.addEventListener("keydown", onKey, true);
   close.addEventListener("click", scCloseRoomDialog);
+  std.addEventListener("click", () => {
+    scCloseRoomDialog();
+    if (entityId) {
+      root.dispatchEvent(
+        new CustomEvent("hass-more-info", {
+          detail: { entityId, scBypass: true },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
+  });
   overlay.addEventListener("click", (ev) => {
     if (ev.target === overlay) scCloseRoomDialog();
   });
@@ -1446,6 +1584,9 @@ function openRoomDialog(key) {
   const timer = setInterval(() => {
     const current = root.hass;
     if (card && current && current !== card._hass) card.hass = current;
+    if (current && thermo.firstElementChild && thermo.firstElementChild.hass !== undefined && current !== thermo.firstElementChild.hass) {
+      thermo.firstElementChild.hass = current;
+    }
   }, 2000);
   // Seite dahinter sperren, solange der Dialog offen ist.
   const prevHtmlOverflow = document.documentElement.style.overflow;
@@ -1531,11 +1672,12 @@ function openRoomDialog(key) {
   document.addEventListener("wheel", onWheel, { capture: true, passive: false });
   document.addEventListener("touchstart", onLockStart, { capture: true, passive: true });
   document.addEventListener("touchmove", onLockMove, { capture: true, passive: false });
-  scRoomDialog = { overlay, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
+  scRoomDialog = { overlay, thermo, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
 }
 
 if (!window.__smartClimateRoomDialog) {
   window.__smartClimateRoomDialog = true;
+  window.addEventListener("hass-more-info", scInterceptMoreInfo, true);
   window.addEventListener("ll-custom", (ev) => {
     const detail = ev && ev.detail;
     if (detail && detail.smart_climate_room) openRoomDialog(detail.smart_climate_room);
