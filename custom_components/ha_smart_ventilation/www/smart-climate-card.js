@@ -1381,47 +1381,92 @@ function scFindRoomEntity(hass, key) {
 
 let scRoomDialog = null;
 
-// Home Assistants Thermostat-Karte der Heizung einbetten (Regler, Modus,
-// Voreinstellung). Modus-/Preset-Auswahl als Karten-Funktionen mit den von der
-// Entität gemeldeten Listen. Schlägt etwas fehl: Knopf zum Standard-Fenster.
-async function scEmbedThermostat(container, hass, heatingId, root) {
-  const fallback = () => {
-    container.innerHTML = "";
-    const fb = document.createElement("div");
-    fb.className = "sc-room-thermo-fb";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "Heizung steuern";
-    btn.addEventListener("click", () => {
-      scCloseRoomDialog();
-      root.dispatchEvent(
-        new CustomEvent("hass-more-info", { detail: { entityId: heatingId, scBypass: true }, bubbles: true, composed: true })
-      );
-    });
-    fb.appendChild(btn);
-    container.appendChild(fb);
+// Eigene Thermostat-Bedienung der Heizung (Ist-Temperatur, Sollwert mit -/+,
+// Betriebsmodus und Voreinstellung) über die Standard-Dienste der climate-
+// Entität. Home Assistants eigene Thermostat-Karte blieb im Dialog leer, daher
+// kein Einbetten. Liefert eine Funktion, die bei neuem hass aufzurufen ist.
+const SC_HVAC_LABEL = {
+  off: "Aus", heat: "Heizbetrieb", cool: "Kühlen", auto: "Auto", heat_cool: "Heizen/Kühlen",
+  dry: "Trocknen", fan_only: "Lüfter",
+};
+const SC_PRESET_LABEL = {
+  comfort: "Komfort", eco: "Eco", home: "Zuhause", sleep: "Schlafen", away: "Abwesend",
+  boost: "Boost", activity: "Aktivität", none: "Keine", building_protection: "Gebäudeschutz",
+};
+const SC_ACTION_LABEL = { heating: "Heizt", idle: "Leerlauf", off: "Aus", cooling: "Kühlt", drying: "Trocknet", fan: "Lüfter" };
+
+function scLabel(map, key) {
+  if (has(map, key)) return map[key];
+  const text = String(key).replace(/_/g, " ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function scBuildThermostat(container, heatingId, root) {
+  let pending = null;
+  let timer = null;
+  let sig = "";
+  let last = null;
+  const call = (service, data) => {
+    const h = root.hass;
+    if (h && h.callService) h.callService("climate", service, Object.assign({ entity_id: heatingId }, data));
   };
-  try {
-    if (!window.loadCardHelpers) return fallback();
-    const helpers = await window.loadCardHelpers();
-    const attrs = hass.states[heatingId].attributes || {};
-    const features = [];
-    if (Array.isArray(attrs.hvac_modes) && attrs.hvac_modes.length > 1) {
-      features.push({ type: "climate-hvac-modes", hvac_modes: attrs.hvac_modes });
+  const render = (hass) => {
+    const st = hass && hass.states && hass.states[heatingId];
+    last = st;
+    if (!st) {
+      container.innerHTML = "";
+      return;
     }
-    if (Array.isArray(attrs.preset_modes) && attrs.preset_modes.length > 0) {
-      features.push({ type: "climate-preset-modes", style: "dropdown", preset_modes: attrs.preset_modes });
+    const a = st.attributes || {};
+    const target = pending !== null ? pending : a.temperature;
+    const next = JSON.stringify([st.state, a.current_temperature, a.temperature, a.hvac_action, a.preset_mode, a.hvac_modes, a.preset_modes, a.target_temp_step, a.min_temp, a.max_temp, pending]);
+    if (next === sig) return;
+    sig = next;
+    const unavailable = st.state === "unavailable" || st.state === "unknown";
+    let html = '<div class="sc-th">';
+    const action = a.hvac_action ? scLabel(SC_ACTION_LABEL, a.hvac_action) : scLabel(SC_HVAC_LABEL, st.state);
+    html += '<div class="sc-th-top">' + (a.current_temperature !== undefined && a.current_temperature !== null ? `<span>Ist ${esc(roundStr(a.current_temperature, 1))} °C</span>` : "<span></span>") + `<span>${unavailable ? "Nicht verfügbar" : esc(action)}</span></div>`;
+    if (!unavailable && target !== undefined && target !== null) {
+      html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
     }
-    const config = { type: "thermostat", entity: heatingId };
-    if (features.length) config.features = features;
-    const el = await helpers.createCardElement(config);
-    el.hass = hass;
-    if (!scRoomDialog || scRoomDialog.thermo !== container) return;
-    container.innerHTML = "";
-    container.appendChild(el);
-  } catch (err) {
-    fallback();
-  }
+    const chips = (list, active, kind, map) =>
+      '<div class="sc-th-chips">' +
+      list.map((m) => `<button type="button" class="sc-th-chip${m === active ? " on" : ""}" data-th="${kind}" data-v="${esc(m)}">${esc(scLabel(map, m))}</button>`).join("") +
+      "</div>";
+    if (!unavailable && Array.isArray(a.hvac_modes) && a.hvac_modes.length > 1) html += chips(a.hvac_modes, st.state, "mode", SC_HVAC_LABEL);
+    if (!unavailable && Array.isArray(a.preset_modes) && a.preset_modes.length > 0) html += chips(a.preset_modes, a.preset_mode, "preset", SC_PRESET_LABEL);
+    html += "</div>";
+    container.innerHTML = html;
+  };
+  container.addEventListener("click", (ev) => {
+    const btn = ev.target && ev.target.closest ? ev.target.closest("[data-th]") : null;
+    if (!btn || !last) return;
+    const a = last.attributes || {};
+    const kind = btn.dataset.th;
+    if (kind === "minus" || kind === "plus") {
+      const step = Number(a.target_temp_step) > 0 ? Number(a.target_temp_step) : 0.5;
+      const cur = pending !== null ? pending : Number(a.temperature);
+      if (Number.isNaN(cur)) return;
+      let v = Math.round((cur + (kind === "plus" ? step : -step)) / step) * step;
+      if (Number.isFinite(Number(a.min_temp))) v = Math.max(Number(a.min_temp), v);
+      if (Number.isFinite(Number(a.max_temp))) v = Math.min(Number(a.max_temp), v);
+      pending = Math.round(v * 100) / 100;
+      sig = "";
+      render(root.hass);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const t = pending;
+        pending = null;
+        call("set_temperature", { temperature: t });
+      }, 700);
+    } else if (kind === "mode") {
+      call("set_hvac_mode", { hvac_mode: btn.dataset.v });
+    } else if (kind === "preset") {
+      call("set_preset_mode", { preset_mode: btn.dataset.v });
+    }
+  });
+  render(root.hass);
+  return { update: render, stop: () => clearTimeout(timer) };
 }
 
 // Eine more-info-Anfrage für einen Raum-Sensor dieser Integration öffnet statt
@@ -1454,6 +1499,7 @@ function scInterceptMoreInfo(ev) {
 function scCloseRoomDialog() {
   if (!scRoomDialog) return;
   clearInterval(scRoomDialog.timer);
+  if (scRoomDialog.thermoCtl) scRoomDialog.thermoCtl.stop();
   document.removeEventListener("keydown", scRoomDialog.onKey, true);
   document.removeEventListener("wheel", scRoomDialog.onWheel, true);
   document.removeEventListener("touchstart", scRoomDialog.onLockStart, true);
@@ -1483,12 +1529,21 @@ function openRoomDialog(key) {
     ".sc-room-grip{flex:none;height:20px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
     ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
-    ".sc-room-bar{position:absolute;top:6px;right:8px;z-index:1}" +
+    ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 8px}" +
     ".sc-room-close{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--secondary-text-color,#727272);font-size:20px;cursor:pointer}" +
-    ".sc-room-bar{display:flex;align-items:center;gap:4px}" +
+    ".sc-room-bar{display:flex;align-items:center;justify-content:flex-end;gap:4px}" +
     ".sc-room-std{border:0;border-radius:16px;background:transparent;color:var(--secondary-text-color,#727272);font-size:13px;padding:6px 10px;cursor:pointer}" +
     ".sc-room-thermo{padding:0 8px}" +
     ".sc-room-thermo:empty{display:none}" +
+    ".sc-th{padding:4px 16px 8px;display:flex;flex-direction:column;gap:10px}" +
+    ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
+    ".sc-th-val{font-size:44px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
+    ".sc-th-val small{font-size:18px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--divider-color,#999);background:transparent;color:inherit;font-size:26px;line-height:1;cursor:pointer}" +
+    ".sc-th-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}" +
+    ".sc-th-chip{border:1px solid var(--divider-color,#999);border-radius:16px;background:transparent;color:inherit;padding:6px 14px;font-size:14px;cursor:pointer}" +
+    ".sc-th-chip.on{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff)}" +
     ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
     ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
@@ -1508,10 +1563,10 @@ function openRoomDialog(key) {
   std.textContent = "Standardansicht";
   bar.appendChild(std);
   bar.appendChild(close);
-  panel.appendChild(bar);
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";
   panel.appendChild(grip);
+  panel.appendChild(bar);
   const scroll = document.createElement("div");
   scroll.className = "sc-room-scroll";
   panel.appendChild(scroll);
@@ -1534,14 +1589,13 @@ function openRoomDialog(key) {
   }
   overlay.appendChild(panel);
 
-  // Thermostat der Heizung: Home Assistants eigene Thermostat-Karte (Regler,
-  // Modus, Voreinstellung) über die Karten-Helfer einbetten. Ohne Helfer/bei
-  // einem Fehler bleibt ein Knopf, der das Standard-Fenster der Heizung öffnet.
+  // Thermostat der Heizung: eigene Bedienelemente (siehe scBuildThermostat).
   const heatingId = entityId && hass.states[entityId] && hass.states[entityId].attributes.entitaeten
     ? hass.states[entityId].attributes.entitaeten.heizung
     : null;
+  let thermoCtl = null;
   if (heatingId && hass.states[heatingId]) {
-    scEmbedThermostat(thermo, hass, heatingId, root);
+    thermoCtl = scBuildThermostat(thermo, heatingId, root);
   }
 
   // In <body> einhängen: <home-assistant> hat ein eigenes Shadow-DOM ohne
@@ -1584,9 +1638,7 @@ function openRoomDialog(key) {
   const timer = setInterval(() => {
     const current = root.hass;
     if (card && current && current !== card._hass) card.hass = current;
-    if (current && thermo.firstElementChild && thermo.firstElementChild.hass !== undefined && current !== thermo.firstElementChild.hass) {
-      thermo.firstElementChild.hass = current;
-    }
+    if (thermoCtl && current) thermoCtl.update(current);
   }, 2000);
   // Seite dahinter sperren, solange der Dialog offen ist.
   const prevHtmlOverflow = document.documentElement.style.overflow;
@@ -1672,7 +1724,7 @@ function openRoomDialog(key) {
   document.addEventListener("wheel", onWheel, { capture: true, passive: false });
   document.addEventListener("touchstart", onLockStart, { capture: true, passive: true });
   document.addEventListener("touchmove", onLockMove, { capture: true, passive: false });
-  scRoomDialog = { overlay, thermo, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
+  scRoomDialog = { overlay, thermo, thermoCtl, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
 }
 
 if (!window.__smartClimateRoomDialog) {

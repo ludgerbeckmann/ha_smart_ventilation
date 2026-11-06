@@ -1699,10 +1699,14 @@ button_action:
 Die Kachel behält ihre Hauptentität (`climate.<raum>`). Das gilt überall, wo der Raum-Sensor
 angetippt wird (Suche, andere Karten, Logbuch), nicht für andere Entitäten. Das Standard-Fenster
 (Verlauf, Rohattribute) bleibt über den Link **Standardansicht** oben im Dialog erreichbar.
-Hat der Raum eine Heizung, steht oben im Dialog Home Assistants eigene **Thermostat-Karte**
-(Regler, Modus, Voreinstellung; die Auswahl nutzt die von der Entität gemeldeten
-`hvac_modes`/`preset_modes`) - schlägt das Einbetten fehl, erscheint ein Knopf "Heizung
-steuern". Die Heizungszeile zeigt darunter Modus, Grund und **seit wann** der gewollte Modus
+Hat der Raum eine Heizung, steht oben im Dialog eine eigene **Thermostat-Bedienung**:
+Ist-Temperatur und Zustand ("Leerlauf"/"Heizt"), der Sollwert groß mit -/+ (im Schritt der
+Entität, begrenzt auf deren Min/Max; gesendet wird 0,7 s nach dem letzten Tippen), Chips für den
+Betriebsmodus und die Voreinstellung (aus den von der Entität gemeldeten `hvac_modes`/
+`preset_modes`; Dienste `climate.set_temperature`/`set_hvac_mode`/`set_preset_mode`). Home
+Assistants eigene Thermostat-Karte ließ sich im Dialog nicht verlässlich einbetten (blieb leer),
+einen runden Drehregler gibt es daher nicht; das Standard-Fenster der Heizung bleibt über die
+Bezeichnung "Heizung" erreichbar. Die Heizungszeile zeigt darunter Modus, Grund und **seit wann** der gewollte Modus
 gilt ("Soll Standby seit 22:14 (vor 3h 20 Min)"), ggf. "Comfort verhindert: niemand zuhause"
 und "Manuell übersteuert seit ..."; Antippen klappt den ganzen Text auf. Dieselben Zeilen
 stehen in der Spalte "Status/Grund" der Geräte-Tabelle der normalen Karte. Eine Änderung am
