@@ -302,6 +302,21 @@ DEFAULT_HEATING_TRIGGER_PROFILE = "comfort"
 DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES = 5
 DEFAULT_HEATING_TRIGGER_HOLD_MINUTES = 15
 CONF_HEATING_SCHEDULE_ENABLED = "heating_schedule_enabled"
+# Nutzungserkennung (Stufe 2, Lektion 131): Je Raum Lichter (später Präsenz)
+# als "Nutzungs-Signale"; gelernt wird je Tagestyp und Stunde, wie oft der
+# Raum genutzt wurde (nur, solange mindestens eine der unter
+# CONF_HEATING_PRESENCE_ENTITIES gewählten Personen zuhause ist). Der
+# Schalter (global Standard aus, pro Raum überschreibbar) entscheidet, ob
+# das Gelernte die Heizung steuert (Comfort in genutzten Stunden, sonst
+# Standby) - sonst wird nur gelernt und angezeigt (Vorschlagsmodus).
+CONF_USAGE_ENTITIES = "usage_entities"
+CONF_USAGE_LEARNING_ENABLED = "usage_learning_enabled"
+CONF_USAGE_THRESHOLD_PERCENT = "usage_threshold_percent"
+CONF_USAGE_MIN_DAYS = "usage_min_days"
+DEFAULT_USAGE_LEARNING_ENABLED = False
+DEFAULT_USAGE_THRESHOLD_PERCENT = 40
+DEFAULT_USAGE_MIN_DAYS = 14
+USAGE_DOMAINS = ["light", "switch", "binary_sensor", "input_boolean"]
 # Dritter Sollwert (neben Comfort/Standby) für das Nacht-Zeitfenster -
 # typischerweise die tiefste der drei Stufen (tiefer als Standby), da
 # nachts i. d. R. weder Komfort- noch Grundwärme in vollem Umfang nötig

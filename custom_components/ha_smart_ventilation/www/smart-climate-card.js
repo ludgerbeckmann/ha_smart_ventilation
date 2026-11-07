@@ -106,7 +106,7 @@ function fmtDuration(minutes) {
 // eine manuelle Übersteuerung. Alles bereits escaped; fehlende Attribute
 // (ältere Integration) ergeben leere Teile.
 function heatingInfo(a, todayStr) {
-  const out = { since: "", prevented: "", override: "" };
+  const out = { since: "", prevented: "", override: "", learned: "" };
   const wanted = has(a, "heizung_soll_modus") ? HEATING_MODE_LABEL[a.heizung_soll_modus] : undefined;
   if (wanted && has(a, "heizung_modus_seit") && a.heizung_modus_seit) {
     const d = new Date(a.heizung_modus_seit);
@@ -121,6 +121,18 @@ function heatingInfo(a, todayStr) {
   if (a.heizung_uebersteuert && a.heizung_uebersteuerung_seit) {
     const d = new Date(a.heizung_uebersteuerung_seit);
     if (!Number.isNaN(d.getTime())) out.override = `Manuell übersteuert seit ${esc(shortTimeStr(d, todayStr))}`;
+  }
+  if (has(a, "nutzung_lerntage")) {
+    const wd = has(a, "nutzung_gelernt_werktag") ? a.nutzung_gelernt_werktag : "";
+    const we = has(a, "nutzung_gelernt_wochenende") ? a.nutzung_gelernt_wochenende : "";
+    if (wd || we) {
+      const bits = [];
+      if (wd) bits.push(`Werktag ${wd}`);
+      if (we) bits.push(`Wochenende ${we}`);
+      out.learned = `Gelernte Nutzung: ${esc(bits.join(", "))}${a.nutzung_aktiv ? "" : " (nur Anzeige)"}`;
+    } else {
+      out.learned = `Nutzung wird gelernt (${esc(String(a.nutzung_lerntage))} Tage)`;
+    }
   }
   return out;
 }
@@ -316,6 +328,7 @@ function crCompactRoom(c) {
     if (has(a, "heizung_grund") && a.heizung_grund) parts.push(plainReason(a.heizung_grund));
     if (hi.prevented) parts.push(hi.prevented);
     if (hi.override) parts.push(hi.override);
+    if (hi.learned) parts.push(hi.learned);
     if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
       parts.push(`Sollstellung ${roundStr(a.heizung_zieltemperatur, 1)} °C`);
     }
@@ -742,7 +755,7 @@ class SmartClimateCard extends HTMLElement {
         }
         let grund = has(a, "heizung_grund") ? deviceReason(a.heizung_grund) : "–";
         const hInfo = heatingInfo(a, todayStr);
-        for (const extra of [hInfo.since, hInfo.prevented, hInfo.override]) {
+        for (const extra of [hInfo.since, hInfo.prevented, hInfo.override, hInfo.learned]) {
           if (extra) grund += ` <br>${parenBreak(extra)}`;
         }
         if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {

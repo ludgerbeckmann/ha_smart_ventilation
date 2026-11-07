@@ -1101,6 +1101,41 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   (nur gesetzt, wenn der Raum den Sensor berücksichtigt). Die Auswertung
   läuft bei jeder Neubewertung (spätestens im 5-Minuten-Takt).
 
+- **Nutzungserkennung (lernende Heizzeiten, ab 1.13.0):** Im Abschnitt
+  "Heizungs-Zeitplan" eines Raums wählen Sie unter **"Nutzungs-Signale"** ein
+  oder mehrere Lichter (später auch Präsenzsensoren). Die Integration lernt
+  daraus, in welchen Stunden der Raum an **Werktagen** und am **Wochenende**
+  genutzt wird. Als genutzt zählt eine Stunde, wenn mindestens ein Signal an
+  war und - falls unter "Heizung" Personen für die Anwesenheit hinterlegt
+  sind - mindestens eine Person nicht bestätigt abwesend war. Ferientage
+  (Ferien-/Werktagssensor sperrt Comfort) zählen wie Wochenende. Beim Start
+  werden bis zu 28 Tage aus dem Verlauf (Recorder) nachgeladen, danach wird
+  laufend ergänzt; die Daten liegen lokal im Speicher von Home Assistant
+  (`.storage`), nicht in Attributen. Es ist einfache Statistik, kein
+  Machine Learning: nachvollziehbar und ohne Trainingsphase.
+  - **Vorschlagsmodus (Standard):** Es wird nur gelernt und angezeigt - im
+    Raum-Dialog und in der Geräte-Tabelle steht z. B. "Gelernte Nutzung:
+    Werktag 7–8 und 15–22 Uhr (nur Anzeige)". Die Heizung ändert sich nicht.
+  - **"Gelernte Zeiten verwenden" = Ja** (global Standard Nein, pro Raum
+    überschreibbar): In typischerweise genutzten Stunden gilt Comfort, sonst
+    Standby. Das ersetzt den Zeitplan, sobald genug gelernt wurde
+    (**Mindest-Lernzeit**, Standard 14 Tage, und mindestens 2 Vergleichstage
+    der jeweiligen Stunde); bis dahin gilt weiter Zeitplan bzw.
+    Schwellenwert-Logik. Eine Stunde gilt als genutzt, wenn der Raum an
+    mindestens **40 %** (**Nutzungs-Schwelle**) der Vergleichstage genutzt
+    wurde.
+  - **Rangfolge:** Fenster offen, Sommerbetrieb, manuelle Übersteuerung und
+    der dynamische Auslöser haben Vorrang; ein aktives **Nacht-Profil des
+    Zeitplans** bleibt bestehen; Anwesenheit und Ferien-/Werktagssensor
+    stufen Comfort wie gewohnt auf Standby herab. Frost-/Gebäudeschutz bleibt
+    unberührt. `heizung_grund` zeigt z. B. "Gelernt: genutzt (7 von 10
+    Werktagen)".
+  - Attribute: `nutzung_lerntage`, `nutzung_aktiv`,
+    `nutzung_gelernt_werktag`, `nutzung_gelernt_wochenende` (nur mit
+    konfigurierter Heizung und Nutzungs-Signalen). Der Dienst
+    `ha_smart_ventilation.reset_usage_learning` (Ziel: die
+    Lüftungsempfehlung des Raums) verwirft das Gelernte.
+
 - **Sommer-/Winterbetrieb**: **kein** eigenes, von dieser Integration
   angelegtes Gerät, sondern eine bereits **vorhandene** `switch`-Entität,
   die in "- Smart Climate Optionen -" hinterlegt und von dieser Integration
@@ -1240,6 +1275,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_soll_modus` | der von der Integration gewollte Modus (`"comfort"`/`"standby"`/`"night"`/`"building_protection"`) - im Unterschied zu `heizung_modus`, das den Gerätezustand live liest. Bleibt bei einer manuellen Übersteuerung auf dem zuletzt gewollten Wert |
 | `heizung_modus_seit` | Zeitpunkt, seit dem `heizung_soll_modus` gilt (Wechsel des gewollten Modus, per Neubewertung erkannt, also auf wenige Minuten genau; über Neustarts erhalten). Nach dem Update gilt zunächst der Zeitpunkt der ersten Auswertung |
 | `heizung_verhindert` | nur vorhanden, wenn ein sonst gewollter Comfort herabgestuft wurde: `"anwesenheit"` oder `"ferien"` (Ferien-/Werktagssensor) |
+| `nutzung_lerntage` / `nutzung_aktiv` / `nutzung_gelernt_werktag` / `nutzung_gelernt_wochenende` | Nutzungserkennung (nur mit Heizung und Nutzungs-Signalen): beobachtete Tage, ob das Gelernte die Heizung steuert, und die gelernten Nutzungszeiten (z. B. `7–8 und 15–22 Uhr`) |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `heizung_uebersteuert` | nur vorhanden (`true`), solange ein manueller Eingriff in Preset/Sollwert gilt (siehe "Manuelle Übersteuerung"); `heizung_uebersteuerung_seit` (Zeitpunkt) und `heizung_uebersteuerung_basis` (Regel-Zielmodus zum Zeitpunkt des Eingriffs) dienen der Wiederherstellung nach einem Neustart |
 | `heizung_letzte_laufzeit` | wie `luftentfeuchter_letzte_laufzeit`/`klimaanlage_letzte_laufzeit`, nur für die Heizung |
