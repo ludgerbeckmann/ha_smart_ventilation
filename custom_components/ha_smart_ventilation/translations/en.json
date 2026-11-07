@@ -157,7 +157,9 @@
               "heating_trigger_entity": "Dynamic trigger",
               "heating_trigger_profile": "Profile on trigger",
               "heating_trigger_on_delay_minutes": "Trigger: on-delay",
-              "heating_trigger_hold_minutes": "Trigger: hold time"
+              "heating_trigger_hold_minutes": "Trigger: hold time",
+              "usage_entities": "Usage signals (lights)",
+              "usage_learning_enabled": "Use learned times"
             },
             "data_description": {
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled: the plain threshold logic still applies (heating threshold in the \"Heating\" section). Currently global: {global_heating_schedule_enabled}",
@@ -170,7 +172,9 @@
               "heating_trigger_entity": "Optional, this room only: light, switch, binary sensor, input_boolean, person or device tracker. While it is on/home (after the on-delay), the chosen profile applies and replaces the schedule or threshold logic (e.g. home office via light, bedroom via person). Open window, summer mode, manual change and \"nobody home\" (no comfort) take precedence. Unknown/unavailable counts as inactive.",
               "heating_trigger_profile": "Profile applied while the trigger is active (default Comfort; for a person, home means Comfort).",
               "heating_trigger_on_delay_minutes": "Minutes the trigger must stay active before it applies (default 5, 0 = immediately).",
-              "heating_trigger_hold_minutes": "Minutes the profile still applies after the trigger ends (default 15, 0 = revert immediately)."
+              "heating_trigger_hold_minutes": "Minutes the profile still applies after the trigger ends (default 15, 0 = revert immediately).",
+              "usage_entities": "Optional, this room only: lights (later presence sensors) used to detect room usage. The integration learns in which hours the room is used on weekdays and weekends (persons from \"Heating\" - presence are taken into account). Learning always runs; the heating only changes with \"Use learned times\".",
+              "usage_learning_enabled": "Empty = use the global setting from \"Smart Climate options\". Yes: Comfort in typically used hours, otherwise Standby - replaces the schedule once enough has been learned. No: learn and display only. Open window, summer mode, trigger, manual change, the schedule's night profile, presence and the holiday/workday sensor take precedence. Currently global: {global_usage_learning_enabled}"
             }
           },
           "notify": {
@@ -360,7 +364,9 @@
               "heating_trigger_entity": "Dynamic trigger",
               "heating_trigger_profile": "Profile on trigger",
               "heating_trigger_on_delay_minutes": "Trigger: on-delay",
-              "heating_trigger_hold_minutes": "Trigger: hold time"
+              "heating_trigger_hold_minutes": "Trigger: hold time",
+              "usage_entities": "Usage signals (lights)",
+              "usage_learning_enabled": "Use learned times"
             },
             "data_description": {
               "heating_schedule_enabled": "Empty = use the global setting from \"Smart Climate Options\". Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled: the plain threshold logic still applies (heating threshold in the \"Heating\" section). Currently global: {global_heating_schedule_enabled}",
@@ -373,7 +379,9 @@
               "heating_trigger_entity": "Optional, this room only: light, switch, binary sensor, input_boolean, person or device tracker. While it is on/home (after the on-delay), the chosen profile applies and replaces the schedule or threshold logic (e.g. home office via light, bedroom via person). Open window, summer mode, manual change and \"nobody home\" (no comfort) take precedence. Unknown/unavailable counts as inactive.",
               "heating_trigger_profile": "Profile applied while the trigger is active (default Comfort; for a person, home means Comfort).",
               "heating_trigger_on_delay_minutes": "Minutes the trigger must stay active before it applies (default 5, 0 = immediately).",
-              "heating_trigger_hold_minutes": "Minutes the profile still applies after the trigger ends (default 15, 0 = revert immediately)."
+              "heating_trigger_hold_minutes": "Minutes the profile still applies after the trigger ends (default 15, 0 = revert immediately).",
+              "usage_entities": "Optional, this room only: lights (later presence sensors) used to detect room usage. The integration learns in which hours the room is used on weekdays and weekends (persons from \"Heating\" - presence are taken into account). Learning always runs; the heating only changes with \"Use learned times\".",
+              "usage_learning_enabled": "Empty = use the global setting from \"Smart Climate options\". Yes: Comfort in typically used hours, otherwise Standby - replaces the schedule once enough has been learned. No: learn and display only. Open window, summer mode, trigger, manual change, the schedule's night profile, presence and the holiday/workday sensor take precedence. Currently global: {global_usage_learning_enabled}"
             }
           },
           "notify": {
@@ -541,7 +549,10 @@
               "heating_night_start_weekday": "Night start (weekday)",
               "heating_comfort_start_weekend": "Comfort start (weekend)",
               "heating_standby_start_weekend": "Standby start (weekend)",
-              "heating_night_start_weekend": "Night start (weekend)"
+              "heating_night_start_weekend": "Night start (weekend)",
+              "usage_learning_enabled": "Use learned times",
+              "usage_threshold_percent": "Usage threshold",
+              "usage_min_days": "Minimum learning time"
             },
             "data_description": {
               "heating_schedule_enabled": "Enabled: the currently active profile (Comfort/Standby/Night, see the start times below) forces the setpoint regardless of the indoor temperature. Disabled (default): the plain threshold logic still applies (heating threshold in the \"Heating\" section)",
@@ -550,7 +561,10 @@
               "heating_night_start_weekday": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
               "heating_comfort_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
               "heating_standby_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
-              "heating_night_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled"
+              "heating_night_start_weekend": "The profile starts at this time and stays active until another profile starts. Empty = profile not used. Only effective while the heating schedule is enabled",
+              "usage_learning_enabled": "Enabled: in rooms with usage signals the learned times control the heating (Comfort in used hours, otherwise Standby) once enough has been learned. Can be overridden per room. Off (default): learn and display only.",
+              "usage_threshold_percent": "An hour counts as used if the room was used in at least this share of the observed comparison days (weekdays or weekends/free days).",
+              "usage_min_days": "Number of days the integration must have observed before the learned times control the heating; until then the schedule or threshold logic applies. At startup, existing days are loaded from the history (recorder)."
             }
           },
           "notify": {
@@ -688,6 +702,10 @@
     "send_test_push": {
       "name": "Send test push",
       "description": "Sends a test push message through the same path as the real notifications to all app push targets of the selected room - even if push is disabled for the room or the person is currently not home. The result (including whether a real notification would be sent right now) is listed in the push_verlauf attribute of the ventilation recommendation; a send error is returned as an error message."
+    },
+    "reset_usage_learning": {
+      "name": "Reset learned usage",
+      "description": "Discards the learned usage of this room; learning starts over."
     }
   }
 }

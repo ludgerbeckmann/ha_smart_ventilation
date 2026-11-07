@@ -4,3 +4,10 @@ send_test_push:
       integration: ha_smart_ventilation
       domain: binary_sensor
       device_class: opening
+
+reset_usage_learning:
+  target:
+    entity:
+      integration: ha_smart_ventilation
+      domain: binary_sensor
+      device_class: opening

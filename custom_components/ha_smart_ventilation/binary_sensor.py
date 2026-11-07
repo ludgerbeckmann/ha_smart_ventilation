@@ -28,9 +28,17 @@ from homeassistant.helpers.event import (
     async_track_time_interval,
 )
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
+from .learning import (
+    BACKFILL_STEP_MINUTES,
+    KEEP_DAYS,
+    UsageProfile,
+    backfill_days,
+    format_windows,
+)
 from .const import (
     CO2_WARM_OUTDOOR_OVERRIDE_FACTOR,
     CONF_AC_ENTITY,
@@ -67,6 +75,13 @@ from .const import (
     CONF_HEATING_PRESET_STANDBY,
     CONF_HEATING_SCHEDULE_ENABLED,
     CONF_HEATING_TRIGGER_ENTITY,
+    CONF_USAGE_ENTITIES,
+    CONF_USAGE_LEARNING_ENABLED,
+    CONF_USAGE_THRESHOLD_PERCENT,
+    CONF_USAGE_MIN_DAYS,
+    DEFAULT_USAGE_LEARNING_ENABLED,
+    DEFAULT_USAGE_THRESHOLD_PERCENT,
+    DEFAULT_USAGE_MIN_DAYS,
     CONF_HEATING_TRIGGER_PROFILE,
     CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
     CONF_HEATING_TRIGGER_HOLD_MINUTES,
@@ -266,6 +281,7 @@ def _window_since_from_history(
     return None
 
 SERVICE_SEND_TEST_PUSH = "send_test_push"
+SERVICE_RESET_USAGE_LEARNING = "reset_usage_learning"
 
 
 async def async_setup_entry(
@@ -289,6 +305,9 @@ async def async_setup_entry(
     # Registrieren (je Raum-Eintrag) ist bei Entity-Diensten üblich.
     async_get_current_platform().async_register_entity_service(
         SERVICE_SEND_TEST_PUSH, {}, "async_send_test_push"
+    )
+    async_get_current_platform().async_register_entity_service(
+        SERVICE_RESET_USAGE_LEARNING, {}, "async_reset_usage_learning"
     )
 
 
@@ -434,6 +453,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heating_mode_wanted: str | None = None
         self._heating_mode_since = None
         self._heating_prevented: str | None = None
+        # Nutzungserkennung (learning.py): gelernte Nutzung je Tagestyp und
+        # Stunde, lokal im Store dieses Eintrags gespeichert.
+        self._usage = UsageProfile()
+        self._usage_store: Store | None = None
+        self._usage_note = ""
 
         # Seit wann die Einspeiseleistung ununterbrochen zu niedrig ist,
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
@@ -1025,6 +1049,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["heizung_modus"] = heating_mode_active
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
+            attrs.update(self._usage_attributes())
             if self._heating_mode_wanted is not None:
                 attrs["heizung_soll_modus"] = self._heating_mode_wanted
                 if self._heating_mode_since is not None:
@@ -1181,6 +1206,26 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         trigger_entity = self._config.get(CONF_HEATING_TRIGGER_ENTITY)
         if trigger_entity and self._get_heating_entity_id():
             tracked.append(trigger_entity)
+
+        # Nutzungserkennung: Signale und Personen verfolgen (jede Änderung
+        # löst eine Neubewertung und damit eine Beobachtung aus) und den
+        # gespeicherten Verlauf laden; fehlt er, im Hintergrund aus dem
+        # Recorder nachladen.
+        usage_entities = self._usage_entities()
+        if usage_entities:
+            tracked.extend(usage_entities)
+            tracked.extend(self._config.get(CONF_HEATING_PRESENCE_ENTITIES) or [])
+            self._usage_store = Store(
+                self.hass, 1, f"{DOMAIN}_usage_{self._entry.entry_id}"
+            )
+            stored = await self._usage_store.async_load()
+            self._usage = UsageProfile((stored or {}).get("days"))
+            if self._usage.observed_days() < KEEP_DAYS // 2:
+                self._entry.async_create_background_task(
+                    self.hass,
+                    self._async_backfill_usage(),
+                    f"{DOMAIN}_usage_backfill_{self._entry.entry_id}",
+                )
 
         # Außentemperatur/-luftfeuchtigkeit kommen ausschließlich aus "Smart
         # Climate Optionen" - direkt verfolgen, falls beim Hinzufügen
@@ -1759,6 +1804,163 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if state is None or state.state != "not_home":
                 return False
         return True
+
+    # ------------------------------------------------------------------
+    # Nutzungserkennung (Stufe 2, CLAUDE.md Lektion 131)
+    # ------------------------------------------------------------------
+    def _usage_entities(self) -> list[str]:
+        return [e for e in self._as_list(self._config.get(CONF_USAGE_ENTITIES)) if e]
+
+    def _usage_day_type(self, now) -> str:
+        """"we" für Wochenende UND freie Tage (Ferien-/Werktagssensor sperrt
+        Comfort), sonst "wd"."""
+        if now.weekday() >= 5 or self._is_heating_comfort_blocked_by_sensor():
+            return "we"
+        return "wd"
+
+    def _usage_params(self) -> tuple[float, int]:
+        glob = self._global_config()
+        return (
+            float(glob.get(CONF_USAGE_THRESHOLD_PERCENT, DEFAULT_USAGE_THRESHOLD_PERCENT)),
+            int(glob.get(CONF_USAGE_MIN_DAYS, DEFAULT_USAGE_MIN_DAYS)),
+        )
+
+    def _usage_active_now(self) -> bool | None:
+        """Wird der Raum jetzt genutzt? Signal an UND (falls Personen
+        hinterlegt) mindestens eine nicht bestätigt abwesend. None, wenn
+        kein Signal einen gültigen Zustand meldet (dann keine Beobachtung)."""
+        known = False
+        any_on = False
+        for entity_id in self._usage_entities():
+            state = self.hass.states.get(entity_id)
+            if state is None or state.state in ("unknown", "unavailable"):
+                continue
+            known = True
+            if state.state in ("on", "home"):
+                any_on = True
+        if not known:
+            return None
+        if any_on and self._is_heating_presence_away():
+            return False
+        return any_on
+
+    def _observe_usage(self) -> None:
+        if not self._usage_entities() or self._usage_store is None:
+            return
+        used = self._usage_active_now()
+        if used is None:
+            return
+        now = dt_util.now()
+        today = now.strftime("%Y-%m-%d")
+        if self._usage.mark(today, self._usage_day_type(now), now.hour, used):
+            self._usage.prune(today)
+            self._usage_store.async_delay_save(lambda: self._usage.to_dict(), 60)
+
+    def _get_learned_heating_mode(self) -> str | None:
+        """"comfort"/"standby" aus dem Gelernten, wenn die Funktion aktiv ist
+        und genug gelernt wurde; sonst None (dann gilt der Zeitplan bzw. die
+        Schwellenwert-Logik). Ein aktives Nacht-Profil des Zeitplans hat
+        Vorrang (Nutzerentscheidung)."""
+        self._usage_note = ""
+        if not self._usage_entities() or not self._effective(
+            CONF_USAGE_LEARNING_ENABLED, DEFAULT_USAGE_LEARNING_ENABLED
+        ):
+            return None
+        if (
+            self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)
+            and self._get_scheduled_heating_mode() == "night"
+        ):
+            return None
+        now = dt_util.now()
+        day_type = self._usage_day_type(now)
+        threshold, min_days = self._usage_params()
+        used = self._usage.is_used(day_type, now.hour, threshold, min_days)
+        if used is None:
+            return None
+        count, observed = self._usage.hour_stats(day_type, now.hour)
+        self._usage_note = (
+            f"{'genutzt' if used else 'nicht genutzt'} "
+            f"({count} von {observed} "
+            f"{'Wochenend-/Freitagen' if day_type == 'we' else 'Werktagen'})"
+        )
+        return "comfort" if used else "standby"
+
+    async def _async_backfill_usage(self) -> None:
+        """Lädt die Nutzung der letzten Tage aus dem Recorder (Licht/Signale
+        und Personen), ohne live beobachtete Stunden zu überschreiben."""
+        try:
+            from homeassistant.components.recorder import get_instance
+            from homeassistant.components.recorder.history import (
+                state_changes_during_period,
+            )
+
+            usage_ids = self._usage_entities()
+            person_ids = list(self._config.get(CONF_HEATING_PRESENCE_ENTITIES) or [])
+            end = dt_util.utcnow()
+            start = end - timedelta(days=KEEP_DAYS)
+
+            def _fetch():
+                out = {}
+                for eid in usage_ids + person_ids:
+                    result = state_changes_during_period(
+                        self.hass,
+                        start,
+                        end,
+                        entity_id=eid,
+                        no_attributes=True,
+                        include_start_time_state=True,
+                    )
+                    out[eid] = [
+                        (dt_util.as_local(st.last_changed), st.state)
+                        for st in sorted(result.get(eid, []), key=lambda s: s.last_changed)
+                    ]
+                return out
+
+            rows = await get_instance(self.hass).async_add_executor_job(_fetch)
+            days = backfill_days(
+                {e: rows[e] for e in usage_ids if rows.get(e)},
+                {e: rows[e] for e in person_ids if rows.get(e)},
+                dt_util.as_local(start),
+                dt_util.as_local(end),
+                lambda d: d.weekday() >= 5,
+            )
+        except Exception:  # noqa: BLE001 - Nachladen ist nur eine Beschleunigung
+            _LOGGER.debug("Nutzungsverlauf nicht nachladbar", exc_info=True)
+            return
+        for date_str, (day_type, bits) in days.items():
+            self._usage.merge_backfill(date_str, day_type, bits)
+        self._usage.prune(dt_util.now().strftime("%Y-%m-%d"))
+        if self._usage_store is not None:
+            self._usage_store.async_delay_save(lambda: self._usage.to_dict(), 5)
+        await self._evaluate()
+        if self.hass is not None and self.entity_id:
+            self.async_write_ha_state()
+
+    async def async_reset_usage_learning(self) -> None:
+        """Entity-Dienst `reset_usage_learning`: verwirft das Gelernte."""
+        self._usage = UsageProfile()
+        if self._usage_store is not None:
+            await self._usage_store.async_save(self._usage.to_dict())
+        await self._evaluate()
+        self.async_write_ha_state()
+
+    def _usage_attributes(self) -> dict:
+        if not self._usage_entities():
+            return {}
+        threshold, min_days = self._usage_params()
+        attrs = {
+            "nutzung_lerntage": self._usage.observed_days(),
+            "nutzung_aktiv": bool(
+                self._effective(CONF_USAGE_LEARNING_ENABLED, DEFAULT_USAGE_LEARNING_ENABLED)
+            ),
+        }
+        weekday = format_windows(self._usage.windows("wd", threshold, min_days))
+        weekend = format_windows(self._usage.windows("we", threshold, min_days))
+        if weekday:
+            attrs["nutzung_gelernt_werktag"] = weekday
+        if weekend:
+            attrs["nutzung_gelernt_wochenende"] = weekend
+        return attrs
 
     def _is_heating_comfort_blocked_by_sensor(self) -> bool:
         """True nur, wenn für diesen Raum der Ferien-/Werktagssensor
@@ -2446,6 +2648,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         heating_trigger_mode = self._config.get(
             CONF_HEATING_TRIGGER_PROFILE, DEFAULT_HEATING_TRIGGER_PROFILE
         )
+        self._observe_usage()
+        heating_learned_mode = self._get_learned_heating_mode()
         # "Gebäudeschutz" (Preset, kein eigener Zahlen-Sollwert) ersetzt
         # Standby bewusst NUR beim Pausier-Grund "Fenster offen" - bei
         # aktivem Sommerbetrieb bleibt es bei Standby (Nutzerentscheidung).
@@ -2455,6 +2659,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             heating_target_mode = "standby"
         elif heating_trigger_engaged:
             heating_target_mode = heating_trigger_mode
+        elif heating_learned_mode is not None:
+            heating_target_mode = heating_learned_mode
         elif heating_schedule_enabled:
             heating_target_mode = self._get_scheduled_heating_mode()
         elif indoor_temp is not None and indoor_temp < heating_threshold:
@@ -2591,6 +2797,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     "standby": "Standby",
                     "night": "Nacht",
                 }.get(heating_target_mode, "Comfort")
+            elif heating_learned_mode is not None:
+                self._heating_reason = "Gelernt: " + self._usage_note
             elif heating_schedule_enabled:
                 self._heating_reason = {
                     "comfort": "Zeitplan: Comfort",

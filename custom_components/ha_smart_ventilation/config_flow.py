@@ -89,6 +89,14 @@ from .const import (
     CONF_HEATING_PRESET_NIGHT,
     CONF_HEATING_PRESET_STANDBY,
     CONF_HEATING_SCHEDULE_ENABLED,
+    CONF_USAGE_ENTITIES,
+    CONF_USAGE_LEARNING_ENABLED,
+    CONF_USAGE_THRESHOLD_PERCENT,
+    CONF_USAGE_MIN_DAYS,
+    DEFAULT_USAGE_LEARNING_ENABLED,
+    DEFAULT_USAGE_THRESHOLD_PERCENT,
+    DEFAULT_USAGE_MIN_DAYS,
+    USAGE_DOMAINS,
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_PRESET_MODE,
@@ -272,6 +280,7 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_HEATING_ENTITY,
     CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_TRIGGER_ENTITY,
+    CONF_USAGE_ENTITIES,
     CONF_SHOWER_TEMPERATURE_ENTITY,
 )
 
@@ -677,6 +686,7 @@ def _room_override_placeholders(hass) -> dict[str, str]:
         (CONF_PERSISTENT_ENABLED, False),
         (CONF_HUMIDITY_PRIORITY_OVER_DURATION, DEFAULT_HUMIDITY_PRIORITY_OVER_DURATION),
         (CONF_HEATING_SCHEDULE_ENABLED, False),
+        (CONF_USAGE_LEARNING_ENABLED, DEFAULT_USAGE_LEARNING_ENABLED),
         (CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED),
         (CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
         (CONF_TTS_QUIET_HOURS_ENABLED, DEFAULT_TTS_QUIET_HOURS_ENABLED),
@@ -790,6 +800,7 @@ def _flatten_step_data(data: dict) -> dict:
         CONF_MOBILE_ENABLED,
         CONF_PERSISTENT_ENABLED,
         CONF_HEATING_SCHEDULE_ENABLED,
+        CONF_USAGE_LEARNING_ENABLED,
         CONF_HEATING_FREE_DAY_ENABLED,
         CONF_TTS_QUIET_HOURS_ENABLED,
     ):
@@ -1072,6 +1083,16 @@ def _build_room_schema(
             )
         )
 
+    usage_include = _area_include_entities(
+        area_entities, USAGE_DOMAINS, defaults.get(CONF_USAGE_ENTITIES)
+    )
+    usage_learning_marker, usage_learning_sel = _tri_state_bool_selector(
+        CONF_USAGE_LEARNING_ENABLED,
+        defaults,
+        yes_label="Ja – Gelerntes steuert die Heizung",
+        no_label="Nein – nur lernen und anzeigen",
+    )
+
     # Für die vier Preset-Auswahlfelder unten: die tatsächlich konfigurierte
     # Heizungs-Entität live auflösen (analog zu binary_sensor.py:
     # _get_heating_entity_id() - hier ohne Entitäts-Instanz, daher separat
@@ -1340,6 +1361,16 @@ def _build_room_schema(
         vol.Schema(
             {
                 heating_schedule_marker: heating_schedule_sel,
+                _entity_marker(
+                    CONF_USAGE_ENTITIES, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=USAGE_DOMAINS,
+                        multiple=True,
+                        **({"include_entities": usage_include} if usage_include else {}),
+                    )
+                ),
+                usage_learning_marker: usage_learning_sel,
                 _entity_marker(
                     CONF_HEATING_TRIGGER_ENTITY, defaults, required=False
                 ): selector.EntitySelector(
@@ -1758,6 +1789,32 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             CONF_HEATING_SCHEDULE_ENABLED,
             default=defaults.get(CONF_HEATING_SCHEDULE_ENABLED, False),
         ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_USAGE_LEARNING_ENABLED,
+            default=defaults.get(
+                CONF_USAGE_LEARNING_ENABLED, DEFAULT_USAGE_LEARNING_ENABLED
+            ),
+        ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_USAGE_THRESHOLD_PERCENT,
+            default=defaults.get(
+                CONF_USAGE_THRESHOLD_PERCENT, DEFAULT_USAGE_THRESHOLD_PERCENT
+            ),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                mode=selector.NumberSelectorMode.BOX,
+                min=10, max=90, step=5, unit_of_measurement="%",
+            )
+        ),
+        vol.Required(
+            CONF_USAGE_MIN_DAYS,
+            default=defaults.get(CONF_USAGE_MIN_DAYS, DEFAULT_USAGE_MIN_DAYS),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                mode=selector.NumberSelectorMode.BOX,
+                min=3, max=28, step=1, unit_of_measurement="Tage",
+            )
+        ),
     }
     for key in _HEATING_TIME_FIELD_KEYS:
         marker, sel = _time_selector(key, defaults)
