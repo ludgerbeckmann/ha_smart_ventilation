@@ -833,3 +833,110 @@ DEFAULT_DASH_WINDOW_RING_WIDTH = 2
 DASH_WINDOW_SIGNAL_OPTIONS = ("off", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v")
 
 DASHBOARD_SIGNAL = "ha_smart_ventilation_dashboard_update"
+
+# ---------------------------------------------------------------------------
+# Raumtypen (Stufe 1, Lektion 132): Vorbelegung der Heizungs-Temperaturen und
+# der Zeitplan-Startzeiten je Raumtyp. Die Richtwerte hier sind der Standard;
+# Anpassungen des Nutzers stehen im globalen Eintrag unter
+# CONF_ROOM_TYPE_PROFILES ({Raumtyp: {Schlüssel: Wert}}, nur abweichende
+# Werte; ein leerer String bei einer Startzeit heißt "Profil nicht genutzt").
+# Auflösung: Raum-Override -> Raumtyp (angepasst, sonst Standard) -> global
+# -> Standard (siehe binary_sensor.py:_effective()).
+# ---------------------------------------------------------------------------
+CONF_ROOM_TYPE = "room_type"
+CONF_ROOM_TYPE_PROFILES = "room_type_profiles"
+# Nur im Formular, wird nie gespeichert: welcher Raumtyp als Nächstes
+# bearbeitet werden soll.
+CONF_ROOM_TYPE_EDIT = "room_type_edit"
+ROOM_TYPE_NONE = "none"
+ROOM_TYPE_LABELS = {
+    "living": "Wohnzimmer",
+    "bedroom": "Schlafzimmer",
+    "kids": "Kinderzimmer",
+    "office": "Büro",
+    "kitchen": "Küche",
+    "bathroom": "Bad",
+}
+ROOM_TYPE_TEMP_KEYS = (
+    CONF_HEATING_COMFORT_TEMP,
+    CONF_HEATING_STANDBY_TEMP,
+    CONF_HEATING_NIGHT_TEMP,
+)
+ROOM_TYPE_START_KEYS = (
+    CONF_HEATING_COMFORT_START_WEEKDAY,
+    CONF_HEATING_STANDBY_START_WEEKDAY,
+    CONF_HEATING_NIGHT_START_WEEKDAY,
+    CONF_HEATING_COMFORT_START_WEEKEND,
+    CONF_HEATING_STANDBY_START_WEEKEND,
+    CONF_HEATING_NIGHT_START_WEEKEND,
+)
+ROOM_TYPE_KEYS = ROOM_TYPE_TEMP_KEYS + ROOM_TYPE_START_KEYS
+
+
+def _room_type_profile(comfort, standby, night, **starts):
+    profile = {
+        CONF_HEATING_COMFORT_TEMP: comfort,
+        CONF_HEATING_STANDBY_TEMP: standby,
+        CONF_HEATING_NIGHT_TEMP: night,
+    }
+    names = {
+        "comfort_wd": CONF_HEATING_COMFORT_START_WEEKDAY,
+        "standby_wd": CONF_HEATING_STANDBY_START_WEEKDAY,
+        "night_wd": CONF_HEATING_NIGHT_START_WEEKDAY,
+        "comfort_we": CONF_HEATING_COMFORT_START_WEEKEND,
+        "standby_we": CONF_HEATING_STANDBY_START_WEEKEND,
+        "night_we": CONF_HEATING_NIGHT_START_WEEKEND,
+    }
+    for short, value in starts.items():
+        profile[names[short]] = value
+    return profile
+
+
+# Startzeiten, die ein Raumtyp nicht nennt, gelten als "Profil nicht genutzt".
+ROOM_TYPE_DEFAULTS = {
+    "living": _room_type_profile(
+        21, 18, 17,
+        comfort_wd="06:30:00", comfort_we="08:00:00",
+        night_wd="23:00:00", night_we="23:30:00",
+    ),
+    "bedroom": _room_type_profile(
+        19, 17, 16,
+        comfort_wd="06:00:00", comfort_we="08:00:00",
+        night_wd="21:30:00", night_we="22:30:00",
+    ),
+    "kids": _room_type_profile(
+        21, 18, 18,
+        comfort_wd="06:30:00", comfort_we="08:00:00",
+        night_wd="20:30:00", night_we="21:00:00",
+    ),
+    "office": _room_type_profile(
+        21, 17, 16,
+        comfort_wd="07:30:00",
+        standby_wd="18:00:00", standby_we="00:00:00",
+    ),
+    "kitchen": _room_type_profile(
+        20, 17, 16,
+        comfort_wd="06:30:00", comfort_we="08:00:00",
+        standby_wd="21:30:00", standby_we="22:30:00",
+    ),
+    "bathroom": _room_type_profile(
+        23, 18, 17,
+        comfort_wd="06:00:00", standby_wd="08:00:00", night_wd="22:00:00",
+        comfort_we="08:00:00", standby_we="10:00:00", night_we="23:00:00",
+    ),
+}
+
+
+def room_type_value(profiles, room_type, key):
+    """(gilt, Wert) für einen vom Raumtyp vorbelegten Schlüssel.
+
+    `gilt` ist False, wenn der Raumtyp unbekannt/nicht gesetzt ist oder der
+    Schlüssel nicht zu den vom Raumtyp vorbelegten gehört (dann gilt die
+    normale Auflösung). Sonst ist der Wert die Anpassung des Nutzers, sonst
+    der Standard des Typs; bei Startzeiten ohne Wert None (Profil nicht
+    genutzt). Ein leerer String zählt als None."""
+    if room_type not in ROOM_TYPE_DEFAULTS or key not in ROOM_TYPE_KEYS:
+        return False, None
+    custom = (profiles or {}).get(room_type) or {}
+    value = custom[key] if key in custom else ROOM_TYPE_DEFAULTS[room_type].get(key)
+    return True, (None if value == "" else value)

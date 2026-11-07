@@ -89,6 +89,16 @@ from .const import (
     CONF_HEATING_PRESET_NIGHT,
     CONF_HEATING_PRESET_STANDBY,
     CONF_HEATING_SCHEDULE_ENABLED,
+    CONF_ROOM_TYPE,
+    CONF_ROOM_TYPE_PROFILES,
+    CONF_ROOM_TYPE_EDIT,
+    ROOM_TYPE_NONE,
+    ROOM_TYPE_LABELS,
+    ROOM_TYPE_DEFAULTS,
+    ROOM_TYPE_TEMP_KEYS,
+    ROOM_TYPE_START_KEYS,
+    ROOM_TYPE_KEYS,
+    room_type_value,
     CONF_USAGE_ENTITIES,
     CONF_USAGE_LEARNING_ENABLED,
     CONF_USAGE_THRESHOLD_PERCENT,
@@ -256,6 +266,7 @@ SECTION_NOTIFY = "notify"  # Benachrichtigungen (Sprache, Push, Web, Erinnerung)
 SECTION_DASHBOARD = "dashboard"  # Dashboard: Bubble-Card (nur global, Bubble-Card-Modul)
 SECTION_DASHBOARD_BUTTON = "dashboard_button"  # Dashboard: Fenster-Button (nur global)
 SECTION_MESSAGES = "messages"  # Benachrichtigungstexte (nur global)
+SECTION_ROOM_TYPES = "room_types"  # Raumtypen bearbeiten (nur global)
 
 # Alle im Raum-Formular über _entity_marker(..., required=False) erzeugten
 # EntitySelector-Felder (siehe _build_room_schema). Anders als Zahlen-/
@@ -281,6 +292,7 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_TRIGGER_ENTITY,
     CONF_USAGE_ENTITIES,
+    CONF_ROOM_TYPE,  # SelectSelector: leer wird nicht übermittelt, siehe oben
     CONF_SHOWER_TEMPERATURE_ENTITY,
 )
 
@@ -660,7 +672,7 @@ def _global_config(hass) -> dict:
     return domain_data.get(global_entry_id) or {}
 
 
-def _room_override_placeholders(hass) -> dict[str, str]:
+def _room_override_placeholders(hass, room_type: str | None = None) -> dict[str, str]:
     """description_placeholders fürs Raum-Formular: für jedes per
     _override_selector() bzw. _tri_state_bool_selector() überschreibbare
     Feld der aktuell wirksame globale Wert (globale Einstellung, sonst
@@ -710,6 +722,17 @@ def _room_override_placeholders(hass) -> dict[str, str]:
     placeholders[f"global_{CONF_MOBILE_TARGETS}"] = (
         ", ".join(target_entities) if target_entities else "keine"
     )
+    # Raumtyp (Lektion 132): für die vom Raumtyp vorbelegten Felder steht
+    # der Wert des Raumtyps statt des globalen Werts im Hinweis.
+    if room_type in ROOM_TYPE_LABELS:
+        profiles = global_data.get(CONF_ROOM_TYPE_PROFILES)
+        for key in ROOM_TYPE_KEYS:
+            _applies, value = room_type_value(profiles, room_type, key)
+            if key in ROOM_TYPE_START_KEYS:
+                text = value[:5] if value else "nicht genutzt"
+            else:
+                text = f"{value} °C"
+            placeholders[f"global_{key}"] = f"Raumtyp {ROOM_TYPE_LABELS[room_type]}: {text}"
     return placeholders
 
 
@@ -788,6 +811,7 @@ def _flatten_step_data(data: dict) -> dict:
         SECTION_DASHBOARD,
         SECTION_DASHBOARD_BUTTON,
         SECTION_MESSAGES,
+        SECTION_ROOM_TYPES,
     )
     flat = {k: v for k, v in data.items() if k not in section_keys}
     for key in section_keys:
@@ -1318,6 +1342,22 @@ def _build_room_schema(
     fields[vol.Required(SECTION_HEATING)] = section(
         vol.Schema(
             {
+                vol.Optional(
+                    CONF_ROOM_TYPE,
+                    description={
+                        "suggested_value": defaults.get(CONF_ROOM_TYPE)
+                        or ROOM_TYPE_NONE
+                    },
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[{"value": ROOM_TYPE_NONE, "label": "Kein Raumtyp"}]
+                        + [
+                            {"value": k, "label": v}
+                            for k, v in ROOM_TYPE_LABELS.items()
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Optional(
                     CONF_HEATING_USE_TEMP_SOURCE,
                     default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
@@ -1875,6 +1915,27 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             vol.Required(SECTION_HEATING_SCHEDULE): section(
                 vol.Schema(schedule_fields), {"collapsed": True}
             ),
+            vol.Required(SECTION_ROOM_TYPES): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            CONF_ROOM_TYPE_EDIT, default=ROOM_TYPE_NONE
+                        ): selector.SelectSelector(
+                            selector.SelectSelectorConfig(
+                                options=[
+                                    {"value": ROOM_TYPE_NONE, "label": "Keinen"}
+                                ]
+                                + [
+                                    {"value": k, "label": v}
+                                    for k, v in ROOM_TYPE_LABELS.items()
+                                ],
+                                mode=selector.SelectSelectorMode.DROPDOWN,
+                            )
+                        ),
+                    }
+                ),
+                {"collapsed": True},
+            ),
             vol.Required(SECTION_NOTIFY): section(
                 vol.Schema(
                     {
@@ -2183,7 +2244,9 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 defaults, area_entities=area_entities, hass=self.hass
             ),
             errors=errors,
-            description_placeholders=_room_override_placeholders(self.hass),
+            description_placeholders=_room_override_placeholders(
+                self.hass, defaults.get(CONF_ROOM_TYPE)
+            ),
         )
 
     async def async_step_import(
@@ -2284,7 +2347,9 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 defaults, area_entities=area_entities, show_area_selector=True, hass=self.hass
             ),
             errors=errors,
-            description_placeholders=_room_override_placeholders(self.hass),
+            description_placeholders=_room_override_placeholders(
+                self.hass, defaults.get(CONF_ROOM_TYPE)
+            ),
         )
 
     async def async_step_global(
@@ -2305,8 +2370,13 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                     flat[key] = None
                 for key in _MESSAGE_FIELD_DEFAULTS:
                     flat[key] = None
+            edit_type = flat.pop(CONF_ROOM_TYPE_EDIT, ROOM_TYPE_NONE)
             flat = _apply_threshold_defaults(flat)
             flat[CONF_IS_GLOBAL] = True
+            # Das Speichern ersetzt alle Daten - die Raumtyp-Anpassungen
+            # stehen nicht in diesem Formular und müssen erhalten bleiben.
+            if current.get(CONF_ROOM_TYPE_PROFILES):
+                flat[CONF_ROOM_TYPE_PROFILES] = current[CONF_ROOM_TYPE_PROFILES]
             # Name/Titel bleibt unverändert - im Formular nicht editierbar
             flat[CONF_ROOM_NAME] = current.get(
                 CONF_ROOM_NAME, self.config_entry.title
@@ -2322,9 +2392,80 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 data=flat,
                 title=self.config_entry.title,
             )
+            if edit_type in ROOM_TYPE_LABELS:
+                self._room_type_edit = edit_type
+                return await self.async_step_room_type()
             return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="global",
             data_schema=_build_global_edit_schema(current),
+        )
+
+    async def async_step_room_type(
+        self, user_input: dict | None = None
+    ) -> config_entries.FlowResult:
+        """Folgeformular der globalen Einstellungen: Werte eines Raumtyps
+        anpassen (Lektion 132). Gespeichert werden nur Werte, die vom
+        Standard des Typs abweichen; eine geleerte Startzeit heißt "Profil
+        nicht genutzt" (leerer String), sofern der Standard eine hat."""
+        room_type = self._room_type_edit
+        current = dict(self.config_entry.data)
+        profiles = dict(current.get(CONF_ROOM_TYPE_PROFILES) or {})
+
+        if user_input is not None:
+            if user_input.get(RESET_TO_DEFAULTS_KEY):
+                profiles.pop(room_type, None)
+            else:
+                custom: dict = {}
+                defaults_of_type = ROOM_TYPE_DEFAULTS[room_type]
+                for key in ROOM_TYPE_TEMP_KEYS:
+                    value = user_input.get(key)
+                    if value is not None and float(value) != float(defaults_of_type[key]):
+                        custom[key] = value
+                for key in ROOM_TYPE_START_KEYS:
+                    # Ein geleertes Zeitfeld fehlt (Lektion 27/44) oder ist
+                    # leer - beides heißt "nicht genutzt".
+                    value = user_input.get(key) or ""
+                    default = defaults_of_type.get(key, "")
+                    if value != default:
+                        custom[key] = value
+                if custom:
+                    profiles[room_type] = custom
+                else:
+                    profiles.pop(room_type, None)
+            new_data = dict(current)
+            if profiles:
+                new_data[CONF_ROOM_TYPE_PROFILES] = profiles
+            else:
+                new_data.pop(CONF_ROOM_TYPE_PROFILES, None)
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=new_data, title=self.config_entry.title
+            )
+            return self.async_create_entry(title="", data={})
+
+        schema: dict = {}
+        for key in ROOM_TYPE_TEMP_KEYS:
+            _applies, value = room_type_value(profiles, room_type, key)
+            schema[
+                vol.Optional(key, description={"suggested_value": value})
+            ] = selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    mode=selector.NumberSelectorMode.BOX,
+                    min=5, max=30, step=0.5, unit_of_measurement="°C",
+                )
+            )
+        for key in ROOM_TYPE_START_KEYS:
+            _applies, value = room_type_value(profiles, room_type, key)
+            marker = (
+                vol.Optional(key, description={"suggested_value": value})
+                if value
+                else vol.Optional(key)
+            )
+            schema[marker] = selector.TimeSelector()
+        schema[vol.Optional(RESET_TO_DEFAULTS_KEY, default=False)] = selector.BooleanSelector()
+        return self.async_show_form(
+            step_id="room_type",
+            data_schema=vol.Schema(schema),
+            description_placeholders={"room_type": ROOM_TYPE_LABELS[room_type]},
         )

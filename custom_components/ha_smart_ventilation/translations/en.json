@@ -125,7 +125,8 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "heating_free_day_enabled": "Use holiday/workday sensor"
+              "heating_free_day_enabled": "Use holiday/workday sensor",
+              "room_type": "Room type"
             },
             "data_description": {
               "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
@@ -140,7 +141,8 @@
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}"
+              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}",
+              "room_type": "Optional, this room only: the room type presets the comfort/standby/night temperature and the start times of the heating schedule (values are in \"Smart Climate options\", section \"Room types\", and can be adjusted there). A value set in this room takes precedence over the room type, the room type over the global values. With a room type only the type's start times apply (profiles it does not set are unused)."
             }
           },
           "heating_schedule": {
@@ -332,7 +334,8 @@
               "heating_comfort_temp": "Heating comfort setpoint",
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
-              "heating_free_day_enabled": "Use holiday/workday sensor"
+              "heating_free_day_enabled": "Use holiday/workday sensor",
+              "room_type": "Room type"
             },
             "data_description": {
               "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
@@ -347,7 +350,8 @@
               "heating_comfort_temp": "Empty = use the value from the global settings. Setpoint applied once the indoor temperature drops below the heating threshold, or in the comfort profile of the schedule. Currently global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
-              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}"
+              "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}",
+              "room_type": "Optional, this room only: the room type presets the comfort/standby/night temperature and the start times of the heating schedule (values are in \"Smart Climate options\", section \"Room types\", and can be adjusted there). A value set in this room takes precedence over the room type, the room type over the global values. With a room type only the type's start times apply (profiles it does not set are unused)."
             }
           },
           "heating_schedule": {
@@ -682,7 +686,36 @@
               "msg_shower_long": "｛raum｝ = room name, ｛wert｝ = shower duration so far in minutes. Voice output only.",
               "msg_device_window_conflict": "Sent once a dehumidifier or air conditioner is fighting unfavourable outdoor air through an open window (see the room option \"Notify on window/device conflict\"). Placeholders: ｛raum｝, ｛geraet｝ (\"Luftentfeuchter\"/\"Klimaanlage\")."
             }
+          },
+          "room_types": {
+            "name": "Room types",
+            "description": "Adjust the values of the room types that rooms can pick in the \"Heating\" section. Choose a type and save: a form with the values of that type opens next.",
+            "data": {
+              "room_type_edit": "Edit room type"
+            },
+            "data_description": {
+              "room_type_edit": "Opens a form with the values of the chosen room type after saving. \"None\" changes nothing."
+            }
           }
+        }
+      },
+      "room_type": {
+        "title": "Edit room type",
+        "description": "Values for the room type {room_type}. Only deviations from the type's default are saved. An empty time field means: this profile is not used.",
+        "data": {
+          "heating_comfort_temp": "Comfort temperature",
+          "heating_standby_temp": "Standby temperature",
+          "heating_night_temp": "Night temperature",
+          "heating_comfort_start_weekday": "Comfort start (weekday)",
+          "heating_standby_start_weekday": "Standby start (weekday)",
+          "heating_night_start_weekday": "Night start (weekday)",
+          "heating_comfort_start_weekend": "Comfort start (weekend)",
+          "heating_standby_start_weekend": "Standby start (weekend)",
+          "heating_night_start_weekend": "Night start (weekend)",
+          "reset_to_defaults": "Reset to the type's defaults"
+        },
+        "data_description": {
+          "reset_to_defaults": "Discards all adjustments of this room type; the defaults apply again."
         }
       }
     }
