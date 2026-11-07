@@ -125,7 +125,8 @@
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
               "heating_night_temp": "Heizung Nacht-Sollwert",
-              "heating_free_day_enabled": "Ferien-/Werktagssensor nutzen"
+              "heating_free_day_enabled": "Ferien-/Werktagssensor nutzen",
+              "room_type": "Raumtyp"
             },
             "data_description": {
               "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
@@ -140,7 +141,8 @@
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit). Aktuell global: {global_heating_standby_temp}",
               "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
-              "heating_free_day_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Ja: Ist global ein Ferien-/Werktagssensor hinterlegt und sperrt er Comfort, heizt dieser Raum nur im Standby statt im Comfort (Nacht, Standby und Gebäudeschutz bleiben unverändert). Aktuell global: {global_heating_free_day_enabled}"
+              "heating_free_day_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Ja: Ist global ein Ferien-/Werktagssensor hinterlegt und sperrt er Comfort, heizt dieser Raum nur im Standby statt im Comfort (Nacht, Standby und Gebäudeschutz bleiben unverändert). Aktuell global: {global_heating_free_day_enabled}",
+              "room_type": "Optional, nur für diesen Raum: Der Raumtyp belegt Comfort-/Standby-/Nacht-Temperatur und die Startzeiten des Heizungs-Zeitplans vor (Werte stehen in \"Smart Climate Optionen\", Abschnitt \"Raumtypen\", und sind dort anpassbar). Ein eigener Wert in diesem Raum hat Vorrang vor dem Raumtyp, der Raumtyp vor den globalen Werten. Mit Raumtyp gelten für die Startzeiten ausschließlich die des Typs (nicht gesetzte Profile werden nicht genutzt)."
             }
           },
           "heating_schedule": {
@@ -332,7 +334,8 @@
               "heating_comfort_temp": "Heizung Comfort-Sollwert",
               "heating_standby_temp": "Heizung Standby-Sollwert",
               "heating_night_temp": "Heizung Nacht-Sollwert",
-              "heating_free_day_enabled": "Ferien-/Werktagssensor nutzen"
+              "heating_free_day_enabled": "Ferien-/Werktagssensor nutzen",
+              "room_type": "Raumtyp"
             },
             "data_description": {
               "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
@@ -347,7 +350,8 @@
               "heating_comfort_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der gesetzt wird, wenn die Innentemperatur unter die Heizungs-Schwelle fällt bzw. im Comfort-Profil des Zeitplans. Aktuell global: {global_heating_comfort_temp}",
               "heating_standby_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert für Standby (Standby-Profil des Zeitplans, Sommerbetrieb, Abwesenheit). Aktuell global: {global_heating_standby_temp}",
               "heating_night_temp": "Leer = Wert aus den allgemeinen Einstellungen verwenden. Sollwert, der im Nacht-Profil des Zeitplans gesetzt wird (nur bei aktiviertem Heizungs-Zeitplan). Aktuell global: {global_heating_night_temp}",
-              "heating_free_day_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Ja: Ist global ein Ferien-/Werktagssensor hinterlegt und sperrt er Comfort, heizt dieser Raum nur im Standby statt im Comfort (Nacht, Standby und Gebäudeschutz bleiben unverändert). Aktuell global: {global_heating_free_day_enabled}"
+              "heating_free_day_enabled": "Leer = globale Einstellung aus \"Smart Climate Optionen\" verwenden. Ja: Ist global ein Ferien-/Werktagssensor hinterlegt und sperrt er Comfort, heizt dieser Raum nur im Standby statt im Comfort (Nacht, Standby und Gebäudeschutz bleiben unverändert). Aktuell global: {global_heating_free_day_enabled}",
+              "room_type": "Optional, nur für diesen Raum: Der Raumtyp belegt Comfort-/Standby-/Nacht-Temperatur und die Startzeiten des Heizungs-Zeitplans vor (Werte stehen in \"Smart Climate Optionen\", Abschnitt \"Raumtypen\", und sind dort anpassbar). Ein eigener Wert in diesem Raum hat Vorrang vor dem Raumtyp, der Raumtyp vor den globalen Werten. Mit Raumtyp gelten für die Startzeiten ausschließlich die des Typs (nicht gesetzte Profile werden nicht genutzt)."
             }
           },
           "heating_schedule": {
@@ -682,7 +686,36 @@
               "msg_shower_long": "｛raum｝ = Raumname, ｛wert｝ = bisherige Duschdauer in Minuten. Nur Sprachausgabe.",
               "msg_device_window_conflict": "Gesendet, sobald ein Luftentfeuchter oder eine Klimaanlage bei offenem Fenster gegen ungünstigere Außenluft ankämpft (siehe Raum-Option \"Benachrichtigung bei Fenster-Gerät-Konflikt\"). Platzhalter: ｛raum｝, ｛geraet｝ (\"Luftentfeuchter\" oder \"Klimaanlage\")."
             }
+          },
+          "room_types": {
+            "name": "Raumtypen",
+            "description": "Werte der Raumtypen anpassen, die Räume im Abschnitt \"Heizung\" wählen können. Wählen Sie einen Typ und speichern: danach öffnet sich ein Formular mit den Werten dieses Typs.",
+            "data": {
+              "room_type_edit": "Raumtyp bearbeiten"
+            },
+            "data_description": {
+              "room_type_edit": "Öffnet nach dem Speichern ein Formular mit den Werten des gewählten Raumtyps. \"Keinen\" ändert nichts."
+            }
           }
+        }
+      },
+      "room_type": {
+        "title": "Raumtyp bearbeiten",
+        "description": "Werte für den Raumtyp {room_type}. Nur Abweichungen vom Standard des Typs werden gespeichert. Ein leeres Zeitfeld heißt: dieses Profil wird nicht genutzt.",
+        "data": {
+          "heating_comfort_temp": "Comfort-Temperatur",
+          "heating_standby_temp": "Standby-Temperatur",
+          "heating_night_temp": "Nacht-Temperatur",
+          "heating_comfort_start_weekday": "Comfort-Start (Werktag)",
+          "heating_standby_start_weekday": "Standby-Start (Werktag)",
+          "heating_night_start_weekday": "Nacht-Start (Werktag)",
+          "heating_comfort_start_weekend": "Comfort-Start (Wochenende)",
+          "heating_standby_start_weekend": "Standby-Start (Wochenende)",
+          "heating_night_start_weekend": "Nacht-Start (Wochenende)",
+          "reset_to_defaults": "Auf Standard des Typs zurücksetzen"
+        },
+        "data_description": {
+          "reset_to_defaults": "Verwirft alle Anpassungen dieses Raumtyps; die Standardwerte gelten wieder."
         }
       }
     }

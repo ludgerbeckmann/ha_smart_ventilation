@@ -1101,6 +1101,39 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   (nur gesetzt, wenn der Raum den Sensor berücksichtigt). Die Auswertung
   läuft bei jeder Neubewertung (spätestens im 5-Minuten-Takt).
 
+- **Raumtypen (ab 1.14.0):** Im Abschnitt "Heizung" eines Raums wählen Sie
+  einen **Raumtyp** (Wohnzimmer, Schlafzimmer, Kinderzimmer, Büro, Küche, Bad).
+  Der Typ belegt **Comfort-/Standby-/Nacht-Temperatur** und die **sechs
+  Startzeiten** des Heizungs-Zeitplans (Werktag/Wochenende) mit
+  Richtwerten vor. Rangfolge: **Raum-Override, dann Raumtyp, dann globale
+  Einstellung, dann Standard** - ein im Raum selbst eingetragener Wert schlägt
+  den Raumtyp, der Raumtyp schlägt die globalen Werte. Nichts wird beim
+  Speichern eingefroren: ändern Sie den Typ oder seine Werte, wirkt das auf
+  alle Räume mit diesem Typ. Mit Raumtyp gelten für die Startzeiten
+  ausschließlich die des Typs; ein Profil, das der Typ nicht nennt, wird nicht
+  genutzt (kein Durchfall auf die globalen Startzeiten). Ohne Raumtyp ändert
+  sich nichts. Der Raumtyp wirkt nur auf Heizungs-Temperaturen und
+  Zeitplan-Startzeiten (nicht auf Schwelle, Lüftungswerte oder die
+  Nutzungserkennung).
+
+  | Raumtyp | Comfort / Standby / Nacht | Startzeiten Werktag / Wochenende |
+  |---|---|---|
+  | Wohnzimmer | 21 / 18 / 17 °C | Comfort 06:30 / 08:00, Nacht 23:00 / 23:30 |
+  | Schlafzimmer | 19 / 17 / 16 °C | Comfort 06:00 / 08:00, Nacht 21:30 / 22:30 |
+  | Kinderzimmer | 21 / 18 / 18 °C | Comfort 06:30 / 08:00, Nacht 20:30 / 21:00 |
+  | Büro | 21 / 17 / 16 °C | Comfort 07:30 / -, Standby 18:00 / 00:00 |
+  | Küche | 20 / 17 / 16 °C | Comfort 06:30 / 08:00, Standby 21:30 / 22:30 |
+  | Bad | 23 / 18 / 17 °C | Comfort 06:00 / 08:00, Standby 08:00 / 10:00, Nacht 22:00 / 23:00 |
+
+  **Werte anpassen:** In "Smart Climate Optionen" im Abschnitt **"Raumtypen"**
+  den Raumtyp unter "Raumtyp bearbeiten" wählen und speichern - danach öffnet
+  sich ein Formular mit den Werten dieses Typs (vorbelegt mit dem aktuell
+  wirksamen Wert). Gespeichert werden nur Abweichungen vom Standard des Typs;
+  ein leeres Zeitfeld heißt "Profil nicht genutzt"; die Checkbox "Auf
+  Standard des Typs zurücksetzen" verwirft die Anpassungen dieses Typs. Für
+  weitere Typen die Einstellungen erneut öffnen. Spätere Änderungen der
+  Richtwerte in einem Update lassen Ihre gespeicherten Anpassungen unberührt.
+
 - **Nutzungserkennung (lernende Heizzeiten, ab 1.13.0):** Im Abschnitt
   "Heizungs-Zeitplan" eines Raums wählen Sie unter **"Nutzungs-Signale"** ein
   oder mehrere Lichter (später auch Präsenzsensoren). Die Integration lernt

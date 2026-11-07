@@ -76,6 +76,9 @@ from .const import (
     CONF_HEATING_SCHEDULE_ENABLED,
     CONF_HEATING_TRIGGER_ENTITY,
     CONF_USAGE_ENTITIES,
+    CONF_ROOM_TYPE,
+    CONF_ROOM_TYPE_PROFILES,
+    room_type_value,
     CONF_USAGE_LEARNING_ENABLED,
     CONF_USAGE_THRESHOLD_PERCENT,
     CONF_USAGE_MIN_DAYS,
@@ -1503,6 +1506,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         room_value = self._config.get(key)
         if room_value not in (None, ""):
             return room_value
+        # Raumtyp (Lektion 132): vorbelegte Heizungs-Werte, Anpassungen
+        # stehen im globalen Eintrag. Zwischen Raum-Override und global.
+        applies, type_value = room_type_value(
+            self._global_config().get(CONF_ROOM_TYPE_PROFILES),
+            self._config.get(CONF_ROOM_TYPE),
+            key,
+        )
+        if applies:
+            return type_value if type_value is not None else hardcoded_default
         global_value = self._global_config().get(key)
         if global_value not in (None, ""):
             return global_value
