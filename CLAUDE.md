@@ -3,7 +3,7 @@
 Diese Datei fasst zusammen, was in einer ausführlichen Entwicklungs-Session
 mit Claude (claude.ai-Chat) zu diesem Projekt erarbeitet wurde – gedacht als
 Einstiegspunkt, damit Claude Code nicht bei null anfängt. Sie ersetzt nicht
-die README.md (die ist die eigentliche Nutzerdokumentation), sondern
+die README.md und den Ordner `docs/` (das ist die eigentliche Nutzerdokumentation), sondern
 ergänzt sie um Dinge, die nur "hinter den Kulissen" während der Entwicklung
 wichtig wurden.
 
@@ -85,7 +85,9 @@ custom_components/ha_smart_ventilation/
 brand/                   # Icons (Root UND custom_components/.../brand/ - beide nötig)
 .github/release.yml               # Release-Notes-Kategorisierung
 .github/workflows/auto-release.yml # Automatisches Tag+Release bei Versionsbump
-README.md                # Vollständige Nutzerdokumentation inkl. Dashboard-Karte
+README.md                # Kurze Einstiegsseite (HACS-Marketplace zeigt sie an), Schnellstart + Link-Tabelle
+docs/                    # Ausführliche Nutzerdokumentation: einrichtung, logik, geraete-und-heizung,
+                         # sensoren, dashboard, fehlersuche, entwicklung (je .md)
 ```
 
 ## Zentrales Architekturprinzip: `_effective()`
@@ -3917,6 +3919,9 @@ Nutzer wählte nach Lektion 131 Stufe 1 (Raumtyp-Vorbelegung) und wollte die Wer
 
 **133. Raum-Dialog: Layout-Korrekturen und Normalbereich-Farben (1.14.1).**
 Nutzer (Screenshot): Die erste Zeile verschwand unter der iPhone-Statusleiste, das Schließen-Kreuz fiel nicht auf, die vier Presets passten nicht in eine Zeile; dazu Wunsch nach Farben nach Normalbereich. Umsetzung nur in `www/smart-climate-card.js`: Panel-Höhe über `env(safe-area-inset-top)` begrenzt, Kreuz 44 px rund mit Hintergrund, "Standardansicht" als Link-Knopf, Preset-Chips `flex: 1 1 auto` ohne Umbruch (bei mehr als vier `wrap`). Farben im Dialog über `colorFor()` (Temperatur blau/grün/rot, Luftfeuchtigkeit orange/grün/blau, CO2 grün/grün/rot), ersetzt dort die Fenster-Hervorhebung der drei Messzeilen; normale Karte und Empfehlungszeile unverändert. Überschriftskarte: `tap_action: more-info` mit dem Raum-Sensor statt `fire-dom-event` (läuft über das Abfangen aus 1.12.0; ob der visuelle Editor das akzeptiert, nicht geprüft). Lektion: Chips mit `flex: 1 1 0` und kleinem Padding schneiden lange Wörter ab - `flex: 1 1 auto` mit `clamp()`-Schrift und einem Breiten-Sweep 280-900 px prüfen.
+
+**134. README in Kurz-Einstiegsseite und `docs/` aufgeteilt (1.14.2).**
+Nutzerfrage anhand des Screenshots der neuen HA-Marketplace-Seite: HACS zeigt die komplette `README.md` (2140 Zeilen) als Detailseite. Nach Vorab-Zusammenfassung und Bestätigung ("ok"): `README.md` ist jetzt nur noch Schaufenster (Funktionsüberblick, Installation, Schnellstart, Link-Tabelle, ca. 80 Zeilen); der übrige Text liegt unverändert (nur Überschriften-Ebenen im Dashboard-Teil um eine Stufe angehoben) in `docs/` (`einrichtung`, `logik`, `geraete-und-heizung`, `sensoren` inkl. "Entitäten pro Raum", `dashboard`, `fehlersuche`, `entwicklung`). Querverweise im Text ("siehe 'Logik im Detail'") sind Links auf die jeweilige Datei; per Skript geprüft, dass kein relativer Link ins Leere zeigt. Zwei offene Rückfragen (Dateizahl, Screenshot-Platzhalter) blieben unbeantwortet, umgesetzt wurden die sieben Dateien und KEIN Screenshot. Die Marketplace-Kopfzeile ("Get recommendations for opening and closing windows...") stammt vermutlich aus der GitHub-Repo-Beschreibung (About) und muss dort von Hand geändert werden. Lektion: Eine README ist bei HACS die Produktseite - Nutzer-Detaildoku gehört nach `docs/`, und bei neuen Doku-Abschnitten die passende Datei wählen statt die README wieder anwachsen zu lassen.
 
 ## Versionierung & Release
 
