@@ -445,9 +445,10 @@ button_action:
 
 Die Kachel behält ihre Hauptentität (`climate.<raum>`). Das gilt überall, wo der Raum-Sensor
 angetippt wird (Suche, andere Karten, Logbuch), nicht für andere Entitäten. Das Standard-Fenster
-(Verlauf, Rohattribute) bleibt über den Link **Standardansicht** oben im Dialog erreichbar.
-Hat der Raum eine Heizung, steht oben im Dialog eine eigene **Thermostat-Bedienung**:
-Ist-Temperatur und Zustand ("Leerlauf"/"Heizt"), der Sollwert groß mit -/+ (im Schritt der
+(Verlauf, Rohattribute) bleibt über den runden **↗-Knopf** neben dem Schließen-Kreuz erreichbar.
+Hat der Raum eine Heizung, steht im Abschnitt **Raumklima** (unter Temperatur, Luftfeuchtigkeit,
+Abs. Luftfeuchtigkeit und Taupunkt) eine eigene **Thermostat-Bedienung**:
+Zustand ("Leerlauf"/"Heizt"; die Ist-Temperatur steht in der Zeile "Temperatur"), der Sollwert groß mit -/+ (im Schritt der
 Entität, begrenzt auf deren Min/Max; gesendet wird 0,7 s nach dem letzten Tippen), Chips für den
 Betriebsmodus und die Voreinstellung (aus den von der Entität gemeldeten `hvac_modes`/
 `preset_modes`; Dienste `climate.set_temperature`/`set_hvac_mode`/`set_preset_mode`). Home
@@ -460,9 +461,13 @@ stehen in der Spalte "Status/Grund" der Geräte-Tabelle der normalen Karte. Eine
 Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "Manuelle
 Übersteuerung").
 
+**Kopfzeile und Reihenfolge (ab 1.14.3):** Der Raumname mit dem Statuschip (OK/Hinweis/Handlungsbedarf)
+steht in der Kopfzeile neben den beiden runden Knöpfen. Danach folgen die Abschnitte **Raumklima**
+(Messwerte plus Heizungssteuerung, statt "Messwerte"), **Lüften**, **Geräte** und **Benachrichtigungen**.
+Räume ohne Heizung zeigen im Raumklima keinen Steuerblock.
+
 **Layout und Farben des Dialogs (ab 1.14.1):** Das Blatt wird oben durch die Statusleiste des
-Geräts begrenzt (Safe-Area), das Schließen-Kreuz ist ein runder 44-px-Knopf, "Standardansicht ↗"
-ein umrandeter Link-Knopf, und bis zu vier Voreinstellungen stehen in einer Zeile (mehr brechen
+Geräts begrenzt (Safe-Area), das Schließen-Kreuz ist ein runder 44-px-Knopf, der Knopf für die Standardansicht (↗) ein ebenso runder Knopf daneben, und bis zu vier Voreinstellungen stehen in einer Zeile (mehr brechen
 um). Die Messwerte im Dialog sind nach dem Normalbereich eingefärbt (Wert, Balkenmarke, Symbol):
 
 | Messwert | unter dem Bereich | im Bereich | über dem Bereich |
