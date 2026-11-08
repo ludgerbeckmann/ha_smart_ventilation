@@ -250,12 +250,19 @@ function crCompactRoom(c) {
   // --- Messwerte ------------------------------------------------------------
   let vals = "";
   const tempVal = a.innentemperatur === undefined ? null : a.innentemperatur;
-  const colorFor = (on, v, lo, hi) =>
-    on ? hlColor : v !== null && v !== undefined && !Number.isNaN(Number(v)) && v >= lo && v <= hi ? SC_COLOR.green : SC_COLOR.grey;
+  // Farbe nach Normalbereich (nicht nach Empfehlung): unter dem Bereich
+  // `below`, darüber `above`, im Bereich grün; ohne Grenzen neutral.
+  const colorFor = (v, lo, hi, below, above) => {
+    if (v === null || v === undefined || Number.isNaN(Number(v))) return SC_COLOR.grey;
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) return SC_COLOR.grey;
+    if (Number(v) < lo) return below;
+    if (Number(v) > hi) return above;
+    return SC_COLOR.green;
+  };
   vals += gauge({
     icon: "mdi:thermometer", label: "Temperatur", entityId: ents.innentemperatur,
     value: tempVal, valueText: `${roundStr(tempVal, 1)} °C`, lo: c.tempLo, hi: c.tempHi, unit: "°C",
-    color: colorFor(c.highlightTemp, tempVal, c.tempLo, c.tempHi),
+    color: colorFor(tempVal, c.tempLo, c.tempHi, SC_COLOR.blue, SC_COLOR.red),
   });
   if (has(a, "luftfeuchtigkeit")) {
     const lo = Math.min(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
@@ -263,7 +270,7 @@ function crCompactRoom(c) {
     vals += gauge({
       icon: "mdi:water-percent", label: "Luftfeuchtigkeit", entityId: ents.luftfeuchtigkeit,
       value: a.luftfeuchtigkeit, valueText: `${roundStr(a.luftfeuchtigkeit, 0)} %`, lo, hi, unit: "%",
-      color: colorFor(c.highlightHum, a.luftfeuchtigkeit, lo, hi),
+      color: colorFor(a.luftfeuchtigkeit, lo, hi, SC_COLOR.orange, SC_COLOR.blue),
     });
   }
   if (has(a, "co2")) {
@@ -272,7 +279,7 @@ function crCompactRoom(c) {
     vals += gauge({
       icon: "mdi:molecule-co2", label: "CO2", entityId: ents.co2,
       value: a.co2, valueText: `${roundStr(a.co2, 0)} ppm`, lo, hi, unit: "ppm",
-      color: colorFor(c.highlightCo2, a.co2, lo, hi),
+      color: colorFor(a.co2, lo, hi, SC_COLOR.green, SC_COLOR.red),
     });
   }
   const cells = [];
@@ -1443,7 +1450,7 @@ function scBuildThermostat(container, heatingId, root) {
       html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
     }
     const chips = (list, active, kind, map) =>
-      '<div class="sc-th-chips">' +
+      `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
       list.map((m) => `<button type="button" class="sc-th-chip${m === active ? " on" : ""}" data-th="${kind}" data-v="${esc(m)}">${esc(scLabel(map, m))}</button>`).join("") +
       "</div>";
     if (!unavailable && Array.isArray(a.hvac_modes) && a.hvac_modes.length > 1) html += chips(a.hvac_modes, st.state, "mode", SC_HVAC_LABEL);
@@ -1536,26 +1543,29 @@ function openRoomDialog(key) {
   overlay.innerHTML =
     "<style>" +
     ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - 16px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out;will-change:transform}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),20px) - 12px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out;will-change:transform}" +
     "@keyframes sc-up{from{transform:translateY(100%)}to{transform:none}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
-    ".sc-room-grip{flex:none;height:20px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
+    ".sc-room-grip{flex:none;height:18px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
     ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
-    ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 8px}" +
-    ".sc-room-close{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--secondary-text-color,#727272);font-size:20px;cursor:pointer}" +
-    ".sc-room-bar{display:flex;align-items:center;justify-content:flex-end;gap:4px}" +
-    ".sc-room-std{border:0;border-radius:16px;background:transparent;color:var(--secondary-text-color,#727272);font-size:13px;padding:6px 10px;cursor:pointer}" +
+    ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 12px 4px}" +
+    ".sc-room-close{width:44px;height:44px;border:0;border-radius:50%;background:var(--secondary-background-color,rgba(127,127,127,.2));color:var(--primary-text-color,#000);font-size:22px;font-weight:600;line-height:1;cursor:pointer;flex:none}" +
+    ".sc-room-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px}" +
+    ".sc-room-std{border:1px solid var(--divider-color,rgba(127,127,127,.5));border-radius:18px;background:transparent;color:var(--primary-text-color,#000);font-size:13px;padding:8px 12px;cursor:pointer}" +
+    ".sc-room-std::after{content:' \\2197';opacity:.7}" +
     ".sc-room-thermo{padding:0 8px}" +
     ".sc-room-thermo:empty{display:none}" +
-    ".sc-th{padding:4px 16px 8px;display:flex;flex-direction:column;gap:10px}" +
-    ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th{padding:2px 8px 6px;display:flex;flex-direction:column;gap:8px}" +
+    ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
-    ".sc-th-val{font-size:44px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
+    ".sc-th-val{font-size:40px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
     ".sc-th-val small{font-size:18px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
     ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--divider-color,#999);background:transparent;color:inherit;font-size:26px;line-height:1;cursor:pointer}" +
-    ".sc-th-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}" +
-    ".sc-th-chip{border:1px solid var(--divider-color,#999);border-radius:16px;background:transparent;color:inherit;padding:6px 14px;font-size:14px;cursor:pointer}" +
+    ".sc-th-chips{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center}" +
+    ".sc-th-chips.wrap{flex-wrap:wrap;gap:8px}" +
+    ".sc-th-chip{flex:1 1 auto;min-width:0;border:1px solid var(--divider-color,#999);border-radius:16px;background:transparent;color:inherit;padding:7px 5px;font-size:clamp(10.5px,3.3vw,14px);white-space:nowrap;text-align:center;cursor:pointer}" +
+    ".sc-th-chips.wrap .sc-th-chip{flex:0 1 auto;padding:6px 14px;font-size:14px}" +
     ".sc-th-chip.on{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff)}" +
     ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
     ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
