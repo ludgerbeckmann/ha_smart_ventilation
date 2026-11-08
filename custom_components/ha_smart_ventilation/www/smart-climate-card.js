@@ -217,7 +217,14 @@ function crCompactRoom(c) {
 
   const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
   const status = c.status;
-  let html = `<div class="cr-top"><h1>${esc(a.raum)}</h1><span class="cr-hchip" style="--c:${SC_STATUS_COLOR[status] || SC_COLOR.green}"><i></i>${SC_STATUS_LABEL[status] || "OK"}</span></div>`;
+  const headerInfo = { name: a.raum, label: SC_STATUS_LABEL[status] || "OK", color: SC_STATUS_COLOR[status] || SC_COLOR.green };
+  let html = "";
+  if (c.headerOut) {
+    // Der Raum-Dialog zeigt Name und Status selbst in seiner Kopfzeile.
+    Object.assign(c.headerOut, headerInfo);
+  } else {
+    html = `<div class="cr-top"><h1>${esc(a.raum)}</h1><span class="cr-hchip" style="--c:${headerInfo.color}"><i></i>${headerInfo.label}</span></div>`;
+  }
 
   // --- Lüften ---------------------------------------------------------------
   let vent = "";
@@ -245,7 +252,7 @@ function crCompactRoom(c) {
       chipColor: hlColor,
     });
   }
-  if (vent) html += `<h2 class="cr-h">Lüften</h2><div class="cr-sec">${vent}</div>`;
+  const ventSection = vent ? `<h2 class="cr-h">Lüften</h2><div class="cr-sec">${vent}</div>` : "";
 
   // --- Messwerte ------------------------------------------------------------
   let vals = "";
@@ -295,7 +302,10 @@ function crCompactRoom(c) {
     );
   }
   if (cells.length) vals += `<div class="cr-two">${cells.join("")}</div>`;
-  html += `<h2 class="cr-h">Messwerte</h2><div class="cr-sec">${vals}</div>`;
+  // Heizungssteuerung des Dialogs: Platzhalter, in den die Karte nach jedem
+  // Neuzeichnen das dauerhafte Thermostat-Element wieder einsetzt.
+  const thermoSlot = c.thermo ? `<div class="cr-thermo-slot"></div>` : "";
+  html += `<h2 class="cr-h">Raumklima</h2><div class="cr-sec">${vals}${thermoSlot}</div>` + ventSection;
 
   // --- Geräte ---------------------------------------------------------------
   const runtime = (on, since, last) => {
@@ -557,6 +567,7 @@ class SmartClimateCard extends HTMLElement {
     const outdoor = { temp: null, hum: null, abs: null, dew: null, tempEnt: "", humEnt: "", absEnt: "", dewEnt: "" };
     let summerModeEntity = "";
     const entries = [];
+    const headerOut = {};
 
     // Lange Texte (Grund, Auslöser, Ziele) werden nach 4 Zeilen automatisch mit
     // "…" gekürzt (CSS line-clamp, Wörter bleiben unverändert). Der volle Text
@@ -938,6 +949,8 @@ class SmartClimateCard extends HTMLElement {
             windowChangedTime, hasLiveReason, statusText, changedTime, highlightClass,
             reasonText: reasonCodes.map((cd) => reasonSentence(cd, s.state === "on", false)).join(" "),
             highlightTemp, highlightHum, highlightCo2, absOpenGate, tempLo, tempHi, notifyOpen,
+            headerOut: this._headerSink ? headerOut : null,
+            thermo: !!this._thermoEl,
           }),
         });
         continue;
@@ -995,12 +1008,18 @@ class SmartClimateCard extends HTMLElement {
     }
 
     const roomsHtml = entries.map((e) => e.html).join("");
+    this._compactHeader = this._headerSink && headerOut.name ? Object.assign({}, headerOut) : null;
 
     // compact_room: nur der Raum, ohne Übersicht und Außen-Messwerte.
     this._content.innerHTML =
       this._config.compact_room === true
         ? roomsHtml
         : `<div class="overview-wrap">${overviewTable}${outdoorTable}</div>${roomsHtml}`;
+    // Dauerhaftes Thermostat-Element (Raum-Dialog) wieder in seinen Platz setzen.
+    if (this._thermoEl) {
+      const slot = this._content.querySelector(".cr-thermo-slot");
+      if (slot) slot.appendChild(this._thermoEl);
+    }
   }
 
   static _css() {
@@ -1219,6 +1238,7 @@ class SmartClimateCard extends HTMLElement {
       .cr-two { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--divider-color, #e0e0e0); }
       .cr-cell { padding: 7px 0; }
       .cr-cell + .cr-cell { border-left: 1px solid var(--divider-color, #e0e0e0); padding-left: 10px; }
+      .cr-thermo-slot { border-top: 1px solid var(--divider-color, #e0e0e0); padding: 8px 0 8px; }
       .cr-notify > summary { list-style: none; cursor: pointer; }
       .cr-notify > summary::-webkit-details-marker { display: none; }
       .cr-fold { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
@@ -1445,7 +1465,8 @@ function scBuildThermostat(container, heatingId, root) {
     const unavailable = st.state === "unavailable" || st.state === "unknown";
     let html = '<div class="sc-th">';
     const action = a.hvac_action ? scLabel(SC_ACTION_LABEL, a.hvac_action) : scLabel(SC_HVAC_LABEL, st.state);
-    html += '<div class="sc-th-top">' + (a.current_temperature !== undefined && a.current_temperature !== null ? `<span>Ist ${esc(roundStr(a.current_temperature, 1))} °C</span>` : "<span></span>") + `<span>${unavailable ? "Nicht verfügbar" : esc(action)}</span></div>`;
+    // Die Ist-Temperatur steht in der Zeile "Temperatur" darüber, hier nur Sollwert und Zustand.
+    html += `<div class="sc-th-top"><span>Heizung Soll</span><span>${unavailable ? "Nicht verfügbar" : esc(action)}</span></div>`;
     if (!unavailable && target !== undefined && target !== null) {
       html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
     }
@@ -1552,11 +1573,12 @@ function openRoomDialog(key) {
     ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 12px 4px}" +
     ".sc-room-close{width:44px;height:44px;border:0;border-radius:50%;background:var(--secondary-background-color,rgba(127,127,127,.2));color:var(--primary-text-color,#000);font-size:22px;font-weight:600;line-height:1;cursor:pointer;flex:none}" +
     ".sc-room-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px}" +
-    ".sc-room-std{border:1px solid var(--divider-color,rgba(127,127,127,.5));border-radius:18px;background:transparent;color:var(--primary-text-color,#000);font-size:13px;padding:8px 12px;cursor:pointer}" +
-    ".sc-room-std::after{content:' \\2197';opacity:.7}" +
-    ".sc-room-thermo{padding:0 8px}" +
-    ".sc-room-thermo:empty{display:none}" +
-    ".sc-th{padding:2px 8px 6px;display:flex;flex-direction:column;gap:8px}" +
+    ".sc-room-title{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding-left:6px}" +
+    ".sc-room-title h1{margin:0;font-size:22px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".sc-room-chip{display:inline-flex;align-items:center;gap:6px;flex:none;border-radius:999px;padding:3px 10px 3px 7px;font-size:13px;font-weight:500;color:var(--c);background:rgba(127,127,127,.18);background:color-mix(in srgb,var(--c) 18%,transparent)}" +
+    ".sc-room-chip i{width:7px;height:7px;border-radius:50%;background:var(--c);display:block}" +
+    ".sc-room-std{width:44px;height:44px;border:0;border-radius:50%;background:var(--secondary-background-color,rgba(127,127,127,.2));color:var(--primary-text-color,#000);font-size:20px;line-height:1;cursor:pointer;flex:none}" +
+    ".sc-th{padding:0;display:flex;flex-direction:column;gap:8px}" +
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
     ".sc-th-val{font-size:40px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
@@ -1583,7 +1605,12 @@ function openRoomDialog(key) {
   const std = document.createElement("button");
   std.className = "sc-room-std";
   std.type = "button";
-  std.textContent = "Standardansicht";
+  std.textContent = "\u2197";
+  std.setAttribute("aria-label", "Standardansicht");
+  std.title = "Standardansicht";
+  const titleEl = document.createElement("div");
+  titleEl.className = "sc-room-title";
+  bar.appendChild(titleEl);
   bar.appendChild(std);
   bar.appendChild(close);
   const grip = document.createElement("div");
@@ -1596,14 +1623,32 @@ function openRoomDialog(key) {
 
   const entityId = scFindRoomEntity(hass, key);
   let card = null;
+  // Thermostat der Heizung liegt im Abschnitt "Raumklima" der Karte; die Karte
+  // setzt dieses dauerhafte Element nach jedem Neuzeichnen in ihren Platzhalter.
   const thermo = document.createElement("div");
   thermo.className = "sc-room-thermo";
-  scroll.appendChild(thermo);
+  const heatingId = entityId && hass.states[entityId] && hass.states[entityId].attributes.entitaeten
+    ? hass.states[entityId].attributes.entitaeten.heizung
+    : null;
+  const hasHeating = !!(heatingId && hass.states[heatingId]);
+  let headerSig = "";
+  const syncHeader = () => {
+    const h = card && card._compactHeader;
+    const sig = h ? JSON.stringify(h) : "";
+    if (sig === headerSig) return;
+    headerSig = sig;
+    titleEl.innerHTML = h
+      ? `<h1>${esc(h.name)}</h1><span class="sc-room-chip" style="--c:${h.color}"><i></i>${esc(h.label)}</span>`
+      : "";
+  };
   if (entityId) {
     card = document.createElement("smart-climate-card");
     card.setConfig({ entities: [entityId], compact_room: true });
+    card._headerSink = true;
+    if (hasHeating) card._thermoEl = thermo;
     card.hass = hass;
     scroll.appendChild(card);
+    syncHeader();
   } else {
     const missing = document.createElement("div");
     missing.className = "sc-room-missing";
@@ -1613,11 +1658,8 @@ function openRoomDialog(key) {
   overlay.appendChild(panel);
 
   // Thermostat der Heizung: eigene Bedienelemente (siehe scBuildThermostat).
-  const heatingId = entityId && hass.states[entityId] && hass.states[entityId].attributes.entitaeten
-    ? hass.states[entityId].attributes.entitaeten.heizung
-    : null;
   let thermoCtl = null;
-  if (heatingId && hass.states[heatingId]) {
+  if (hasHeating) {
     thermoCtl = scBuildThermostat(thermo, heatingId, root);
   }
 
@@ -1662,6 +1704,7 @@ function openRoomDialog(key) {
     const current = root.hass;
     if (card && current && current !== card._hass) card.hass = current;
     if (thermoCtl && current) thermoCtl.update(current);
+    syncHeader();
   }, 2000);
   // Seite dahinter sperren, solange der Dialog offen ist.
   const prevHtmlOverflow = document.documentElement.style.overflow;
