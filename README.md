@@ -1782,6 +1782,21 @@ stehen in der Spalte "Status/Grund" der Geräte-Tabelle der normalen Karte. Eine
 Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "Manuelle
 Übersteuerung").
 
+**Layout und Farben des Dialogs (ab 1.14.1):** Das Blatt wird oben durch die Statusleiste des
+Geräts begrenzt (Safe-Area), das Schließen-Kreuz ist ein runder 44-px-Knopf, "Standardansicht ↗"
+ein umrandeter Link-Knopf, und bis zu vier Voreinstellungen stehen in einer Zeile (mehr brechen
+um). Die Messwerte im Dialog sind nach dem Normalbereich eingefärbt (Wert, Balkenmarke, Symbol):
+
+| Messwert | unter dem Bereich | im Bereich | über dem Bereich |
+|---|---|---|---|
+| Temperatur | blau | grün | rot |
+| Luftfeuchtigkeit | orange (zu trocken) | grün | blau (zu feucht) |
+| CO2 | grün | grün | rot |
+
+Taupunkt und absolute Luftfeuchtigkeit bleiben neutral, ein fehlender Wert bleibt ein oranges "–".
+Die normale Karte ist unverändert. Eine Überschriftskarte kann statt `fire-dom-event` einfach
+`tap_action: {action: more-info, entity: binary_sensor.<raum>_lueftungsempfehlung}` nutzen.
+
 **Einschränkung:** Ohne eine echte Home-Assistant-Instanz zum Testen des
 tatsächlichen Lovelace-Rendering ließ sich diese Karte nur über eine
 simulierte DOM-Umgebung (jsdom) mit Beispieldaten gegen die dokumentierten
