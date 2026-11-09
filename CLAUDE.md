@@ -3926,6 +3926,42 @@ Nutzerfrage anhand des Screenshots der neuen HA-Marketplace-Seite: HACS zeigt di
 **135. Raum-Dialog: Name in die Kopfzeile, Heizungssteuerung in den Abschnitt "Raumklima" (1.14.3).**
 Nutzer (Screenshot): Raumname gehört in die Zeile mit dem X, die Ist-Temperatur stand dreimal im Dialog, und die Heizungssteuerung soll zu den Messwerten. Vorab-Zusammenfassung mit drei Fragen (Standardansicht-Knopf, Reihenfolge, Position der Steuerung); die Antwort "ok" nahm meine Empfehlungen an: runder ↗-Knopf neben dem Kreuz, Raumklima vor Lüften, Steuerung am Ende des Abschnitts. Umsetzung nur in `www/smart-climate-card.js`: Die Karte (`compact_room`, vom Dialog mit `_headerSink = true` markiert) lässt das `.cr-top` weg und legt Name/Status in `card._compactHeader`, der Dialog zeichnet daraus Titel und Chip in seiner Leiste (`syncHeader()`, nach jedem `card.hass = ...`). Weil die Karte bei jedem hass-Update per `innerHTML` komplett neu zeichnet, würde ein darin eingebautes Thermostat jedes Mal zerstört; deshalb liegt es als dauerhaftes Element (`card._thermoEl`) beim Dialog und die Karte setzt es nach jedem Neuzeichnen in den Platzhalter `.cr-thermo-slot` zurück. Das Thermostat zeigt nur noch "Heizung Soll" und den Zustand, die Ist-Temperatur steht in der Zeile "Temperatur". Tests angepasst (`test-compact`, `test-heatinfo`; `test-swipe`/`test-thermo-layout` unverändert grün), Screenshot bei 393 px angesehen. Lektion: Ein Element mit eigenem Zustand und Listenern gehört nicht in HTML, das bei jedem Update komplett neu gesetzt wird - es muss dauerhaft außerhalb leben und nur wieder eingehängt werden.
 
+**136. Heizungsart und Vorheizzeit, dazu gelernte Aufheizrate (1.15.0).**
+Nutzerfrage: Fußbodenheizung (Erdgeschoss, "ziemlich träge") und Heizkörper
+(Obergeschoss) verhalten sich verschieden - bei der Nutzungserkennung/dem
+Zeitplan berücksichtigen. Vorher beschriebene Lücke (Lektion 131, "Vorheizen"
+offen): Comfort begann erst zur Startzeit. Vorab bestätigt: nur pro Raum
+(nicht im Raumtyp), beide Stufen auf einmal. Die zuerst vorgeschlagenen
+Vorbelegungen 30/180 Min. nannte der Nutzer zu hoch - jetzt 20 Min.
+(Heizkörper)/120 Min. (Fußbodenheizung). Umsetzung: Raumfelder `heating_type`
+(SelectSelector, "none" = keine Angabe, in `ROOM_OPTIONAL_ENTITY_KEYS`),
+`heating_preheat_minutes` (NumberSelector mit `suggested_value`, leer/0 =
+Vorbelegung; ebenfalls in `ROOM_OPTIONAL_ENTITY_KEYS`, daher kann 0 nicht
+"kein Vorheizen" bedeuten - dafür die Heizungsart leer lassen; bewusst kein
+Dropdown wie geplant, weil ein geleertes `SelectSelector`+`vol.Coerce(int)`
+bei "" abstürzen würde), `heating_preheat_auto` (Standard an). Wirkung:
+`_preheat_lead_minutes()` (gelernt, sonst fest), `_get_scheduled_heating_mode(at)`
+bewertet den Zeitplan auch für "jetzt + Vorlauf"; nur ein dortiges Comfort
+wird vorgezogen (`_get_scheduled_heating_mode_with_preheat()`, im gelernten
+Pfad analog über `is_used()` der Zielstunde). `_track_heating_run()` misst
+Läufe (Start bei Comfort und Ist < Soll - 0,5 K, Ende bei Soll - 0,2 K oder
+Wechsel auf Standby/Nacht; Fenster offen/Übersteuerung/None verwirft den Lauf),
+`HeatingRates` in `learning.py` hält den Median der letzten 10 Läufe (ab 2)
+in einem eigenen Store `{DOMAIN}_heatrate_<entry_id>` (nur mit Heizungsart,
+unabhängig von der Nutzungserkennung); Dienst `reset_usage_learning` setzt ihn
+ebenfalls zurück. Attribute `heizung_vorheizzeit`, `heizung_aufheizrate`; die
+Karte braucht nichts (`heizung_grund`). Tests (Scratchpad): `test_preheat.py`
+(Logik per ast gegen Stubs: Zeitplan-Vorlauf, Standby nicht vorgezogen,
+Tagesgrenze, automatische Zeit, Laufmessung inkl. Verwerfen), angepasste
+`test_usage_logic.py`/`test_heating_schedule_override.py` (Harness kennt die
+neuen Attribute/`datetime`). Nicht an der echten Instanz geprüft; offen: ob
+die Messung bei trägen Fußbodenheizungen (Nachlauf nach dem Sollwert) zu
+kurze Läufe ergibt - Läufe unter 30 Min. werden verworfen, die Rate ist dann
+eine Untergrenze. Lektion: Eine Test-Harness, die Methoden per `ast`
+herausschneidet, kennt neue Attribute/Annotationen nicht - nach jeder
+Signaturänderung (hier `at: datetime | None`) die bestehenden Harness-Tests
+laufen lassen, bevor man den Code für "fertig" hält.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

@@ -194,3 +194,60 @@ def backfill_days(
         key: ("we" if weekend_of(datetime.strptime(key, "%Y-%m-%d")) else "wd", "".join(bits))
         for key, bits in hours.items()
     }
+
+
+# --- Gelernte Aufheizrate (CLAUDE.md Lektion 136) -------------------------
+
+RATE_KEEP_RUNS = 10
+RATE_MIN_RUNS = 2
+RATE_MIN_RUN_MINUTES = 30
+RATE_MIN_RISE_K = 0.5
+PREHEAT_SAFETY_FACTOR = 1.1
+PREHEAT_MAX_MINUTES = 360
+
+
+class HeatingRates:
+    """Aufheizraten (K/h) der letzten Comfort-Läufe eines Raums. Reine
+    Datenhaltung ohne Home-Assistant-Abhängigkeit; der Median der letzten
+    Läufe ist robust gegen einzelne Ausreißer."""
+
+    def __init__(self, rates: list | None = None) -> None:
+        self.rates: list[float] = [
+            float(r)
+            for r in (rates or [])
+            if isinstance(r, (int, float)) and r > 0
+        ][-RATE_KEEP_RUNS:]
+
+    def to_dict(self) -> dict:
+        return {"rates": self.rates}
+
+    def add_run(self, minutes: float, rise_k: float) -> bool:
+        """Trägt einen abgeschlossenen Aufheizlauf ein. Zu kurze Läufe oder
+        zu kleine Anstiege werden verworfen (Messrauschen). True, wenn der
+        Lauf gewertet wurde."""
+        if minutes < RATE_MIN_RUN_MINUTES or rise_k < RATE_MIN_RISE_K:
+            return False
+        self.rates.append(round(rise_k / (minutes / 60), 3))
+        self.rates = self.rates[-RATE_KEEP_RUNS:]
+        return True
+
+    def median_rate(self) -> float | None:
+        """Median in K/h; None, solange weniger als RATE_MIN_RUNS Läufe."""
+        if len(self.rates) < RATE_MIN_RUNS:
+            return None
+        ordered = sorted(self.rates)
+        mid = len(ordered) // 2
+        if len(ordered) % 2:
+            return ordered[mid]
+        return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def preheat_minutes(rate: float | None, target: float | None, current: float | None) -> int | None:
+    """Vorheizzeit in Minuten aus Aufheizrate, Ziel- und Ist-Temperatur;
+    None, wenn eine Angabe fehlt. 0, wenn der Raum schon warm genug ist."""
+    if rate is None or rate <= 0 or target is None or current is None:
+        return None
+    gap = target - current
+    if gap <= 0:
+        return 0
+    return int(min(PREHEAT_MAX_MINUTES, round(gap / rate * 60 * PREHEAT_SAFETY_FACTOR)))

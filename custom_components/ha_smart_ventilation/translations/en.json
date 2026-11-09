@@ -113,6 +113,9 @@
             "name": "Heating",
             "description": "Heating device, presets, presence check and setpoints for this room. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
+              "heating_type": "Heating type",
+              "heating_preheat_minutes": "Pre-heat time (min.)",
+              "heating_preheat_auto": "Learn pre-heat time automatically",
               "heating_use_temp_source": "Also use temperature source for heating",
               "heating_entity": "Heating",
               "heating_use_preset_mode": "Control/show via presets",
@@ -129,6 +132,9 @@
               "room_type": "Room type"
             },
             "data_description": {
+              "heating_type": "Optional, this room only: radiators react quickly, underfloor heating is slow. With a heating type, comfort (schedule and learned times) starts the pre-heat time earlier; standby, night and building protection are not brought forward. Tip: with underfloor heating keep the standby setpoint only slightly below comfort, a deep setback hardly pays off because of the inertia. Without a value there is no pre-heating.",
+              "heating_preheat_minutes": "Only with a heating type. Empty or 0 = default of the heating type (radiator 20 min., underfloor heating 120 min.). Applies until enough heating runs have been measured or while automatic learning is off.",
+              "heating_preheat_auto": "Only with a heating type. The integration measures how fast the room warms up when heating to comfort (median of the last 10 runs, at least 2) and calculates the pre-heat time from the current distance to the comfort setpoint. Until then the fixed pre-heat time applies. The outdoor temperature is not taken into account.",
               "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
               "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (further down in this section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
               "heating_use_preset_mode": "Empty = use the global setting. Enabled (default, also globally), heating is controlled/shown via preset_mode instead of a numeric setpoint - but only if the entity actually supports preset_mode; otherwise it automatically falls back to setpoint control. Currently global: {global_heating_use_preset_mode}",
@@ -322,6 +328,9 @@
             "name": "Heating",
             "description": "Heating device, presets, presence check and setpoints for this room. Optional fields override the global settings. Left empty, the global value applies (Settings → Devices & Services → Smart Climate Options → Configure).",
             "data": {
+              "heating_type": "Heating type",
+              "heating_preheat_minutes": "Pre-heat time (min.)",
+              "heating_preheat_auto": "Learn pre-heat time automatically",
               "heating_use_temp_source": "Also use temperature source for heating",
               "heating_entity": "Heating",
               "heating_use_preset_mode": "Control/show via presets",
@@ -338,6 +347,9 @@
               "room_type": "Room type"
             },
             "data_description": {
+              "heating_type": "Optional, this room only: radiators react quickly, underfloor heating is slow. With a heating type, comfort (schedule and learned times) starts the pre-heat time earlier; standby, night and building protection are not brought forward. Tip: with underfloor heating keep the standby setpoint only slightly below comfort, a deep setback hardly pays off because of the inertia. Without a value there is no pre-heating.",
+              "heating_preheat_minutes": "Only with a heating type. Empty or 0 = default of the heating type (radiator 20 min., underfloor heating 120 min.). Applies until enough heating runs have been measured or while automatic learning is off.",
+              "heating_preheat_auto": "Only with a heating type. The integration measures how fast the room warms up when heating to comfort (median of the last 10 runs, at least 2) and calculates the pre-heat time from the current distance to the comfort setpoint. Until then the fixed pre-heat time applies. The outdoor temperature is not taken into account.",
               "heating_use_temp_source": "Automatically uses the indoor temperature source selected above as the heating device, instead of selecting a second, separate entity in the \"Heating\" field - only effective if the temperature source is actually a climate entity (otherwise treated as \"no heating configured\"). When enabled, the \"Heating\" field directly below is ignored.",
               "heating_entity": "A climate entity. Switches between a comfort and a standby setpoint (further down in this section) instead of simply turning on/off - the usual way heating is operated. Also falls back to standby while the window is confirmed open. Ignored if \"Also use temperature source for heating\" above is enabled.",
               "heating_use_preset_mode": "Empty = use the global setting. Enabled (default, also globally), heating is controlled/shown via preset_mode instead of a numeric setpoint - but only if the entity actually supports preset_mode; otherwise it automatically falls back to setpoint control. Currently global: {global_heating_use_preset_mode}",

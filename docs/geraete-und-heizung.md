@@ -230,6 +230,34 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
     `ha_smart_ventilation.reset_usage_learning` (Ziel: die
     Lüftungsempfehlung des Raums) verwirft das Gelernte.
 
+- **Heizungsart und Vorheizen (ab 1.15.0):** Im Abschnitt "Heizung" eines
+  Raums (nur pro Raum) wählen Sie die **Heizungsart**: **Heizkörper** oder
+  **Fußbodenheizung** (eine Fußbodenheizung ist deutlich träger). Mit
+  Heizungsart beginnt **Comfort** - im Zeitplan wie in der gelernten Nutzung -
+  um die **Vorheizzeit früher** als die Startzeit. Vorgezogen wird nur
+  Comfort; Standby, Nacht und Gebäudeschutz beginnen nicht früher. Fenster
+  offen, Sommerbetrieb, manuelle Übersteuerung, Anwesenheit und
+  Ferien-/Werktagssensor haben weiter Vorrang, der dynamische Auslöser
+  (Licht/Person) wird nicht vorgeheizt. Ohne Heizungsart ändert sich nichts.
+  - **Feste Vorheizzeit:** Vorbelegung **20 Min. (Heizkörper)** bzw.
+    **120 Min. (Fußbodenheizung)**; im Feld "Vorheizzeit" überschreibbar
+    (leer oder 0 = Vorbelegung).
+  - **Automatisch lernen (Standard an):** Die Integration misst jeden
+    Aufheizlauf auf Comfort (mindestens 30 Min. und 0,5 K Anstieg, Ende bei
+    Erreichen des Sollwerts; Läufe mit offenem Fenster oder manueller
+    Änderung zählen nicht). Aus dem **Median der letzten 10 Läufe** (ab 2
+    Läufen) ergibt sich die Aufheizrate in K/h. Die Vorheizzeit ist dann
+    `(Comfort-Sollwert − Ist-Temperatur) ÷ Rate × 1,1`, höchstens 6 Stunden,
+    und wird bei jeder Neubewertung neu gerechnet (ist der Raum schon warm,
+    entfällt sie). Bis genug Läufe vorliegen, gilt die feste Vorheizzeit. Die
+    Außentemperatur fließt nicht ein. Der Dienst `reset_usage_learning`
+    verwirft auch die Aufheizrate.
+  - `heizung_grund` zeigt "Zeitplan: Vorheizen (Comfort beginnt in X Min.)"
+    bzw. "Gelernt: Vorheizen (...)". Attribute: `heizung_vorheizzeit` (Minuten,
+    nur mit Heizungsart) und `heizung_aufheizrate` (K/h, sobald gelernt).
+  - **Tipp Fußbodenheizung:** Standby-/Nacht-Sollwert nur wenig unter Comfort
+    legen - eine tiefe Absenkung lohnt wegen der Trägheit kaum und kostet
+    beim Wiederaufheizen viel. Das wird nicht erzwungen.
 - **Sommer-/Winterbetrieb**: **kein** eigenes, von dieser Integration
   angelegtes Gerät, sondern eine bereits **vorhandene** `switch`-Entität,
   die in "- Smart Climate Optionen -" hinterlegt und von dieser Integration

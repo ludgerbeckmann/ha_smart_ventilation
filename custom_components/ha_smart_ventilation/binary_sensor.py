@@ -35,9 +35,11 @@ from homeassistant.util import slugify
 from .learning import (
     BACKFILL_STEP_MINUTES,
     KEEP_DAYS,
+    HeatingRates,
     UsageProfile,
     backfill_days,
     format_windows,
+    preheat_minutes,
 )
 from .const import (
     CO2_WARM_OUTDOOR_OVERRIDE_FACTOR,
@@ -88,6 +90,11 @@ from .const import (
     CONF_HEATING_TRIGGER_PROFILE,
     CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
     CONF_HEATING_TRIGGER_HOLD_MINUTES,
+    CONF_HEATING_TYPE,
+    CONF_HEATING_PREHEAT_AUTO,
+    CONF_HEATING_PREHEAT_MINUTES,
+    DEFAULT_HEATING_PREHEAT_AUTO,
+    DEFAULT_HEATING_PREHEAT_MINUTES,
     DEFAULT_HEATING_TRIGGER_PROFILE,
     DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES,
     DEFAULT_HEATING_TRIGGER_HOLD_MINUTES,
@@ -461,6 +468,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._usage = UsageProfile()
         self._usage_store: Store | None = None
         self._usage_note = ""
+        # Vorheizen (Lektion 136): gelernte Aufheizrate, laufende Messung
+        # eines Comfort-Laufs (Startzeit, Starttemperatur, Höchsttemperatur)
+        # und ob der aktuelle Comfort-Zielmodus nur durch die Vorheizzeit
+        # zustande kam.
+        self._heat_rates = HeatingRates()
+        self._heat_rates_store: Store | None = None
+        self._heat_run: tuple | None = None
+        self._heat_run_closed = False
+        self._preheat_lead = 0
+        self._preheating = False
 
         # Seit wann die Einspeiseleistung ununterbrochen zu niedrig ist,
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
@@ -1059,6 +1076,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     attrs["heizung_modus_seit"] = self._heating_mode_since.isoformat()
             if self._heating_prevented:
                 attrs["heizung_verhindert"] = self._heating_prevented
+            heat_rate = self._heat_rates.median_rate()
+            if heat_rate is not None:
+                attrs["heizung_aufheizrate"] = round(heat_rate, 2)
+            if self._heating_type() is not None:
+                attrs["heizung_vorheizzeit"] = self._preheat_lead
             if self._effective(
                 CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED
             ) and self._global_config().get(CONF_HEATING_FREE_DAY_ENTITY):
@@ -1229,6 +1251,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     self._async_backfill_usage(),
                     f"{DOMAIN}_usage_backfill_{self._entry.entry_id}",
                 )
+
+        # Gelernte Aufheizrate (nur mit gewählter Heizungsart): eigener
+        # Store, unabhängig von der Nutzungserkennung.
+        if self._heating_type() is not None:
+            self._heat_rates_store = Store(
+                self.hass, 1, f"{DOMAIN}_heatrate_{self._entry.entry_id}"
+            )
+            stored_rates = await self._heat_rates_store.async_load()
+            self._heat_rates = HeatingRates((stored_rates or {}).get("rates"))
 
         # Außentemperatur/-luftfeuchtigkeit kommen ausschließlich aus "Smart
         # Climate Optionen" - direkt verfolgen, falls beim Hinzufügen
@@ -1868,6 +1899,92 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._usage.prune(today)
             self._usage_store.async_delay_save(lambda: self._usage.to_dict(), 60)
 
+    def _heating_type(self) -> str | None:
+        """Heizungsart dieses Raums (nur pro Raum) oder None (= keine
+        Vorheizzeit, Verhalten wie bisher)."""
+        value = self._config.get(CONF_HEATING_TYPE)
+        return value if value in DEFAULT_HEATING_PREHEAT_MINUTES else None
+
+    def _preheat_lead_minutes(self, indoor_temp: float | None) -> int:
+        """Vorlaufzeit, um die Comfort früher beginnt (Lektion 136): sobald
+        genug Aufheizläufe gemessen wurden, aus Aufheizrate und
+        Temperaturabstand zum Comfort-Sollwert (mit automatischer Vorheizzeit
+        aktiv), sonst die feste Vorheizzeit des Raums bzw. die Vorbelegung
+        der Heizungsart. 0 ohne Heizungsart."""
+        htype = self._heating_type()
+        if htype is None:
+            return 0
+        if self._config.get(CONF_HEATING_PREHEAT_AUTO, DEFAULT_HEATING_PREHEAT_AUTO):
+            comfort = self._effective(
+                CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP
+            )
+            auto = preheat_minutes(self._heat_rates.median_rate(), comfort, indoor_temp)
+            if auto is not None:
+                return auto
+        configured = self._config.get(CONF_HEATING_PREHEAT_MINUTES)
+        try:
+            fixed = int(configured) if configured else 0
+        except (TypeError, ValueError):
+            fixed = 0
+        if fixed <= 0:
+            fixed = DEFAULT_HEATING_PREHEAT_MINUTES[htype]
+        return fixed
+
+    def _get_scheduled_heating_mode_with_preheat(self) -> str | None:
+        """Zeitplan-Modus; beginnt Comfort innerhalb der Vorlaufzeit, gilt
+        schon jetzt Comfort (nur Comfort wird vorgezogen, Standby/Nacht
+        nicht)."""
+        mode = self._get_scheduled_heating_mode()
+        if mode == "comfort" or self._preheat_lead <= 0:
+            return mode
+        ahead = self._get_scheduled_heating_mode(
+            dt_util.now() + timedelta(minutes=self._preheat_lead)
+        )
+        if ahead == "comfort":
+            self._preheating = True
+            return "comfort"
+        return mode
+
+    def _track_heating_run(self, mode: str | None, indoor_temp: float | None) -> None:
+        """Misst Aufheizläufe: Ein Lauf beginnt mit dem Zielmodus Comfort
+        (Raum noch unter dem Sollwert) und endet, sobald der Sollwert
+        (minus 0,2 K) erreicht ist; ein anderer Zielmodus davor beendet ihn
+        mit dem bis dahin erreichten Anstieg (Fenster offen oder manuelle
+        Übersteuerung = verworfen). Zu kurze/kleine Läufe wertet
+        HeatingRates nicht."""
+        if self._heat_rates_store is None:
+            return
+        now = dt_util.now()
+        if mode != "comfort":
+            run = self._heat_run
+            self._heat_run = None
+            self._heat_run_closed = False
+            if run is not None and mode in ("standby", "night"):
+                minutes = (now - run[0]).total_seconds() / 60
+                if self._heat_rates.add_run(minutes, run[2] - run[1]):
+                    self._heat_rates_store.async_delay_save(
+                        lambda: self._heat_rates.to_dict(), 60
+                    )
+            return
+        if indoor_temp is None or self._heat_run_closed:
+            return
+        comfort = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
+        if self._heat_run is None:
+            if indoor_temp < comfort - 0.5:
+                self._heat_run = (now, indoor_temp, indoor_temp)
+            return
+        start, start_temp, max_temp = self._heat_run
+        max_temp = max(max_temp, indoor_temp)
+        self._heat_run = (start, start_temp, max_temp)
+        if indoor_temp >= comfort - 0.2:
+            minutes = (now - start).total_seconds() / 60
+            if self._heat_rates.add_run(minutes, max_temp - start_temp):
+                self._heat_rates_store.async_delay_save(
+                    lambda: self._heat_rates.to_dict(), 60
+                )
+            self._heat_run = None
+            self._heat_run_closed = True
+
     def _get_learned_heating_mode(self) -> str | None:
         """"comfort"/"standby" aus dem Gelernten, wenn die Funktion aktiv ist
         und genug gelernt wurde; sonst None (dann gilt der Zeitplan bzw. die
@@ -1889,6 +2006,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         used = self._usage.is_used(day_type, now.hour, threshold, min_days)
         if used is None:
             return None
+        if not used and self._preheat_lead > 0:
+            ahead = now + timedelta(minutes=self._preheat_lead)
+            if self._usage.is_used(
+                self._usage_day_type(ahead), ahead.hour, threshold, min_days
+            ):
+                self._preheating = True
+                self._usage_note = "Comfort beginnt bald"
+                return "comfort"
         count, observed = self._usage.hour_stats(day_type, now.hour)
         self._usage_note = (
             f"{'genutzt' if used else 'nicht genutzt'} "
@@ -1953,6 +2078,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._usage = UsageProfile()
         if self._usage_store is not None:
             await self._usage_store.async_save(self._usage.to_dict())
+        self._heat_rates = HeatingRates()
+        self._heat_run = None
+        if self._heat_rates_store is not None:
+            await self._heat_rates_store.async_save(self._heat_rates.to_dict())
         await self._evaluate()
         self.async_write_ha_state()
 
@@ -2117,7 +2246,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         await self._evaluate()
         self.async_write_ha_state()
 
-    def _get_scheduled_heating_mode(self) -> str | None:
+    def _get_scheduled_heating_mode(self, at: datetime | None = None) -> str | None:
         """Bestimmt den vom Heizungs-Zeitplan (CONF_HEATING_SCHEDULE_ENABLED)
         für den aktuellen Zeitpunkt erzwungenen Modus - "comfort",
         "standby" oder "night" - bzw. None, wenn keine einzige Startzeit
@@ -2133,8 +2262,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         des Tages gilt das zuletzt gestartete Profil des Vortags (mit dessen
         Wochentyp - z. B. gilt in der Nacht auf Samstag noch der Freitag).
         Gibt es für den Vortag kein Profil, wird das zuletzt startende
-        Profil des heutigen Tages genommen (Umlauf)."""
-        now = dt_util.now()
+        Profil des heutigen Tages genommen (Umlauf). `at` bewertet einen
+        anderen Zeitpunkt (Vorheizen, Lektion 136)."""
+        now = at or dt_util.now()
         today = self._scheduled_profile_starts(now.weekday() >= 5)
         current_time = now.time()
         started = [(start, order, mode) for start, order, mode in today if start <= current_time]
@@ -2661,6 +2791,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             CONF_HEATING_TRIGGER_PROFILE, DEFAULT_HEATING_TRIGGER_PROFILE
         )
         self._observe_usage()
+        self._preheating = False
+        self._preheat_lead = self._preheat_lead_minutes(indoor_temp)
         heating_learned_mode = self._get_learned_heating_mode()
         # "Gebäudeschutz" (Preset, kein eigener Zahlen-Sollwert) ersetzt
         # Standby bewusst NUR beim Pausier-Grund "Fenster offen" - bei
@@ -2674,7 +2806,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         elif heating_learned_mode is not None:
             heating_target_mode = heating_learned_mode
         elif heating_schedule_enabled:
-            heating_target_mode = self._get_scheduled_heating_mode()
+            heating_target_mode = self._get_scheduled_heating_mode_with_preheat()
         elif indoor_temp is not None and indoor_temp < heating_threshold:
             heating_target_mode = "comfort"
         elif indoor_temp is not None and indoor_temp >= heating_threshold + margin:
@@ -2712,6 +2844,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         if heating_overridden:
             heating_target_mode = None
+        self._track_heating_run(heating_target_mode, indoor_temp)
         self._heating_prevented = (
             "anwesenheit"
             if heating_presence_blocked_comfort
@@ -2811,12 +2944,22 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 }.get(heating_target_mode, "Comfort")
             elif heating_learned_mode is not None:
                 self._heating_reason = "Gelernt: " + self._usage_note
+                if self._preheating and heating_target_mode == "comfort":
+                    self._heating_reason = (
+                        "Gelernt: Vorheizen (Comfort beginnt in "
+                        f"{self._preheat_lead} Min.)"
+                    )
             elif heating_schedule_enabled:
                 self._heating_reason = {
                     "comfort": "Zeitplan: Comfort",
                     "night": "Zeitplan: Nacht",
                     "standby": "Zeitplan: Standby",
                 }.get(heating_target_mode, "Zeitplan: keine Startzeit konfiguriert")
+                if self._preheating and heating_target_mode == "comfort":
+                    self._heating_reason = (
+                        "Zeitplan: Vorheizen (Comfort beginnt in "
+                        f"{self._preheat_lead} Min.)"
+                    )
             elif heating_target_mode == "comfort":
                 self._heating_reason = "Innentemperatur unter Schwelle, Comfort"
             elif heating_target_mode == "standby":
