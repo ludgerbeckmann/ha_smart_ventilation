@@ -113,6 +113,9 @@
             "name": "Heizung",
             "description": "Heizungs-Gerät, Presets, Anwesenheitsprüfung und Sollwerte für diesen Raum. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
             "data": {
+              "heating_type": "Heizungsart",
+              "heating_preheat_minutes": "Vorheizzeit (Min.)",
+              "heating_preheat_auto": "Vorheizzeit automatisch lernen",
               "heating_use_temp_source": "Temperaturquelle auch fürs Heizen",
               "heating_entity": "Heizung",
               "heating_use_preset_mode": "Presets steuern/anzeigen",
@@ -129,6 +132,9 @@
               "room_type": "Raumtyp"
             },
             "data_description": {
+              "heating_type": "Optional, nur für diesen Raum: Heizkörper reagieren schnell, eine Fußbodenheizung ist träge. Mit Heizungsart beginnt Comfort (Zeitplan und gelernte Zeiten) um die Vorheizzeit früher; Standby, Nacht und Gebäudeschutz kommen nicht früher. Tipp: Bei Fußbodenheizung den Standby-Sollwert nur wenig unter Comfort legen, tiefes Absenken lohnt wegen der Trägheit kaum. Ohne Angabe gibt es kein Vorheizen.",
+              "heating_preheat_minutes": "Nur mit Heizungsart. Leer oder 0 = Vorbelegung der Heizungsart (Heizkörper 20 Min., Fußbodenheizung 120 Min.). Gilt, solange noch nicht genug Aufheizläufe gemessen wurden oder das automatische Lernen aus ist.",
+              "heating_preheat_auto": "Nur mit Heizungsart. Die Integration misst, wie schnell der Raum beim Aufheizen auf Comfort wärmer wird (Median der letzten 10 Läufe, mindestens 2) und berechnet daraus die Vorheizzeit aus dem aktuellen Abstand zum Comfort-Sollwert. Bis dahin gilt die feste Vorheizzeit. Die Außentemperatur wird nicht berücksichtigt.",
               "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
               "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (weiter unten im selben Abschnitt) um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
               "heating_use_preset_mode": "Leer = globale Einstellung verwenden. Aktiviert (Standard, auch global), wird die Heizung über preset_mode statt über einen Zahlen-Sollwert gesteuert/angezeigt - aber nur, wenn die Entität preset_mode tatsächlich unterstützt; sonst bleibt es automatisch bei der Sollwert-Steuerung. Aktuell global: {global_heating_use_preset_mode}",
@@ -322,6 +328,9 @@
             "name": "Heizung",
             "description": "Heizungs-Gerät, Presets, Anwesenheitsprüfung und Sollwerte für diesen Raum. Optionale Felder überschreiben die allgemeinen Einstellungen. Leer gelassen gilt der globale Wert (Einstellungen → Geräte & Dienste → - Smart Climate Optionen - → Konfigurieren).",
             "data": {
+              "heating_type": "Heizungsart",
+              "heating_preheat_minutes": "Vorheizzeit (Min.)",
+              "heating_preheat_auto": "Vorheizzeit automatisch lernen",
               "heating_use_temp_source": "Temperaturquelle auch fürs Heizen",
               "heating_entity": "Heizung",
               "heating_use_preset_mode": "Presets steuern/anzeigen",
@@ -338,6 +347,9 @@
               "room_type": "Raumtyp"
             },
             "data_description": {
+              "heating_type": "Optional, nur für diesen Raum: Heizkörper reagieren schnell, eine Fußbodenheizung ist träge. Mit Heizungsart beginnt Comfort (Zeitplan und gelernte Zeiten) um die Vorheizzeit früher; Standby, Nacht und Gebäudeschutz kommen nicht früher. Tipp: Bei Fußbodenheizung den Standby-Sollwert nur wenig unter Comfort legen, tiefes Absenken lohnt wegen der Trägheit kaum. Ohne Angabe gibt es kein Vorheizen.",
+              "heating_preheat_minutes": "Nur mit Heizungsart. Leer oder 0 = Vorbelegung der Heizungsart (Heizkörper 20 Min., Fußbodenheizung 120 Min.). Gilt, solange noch nicht genug Aufheizläufe gemessen wurden oder das automatische Lernen aus ist.",
+              "heating_preheat_auto": "Nur mit Heizungsart. Die Integration misst, wie schnell der Raum beim Aufheizen auf Comfort wärmer wird (Median der letzten 10 Läufe, mindestens 2) und berechnet daraus die Vorheizzeit aus dem aktuellen Abstand zum Comfort-Sollwert. Bis dahin gilt die feste Vorheizzeit. Die Außentemperatur wird nicht berücksichtigt.",
               "heating_use_temp_source": "Verwendet automatisch die im Abschnitt \"Sensoren\" gewählte Innentemperatur-Quelle als Heizungs-Gerät, statt eine zweite, eigene Entität im Feld \"Heizung\" auszuwählen - nur wirksam, wenn die Temperaturquelle tatsächlich eine climate-Entität ist (sonst wie \"keine Heizung konfiguriert\" behandelt). Bei Aktivierung wird das Feld \"Heizung\" direkt darunter ignoriert.",
               "heating_entity": "Eine climate-Entität. Schaltet zwischen einem Comfort- und einem Standby-Sollwert (weiter unten im selben Abschnitt) um, statt einfach ein-/auszuschalten - wie für Heizungen üblich. Pausiert (Standby) zusätzlich, solange das Fenster bestätigt offen ist. Wird ignoriert, falls oben \"Temperaturquelle auch fürs Heizen verwenden\" aktiviert ist.",
               "heating_use_preset_mode": "Leer = globale Einstellung verwenden. Aktiviert (Standard, auch global), wird die Heizung über preset_mode statt über einen Zahlen-Sollwert gesteuert/angezeigt - aber nur, wenn die Entität preset_mode tatsächlich unterstützt; sonst bleibt es automatisch bei der Sollwert-Steuerung. Aktuell global: {global_heating_use_preset_mode}",

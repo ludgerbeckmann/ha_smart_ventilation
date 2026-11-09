@@ -298,6 +298,25 @@ CONF_HEATING_TRIGGER_ENTITY = "heating_trigger_entity"
 CONF_HEATING_TRIGGER_PROFILE = "heating_trigger_profile"
 CONF_HEATING_TRIGGER_ON_DELAY_MINUTES = "heating_trigger_on_delay_minutes"
 CONF_HEATING_TRIGGER_HOLD_MINUTES = "heating_trigger_hold_minutes"
+
+# Heizungsart und Vorheizzeit (nur pro Raum, CLAUDE.md Lektion 136)
+CONF_HEATING_TYPE = "heating_type"
+CONF_HEATING_PREHEAT_MINUTES = "heating_preheat_minutes"
+CONF_HEATING_PREHEAT_AUTO = "heating_preheat_auto"
+HEATING_TYPE_NONE = "none"
+HEATING_TYPE_RADIATOR = "radiator"
+HEATING_TYPE_FLOOR = "floor"
+HEATING_TYPE_LABELS = {
+    HEATING_TYPE_RADIATOR: "Heizkörper",
+    HEATING_TYPE_FLOOR: "Fußbodenheizung",
+}
+# Vorbelegung der festen Vorheizzeit je Heizungsart (Minuten); gilt, bis
+# genug Aufheizläufe gemessen wurden (automatische Vorheizzeit).
+DEFAULT_HEATING_PREHEAT_MINUTES = {
+    HEATING_TYPE_RADIATOR: 20,
+    HEATING_TYPE_FLOOR: 120,
+}
+DEFAULT_HEATING_PREHEAT_AUTO = True
 DEFAULT_HEATING_TRIGGER_PROFILE = "comfort"
 DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES = 5
 DEFAULT_HEATING_TRIGGER_HOLD_MINUTES = 15

@@ -81,6 +81,12 @@ from .const import (
     CONF_HEATING_TRIGGER_PROFILE,
     CONF_HEATING_TRIGGER_ON_DELAY_MINUTES,
     CONF_HEATING_TRIGGER_HOLD_MINUTES,
+    CONF_HEATING_TYPE,
+    CONF_HEATING_PREHEAT_AUTO,
+    CONF_HEATING_PREHEAT_MINUTES,
+    DEFAULT_HEATING_PREHEAT_AUTO,
+    HEATING_TYPE_LABELS,
+    HEATING_TYPE_NONE,
     DEFAULT_HEATING_TRIGGER_PROFILE,
     DEFAULT_HEATING_TRIGGER_ON_DELAY_MINUTES,
     DEFAULT_HEATING_TRIGGER_HOLD_MINUTES,
@@ -293,6 +299,8 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_HEATING_TRIGGER_ENTITY,
     CONF_USAGE_ENTITIES,
     CONF_ROOM_TYPE,  # SelectSelector: leer wird nicht übermittelt, siehe oben
+    CONF_HEATING_TYPE,  # dito (SelectSelector)
+    CONF_HEATING_PREHEAT_MINUTES,  # leer/0 = Vorbelegung der Heizungsart
     CONF_SHOWER_TEMPERATURE_ENTITY,
 )
 
@@ -1358,6 +1366,39 @@ def _build_room_schema(
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
+                vol.Optional(
+                    CONF_HEATING_TYPE,
+                    description={
+                        "suggested_value": defaults.get(CONF_HEATING_TYPE)
+                        or HEATING_TYPE_NONE
+                    },
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[{"value": HEATING_TYPE_NONE, "label": "Keine Angabe"}]
+                        + [
+                            {"value": k, "label": v}
+                            for k, v in HEATING_TYPE_LABELS.items()
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional(
+                    CONF_HEATING_PREHEAT_MINUTES,
+                    description={
+                        "suggested_value": defaults.get(CONF_HEATING_PREHEAT_MINUTES)
+                    },
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        min=0, max=360, step=5, unit_of_measurement="min",
+                    )
+                ),
+                vol.Optional(
+                    CONF_HEATING_PREHEAT_AUTO,
+                    default=defaults.get(
+                        CONF_HEATING_PREHEAT_AUTO, DEFAULT_HEATING_PREHEAT_AUTO
+                    ),
+                ): selector.BooleanSelector(),
                 vol.Optional(
                     CONF_HEATING_USE_TEMP_SOURCE,
                     default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),

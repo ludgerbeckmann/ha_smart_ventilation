@@ -135,6 +135,8 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_soll_modus` | der von der Integration gewollte Modus (`"comfort"`/`"standby"`/`"night"`/`"building_protection"`) - im Unterschied zu `heizung_modus`, das den Gerätezustand live liest. Bleibt bei einer manuellen Übersteuerung auf dem zuletzt gewollten Wert |
 | `heizung_modus_seit` | Zeitpunkt, seit dem `heizung_soll_modus` gilt (Wechsel des gewollten Modus, per Neubewertung erkannt, also auf wenige Minuten genau; über Neustarts erhalten). Nach dem Update gilt zunächst der Zeitpunkt der ersten Auswertung |
 | `heizung_verhindert` | nur vorhanden, wenn ein sonst gewollter Comfort herabgestuft wurde: `"anwesenheit"` oder `"ferien"` (Ferien-/Werktagssensor) |
+| `heizung_vorheizzeit` | nur mit gewählter Heizungsart: aktuelle Vorlaufzeit in Minuten, um die Comfort früher beginnt (fest oder aus der gelernten Aufheizrate) |
+| `heizung_aufheizrate` | nur sobald gelernt: Median der Aufheizrate in K/h (mit Heizungsart) |
 | `nutzung_lerntage` / `nutzung_aktiv` / `nutzung_gelernt_werktag` / `nutzung_gelernt_wochenende` | Nutzungserkennung (nur mit Heizung und Nutzungs-Signalen): beobachtete Tage, ob das Gelernte die Heizung steuert, und die gelernten Nutzungszeiten (z. B. `7–8 und 15–22 Uhr`) |
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `heizung_uebersteuert` | nur vorhanden (`true`), solange ein manueller Eingriff in Preset/Sollwert gilt (siehe "Manuelle Übersteuerung"); `heizung_uebersteuerung_seit` (Zeitpunkt) und `heizung_uebersteuerung_basis` (Regel-Zielmodus zum Zeitpunkt des Eingriffs) dienen der Wiederherstellung nach einem Neustart |
