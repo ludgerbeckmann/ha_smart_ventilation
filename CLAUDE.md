@@ -3962,6 +3962,50 @@ herausschneidet, kennt neue Attribute/Annotationen nicht - nach jeder
 Signaturänderung (hier `at: datetime | None`) die bestehenden Harness-Tests
 laufen lassen, bevor man den Code für "fertig" hält.
 
+**137. Handeingriffe am Thermostat als Lernsignal, Lernen standardmäßig aktiv (1.16.0).**
+Nutzerfrage: lernt das System, wenn das Thermostat nachmittags öfter von
+Hand auf Comfort gestellt wird? Antwort: bis dahin nein (nur Licht/Personen,
+Lektion 131, und das Anwenden war standardmäßig aus - "Gelernte Zeiten
+verwenden" = Nein; der Nutzer verstand das als "muss man erst aktivieren" und
+wollte es standardmäßig aktiv). Der Nutzer präzisierte die Gewichtung:
+Comfort von Hand ist ein Signal, aber es wird oft nicht passend
+zurückgestellt; eine bewusste Absenkung (Eco) ist ebenfalls ein Signal. Vorab
+bestätigt: Comfort von Hand = schwaches Signal nur für die Stunde des
+Eingriffs; Absenkung von Hand = starkes Veto für die Stunde und alle
+Folgestunden, solange die Übersteuerung besteht (`VETO = "v"` im Tagesstring
+von `learning.py`, zählt als nicht genutzt, wird von passiven Signalen und dem
+Recorder-Nachlauf nicht überschrieben; `mark_manual()` lässt die zuletzt
+getroffene bewusste Entscheidung einer Stunde gelten); Schwelle unverändert
+40 %; auch ohne Licht-/Personen-Signale lernt jeder Raum mit Heizung
+(`_usage_learning_available()`, der Store wird dafür auch ohne Signale
+angelegt, der Recorder-Nachlauf nur mit Signalen). Erkennung: in
+`_resolve_heating_override()` beim Erkennen des Eingriffs
+`_classify_manual_heating_mode()` (Gerät meldet live genau Comfort ->
+"used"; genau Standby/Nacht/Gebäudeschutz -> "unused"; sonst kein Signal,
+es wird nicht geraten); bei "unused" wird jede Neubewertung während der
+Übersteuerung die aktuelle Stunde nachmarkiert. Standard: `DEFAULT_USAGE_LEARNING_ENABLED = True`.
+Stolperstein (Lektion 10): Das globale Formular speichert den früheren
+Standard Nein immer mit ab - ein geänderter DEFAULT_*-Wert erreicht
+bestehende Einträge nicht. `_migrate_usage_learning_default()` in `__init__.py`
+hebt ein globales Nein einmalig auf Ja; der Marker
+`usage_learning_default_migrated` muss beim globalen Speichern im Formular
+explizit erhalten bleiben (wie `room_type_profiles`, Lektion 132), sonst
+würde ein bewusst gesetztes Nein beim nächsten Start erneut überschrieben.
+Ein Nein im Raum-Override bleibt unberührt. Grenzen: Die Integration sieht
+nicht, wer den Sollwert geändert hat (andere Automationen zählen mit);
+Handeingriffe lernen nur live (Recorder liefert keine Sollwerte); das Veto
+der laufenden Übersteuerung geht bei einem Neustart verloren
+(`_manual_usage_signal` wird nicht wiederhergestellt). Tests (Scratchpad):
+`test_manual_usage.py` (Zeichen/Veto-Logik, Lernen nur aus Handeingriffen,
+Klassifizierung, Erkennung mit Markierung der Stunde und Folgestunden,
+Ende durch Fenster, nicht zuordenbarer Wert, Migration inkl. erhaltenem Nein),
+angepasste Harness-Tests. Nicht an der echten Instanz geprüft. Lektion: Eine
+Änderung eines Standardwerts erreicht bestehende Einträge nur dann, wenn der
+alte Wert nicht explizit mitgespeichert wurde - bei Formularfeldern mit
+`default=` wurde er das immer, deshalb Migration mit Marker; und ein
+Lernsignal, dessen Ende unbekannt ist (Comfort von Hand), darf nur den
+bekannten Zeitpunkt zählen, nicht die Folgezeit.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

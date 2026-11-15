@@ -8,7 +8,8 @@ ist bewusst einfache Statistik, kein Machine Learning: nachvollziehbar,
 lokal und ohne Trainingsphase.
 
 Der Verlauf je Tag ist ein String aus 24 Zeichen: "1" genutzt, "0"
-beobachtet und nicht genutzt, "-" nicht beobachtet.
+beobachtet und nicht genutzt, "v" bewusst von Hand abgesenkt (zählt als
+nicht genutzt), "-" nicht beobachtet.
 """
 
 from __future__ import annotations
@@ -25,6 +26,8 @@ KEEP_DAYS = 28
 MIN_HOUR_SAMPLES = 2
 BACKFILL_STEP_MINUTES = 10
 _EMPTY_DAY = "-" * 24
+# Stundenzeichen: bewusste Absenkung von Hand (zählt als "nicht genutzt").
+VETO = "v"
 
 
 class UsageProfile:
@@ -54,8 +57,32 @@ class UsageProfile:
             day["t"] = day_type
             changed = True
         old = day["h"][hour]
-        new = "1" if used else ("0" if old == "-" else old)
+        if old == VETO:
+            # Eine bewusste Absenkung von Hand gilt für diese Stunde - ein
+            # passives Signal (Licht, Person) überschreibt sie nicht.
+            new = old
+        else:
+            new = "1" if used else ("0" if old == "-" else old)
         if new != old:
+            day["h"] = day["h"][:hour] + new + day["h"][hour + 1 :]
+            changed = True
+        return changed
+
+    def mark_manual(self, date_str: str, day_type: str, hour: int, used: bool) -> bool:
+        """Trägt einen Handeingriff ein: Comfort von Hand = "1", bewusste
+        Absenkung von Hand = Veto (zählt als nicht genutzt und wird von
+        passiven Signalen nicht überschrieben). Die zuletzt getroffene
+        bewusste Entscheidung einer Stunde gilt."""
+        day = self.days.get(date_str)
+        if day is None:
+            day = {"t": day_type, "h": _EMPTY_DAY}
+            self.days[date_str] = day
+        changed = False
+        if day["t"] != day_type:
+            day["t"] = day_type
+            changed = True
+        new = "1" if used else VETO
+        if day["h"][hour] != new:
             day["h"] = day["h"][:hour] + new + day["h"][hour + 1 :]
             changed = True
         return changed

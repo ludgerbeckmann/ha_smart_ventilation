@@ -332,7 +332,12 @@ CONF_USAGE_ENTITIES = "usage_entities"
 CONF_USAGE_LEARNING_ENABLED = "usage_learning_enabled"
 CONF_USAGE_THRESHOLD_PERCENT = "usage_threshold_percent"
 CONF_USAGE_MIN_DAYS = "usage_min_days"
-DEFAULT_USAGE_LEARNING_ENABLED = False
+DEFAULT_USAGE_LEARNING_ENABLED = True
+# Marker im globalen Eintrag: der Standard "Gelernte Zeiten verwenden" wurde
+# mit 1.16.0 von Nein auf Ja gestellt; bereits gespeicherte Nein-Werte
+# (das Formular speichert den Standard immer mit) werden einmalig auf Ja
+# gehoben (_migrate_usage_learning_default in __init__.py).
+CONF_USAGE_LEARNING_DEFAULT_MIGRATED = "usage_learning_default_migrated"
 DEFAULT_USAGE_THRESHOLD_PERCENT = 40
 DEFAULT_USAGE_MIN_DAYS = 14
 USAGE_DOMAINS = ["light", "switch", "binary_sensor", "input_boolean"]

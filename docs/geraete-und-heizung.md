@@ -207,17 +207,34 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   laufend ergänzt; die Daten liegen lokal im Speicher von Home Assistant
   (`.storage`), nicht in Attributen. Es ist einfache Statistik, kein
   Machine Learning: nachvollziehbar und ohne Trainingsphase.
-  - **Vorschlagsmodus (Standard):** Es wird nur gelernt und angezeigt - im
-    Raum-Dialog und in der Geräte-Tabelle steht z. B. "Gelernte Nutzung:
-    Werktag 7–8 und 15–22 Uhr (nur Anzeige)". Die Heizung ändert sich nicht.
-  - **"Gelernte Zeiten verwenden" = Ja** (global Standard Nein, pro Raum
-    überschreibbar): In typischerweise genutzten Stunden gilt Comfort, sonst
-    Standby. Das ersetzt den Zeitplan, sobald genug gelernt wurde
+  - **Handeingriffe am Thermostat (ab 1.16.0):** Auch das, was Sie am
+    Thermostat von Hand einstellen, wird gelernt - mit oder ohne
+    Nutzungs-Signale (jeder Raum mit Heizung lernt). Stellen Sie von Hand auf
+    **Comfort**, zählt nur diese Stunde als genutzt (wann die Nutzung endet,
+    ist unbekannt, daher zählen Folgestunden nicht). Stellen Sie bewusst auf
+    **Eco/Standby/Nacht/Gebäudeschutz**, zählen diese Stunde und alle
+    Folgestunden, solange die Übersteuerung besteht, als **nicht genutzt**;
+    das ist ein Veto, das ein Licht-Signal oder der Verlauf aus dem Recorder
+    nicht überschreibt. Ein Wert, der keinem Modus entspricht, zählt nicht.
+    Die Schwelle bleibt 40 % der Vergleichstage, einzelne Absenkungen kippen
+    also keine oft genutzte Stunde. Die Integration sieht nicht, wer den
+    Sollwert geändert hat - eine andere Automation zählt genauso. Rückwirkend
+    lernt nur das Licht (Recorder), Handeingriffe zählen ab 1.16.0; nach
+    einem Neustart endet das Veto der laufenden Übersteuerung.
+  - **"Gelernte Zeiten verwenden" = Ja (Standard seit 1.16.0, global und pro
+    Raum überschreibbar):** In typischerweise genutzten Stunden gilt Comfort,
+    sonst Standby. Das ersetzt den Zeitplan, sobald genug gelernt wurde
     (**Mindest-Lernzeit**, Standard 14 Tage, und mindestens 2 Vergleichstage
     der jeweiligen Stunde); bis dahin gilt weiter Zeitplan bzw.
     Schwellenwert-Logik. Eine Stunde gilt als genutzt, wenn der Raum an
     mindestens **40 %** (**Nutzungs-Schwelle**) der Vergleichstage genutzt
-    wurde.
+    wurde. **Nein** = Vorschlagsmodus: Es wird nur gelernt und angezeigt - im
+    Raum-Dialog und in der Geräte-Tabelle steht z. B. "Gelernte Nutzung:
+    Werktag 7–8 und 15–22 Uhr (nur Anzeige)", die Heizung ändert sich nicht.
+    Beim Update auf 1.16.0 wird ein bisher gespeichertes globales Nein einmalig
+    auf Ja gehoben (der frühere Standard wurde immer mitgespeichert); ein
+    danach bewusst gesetztes Nein bleibt erhalten, ebenso ein Nein in einem
+    einzelnen Raum.
   - **Rangfolge:** Fenster offen, Sommerbetrieb, manuelle Übersteuerung und
     der dynamische Auslöser haben Vorrang; ein aktives **Nacht-Profil des
     Zeitplans** bleibt bestehen; Anwesenheit und Ferien-/Werktagssensor
@@ -226,7 +243,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
     Werktagen)".
   - Attribute: `nutzung_lerntage`, `nutzung_aktiv`,
     `nutzung_gelernt_werktag`, `nutzung_gelernt_wochenende` (nur mit
-    konfigurierter Heizung und Nutzungs-Signalen). Der Dienst
+    konfigurierter Heizung). Der Dienst
     `ha_smart_ventilation.reset_usage_learning` (Ziel: die
     Lüftungsempfehlung des Raums) verwirft das Gelernte.
 

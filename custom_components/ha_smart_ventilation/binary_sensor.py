@@ -478,6 +478,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heat_run_closed = False
         self._preheat_lead = 0
         self._preheating = False
+        # Lernsignal des aktuellen Handeingriffs ("used" = von Hand auf
+        # Comfort, "unused" = bewusst abgesenkt, None = unbekannt/keiner).
+        self._manual_usage_signal: str | None = None
 
         # Seit wann die Einspeiseleistung ununterbrochen zu niedrig ist,
         # während das jeweilige Gerät läuft (für die Abschalt-Verzögerung).
@@ -1240,12 +1243,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if usage_entities:
             tracked.extend(usage_entities)
             tracked.extend(self._config.get(CONF_HEATING_PRESENCE_ENTITIES) or [])
+        if self._usage_learning_available():
             self._usage_store = Store(
                 self.hass, 1, f"{DOMAIN}_usage_{self._entry.entry_id}"
             )
             stored = await self._usage_store.async_load()
             self._usage = UsageProfile((stored or {}).get("days"))
-            if self._usage.observed_days() < KEEP_DAYS // 2:
+            if usage_entities and self._usage.observed_days() < KEEP_DAYS // 2:
                 self._entry.async_create_background_task(
                     self.hass,
                     self._async_backfill_usage(),
@@ -1854,6 +1858,35 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     def _usage_entities(self) -> list[str]:
         return [e for e in self._as_list(self._config.get(CONF_USAGE_ENTITIES)) if e]
 
+    def _usage_learning_available(self) -> bool:
+        """Gelernt wird mit Nutzungs-Signalen (Licht/Person) und/oder aus
+        Handeingriffen an der Heizung (Lektion 137) - also auch in Räumen
+        mit Heizung, aber ohne Signale."""
+        return bool(self._usage_entities() or self._get_heating_entity_id())
+
+    def _mark_manual_usage(self, signal: str) -> None:
+        """Trägt einen Handeingriff als Lernsignal für die aktuelle Stunde
+        ein ("used" = Comfort von Hand, "unused" = bewusst abgesenkt)."""
+        if self._usage_store is None:
+            return
+        now = dt_util.now()
+        today = now.strftime("%Y-%m-%d")
+        if self._usage.mark_manual(
+            today, self._usage_day_type(now), now.hour, signal == "used"
+        ):
+            self._usage.prune(today)
+            self._usage_store.async_delay_save(lambda: self._usage.to_dict(), 60)
+
+    def _classify_manual_heating_mode(self, entity_id: str) -> str | None:
+        """Lernsignal eines erkannten Handeingriffs: Meldet das Gerät live
+        genau den Comfort-Wert/-Preset, ist es "used", genau einen der
+        Absenk-Werte (Standby/Nacht/Gebäudeschutz) "unused"; ein anderer
+        (nicht zuordenbarer) Wert ist kein Signal - es wird nicht geraten."""
+        for mode in ("comfort", "standby", "night", "building_protection"):
+            if self._heating_live_matches(entity_id, mode) is True:
+                return "used" if mode == "comfort" else "unused"
+        return None
+
     def _usage_day_type(self, now) -> str:
         """"we" für Wochenende UND freie Tage (Ferien-/Werktagssensor sperrt
         Comfort), sonst "wd"."""
@@ -1991,7 +2024,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Schwellenwert-Logik). Ein aktives Nacht-Profil des Zeitplans hat
         Vorrang (Nutzerentscheidung)."""
         self._usage_note = ""
-        if not self._usage_entities() or not self._effective(
+        if not self._usage_learning_available() or not self._effective(
             CONF_USAGE_LEARNING_ENABLED, DEFAULT_USAGE_LEARNING_ENABLED
         ):
             return None
@@ -2086,7 +2119,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self.async_write_ha_state()
 
     def _usage_attributes(self) -> dict:
-        if not self._usage_entities():
+        if not self._usage_learning_available():
             return {}
         threshold, min_days = self._usage_params()
         attrs = {
@@ -3830,6 +3863,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     def _clear_heating_override(self) -> None:
         self._heating_override_since = None
         self._heating_override_baseline = None
+        self._manual_usage_signal = None
         # Nach dem Ende wieder Regel-Befehl senden und erst nach neuer
         # Live-Bestätigung wieder auf Handeingriffe achten.
         self._heating_confirmed = False
@@ -3874,6 +3908,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if pause_active or expired or rule_changed or reached_rule:
                 self._clear_heating_override()
             else:
+                # Eine bewusste Absenkung gilt für jede Stunde, in der sie
+                # noch besteht (Lektion 137).
+                if self._manual_usage_signal == "unused":
+                    self._mark_manual_usage("unused")
                 return True
 
         if pause_active or rule_target is None or self._heating_state is None:
@@ -3890,6 +3928,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._heating_override_since = dt_util.utcnow()
             self._heating_override_baseline = rule_target
             self._heating_confirmed = False
+            self._manual_usage_signal = self._classify_manual_heating_mode(entity_id)
+            if self._manual_usage_signal is not None:
+                self._mark_manual_usage(self._manual_usage_signal)
             return True
         return False
 

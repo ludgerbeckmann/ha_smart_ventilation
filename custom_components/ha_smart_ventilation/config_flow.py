@@ -97,6 +97,7 @@ from .const import (
     CONF_HEATING_SCHEDULE_ENABLED,
     CONF_ROOM_TYPE,
     CONF_ROOM_TYPE_PROFILES,
+    CONF_USAGE_LEARNING_DEFAULT_MIGRATED,
     CONF_ROOM_TYPE_EDIT,
     ROOM_TYPE_NONE,
     ROOM_TYPE_LABELS,
@@ -2418,6 +2419,10 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
             # stehen nicht in diesem Formular und müssen erhalten bleiben.
             if current.get(CONF_ROOM_TYPE_PROFILES):
                 flat[CONF_ROOM_TYPE_PROFILES] = current[CONF_ROOM_TYPE_PROFILES]
+            # Dito der Migrations-Marker (sonst würde ein bewusst gesetztes
+            # "Nein" beim nächsten Start erneut auf "Ja" gehoben).
+            if current.get(CONF_USAGE_LEARNING_DEFAULT_MIGRATED):
+                flat[CONF_USAGE_LEARNING_DEFAULT_MIGRATED] = True
             # Name/Titel bleibt unverändert - im Formular nicht editierbar
             flat[CONF_ROOM_NAME] = current.get(
                 CONF_ROOM_NAME, self.config_entry.title
