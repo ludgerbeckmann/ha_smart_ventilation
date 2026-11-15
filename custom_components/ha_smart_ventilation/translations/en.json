@@ -519,6 +519,7 @@
             "name": "Heating",
             "description": "Presets, setpoints and summer mode as the room-wide default.",
             "data": {
+              "heating_system": "Heating system",
               "heating_use_preset_mode": "Control/show via presets",
               "heating_preset_comfort": "Preset name Comfort",
               "heating_preset_standby": "Preset name Standby",
@@ -537,6 +538,7 @@
               "heating_free_day_enabled": "Use sensor for all rooms"
             },
             "data_description": {
+              "heating_system": "Setpoint thermostat (default): comfort/standby/night temperatures and the heating threshold are configurable. Preset system (e.g. KNX): the room controller defines setpoints and preset names, the integration only switches presets; temperatures, heating threshold and preset fields are hidden (stored values are kept). Takes effect the next time this form is opened.",
               "heating_use_preset_mode": "Default Yes (opt-out): heating entities that support preset_mode (e.g. KNX) are controlled/shown via presets automatically instead of a numeric setpoint. Without support, it automatically stays on setpoint control - overridable per room to \"No\" to avoid using presets despite support.",
               "heating_preset_comfort": "Preset name for the comfort state (e.g. \"Comfort\") - dropdown only suggests the eight official Home Assistant standard values (no single device to read the actual presets from), freely editable. Empty = this state keeps being set via the comfort setpoint.",
               "heating_preset_standby": "Like \"Preset name Comfort\", for the standby state.",

@@ -33,6 +33,10 @@ from .const import (
     CONF_HEATING_STANDBY_START_WEEKDAY,
     CONF_HEATING_STANDBY_START_WEEKEND,
     CONF_HEATING_COMFORT_TEMP,
+    CONF_HEATING_SYSTEM,
+    DEFAULT_HEATING_SYSTEM,
+    HEATING_SYSTEM_LABELS,
+    HEATING_SYSTEM_PRESET,
     CONF_HEATING_ENTITY,
     CONF_HEATING_NIGHT_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND,
@@ -1015,6 +1019,14 @@ def _build_room_schema(
     shower_max_marker, shower_max_sel = _override_selector(
         CONF_SHOWER_MAX_DURATION, defaults
     )
+    # Globales Heizungssystem "Preset-System" (KNX, Lektion 138): Temperaturen,
+    # Heizschwelle und Preset-Namen entfallen im Formular (gespeicherte Werte
+    # bleiben unberührt, siehe Lektion 26/27).
+    preset_system = (
+        hass is not None
+        and _global_config(hass).get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM)
+        == HEATING_SYSTEM_PRESET
+    )
     heating_threshold_marker, heating_threshold_sel = _override_selector(
         CONF_HEATING_THRESHOLD_TEMP, defaults
     )
@@ -1416,11 +1428,17 @@ def _build_room_schema(
                         ),
                     )
                 ),
-                heating_use_preset_marker: heating_use_preset_sel,
-                heating_preset_comfort_marker: heating_preset_comfort_sel,
-                heating_preset_standby_marker: heating_preset_standby_sel,
-                heating_preset_night_marker: heating_preset_night_sel,
-                heating_preset_building_protection_marker: heating_preset_building_protection_sel,
+                **(
+                    {}
+                    if preset_system
+                    else {
+                        heating_use_preset_marker: heating_use_preset_sel,
+                        heating_preset_comfort_marker: heating_preset_comfort_sel,
+                        heating_preset_standby_marker: heating_preset_standby_sel,
+                        heating_preset_night_marker: heating_preset_night_sel,
+                        heating_preset_building_protection_marker: heating_preset_building_protection_sel,
+                    }
+                ),
                 _entity_marker(
                     CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False
                 ): selector.EntitySelector(
@@ -1430,10 +1448,16 @@ def _build_room_schema(
                     )
                 ),
                 heating_free_day_marker: heating_free_day_sel,
-                heating_threshold_marker: heating_threshold_sel,
-                heating_comfort_marker: heating_comfort_sel,
-                heating_standby_marker: heating_standby_sel,
-                heating_night_marker: heating_night_sel,
+                **(
+                    {}
+                    if preset_system
+                    else {
+                        heating_threshold_marker: heating_threshold_sel,
+                        heating_comfort_marker: heating_comfort_sel,
+                        heating_standby_marker: heating_standby_sel,
+                        heating_night_marker: heating_night_sel,
+                    }
+                ),
             }
         ),
         {"collapsed": True},
@@ -1785,32 +1809,53 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
         )
     ] = selector.BooleanSelector()
 
+    preset_system = (
+        defaults.get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM)
+        == HEATING_SYSTEM_PRESET
+    )
     heating_fields = {
         vol.Required(
-            CONF_HEATING_USE_PRESET_MODE,
-            default=defaults.get(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE),
-        ): selector.BooleanSelector(),
+            CONF_HEATING_SYSTEM,
+            default=defaults.get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    {"value": k, "label": v} for k, v in HEATING_SYSTEM_LABELS.items()
+                ],
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        ),
     }
+    if not preset_system:
+        heating_fields[
+            vol.Required(
+                CONF_HEATING_USE_PRESET_MODE,
+                default=defaults.get(
+                    CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE
+                ),
+            )
+        ] = selector.BooleanSelector()
     # Dropdown als raumweiter Standard - anders als im Raum-Formular (siehe
     # _heating_preset_selector()) gibt es hier keine konkrete Entität, deren
     # preset_modes sich auslesen ließen (jeder Raum kann eine andere
     # Heizungs-Entität haben) - daher COMMON_HEATING_PRESET_MODES als feste
     # Vorschlagsliste statt eines reinen Freitextfelds, weiterhin über
     # custom_value frei editierbar.
-    for key in (
-        CONF_HEATING_PRESET_COMFORT,
-        CONF_HEATING_PRESET_STANDBY,
-        CONF_HEATING_PRESET_NIGHT,
-        CONF_HEATING_PRESET_BUILDING_PROTECTION,
-    ):
-        marker, field_selector = _heating_preset_selector(
-            key, defaults, COMMON_HEATING_PRESET_MODES
-        )
-        heating_fields[marker] = field_selector
-    heating_fields[heating_threshold_marker] = heating_threshold_sel
-    heating_fields[heating_comfort_marker] = heating_comfort_sel
-    heating_fields[heating_standby_marker] = heating_standby_sel
-    heating_fields[heating_night_marker] = heating_night_sel
+    if not preset_system:
+        for key in (
+            CONF_HEATING_PRESET_COMFORT,
+            CONF_HEATING_PRESET_STANDBY,
+            CONF_HEATING_PRESET_NIGHT,
+            CONF_HEATING_PRESET_BUILDING_PROTECTION,
+        ):
+            marker, field_selector = _heating_preset_selector(
+                key, defaults, COMMON_HEATING_PRESET_MODES
+            )
+            heating_fields[marker] = field_selector
+        heating_fields[heating_threshold_marker] = heating_threshold_sel
+        heating_fields[heating_comfort_marker] = heating_comfort_sel
+        heating_fields[heating_standby_marker] = heating_standby_sel
+        heating_fields[heating_night_marker] = heating_night_sel
     heating_fields[
         _entity_marker(CONF_SUMMER_MODE_FORECAST_ENTITY, defaults, required=False)
     ] = selector.EntitySelector(
@@ -2413,6 +2458,23 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 for key in _MESSAGE_FIELD_DEFAULTS:
                     flat[key] = None
             edit_type = flat.pop(CONF_ROOM_TYPE_EDIT, ROOM_TYPE_NONE)
+            if flat.get(CONF_HEATING_SYSTEM) == HEATING_SYSTEM_PRESET:
+                # Im Preset-System ausgeblendete Felder behalten ihren
+                # gespeicherten Wert (Lektion 26/27/138), statt von
+                # _apply_threshold_defaults zurückgesetzt zu werden.
+                for key in (
+                    CONF_HEATING_THRESHOLD_TEMP,
+                    CONF_HEATING_COMFORT_TEMP,
+                    CONF_HEATING_STANDBY_TEMP,
+                    CONF_HEATING_NIGHT_TEMP,
+                    CONF_HEATING_USE_PRESET_MODE,
+                    CONF_HEATING_PRESET_COMFORT,
+                    CONF_HEATING_PRESET_STANDBY,
+                    CONF_HEATING_PRESET_NIGHT,
+                    CONF_HEATING_PRESET_BUILDING_PROTECTION,
+                ):
+                    if key not in flat and key in current:
+                        flat[key] = current[key]
             flat = _apply_threshold_defaults(flat)
             flat[CONF_IS_GLOBAL] = True
             # Das Speichern ersetzt alle Daten - die Raumtyp-Anpassungen
@@ -2467,6 +2529,14 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 defaults_of_type = ROOM_TYPE_DEFAULTS[room_type]
                 for key in ROOM_TYPE_TEMP_KEYS:
                     value = user_input.get(key)
+                    if (
+                        current.get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM)
+                        == HEATING_SYSTEM_PRESET
+                    ):
+                        # Im Preset-System ausgeblendet: Gespeichertes bleibt.
+                        if key in (profiles.get(room_type) or {}):
+                            custom[key] = profiles[room_type][key]
+                        continue
                     if value is not None and float(value) != float(defaults_of_type[key]):
                         custom[key] = value
                 for key in ROOM_TYPE_START_KEYS:
@@ -2491,7 +2561,11 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data={})
 
         schema: dict = {}
-        for key in ROOM_TYPE_TEMP_KEYS:
+        preset_system = (
+            current.get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM)
+            == HEATING_SYSTEM_PRESET
+        )
+        for key in () if preset_system else ROOM_TYPE_TEMP_KEYS:
             _applies, value = room_type_value(profiles, room_type, key)
             schema[
                 vol.Optional(key, description={"suggested_value": value})

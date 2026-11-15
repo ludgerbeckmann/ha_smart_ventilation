@@ -40,6 +40,16 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   - ein bereits anderweitig ermittelter Standby-/Nacht-/Gebäudeschutz-Modus
   bleibt davon unberührt.
 
+  **Preset-System (KNX)**: Ist global das Heizungssystem "Preset-System"
+  gewählt, schaltet die Integration ausschließlich Presets. Die Zuordnung
+  der vier Modi geschieht automatisch aus den `preset_modes` der Entität
+  (comfort, standby, economy → Nacht, building_protection; sonst diese
+  KNX-Standardnamen). Die reine Schwellenwert-Logik entfällt: Greift weder
+  Zeitplan, Gelerntes noch Auslöser, ändert die Integration nichts. Für
+  Vorheizen und Aufheizrate wird der Comfort-Sollwert aus dem
+  `temperature`-Attribut gelesen, solange die Entität in Comfort steht
+  (bis dahin gilt die feste Vorheizzeit).
+
   **Presets statt Sollwert** (optional, Option "Presets steuern/anzeigen",
   Standard auch global Ja): Manche climate-Integrationen (z. B. KNX) bilden
   Comfort/Standby/Nacht/Gebäudeschutz nativ als `preset_mode`

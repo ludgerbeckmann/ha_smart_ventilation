@@ -186,7 +186,14 @@
        keine Auswirkung. Unabhängig von den im Abschnitt
        "Benachrichtigungen" konfigurierten Anwesenheits-Entitäten der App-Benachrichtigungsziele - dort geht es
        um "wen benachrichtigen", hier um "wann Comfort erlaubt ist"
-     - **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
+     - **Heizungssystem** (nur global): "Sollwert-Thermostat" (Standard) oder
+  "Preset-System (z. B. KNX)". Beim Preset-System gibt der Raumregler
+  Sollwerte und Preset-Namen vor - die folgenden Felder (Heizungs-Schwelle,
+  Comfort-/Standby-/Nacht-Sollwert, Presets steuern/anzeigen, Preset-Namen,
+  im Raum-Formular ebenso, bei den Raumtypen die Temperaturen) werden dann
+  ausgeblendet; gespeicherte Werte bleiben erhalten. Das Ausblenden wirkt
+  beim nächsten Öffnen des Formulars.
+- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
        **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
        relevant, wenn oben eine Heizung hinterlegt oder die
        Temperaturquelle dafür wiederverwendet wird) - jeweils Dropdown mit gängigen Vorschlagswerten,
