@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
+from urllib.parse import quote
 from collections import deque
 from datetime import datetime, timedelta
 
@@ -4433,6 +4434,90 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._log_push(f"Sprachausgabe ({source or 'ohne Angabe'}): {message}")
         volume_percent = self._effective(CONF_TTS_VOLUME, DEFAULT_TTS_VOLUME)
         playback_mode = self._effective(CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE)
+
+        # Sonos-Lautsprecher im Modus "Überlagern": Ansage als Überlagerung
+        # (announce) mit eigener Ansage-Lautstärke - die Musik wird dabei vom
+        # Lautsprecher selbst abgesenkt und danach wiederhergestellt, ihre
+        # Lautstärke bleibt unangetastet (Lektion 139).
+        announce_entities: list[str] = []
+        if playback_mode != TTS_PLAYBACK_MODE_PAUSE:
+            announce_entities = [e for e in sonos_entities if self._is_sonos_player(e)]
+        classic_entities = [e for e in sonos_entities if e not in announce_entities]
+        if announce_entities:
+            self._log_push(
+                "Sprachausgabe-Weg: Sonos-Ansage (announce) auf "
+                + ", ".join(announce_entities)
+            )
+            self.hass.async_create_task(
+                self._play_tts_announce(
+                    announce_entities, tts_entity, message, volume_percent, playback_mode
+                )
+            )
+        if classic_entities:
+            await self._play_tts_classic(
+                classic_entities, tts_entity, message, volume_percent, playback_mode
+            )
+
+    def _is_sonos_player(self, entity_id: str) -> bool:
+        """True, wenn die media_player-Entität zur Sonos-Integration gehört."""
+        entry = er.async_get(self.hass).async_get(entity_id)
+        return entry is not None and entry.platform == "sonos"
+
+    async def _play_tts_announce(
+        self,
+        entities: list[str],
+        tts_entity: str,
+        message: str,
+        volume_percent,
+        playback_mode: str,
+    ) -> None:
+        """Sonos-Ansage über media_player.play_media mit announce: true und
+        extra.volume. Läuft in einem eigenen Task (blocking=True kann bis zum
+        Ende der Ansage dauern, _evaluate() soll nicht warten); scheitert ein
+        Aufruf, fällt genau dieser Lautsprecher auf den klassischen Ablauf
+        zurück (Lautstärke setzen/zurücksetzen)."""
+        media_id = f"media-source://tts/{tts_entity}?message={quote(message)}"
+        try:
+            volume = int(max(0.0, min(100.0, float(volume_percent))))
+        except (TypeError, ValueError):
+            volume = int(DEFAULT_TTS_VOLUME)
+        for entity_id in entities:
+            try:
+                await self.hass.services.async_call(
+                    "media_player",
+                    "play_media",
+                    {
+                        "entity_id": entity_id,
+                        "media_content_id": media_id,
+                        "media_content_type": "music",
+                        "announce": True,
+                        "extra": {"volume": volume},
+                    },
+                    blocking=True,
+                )
+            except Exception as err:  # noqa: BLE001 - siehe Lektion 50
+                _LOGGER.warning(
+                    "Sonos-Ansage auf %s fehlgeschlagen (%s), nutze den "
+                    "klassischen Ablauf (Raum %s)",
+                    entity_id,
+                    err,
+                    self._config[CONF_ROOM_NAME],
+                )
+                self._log_push(f"Sonos-Ansage auf {entity_id} fehlgeschlagen: {err}")
+                await self._play_tts_classic(
+                    [entity_id], tts_entity, message, volume_percent, playback_mode
+                )
+
+    async def _play_tts_classic(
+        self,
+        sonos_entities: list[str],
+        tts_entity: str,
+        message: str,
+        volume_percent,
+        playback_mode: str,
+    ) -> None:
+        """Klassischer Ablauf: Lautstärke setzen, optional pausieren,
+        tts.speak, Lautstärke nach der geschätzten Ansagedauer zurücksetzen."""
         original_volumes = self._get_current_volumes(sonos_entities)
 
         try:

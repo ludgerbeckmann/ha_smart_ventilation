@@ -135,6 +135,14 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   geschätzt (rund 150 Wörter/Minute plus Pufferzeit) - bei sehr langen
   Ansagen oder einem ungewöhnlich langsamen TTS-Dienst kann die Lautstärke
   dadurch im Einzelfall etwas zu früh oder zu spät zurückgesetzt werden.
+- **Sonos (Überlagern)**: Für Sonos-Lautsprecher im Modus "Überlagern" nutzt
+  die Integration die Ansage-Funktion des Lautsprechers (`announce`): Die
+  Musik wird kurz abgesenkt, die Ansage läuft in der eingestellten
+  Lautstärke, danach stellt der Lautsprecher die Musik selbst wieder her -
+  die Musiklautstärke wird nicht angefasst. Scheitert der Aufruf, fällt die
+  Ansage auf den oben beschriebenen Ablauf zurück; der Weg steht im
+  `push_verlauf`. Im Modus "Pausieren" und bei anderen Herstellern gilt
+  weiter der Ablauf mit Lautstärke setzen und zurücksetzen.
 - **Pausieren vs. Überlagern**: Im Modus "Pausieren" wird die vorhandene
   Wiedergabe vor der Ansage pausiert, aber **nicht automatisch
   fortgesetzt** - ein zuverlässiges automatisches Fortsetzen ist
