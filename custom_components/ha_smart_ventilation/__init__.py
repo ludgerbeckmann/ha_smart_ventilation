@@ -19,6 +19,8 @@ from .const import (
     CONF_NOTIFY_METHOD,
     CONF_PERSISTENT_ENABLED,
     CONF_ROOM_NAME,
+    CONF_USAGE_LEARNING_DEFAULT_MIGRATED,
+    CONF_USAGE_LEARNING_ENABLED,
     DASHBOARD_SIGNAL,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
@@ -137,6 +139,23 @@ def _migrate_global_entry_title(hass: HomeAssistant, entry: ConfigEntry) -> None
     hass.config_entries.async_update_entry(
         entry, title=GLOBAL_ROOM_NAME, data=new_data
     )
+
+
+def _migrate_usage_learning_default(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Hebt "Gelernte Zeiten verwenden" im globalen Eintrag einmalig auf Ja
+    (neuer Standard seit 1.16.0, CLAUDE.md Lektion 137). Das globale
+    Formular speichert den früheren Standard Nein immer mit ab, ein bloß
+    geänderter DEFAULT_*-Wert erreicht bestehende Einträge also nicht
+    (Lektion 10). Der Marker verhindert, dass ein danach bewusst gesetztes
+    Nein erneut überschrieben wird."""
+    if not entry.data.get(CONF_IS_GLOBAL):
+        return
+    if entry.data.get(CONF_USAGE_LEARNING_DEFAULT_MIGRATED):
+        return
+    new_data = dict(entry.data)
+    new_data[CONF_USAGE_LEARNING_ENABLED] = True
+    new_data[CONF_USAGE_LEARNING_DEFAULT_MIGRATED] = True
+    hass.config_entries.async_update_entry(entry, data=new_data)
 
 
 def _get_lovelace_resources(hass: HomeAssistant):
@@ -277,6 +296,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Richtet einen Raum oder die allgemeinen Einstellungen ein."""
     _migrate_legacy_notify_method(hass, entry)
     _migrate_global_entry_title(hass, entry)
+    _migrate_usage_learning_default(hass, entry)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
