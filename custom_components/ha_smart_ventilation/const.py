@@ -385,6 +385,32 @@ CONF_HEATING_USE_PRESET_MODE = "heating_use_preset_mode"
 # Sollwerte). "Nacht" wird dem Nutzer als "Eco (Nacht)" angezeigt, da
 # dieser Modus auf vielen Geräten "Eco" genannt wird, aber - wie der Name
 # hier weiterhin sagt - über Nacht aktiviert wird.
+# Heizungssystem (nur global, Lektion 138): "setpoint" = Sollwert-Thermostat
+# (bisheriges Verhalten), "preset" = Preset-System (z. B. KNX: Raumregler
+# liefert Sollwerte und Presets, die Integration schaltet nur Presets).
+CONF_HEATING_SYSTEM = "heating_system"
+HEATING_SYSTEM_SETPOINT = "setpoint"
+HEATING_SYSTEM_PRESET = "preset"
+HEATING_SYSTEM_LABELS = {
+    HEATING_SYSTEM_SETPOINT: "Sollwert-Thermostat (Temperaturen einstellbar)",
+    HEATING_SYSTEM_PRESET: "Preset-System (z. B. KNX, Raumregler gibt Sollwerte vor)",
+}
+DEFAULT_HEATING_SYSTEM = HEATING_SYSTEM_SETPOINT
+# Schlüsselwörter, mit denen im Preset-System die echten preset_modes der
+# Heizungs-Entität den vier Modi zugeordnet werden (Reihenfolge = Priorität);
+# letzter Eintrag je Modus = KNX-Standardname als Rückfall.
+HEATING_PRESET_KEYWORDS = {
+    "comfort": ("comfort", "komfort", "home"),
+    "standby": ("standby",),
+    "night": ("economy", "eco", "night", "nacht", "sleep"),
+    "building_protection": ("building", "protection", "frost", "gebäude"),
+}
+HEATING_PRESET_KNX_FALLBACK = {
+    "comfort": "comfort",
+    "standby": "standby",
+    "night": "economy",
+    "building_protection": "building_protection",
+}
 CONF_HEATING_PRESET_COMFORT = "heating_preset_comfort"
 CONF_HEATING_PRESET_STANDBY = "heating_preset_standby"
 CONF_HEATING_PRESET_NIGHT = "heating_preset_night"

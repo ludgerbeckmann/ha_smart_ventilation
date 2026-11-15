@@ -63,6 +63,11 @@ from .const import (
     CONF_HEATING_STANDBY_START_WEEKDAY,
     CONF_HEATING_STANDBY_START_WEEKEND,
     CONF_HEATING_COMFORT_TEMP,
+    CONF_HEATING_SYSTEM,
+    DEFAULT_HEATING_SYSTEM,
+    HEATING_PRESET_KEYWORDS,
+    HEATING_PRESET_KNX_FALLBACK,
+    HEATING_SYSTEM_PRESET,
     CONF_HEATING_ENTITY,
     CONF_HEATING_NIGHT_START_WEEKDAY,
     CONF_HEATING_NIGHT_START_WEEKEND,
@@ -477,6 +482,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heat_run: tuple | None = None
         self._heat_run_closed = False
         self._preheat_lead = 0
+        self._comfort_setpoint_cache: float | None = None
         self._preheating = False
         # Lernsignal des aktuellen Handeingriffs ("used" = von Hand auf
         # Comfort, "unused" = bewusst abgesenkt, None = unbekannt/keiner).
@@ -1948,10 +1954,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if htype is None:
             return 0
         if self._config.get(CONF_HEATING_PREHEAT_AUTO, DEFAULT_HEATING_PREHEAT_AUTO):
-            comfort = self._effective(
-                CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP
+            comfort = self._heating_comfort_setpoint()
+            auto = (
+                preheat_minutes(self._heat_rates.median_rate(), comfort, indoor_temp)
+                if comfort is not None
+                else None
             )
-            auto = preheat_minutes(self._heat_rates.median_rate(), comfort, indoor_temp)
             if auto is not None:
                 return auto
         configured = self._config.get(CONF_HEATING_PREHEAT_MINUTES)
@@ -2001,7 +2009,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return
         if indoor_temp is None or self._heat_run_closed:
             return
-        comfort = self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
+        comfort = self._heating_comfort_setpoint()
+        if comfort is None:
+            return
         if self._heat_run is None:
             if indoor_temp < comfort - 0.5:
                 self._heat_run = (now, indoor_temp, indoor_temp)
@@ -2451,12 +2461,45 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         supported_features = state.attributes.get("supported_features", 0)
         return bool(supported_features & ClimateEntityFeature.PRESET_MODE)
 
+    def _heating_system_is_preset(self) -> bool:
+        """True beim globalen Heizungssystem "Preset-System" (KNX, Lektion
+        138): Sollwerte und Preset-Namen kommen vom Raumregler, die
+        Integration schaltet nur Presets."""
+        return (
+            self._global_config().get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM)
+            == HEATING_SYSTEM_PRESET
+        )
+
+    def _heating_comfort_setpoint(self) -> float | None:
+        """Comfort-Sollwert für Vorheizen/Aufheizrate: beim Sollwert-
+        Thermostat der eingestellte Wert, beim Preset-System der zuletzt in
+        Comfort live gemeldete `temperature`-Wert (None, solange unbekannt)."""
+        if not self._heating_system_is_preset():
+            return self._effective(CONF_HEATING_COMFORT_TEMP, DEFAULT_HEATING_COMFORT_TEMP)
+        return self._comfort_setpoint_cache
+
+    def _update_comfort_setpoint_cache(self) -> None:
+        """Merkt sich beim Preset-System den Sollwert, den der Raumregler
+        gerade im Comfort-Preset meldet."""
+        if not self._heating_system_is_preset():
+            return
+        entity_id = self._get_heating_entity_id()
+        if not entity_id:
+            return
+        comfort_name = self._get_heating_preset_name("comfort")
+        if comfort_name and self._get_heating_live_preset_mode(entity_id) == comfort_name:
+            target = self._get_heating_target_temperature(entity_id)
+            if target is not None:
+                self._comfort_setpoint_cache = target
+
     def _heating_preset_mode_effective(self, entity_id: str) -> bool:
         """True, wenn für diesen Raum tatsächlich über preset_mode statt
         über einen Zahlen-Sollwert gesteuert/angezeigt werden soll - nur,
         wenn CONF_HEATING_USE_PRESET_MODE (Standard Ja) nicht explizit auf
         "Nein" gesetzt UND die Entität preset_mode tatsächlich
         unterstützt."""
+        if self._heating_system_is_preset():
+            return self._heating_supports_preset_mode(entity_id)
         if not self._effective(CONF_HEATING_USE_PRESET_MODE, DEFAULT_HEATING_USE_PRESET_MODE):
             return False
         return self._heating_supports_preset_mode(entity_id)
@@ -2468,6 +2511,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         Preset-Name hinterlegt ist (siehe CONF_HEATING_PRESET_*-Konstanten
         in const.py); _update_heating() fällt in diesem Fall für genau
         diesen Modus auf die Sollwert-Steuerung zurück."""
+        if self._heating_system_is_preset():
+            # Preset-System: Zuordnung automatisch aus den echten
+            # preset_modes der Entität, sonst KNX-Standardnamen.
+            entity_id = self._get_heating_entity_id()
+            state = self.hass.states.get(entity_id) if entity_id else None
+            available = list(state.attributes.get("preset_modes") or []) if state else []
+            for keyword in HEATING_PRESET_KEYWORDS[mode]:
+                match = next((p for p in available if keyword in str(p).lower()), None)
+                if match:
+                    return match
+            return HEATING_PRESET_KNX_FALLBACK[mode]
         key = {
             "comfort": CONF_HEATING_PRESET_COMFORT,
             "standby": CONF_HEATING_PRESET_STANDBY,
@@ -2825,6 +2879,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         )
         self._observe_usage()
         self._preheating = False
+        self._update_comfort_setpoint_cache()
         self._preheat_lead = self._preheat_lead_minutes(indoor_temp)
         heating_learned_mode = self._get_learned_heating_mode()
         # "Gebäudeschutz" (Preset, kein eigener Zahlen-Sollwert) ersetzt
@@ -2840,6 +2895,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             heating_target_mode = heating_learned_mode
         elif heating_schedule_enabled:
             heating_target_mode = self._get_scheduled_heating_mode_with_preheat()
+        elif self._heating_system_is_preset():
+            # Preset-System: keine Schwellenwert-Logik (Lektion 138).
+            heating_target_mode = None
         elif indoor_temp is not None and indoor_temp < heating_threshold:
             heating_target_mode = "comfort"
         elif indoor_temp is not None and indoor_temp >= heating_threshold + margin:
@@ -2997,6 +3055,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 self._heating_reason = "Innentemperatur unter Schwelle, Comfort"
             elif heating_target_mode == "standby":
                 self._heating_reason = "Innentemperatur über Schwelle, Standby"
+            elif self._heating_system_is_preset():
+                self._heating_reason = "kein Zeitplan/Gelerntes aktiv, Raumregler bestimmt"
             else:
                 self._heating_reason = "im Sollbereich, hält letzten Zustand"
         # --- Schließen: Außenluft ist inzwischen (wieder) absolut feuchter
