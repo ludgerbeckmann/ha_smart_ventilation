@@ -657,12 +657,14 @@
             "data": {
               "dash_window_signal": "Fenster-Signal",
               "dash_window_ring_width": "Ring-/Balkenbreite Fenster-Signal",
-              "dash_window_icon_color": "Symbol im Fenster-Button einfärben"
+              "dash_window_icon_color": "Symbol im Fenster-Button einfärben",
+              "dash_window_fill": "Farbe Fenster-Button bei Signal"
             },
             "data_description": {
               "dash_window_signal": "Wie der Raumstatus am Fenster-Button gezeigt wird (Farbe: Hinweis orange, Handlungsbedarf rot). Aus = kein Signal.",
               "dash_window_ring_width": "Breite in Pixel (1-12); gilt für Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N, S, T, V).",
-              "dash_window_icon_color": "Aus (Standard): nur die Schaltfläche zeigt das Signal. An: auch das Symbol erscheint in der Signalfarbe (Hinweis orange, Handlungsbedarf rot). Wirkt nicht bei den flächigen Varianten I, K, O, P, Q, R und U."
+              "dash_window_icon_color": "Aus (Standard): nur die Schaltfläche zeigt das Signal. An: auch das Symbol erscheint in der Signalfarbe (Hinweis orange, Handlungsbedarf rot). Wirkt nicht bei den flächigen Varianten I, K, O, P, Q, R und U.",
+              "dash_window_fill": "Unverändert (Standard): die Farbe kommt aus dem Fensterzustand (z. B. Blau bei offen). Alternativ eine feste Flächenfarbe, solange ein Signal (Hinweis/Handlungsbedarf) aktiv ist - Dunkelblau hebt Rot und Orange besser ab."
             }
           },
           "messages": {

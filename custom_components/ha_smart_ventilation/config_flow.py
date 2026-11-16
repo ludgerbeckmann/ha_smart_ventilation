@@ -44,10 +44,13 @@ from .const import (
     CONF_DASH_TINT,
     DASH_EXTRA_OPTIONS,
     DASH_SIDE_OPTIONS,
+    DASH_WINDOW_FILL_COLORS,
     DASH_WINDOW_SIGNAL_OPTIONS,
+    CONF_DASH_WINDOW_FILL,
     CONF_DASH_WINDOW_SIGNAL,
     CONF_DASH_WINDOW_ICON_COLOR,
     CONF_DASH_WINDOW_RING_WIDTH,
+    DEFAULT_DASH_WINDOW_FILL,
     DEFAULT_DASH_WINDOW_SIGNAL,
     DEFAULT_DASH_WINDOW_ICON_COLOR,
     DEFAULT_DASH_WINDOW_RING_WIDTH,
@@ -1744,6 +1747,19 @@ def _build_dashboard_button_section(defaults: dict) -> dict:
                 CONF_DASH_WINDOW_ICON_COLOR, DEFAULT_DASH_WINDOW_ICON_COLOR
             ),
         ): selector.BooleanSelector(),
+        vol.Required(
+            CONF_DASH_WINDOW_FILL,
+            default=defaults.get(CONF_DASH_WINDOW_FILL, DEFAULT_DASH_WINDOW_FILL),
+        ): _dash_select(
+            tuple(DASH_WINDOW_FILL_COLORS),
+            {
+                "default": "Unverändert",
+                "darkblue": "Dunkelblau",
+                "nightblue": "Nachtblau",
+                "anthracite": "Anthrazit",
+                "lightgray": "Hellgrau",
+            },
+        ),
     }
     return fields
 

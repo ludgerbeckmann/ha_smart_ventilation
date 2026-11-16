@@ -880,6 +880,15 @@ CONF_DASH_WINDOW_SIGNAL = "dash_window_signal"  # Darstellung des Raumstatus am 
 CONF_DASH_WINDOW_RING_WIDTH = "dash_window_ring_width"  # Ringbreite in px
 CONF_DASH_WINDOW_ICON_COLOR = "dash_window_icon_color"  # Symbol im Fenster-Button in der Signalfarbe
 DEFAULT_DASH_WINDOW_ICON_COLOR = False
+CONF_DASH_WINDOW_FILL = "dash_window_fill"  # Flächenfarbe des Fenster-Buttons bei aktivem Signal
+DASH_WINDOW_FILL_COLORS = {
+    "default": "",  # unverändert (Farbe aus dem Fensterzustand, z. B. subbutton_typfarben)
+    "darkblue": "#0D47A1",
+    "nightblue": "#1A2B45",
+    "anthracite": "#2B2F36",
+    "lightgray": "#E3E8EE",
+}
+DEFAULT_DASH_WINDOW_FILL = "default"
 DEFAULT_DASH_WINDOW_SIGNAL = "j"
 DEFAULT_DASH_WINDOW_RING_WIDTH = 2
 DASH_WINDOW_SIGNAL_OPTIONS = ("off", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v")
