@@ -46,7 +46,8 @@ from .const import (
     DASH_SIDE_OPTIONS,
     DASH_WINDOW_FILL_COLORS,
     DASH_WINDOW_SIGNAL_OPTIONS,
-    CONF_DASH_WINDOW_FILL,
+    CONF_DASH_WINDOW_FILL_ACTION,
+    CONF_DASH_WINDOW_FILL_NOTICE,
     CONF_DASH_WINDOW_SIGNAL,
     CONF_DASH_WINDOW_ICON_COLOR,
     CONF_DASH_WINDOW_RING_WIDTH,
@@ -1702,6 +1703,17 @@ def _build_dashboard_section(defaults: dict) -> dict:
     return fields
 
 
+_WINDOW_FILL_LABELS = {
+    "default": "Unverändert",
+    "darkblue": "Dunkelblau",
+    "nightblue": "Nachtblau",
+    "anthracite": "Anthrazit",
+    "lightblue": "Hellblau",
+    "paleblue": "Sehr helles Blau",
+    "iceblue": "Eisblau",
+}
+
+
 def _build_dashboard_button_section(defaults: dict) -> dict:
     """Felder des Abschnitts "Dashboard: Fenster-Button" (Signal am
     Fenster-Button der Bubble Card, siehe dashboard.py)."""
@@ -1748,18 +1760,13 @@ def _build_dashboard_button_section(defaults: dict) -> dict:
             ),
         ): selector.BooleanSelector(),
         vol.Required(
-            CONF_DASH_WINDOW_FILL,
-            default=defaults.get(CONF_DASH_WINDOW_FILL, DEFAULT_DASH_WINDOW_FILL),
-        ): _dash_select(
-            tuple(DASH_WINDOW_FILL_COLORS),
-            {
-                "default": "Unverändert",
-                "darkblue": "Dunkelblau",
-                "nightblue": "Nachtblau",
-                "anthracite": "Anthrazit",
-                "lightgray": "Hellgrau",
-            },
-        ),
+            CONF_DASH_WINDOW_FILL_ACTION,
+            default=defaults.get(CONF_DASH_WINDOW_FILL_ACTION, DEFAULT_DASH_WINDOW_FILL),
+        ): _dash_select(tuple(DASH_WINDOW_FILL_COLORS), _WINDOW_FILL_LABELS),
+        vol.Required(
+            CONF_DASH_WINDOW_FILL_NOTICE,
+            default=defaults.get(CONF_DASH_WINDOW_FILL_NOTICE, DEFAULT_DASH_WINDOW_FILL),
+        ): _dash_select(tuple(DASH_WINDOW_FILL_COLORS), _WINDOW_FILL_LABELS),
     }
     return fields
 
