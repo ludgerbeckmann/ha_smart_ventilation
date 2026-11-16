@@ -656,11 +656,13 @@
             "description": "Signal am Fenster-Button der Bubble Card: zeigt den Raumstatus (Hinweis orange, Handlungsbedarf rot). Die Varianten (Buchstaben) sind in der README mit Vorschaubild beschrieben.",
             "data": {
               "dash_window_signal": "Fenster-Signal",
-              "dash_window_ring_width": "Ring-/Balkenbreite Fenster-Signal"
+              "dash_window_ring_width": "Ring-/Balkenbreite Fenster-Signal",
+              "dash_window_icon_color": "Symbol im Fenster-Button einfärben"
             },
             "data_description": {
               "dash_window_signal": "Wie der Raumstatus am Fenster-Button gezeigt wird (Farbe: Hinweis orange, Handlungsbedarf rot). Aus = kein Signal.",
-              "dash_window_ring_width": "Breite in Pixel (1-12); gilt für Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N, S, T, V)."
+              "dash_window_ring_width": "Breite in Pixel (1-12); gilt für Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N, S, T, V).",
+              "dash_window_icon_color": "Aus (Standard): nur die Schaltfläche zeigt das Signal. An: auch das Symbol erscheint in der Signalfarbe (Hinweis orange, Handlungsbedarf rot). Wirkt nicht bei den flächigen Varianten I, K, O, P, Q, R und U."
             }
           },
           "messages": {

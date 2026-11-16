@@ -656,11 +656,13 @@
             "description": "Signal on the window button of the Bubble Card: shows the room status (notice orange, action needed red). The variants (letters) are described in the README with a preview image.",
             "data": {
               "dash_window_signal": "Window signal",
-              "dash_window_ring_width": "Window signal ring/bar width"
+              "dash_window_ring_width": "Window signal ring/bar width",
+              "dash_window_icon_color": "Color the window button icon"
             },
             "data_description": {
               "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
-              "dash_window_ring_width": "Width in pixels (1-12); for variants with a ring or bar (A, B, C, E, F, J, L, M, N, S, T, V)."
+              "dash_window_ring_width": "Width in pixels (1-12); for variants with a ring or bar (A, B, C, E, F, J, L, M, N, S, T, V).",
+              "dash_window_icon_color": "Off (default): only the button shows the signal. On: the icon is also drawn in the signal color (notice orange, action needed red). Has no effect on the filled variants I, K, O, P, Q, R and U."
             }
           },
           "messages": {
