@@ -217,7 +217,8 @@ function crCompactRoom(c) {
 
   const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
   const status = c.status;
-  const headerInfo = { name: a.raum, label: SC_STATUS_LABEL[status] || "OK", color: SC_STATUS_COLOR[status] || SC_COLOR.green };
+  const SC_STATUS_ICON = { ok: "mdi:check-circle-outline", hinweis: "mdi:alert-circle-outline", handlungsbedarf: "mdi:alert-outline" };
+  const headerInfo = { name: a.raum, label: SC_STATUS_LABEL[status] || "OK", color: SC_STATUS_COLOR[status] || SC_COLOR.green, icon: SC_STATUS_ICON[status] || SC_STATUS_ICON.ok };
   let html = "";
   if (c.headerOut) {
     // Der Raum-Dialog zeigt Name und Status selbst in seiner Kopfzeile.
@@ -1570,14 +1571,17 @@ function openRoomDialog(key) {
     ".sc-room-grip{flex:none;height:18px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
     ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
-    ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 12px 4px}" +
-    ".sc-room-close{width:44px;height:44px;border:0;border-radius:50%;background:var(--secondary-background-color,rgba(127,127,127,.2));color:var(--primary-text-color,#000);font-size:22px;font-weight:600;line-height:1;cursor:pointer;flex:none}" +
-    ".sc-room-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px}" +
-    ".sc-room-title{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding-left:6px}" +
-    ".sc-room-title h1{margin:0;font-size:22px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
-    ".sc-room-chip{display:inline-flex;align-items:center;gap:6px;flex:none;border-radius:999px;padding:3px 10px 3px 7px;font-size:13px;font-weight:500;color:var(--c);background:rgba(127,127,127,.18);background:color-mix(in srgb,var(--c) 18%,transparent)}" +
+    ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 12px 8px}" +
+    ".sc-room-bar{display:flex;align-items:stretch;justify-content:flex-end;gap:10px;padding-bottom:8px}" +
+    ".sc-room-close,.sc-room-std{width:56px;height:56px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));color:var(--primary-text-color,#000);line-height:1;cursor:pointer;flex:none;padding:0}" +
+    ".sc-room-close{font-size:22px;font-weight:600}.sc-room-std{font-size:20px}" +
+    ".sc-room-title{flex:1;min-width:0;display:flex;align-items:center;gap:12px;height:56px;box-sizing:border-box;padding:0 12px 0 8px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)))}" +
+    ".sc-room-ico{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.18);color:var(--c);--mdc-icon-size:22px}" +
+    ".sc-room-title h1{margin:0;flex:1;font-size:16px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".sc-room-chip{display:inline-flex;align-items:center;gap:6px;flex:none;border-radius:999px;border:1px solid var(--divider-color,rgba(127,127,127,.35));padding:3px 10px 3px 8px;font-size:13px;font-weight:500;color:var(--c)}" +
     ".sc-room-chip i{width:7px;height:7px;border-radius:50%;background:var(--c);display:block}" +
-    ".sc-room-std{width:44px;height:44px;border:0;border-radius:50%;background:var(--secondary-background-color,rgba(127,127,127,.2));color:var(--primary-text-color,#000);font-size:20px;line-height:1;cursor:pointer;flex:none}" +
+    ".sc-room-chip b{font-weight:500}" +
+    "@media (max-width:440px){.sc-room-chip b{display:none}.sc-room-chip{padding:3px 8px}.sc-room-close,.sc-room-std{width:48px}}" +
     ".sc-th{padding:0;display:flex;flex-direction:column;gap:8px}" +
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
@@ -1638,7 +1642,7 @@ function openRoomDialog(key) {
     if (sig === headerSig) return;
     headerSig = sig;
     titleEl.innerHTML = h
-      ? `<h1>${esc(h.name)}</h1><span class="sc-room-chip" style="--c:${h.color}"><i></i>${esc(h.label)}</span>`
+      ? `<span class="sc-room-ico" style="--c:${h.color}"><ha-icon icon="${h.icon || "mdi:home-outline"}"></ha-icon></span><h1>${esc(h.name)}</h1><span class="sc-room-chip" style="--c:${h.color}"><i></i><b>${esc(h.label)}</b></span>`
       : "";
   };
   if (entityId) {
