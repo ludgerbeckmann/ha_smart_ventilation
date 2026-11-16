@@ -14,6 +14,9 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
 from .const import (
+    CONF_DASH_WINDOW_FILL,
+    CONF_DASH_WINDOW_FILL_ACTION,
+    CONF_DASH_WINDOW_FILL_NOTICE,
     CONF_IS_GLOBAL,
     CONF_MOBILE_ENABLED,
     CONF_NOTIFY_METHOD,
@@ -158,6 +161,20 @@ def _migrate_usage_learning_default(hass: HomeAssistant, entry: ConfigEntry) -> 
     hass.config_entries.async_update_entry(entry, data=new_data)
 
 
+def _migrate_window_fill(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Übernimmt die Fensterfarbe aus 1.20.0 (ein Feld) einmalig in die
+    beiden neuen Felder (Handlungsbedarf/Hinweis, 1.21.0)."""
+    if not entry.data.get(CONF_IS_GLOBAL):
+        return
+    if CONF_DASH_WINDOW_FILL not in entry.data:
+        return
+    new_data = dict(entry.data)
+    old = new_data.pop(CONF_DASH_WINDOW_FILL)
+    new_data.setdefault(CONF_DASH_WINDOW_FILL_ACTION, old)
+    new_data.setdefault(CONF_DASH_WINDOW_FILL_NOTICE, old)
+    hass.config_entries.async_update_entry(entry, data=new_data)
+
+
 def _get_lovelace_resources(hass: HomeAssistant):
     """Liefert die Lovelace-Ressourcen-Sammlung oder None.
 
@@ -297,6 +314,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _migrate_legacy_notify_method(hass, entry)
     _migrate_global_entry_title(hass, entry)
     _migrate_usage_learning_default(hass, entry)
+    _migrate_window_fill(hass, entry)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data

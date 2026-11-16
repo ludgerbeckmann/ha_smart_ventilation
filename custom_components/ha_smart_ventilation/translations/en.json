@@ -658,13 +658,15 @@
               "dash_window_signal": "Window signal",
               "dash_window_ring_width": "Window signal ring/bar width",
               "dash_window_icon_color": "Color the window button icon",
-              "dash_window_fill": "Window button colour on signal"
+              "dash_window_fill_action": "Window colour on action needed",
+              "dash_window_fill_notice": "Window colour on notice"
             },
             "data_description": {
               "dash_window_signal": "How the room status is shown on the window button (colour: notice orange, action needed red). Off = no signal.",
               "dash_window_ring_width": "Width in pixels (1-12); for variants with a ring or bar (A, B, C, E, F, J, L, M, N, S, T, V).",
               "dash_window_icon_color": "Off (default): only the button shows the signal. On: the icon is also drawn in the signal color (notice orange, action needed red). Has no effect on the filled variants I, K, O, P, Q, R and U.",
-              "dash_window_fill": "Unchanged (default): colour comes from the window state (e.g. blue when open). Alternatively a fixed fill colour while a signal (notice/action needed) is active - dark blue makes red and orange stand out better."
+              "dash_window_fill_action": "Unchanged (default): colour from the window state (e.g. blue). Alternatively a fixed fill colour while action is needed (red ring) - light tones stand out well against red; the icon is then drawn in the signal colour automatically.",
+              "dash_window_fill_notice": "Unchanged (default): colour from the window state. Alternatively a fixed fill colour while a notice is active (orange ring) - dark tones such as dark blue stand out well against orange."
             }
           },
           "messages": {
