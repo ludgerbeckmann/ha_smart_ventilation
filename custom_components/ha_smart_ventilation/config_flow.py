@@ -46,8 +46,10 @@ from .const import (
     DASH_SIDE_OPTIONS,
     DASH_WINDOW_SIGNAL_OPTIONS,
     CONF_DASH_WINDOW_SIGNAL,
+    CONF_DASH_WINDOW_ICON_COLOR,
     CONF_DASH_WINDOW_RING_WIDTH,
     DEFAULT_DASH_WINDOW_SIGNAL,
+    DEFAULT_DASH_WINDOW_ICON_COLOR,
     DEFAULT_DASH_WINDOW_RING_WIDTH,
     CONF_DASH_HEAT_BAR,
     CONF_DASH_COVER_BAR,
@@ -1736,6 +1738,12 @@ def _build_dashboard_button_section(defaults: dict) -> dict:
                 CONF_DASH_WINDOW_RING_WIDTH, DEFAULT_DASH_WINDOW_RING_WIDTH
             ),
         ): _dash_number(1, 12, "px"),
+        vol.Required(
+            CONF_DASH_WINDOW_ICON_COLOR,
+            default=defaults.get(
+                CONF_DASH_WINDOW_ICON_COLOR, DEFAULT_DASH_WINDOW_ICON_COLOR
+            ),
+        ): selector.BooleanSelector(),
     }
     return fields
 

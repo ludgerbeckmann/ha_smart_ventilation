@@ -29,6 +29,7 @@ from .const import (
     CONF_DASH_HEAT_SIDE,
     CONF_DASH_LINE_HEIGHT,
     CONF_DASH_TINT,
+    CONF_DASH_WINDOW_ICON_COLOR,
     CONF_DASH_WINDOW_RING_WIDTH,
     CONF_DASH_WINDOW_SIGNAL,
     CONF_SUMMER_MODE_SWITCH_ENTITY,
@@ -54,6 +55,7 @@ from .const import (
     DEFAULT_DASH_HEAT_SIDE,
     DEFAULT_DASH_LINE_HEIGHT,
     DEFAULT_DASH_TINT,
+    DEFAULT_DASH_WINDOW_ICON_COLOR,
     DEFAULT_DASH_WINDOW_RING_WIDTH,
     DEFAULT_DASH_WINDOW_SIGNAL,
 )
@@ -64,7 +66,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v4.2"
+MODULE_VERSION_LABEL = "v4.3"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
@@ -124,6 +126,7 @@ def build_dashboard_attributes(data: dict) -> dict:
         "wechselwert_1": extra_1,
         "wechselwert_2": extra_2,
         "fenster_signal": window_signal,
+        "fenster_symbol_farbe": flag(CONF_DASH_WINDOW_ICON_COLOR, DEFAULT_DASH_WINDOW_ICON_COLOR),
         "fenster_signal_breite": f"{_fmt(_num(data.get(CONF_DASH_WINDOW_RING_WIDTH), DEFAULT_DASH_WINDOW_RING_WIDTH, 1, 12))}px",
     }
     summer = data.get(CONF_SUMMER_MODE_SWITCH_ENTITY)
