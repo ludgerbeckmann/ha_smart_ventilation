@@ -477,6 +477,20 @@ um). Die Messwerte im Dialog sind nach dem Normalbereich eingefärbt (Wert, Balk
 | CO2 | grün | grün | rot |
 
 Taupunkt und absolute Luftfeuchtigkeit bleiben neutral, ein fehlender Wert bleibt ein oranges "–".
+
+**Heizplan heute (ab 1.22.0):** Hat ein Raum eine Heizung und ist der Heizungs-Zeitplan und/oder das
+Gelernte aktiv, zeigt die Karte den geplanten Tagesverlauf als Farbbalken über 0-24 Uhr - im Raum-Dialog als
+Zeile "Heizplan heute" unter der Heizung, in der normalen Karte als Zeile "Heizplan" in der Geräte-Tabelle. Die
+Farben: **Komfort** orange, **Standby** blau, **Eco (Nacht)** dunkles Blau/Violett; ein schraffierter
+Abschnitt bedeutet "kein Plan" (z. B. Stunden, die noch nicht genug gelernt sind, ohne Zeitplan). Eine
+schwarze Marke zeigt die aktuelle Uhrzeit, darunter stehen die Skala und die Wechselzeiten.
+Der Plan folgt derselben Rangfolge wie die Steuerung: ganztägiger Sommerbetrieb (alles Standby) vor Gelerntem
+vor Zeitplan, ein Nacht-Profil des Zeitplans hat Vorrang vor dem Gelernten; die Vorheizzeit ist eingerechnet
+(Comfort beginnt entsprechend früher), und ein Ferien-/Werktagssensor, der Comfort sperrt, macht daraus Standby.
+**Nicht im Plan** sind Dinge, die vom Moment abhängen: offenes Fenster, Anwesenheit, der dynamische Auslöser
+(Licht/Person) und manuelle Eingriffe - sie können den tatsächlichen Modus (siehe Heizungszeile) jederzeit
+vom Plan abweichen lassen. Der Plan zeigt nur den heutigen Tag und die heutigen Zustände von Sommerschalter und
+Ferien-Sensor.
 Die normale Karte ist unverändert. Eine Überschriftskarte kann statt `fire-dom-event` einfach
 `tap_action: {action: more-info, entity: binary_sensor.<raum>_lueftungsempfehlung}` nutzen.
 
