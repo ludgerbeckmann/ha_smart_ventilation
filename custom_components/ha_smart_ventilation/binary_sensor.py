@@ -483,6 +483,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heat_run: tuple | None = None
         self._heat_run_closed = False
         self._preheat_lead = 0
+        self._heating_plan_cache: tuple | None = None
         self._comfort_setpoint_cache: float | None = None
         self._preheating = False
         # Lernsignal des aktuellen Handeingriffs ("used" = von Hand auf
@@ -1080,6 +1081,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
             attrs.update(self._usage_attributes())
+            day_plan = self._heating_day_plan()
+            if day_plan:
+                attrs["heizung_tagesplan"] = day_plan
             if self._heating_mode_wanted is not None:
                 attrs["heizung_soll_modus"] = self._heating_mode_wanted
                 if self._heating_mode_since is not None:
@@ -1986,6 +1990,94 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._preheating = True
             return "comfort"
         return mode
+
+    def _heating_day_plan(self) -> list | None:
+        """Plan der Heizungs-Modi für den ganzen heutigen Tag als Liste von
+        [Startminute, Modus] (Modus "comfort"/"standby"/"night", "" = kein
+        Plan für diesen Abschnitt), nur zur Anzeige (Karte).
+
+        Dieselbe Rangfolge wie in _evaluate(): Sommerbetrieb (ganztägig
+        Standby) vor Gelerntem vor Zeitplan, ein Nacht-Profil des Zeitplans
+        hat Vorrang vor dem Gelernten; die Vorheizzeit ist eingerechnet, ein
+        Ferien-/Werktagssensor stuft Comfort auf Standby herab. NICHT
+        enthalten (nicht vorausplanbar): offenes Fenster, Anwesenheit,
+        dynamischer Auslöser, Handeingriffe. Ohne aktiven Zeitplan und ohne
+        aktives Gelerntes gibt es keinen Plan (None)."""
+        sched_on = bool(self._effective(CONF_HEATING_SCHEDULE_ENABLED, False))
+        learn_on = bool(
+            self._usage_learning_available()
+            and self._effective(CONF_USAGE_LEARNING_ENABLED, DEFAULT_USAGE_LEARNING_ENABLED)
+        )
+        if not sched_on and not learn_on:
+            return None
+        now = dt_util.now()
+        summer = self._is_summer_mode_active()
+        blocked = self._is_heating_comfort_blocked_by_sensor()
+        lead = self._preheat_lead if self._heating_type() is not None else 0
+        key = (
+            now.date(),
+            now.hour * 60 + now.minute // 5 * 5,
+            sched_on,
+            learn_on,
+            summer,
+            blocked,
+            lead,
+            self._usage.observed_days() if learn_on else 0,
+        )
+        if self._heating_plan_cache is not None and self._heating_plan_cache[0] == key:
+            return self._heating_plan_cache[1]
+        threshold, min_days = self._usage_params()
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        def mode_at(minute: int) -> str:
+            if summer:
+                return "standby"
+            at = midnight + timedelta(minutes=minute)
+            scheduled = self._get_scheduled_heating_mode(at) if sched_on else None
+            mode = None
+            if learn_on and not (sched_on and scheduled == "night"):
+                used = self._usage.is_used(
+                    self._usage_day_type(at), at.hour, threshold, min_days
+                )
+                if used is not None:
+                    mode = "comfort" if used else "standby"
+                    if not used and lead > 0:
+                        ahead = at + timedelta(minutes=lead)
+                        if self._usage.is_used(
+                            self._usage_day_type(ahead), ahead.hour, threshold, min_days
+                        ):
+                            mode = "comfort"
+            if mode is None and sched_on:
+                mode = scheduled
+                if (
+                    mode is not None
+                    and mode != "comfort"
+                    and lead > 0
+                    and self._get_scheduled_heating_mode(at + timedelta(minutes=lead))
+                    == "comfort"
+                ):
+                    mode = "comfort"
+            if mode is None:
+                return ""
+            if mode == "comfort" and blocked:
+                return "standby"
+            return mode
+
+        candidates = {h * 60 for h in range(25)}
+        if sched_on:
+            for start, _order, _mode in self._scheduled_profile_starts(now.weekday() >= 5):
+                candidates.add(start.hour * 60 + start.minute)
+        if lead > 0:
+            candidates |= {c - lead for c in list(candidates)}
+        plan: list = []
+        for minute in sorted(c for c in candidates if 0 <= c < 1440):
+            mode = mode_at(minute)
+            if not plan or plan[-1][1] != mode:
+                plan.append([minute, mode])
+        if all(entry[1] == "" for entry in plan):
+            plan = None
+        self._heating_plan_cache = (key, plan)
+        return plan
 
     def _track_heating_run(self, mode: str | None, indoor_temp: float | None) -> None:
         """Misst Aufheizläufe: Ein Lauf beginnt mit dem Zielmodus Comfort

@@ -163,6 +163,52 @@ const SC_HEATING_COLOR = {
   standby: SC_COLOR.grey,
 };
 
+// Heizplan des Tages (Attribut heizung_tagesplan = [[Startminute, Modus], ...]):
+// Farbbalken über 0-24 Uhr mit "jetzt"-Markierung, Skala und den Wechselzeiten.
+// Modus "" = für diesen Abschnitt gibt es keinen Plan (schraffiert).
+const SC_PLAN_COLOR = {
+  comfort: "var(--state-climate-heat-color, #ff8100)",
+  standby: "var(--state-climate-cool-color, #2b9af9)",
+  night: "#5c6bc0",
+};
+const PLAN_LABEL = { comfort: "Komfort", standby: "Standby", night: "Eco (Nacht)" };
+
+function planHtml(plan, now) {
+  if (!Array.isArray(plan) || !plan.length) return "";
+  const segs = [];
+  for (const entry of plan) {
+    if (!Array.isArray(entry)) continue;
+    const start = Number(entry[0]);
+    if (!Number.isFinite(start) || start < 0 || start >= 1440) continue;
+    segs.push([start, typeof entry[1] === "string" ? entry[1] : ""]);
+  }
+  if (!segs.length) return "";
+  segs.sort((x, y) => x[0] - y[0]);
+  if (segs[0][0] > 0) segs.unshift([0, ""]);
+  const hhmm = (m) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+  let bar = "";
+  const times = [];
+  segs.forEach(([start, mode], i) => {
+    const end = i + 1 < segs.length ? segs[i + 1][0] : 1440;
+    const known = Object.prototype.hasOwnProperty.call(SC_PLAN_COLOR, mode);
+    const label = known ? PLAN_LABEL[mode] : "kein Plan";
+    bar += `<span class="plan-seg${known ? "" : " plan-none"}" style="flex:${end - start} 0 0;${known ? `background:${SC_PLAN_COLOR[mode]}` : ""}" title="${hhmm(start)}–${end >= 1440 ? "24:00" : hhmm(end)} ${esc(label)}"></span>`;
+    if (known) {
+      times.push(`<span class="plan-t"><span class="plan-dot" style="background:${SC_PLAN_COLOR[mode]}"></span>${hhmm(start)} ${esc(label)}</span>`);
+    }
+  });
+  const d = now instanceof Date ? now : new Date();
+  const nowPct = ((d.getHours() * 60 + d.getMinutes()) / 1440) * 100;
+  const tick = (h) =>
+    `<span style="${h === 0 ? "left:0;transform:none" : h === 24 ? "right:0;transform:none" : `left:${(h / 24) * 100}%`}">${h}</span>`;
+  return (
+    `<div class="plan"><div class="plan-wrap"><div class="plan-bar">${bar}</div>` +
+    `<div class="plan-now" style="left:${nowPct.toFixed(2)}%"></div></div>` +
+    `<div class="plan-scale">${[0, 6, 12, 18, 24].map(tick).join("")}</div>` +
+    `<div class="plan-times">${times.join("")}</div></div>`
+  );
+}
+
 // Geräte-Grund als reiner Text (ohne Zeilenumbrüche), ohne Vorsatz "pausiert: ".
 function plainReason(value) {
   const text = String(value);
@@ -356,6 +402,12 @@ function crCompactRoom(c) {
       clampKey: `${a.raum}|heat`,
       right: runtime(a.heizung_an, a.heizung_seit, a.heizung_letzte_laufzeit),
     });
+    if (has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) {
+      const planBlock = planHtml(a.heizung_tagesplan);
+      if (planBlock) {
+        dev += `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-p">Heizplan heute</div>${planBlock}</div></div>`;
+      }
+    }
   }
   if (has(a, "duschen_erkannt")) {
     let sub = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "";
@@ -781,6 +833,10 @@ class SmartClimateCard extends HTMLElement {
           grund += ` <br>(Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|heat`, grund)}</td></tr>`;
+        if (has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) {
+          const planBlock = planHtml(a.heizung_tagesplan);
+          if (planBlock) deviceRows += `<tr><td style="white-space:nowrap">Heizplan</td><td colspan="2">${planBlock}</td></tr>`;
+        }
       }
       if (has(a, "duschen_erkannt")) {
         const name = ent(ents.dusche, `${a.duschen_erkannt ? "🟢" : "⚫"} Dusche`);
@@ -1240,6 +1296,18 @@ class SmartClimateCard extends HTMLElement {
       .cr-cell { padding: 7px 0; }
       .cr-cell + .cr-cell { border-left: 1px solid var(--divider-color, #e0e0e0); padding-left: 10px; }
       .cr-thermo-slot { border-top: 1px solid var(--divider-color, #e0e0e0); padding: 8px 0 8px; }
+      .plan { width: 100%; min-width: 0; padding: 2px 0; }
+      .plan-wrap { position: relative; }
+      .plan-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--divider-color, #e0e0e0); }
+      .plan-seg { height: 100%; min-width: 0; }
+      .plan-none { background: repeating-linear-gradient(45deg, rgba(127, 127, 127, 0.35) 0 4px, transparent 4px 8px); }
+      .plan-now { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--primary-text-color, #000); }
+      .plan-scale { position: relative; height: 1.2em; margin-top: 3px; font-size: 0.75em; color: var(--secondary-text-color, #727272); }
+      .plan-scale span { position: absolute; transform: translateX(-50%); }
+      .plan-times { margin-top: 2px; font-size: 0.85em; line-height: 1.5; color: var(--secondary-text-color, #727272); }
+      .plan-t { display: inline-block; margin-right: 12px; white-space: nowrap; }
+      .plan-dot { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; }
+      .cr-plan .cr-t { min-width: 0; }
       .cr-notify > summary { list-style: none; cursor: pointer; }
       .cr-notify > summary::-webkit-details-marker { display: none; }
       .cr-fold { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
