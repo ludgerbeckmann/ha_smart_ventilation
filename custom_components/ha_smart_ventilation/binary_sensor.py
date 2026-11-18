@@ -14,6 +14,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.components.climate import ClimateEntityFeature
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
@@ -382,6 +383,15 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # - im Protokoll als "nach Start" angegeben.
         self._started_at = dt_util.utcnow()
         self._last_reason: str | None = None
+        # Welche Größen (temp/humidity/co2) die aktuell offene Empfehlung
+        # ausgelöst haben. Nur diese halten sie in ihrer Totzone offen (siehe
+        # *_still_needed in _evaluate). None = unbekannt (nach einem Neustart
+        # ohne gespeicherten Wert): dann gilt der alte, breite Halt.
+        self._open_reasons: set[str] | None = set()
+        # Wird beim Herunterfahren gesetzt: dann nichts mehr bewerten oder
+        # melden, weil andere Integrationen ihre Sensoren kurz als nicht
+        # verfügbar melden und das sonst eine Schließen-Meldung auslöst.
+        self._ha_stopping = False
         # Zeitpunkt des letzten ECHTEN Empfehlungswechsels - anders als
         # last_changed der Entität selbst (das Home Assistant bei jedem
         # Neustart auf den Neustart-Zeitpunkt zurücksetzt, siehe README)
@@ -966,6 +976,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             attrs["empfehlung_aktiv_seit"] = self._open_since.isoformat()
         if self._last_state_change_at is not None:
             attrs["letzter_wechsel"] = self._last_state_change_at.isoformat()
+        if self._attr_is_on and self._open_reasons:
+            attrs["geoeffnet_wegen"] = sorted(self._open_reasons)
         window_entity = self._config.get(CONF_WINDOW_ENTITY)
         if window_entity and self._window_since is not None:
             window_state = self.hass.states.get(window_entity)
@@ -1133,10 +1145,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         """
         await super().async_added_to_hass()
 
+        @callback
+        def _on_ha_stop(_event: Event) -> None:
+            self._ha_stopping = True
+
+        self.async_on_remove(
+            self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _on_ha_stop)
+        )
+
         last_state = await self.async_get_last_state()
         if last_state is not None:
             self._attr_is_on = last_state.state == "on"
             attrs = last_state.attributes
+            if self._attr_is_on:
+                restored = attrs.get("geoeffnet_wegen")
+                self._open_reasons = (
+                    set(restored) if isinstance(restored, list) else None
+                )
             if "empfehlung_aktiv_seit" in attrs:
                 self._open_since = dt_util.parse_datetime(
                     attrs["empfehlung_aktiv_seit"]
@@ -2719,6 +2744,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
     async def _evaluate(self) -> None:  # noqa: C901 - bewusst als ein Ablauf gehalten
         """Prüft alle Bedingungen und aktualisiert ggf. den Zustand."""
+        if self._ha_stopping or getattr(self.hass, "is_stopping", False):
+            return
         await self._async_update_window_since()
         indoor_temp = self._get_indoor_temperature()
         humidity = self._get_float_state(self._config.get(CONF_HUMIDITY_ENTITY), decimals=0)
@@ -3230,14 +3257,37 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # ganze Zeit über unverändert im Lüftungsbedarf-Bereich blieb.
         # Symmetrisch für alle drei Größen: jede schützt die beiden anderen
         # davor, allein deswegen zu schließen.
+        # Der Halt in der Totzone gilt nur für eine Größe, die die Empfehlung
+        # selbst ausgelöst hat - sonst hielte z. B. 20,2 °C (zwischen 20 und
+        # 23) eine wegen CO2 geöffnete Empfehlung ewig offen.
+        if self._attr_is_on and self._open_reasons is not None:
+            if open_by_temp:
+                self._open_reasons.add("temp")
+            if open_by_humidity:
+                self._open_reasons.add("humidity")
+            if open_by_co2:
+                self._open_reasons.add("co2")
+
+        def _holds(reason: str) -> bool:
+            return self._open_reasons is None or reason in self._open_reasons
+
         temp_still_needed = open_by_temp or (
-            self._attr_is_on and indoor_temp is not None and not temp_needs_close
+            self._attr_is_on
+            and indoor_temp is not None
+            and not temp_needs_close
+            and _holds("temp")
         )
         humidity_still_needed = open_by_humidity or (
-            self._attr_is_on and humidity is not None and not humidity_needs_close
+            self._attr_is_on
+            and humidity is not None
+            and not humidity_needs_close
+            and _holds("humidity")
         )
         co2_still_needed = open_by_co2 or (
-            self._attr_is_on and co2 is not None and not co2_needs_close
+            self._attr_is_on
+            and co2 is not None
+            and not co2_needs_close
+            and _holds("co2")
         )
 
         # Ohne Fenster in diesem Raum gibt es grundsätzlich nichts zu öffnen
@@ -3515,8 +3565,18 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._last_state_change_at = dt_util.utcnow()
             if new_state:
                 self._open_since = dt_util.utcnow()
+                self._open_reasons = {
+                    name
+                    for name, flag in (
+                        ("temp", open_by_temp),
+                        ("humidity", open_by_humidity),
+                        ("co2", open_by_co2),
+                    )
+                    if flag
+                }
             else:
                 self._open_since = None
+                self._open_reasons = set()
             self.async_write_ha_state()
             if silent_frost_close or silent_co2_close:
                 self._last_notified_at = None

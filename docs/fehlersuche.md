@@ -112,6 +112,9 @@ Log-Zeilen von Hand abgeschrieben werden müssen:
   permissiv, wie es bei komplett fehlender Konfiguration der Fall ist.
   Das verhindert Fehlalarme durch kurzzeitige Sensor-Ausfälle beim
   Neustart.
+- **Kein Bewerten beim Herunterfahren** (ab 1.22.2): Sobald Home Assistant
+  herunterfährt, wird nichts mehr bewertet oder gemeldet. Sonst lösten kurz
+  "nicht verfügbare" Sensoren anderer Integrationen eine Schließen-Meldung aus.
 - **Neustart-sicher**: Der Empfehlungsstatus ("Lüften empfohlen: ja/nein")
   wird über Neustarts von Home Assistant hinweg wiederhergestellt
   (`RestoreEntity`). Ohne diesen Mechanismus würde jede Entität nach einem
