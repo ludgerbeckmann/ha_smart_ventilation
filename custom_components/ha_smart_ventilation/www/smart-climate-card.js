@@ -156,20 +156,30 @@ const SC_COLOR = {
 const SC_HL_COLOR = { "hl-green": SC_COLOR.green, "hl-orange": SC_COLOR.orange, "hl-red": SC_COLOR.red };
 const SC_STATUS_LABEL = { ok: "OK", hinweis: "Hinweis", handlungsbedarf: "Handlungsbedarf" };
 const SC_STATUS_COLOR = { ok: SC_COLOR.green, hinweis: SC_COLOR.orange, handlungsbedarf: SC_COLOR.red };
+// Farben wie beim Ventil-Balken der Bubble-Card (Modul climate_status).
 const SC_HEATING_COLOR = {
-  comfort: "var(--state-climate-heat-color, #ff8100)",
-  night: SC_COLOR.orange,
-  building_protection: "var(--state-climate-cool-color, #2b9af9)",
-  standby: SC_COLOR.grey,
+  comfort: "var(--state-climate-heat-color, rgb(255, 99, 71))",
+  standby: "var(--warning-color, rgb(255, 193, 7))",
+  night: "var(--state-climate-auto-color, rgb(102, 187, 106))",
+  building_protection: "var(--state-climate-cool-color, rgb(75, 177, 254))",
 };
+// Preset-Name des Geräts (herstellerabhängig) -> Modus für die Farbe.
+function scPresetMode(name) {
+  const n = String(name || "").toLowerCase();
+  if (/comfort|komfort/.test(n)) return "comfort";
+  if (/standby|home/.test(n)) return "standby";
+  if (/eco|night|nacht|sleep/.test(n)) return "night";
+  if (/protect|schutz|away/.test(n)) return "building_protection";
+  return "";
+}
 
 // Heizplan des Tages (Attribut heizung_tagesplan = [[Startminute, Modus], ...]):
 // Farbbalken über 0-24 Uhr mit "jetzt"-Markierung, Skala und den Wechselzeiten.
 // Modus "" = für diesen Abschnitt gibt es keinen Plan (schraffiert).
 const SC_PLAN_COLOR = {
-  comfort: "var(--state-climate-heat-color, #ff8100)",
-  standby: "var(--state-climate-cool-color, #2b9af9)",
-  night: "#5c6bc0",
+  comfort: SC_HEATING_COLOR.comfort,
+  standby: SC_HEATING_COLOR.standby,
+  night: SC_HEATING_COLOR.night,
 };
 const PLAN_LABEL = { comfort: "Komfort", standby: "Standby", night: "Eco (Nacht)" };
 
@@ -1541,7 +1551,7 @@ function scBuildThermostat(container, heatingId, root) {
     }
     const chips = (list, active, kind, map) =>
       `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
-      list.map((m) => `<button type="button" class="sc-th-chip${m === active ? " on" : ""}" data-th="${kind}" data-v="${esc(m)}">${esc(scLabel(map, m))}</button>`).join("") +
+      list.map((m) => { const mc = kind === "preset" && m === active ? SC_HEATING_COLOR[scPresetMode(m)] : ""; return `<button type="button" class="sc-th-chip${m === active ? " on" : ""}${mc ? " mc" : ""}"${mc ? ` style="--mc:${mc}"` : ""} data-th="${kind}" data-v="${esc(m)}">${esc(scLabel(map, m))}</button>`; }).join("") +
       "</div>";
     if (!unavailable && Array.isArray(a.hvac_modes) && a.hvac_modes.length > 1) html += chips(a.hvac_modes, st.state, "mode", SC_HVAC_LABEL);
     if (!unavailable && Array.isArray(a.preset_modes) && a.preset_modes.length > 0) html += chips(a.preset_modes, a.preset_mode, "preset", SC_PRESET_LABEL);
@@ -1661,6 +1671,7 @@ function openRoomDialog(key) {
     ".sc-th-chip{flex:1 1 auto;min-width:0;border:1px solid var(--divider-color,#999);border-radius:16px;background:transparent;color:inherit;padding:7px 5px;font-size:clamp(10.5px,3.3vw,14px);white-space:nowrap;text-align:center;cursor:pointer}" +
     ".sc-th-chips.wrap .sc-th-chip{flex:0 1 auto;padding:6px 14px;font-size:14px}" +
     ".sc-th-chip.on{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:var(--text-primary-color,#fff)}" +
+    ".sc-th-chip.on.mc{background:var(--mc);border-color:var(--mc);color:#1b1b1b}" +
     ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
     ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
