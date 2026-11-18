@@ -1107,10 +1107,6 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 attrs["heizung_aufheizrate"] = round(heat_rate, 2)
             if self._heating_type() is not None:
                 attrs["heizung_vorheizzeit"] = self._preheat_lead
-            if self._effective(
-                CONF_HEATING_FREE_DAY_ENABLED, DEFAULT_HEATING_FREE_DAY_ENABLED
-            ) and self._global_config().get(CONF_HEATING_FREE_DAY_ENTITY):
-                attrs["heizung_comfort_gesperrt"] = self._is_heating_comfort_blocked_by_sensor()
             if self._heating_override_since is not None:
                 attrs["heizung_uebersteuert"] = True
                 attrs["heizung_uebersteuerung_seit"] = (

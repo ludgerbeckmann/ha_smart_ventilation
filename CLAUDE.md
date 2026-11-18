@@ -152,79 +152,7 @@ Neustarts hinweg startet die Entität immer bei "aus" und erkennt bei der
 ersten Neubewertung fälschlich einen Zustandswechsel (samt
 Benachrichtigung), obwohl sich nichts geändert hat.
 
-**4. Home Assistants Jinja-Sandbox blockiert mutierende Methoden.**
-`list.append()`, `dict.update()` etc. funktionieren in Templates (z. B.
-Dashboard-Karten) NICHT - `SecurityError: access to attribute 'append' of
-'list' object is unsafe`. Strings müssen über `~`-Verkettung und bedingte
-Ausdrücke aufgebaut werden, nicht über Listen mit Append-Schleifen.
-
-**5. Home Assistants Markdown-Karte filtert das `style`-Attribut aus
-eingebettetem HTML - andere, rein präsentative Attribute/Tags dagegen
-nicht.** `<div style="height: 6px;">` oder `<hr style="...">` werden zu
-wirkungslosen/leeren Standard-Tags reduziert. Funktioniert haben
-stattdessen: `<mark>` (Hervorhebung, gelber Hintergrund statt frei wählbarer
-Farbe), `<small>` (Schriftgröße, mehrfach verschachtelbar für kompakteren
-Abstand), `<br>`, `<hr>` (ohne Attribute), reiner Zeichentext, sowie -
-vom Nutzer in der echten Oberfläche bestätigt - `<font color="red">`
-(frei wählbare Textfarbe über das alte, rein präsentative `color`-Attribut,
-das offenbar NICHT wie `style` gefiltert wird) und `<strong>` (Fettschrift,
-reines Standard-Tag ohne jedes Attribut). Noch
-nicht abschließend getestet, ob es noch weitere Einschränkungen gibt -
-falls Karten-Änderungen nicht wirken, zuerst prüfen ob ein Style-Attribut
-im Spiel ist.
-
-**6. YAML-Folding (`content: >` in Karten-YAML) faltet Zeilenumbrüche zu
-Leerzeichen**, außer bei Zeilen mit zusätzlicher Einrückung. Mehrzeilige
-Jinja-Tags (z. B. ein `{% for %}` über 3 Zeilen mit `|`-Filtern) sind daher
-riskant und haben einmal zu `TemplateSyntaxError: unexpected end of
-template, expected ')'` geführt. Seitdem: **ein Jinja-Tag pro Zeile**,
-konsequent bei gleicher Einrückung.
-
-**7. Vor jeder Dashboard-Karten-Änderung lokal testen**, nicht blind an den
-Nutzer schicken - Home Assistant selbst steht nicht zur Verfügung, aber
-eine Kombination aus `PyYAML` (simuliert das echte Card-YAML-Folding) und
-`jinja2.sandbox.SandboxedEnvironment` (simuliert Home Assistants
-Jinja-Einschränkungen) fängt die meisten Fehler zuverlässig ab, bevor der
-Nutzer sie in der echten Oberfläche entdeckt:
-
-```python
-import yaml, jinja2, jinja2.sandbox
-data = yaml.safe_load(card_yaml_text)
-env = jinja2.sandbox.SandboxedEnvironment(
-    trim_blocks=True, lstrip_blocks=True, undefined=jinja2.StrictUndefined
-)
-tmpl = env.from_string(data["content"])
-output = tmpl.render(states=FakeStatesObj(), now=lambda: ..., as_local=lambda dt: dt)
-```
-
-**Wichtig: `undefined=jinja2.StrictUndefined` nicht vergessen** (siehe
-Nachtrag unten) - ohne das fängt dieser Test einen ganzen Fehlertyp nicht.
-
-Trotz dieses Tests bleiben CSS/Rendering-Details (Abstände, Style-Filterung)
-nicht zuverlässig vorhersagbar - dafür bräuchte es eine echte
-Home-Assistant-Instanz.
-
-**Nachtrag (nach 0.41.0, reiner Dashboard-Karten-Fix ohne eigenen
-Versionsbump):** Ein neues Attribut (`luftentfeuchter_tank_fehler`,
-nur gesetzt, falls für den Raum ein Tankstatus-Sensor konfiguriert ist)
-wurde in der Karte ohne das sonst überall befolgte `a.attr is defined`-
-Muster referenziert (`... if a.luftentfeuchter_tank_fehler else ...`).
-Der Fehler lief in der eigenen Sandbox-Simulation klaglos durch - ein
-`dict` (unser `FakeState.attributes`) liefert bei fehlendem Key über
-Jinja2s normale, nachsichtige `Undefined`-Klasse einfach einen falsy
-Wert zurück. In der echten Home-Assistant-Oberfläche crashte die Karte
-dagegen mit `UndefinedError: 'ReadOnlyDict object' has no attribute
-'luftentfeuchter_tank_fehler'` - HAs eigene Jinja-Umgebung behandelt
-einen fehlenden Attributzugriff dort strenger. Reproduziert und der Fix
-bestätigt durch `undefined=jinja2.StrictUndefined` in der Simulation
-(dann schlägt exakt derselbe Fehler auch lokal fehl, der Fix mit
-`is defined`-Guard besteht dagegen). Lektion: Die eigene Simulation war
-bis dahin **nachsichtiger** als die echte Oberfläche, nicht strenger -
-das Gegenteil der bis dahin angenommenen Richtung ("Simulation fängt
-das meiste ab, Rendering-Details bleiben ungewiss"). Ab sofort immer
-`StrictUndefined` verwenden, damit ein fehlender `is defined`-Guard bei
-einem neuen/optionalen Attribut zuverlässig schon lokal auffällt, nicht
-erst beim Nutzer in der echten Karte.
+*(Die Lektionen 4-7, 17, 29, 30, 32, 39 und 69 betrafen ausschließlich die seit 0.87.0 gelöschte Jinja-/Markdown-Karte und wurden in 1.22.3 entfernt; die Nummern bleiben unbesetzt. Die Hinweise in den übrigen Lektionen auf "Karte"/"Jinja" sind Historie.)*
 
 **8. `{platzhalter}` in `strings.json`/`translations/*.json` niemals als
 reinen Beispieltext in `description`/`data_description` schreiben - auch
@@ -564,56 +492,6 @@ und "keine Benachrichtigung" sind zwei unabhängige Entscheidungen, die
 aus unterschiedlichen Gründen getroffen werden - fehlender Messwert
 (Lektion 11) rechtfertigt beides, ein echter, nur nicht dringender
 Messwert rechtfertigt nur Letzteres.
-
-**17. "Alle rot angezeigten Daten sollen orange werden" war zu breit
-interpretiert - die eigentliche Absicht war viel enger (Dashboard-Karte,
-kein Versionsbump nötig, Backend-Teil weiterhin 0.40.0).**
-Nach der Frage "gibt es für CO2 einen zu niedrigen Wert" (Antwort: nein,
-siehe Lektion 16) sagte der Nutzer, das solle "auch nicht zwingend eine
-Benachrichtigung erzeugen" und "außerdem alle rot angezeigten Daten nur
-orange dargestellt werden". Eine Rückfrage (AskUserQuestion) dazu, ob
-damit wirklich jeder rote Zustand kartenweit gemeint sei, wurde mit "ja"
-beantwortet - entsprechend wurde Rot zunächst komplett aus der
-Kartenlogik entfernt (nur noch 🟢/🟠, siehe Git-Historie). Direkt danach
-korrigierte der Nutzer das explizit: orange sollte **nur** für den
-CO2-zu-niedrig-Fall gelten, alle anderen bisher roten Fälle (echter
-Fenster-Mismatch aus einem anderen Grund) sollten **rot bleiben** - nur
-das schon zuvor (0.39.0) bestehende, unabhängige Orange für Räume ohne
-Fenster sollte unverändert bleiben. Endgültige Logik: 🟢 (passt) / 🔴
-(Mismatch aus echtem Grund) / 🟠 (Mismatch, aber der gewinnende Auslöser
-ist CO2-Schließen oder der Raum hat kein Fenster) - `co2_close_exception`
-im Karten-Template, analog zu `silent_co2_close` im Backend. Lektion: Eine
-"ja"-Antwort auf eine klärende Rückfrage validiert nur die konkret
-gestellte Frage, nicht automatisch die davor formulierte, oft unpräzise
-gemeinte Ursprungsanweisung - bei einer sprachlich absoluten Formulierung
-("alle", "immer", "nie") im Nachgang einer engeren, konkreten Beobachtung
-(hier: die CO2-Erkenntnis) lohnt sich eine zweite, noch konkretere
-Rückfrage ("nur für X, oder wirklich überall?"), bevor eine
-kartenweite Änderung umgesetzt wird - auch wenn die erste Rückfrage
-bereits explizit "ja, überall" bestätigt hat.
-
-**Nachtrag (0.49.0, reiner Dashboard-Karten-Fix ohne eigenen
-Versionsbump):** Weitere Verfeinerung derselben Farblogik - der Nutzer
-bat darum, den CO2-zu-niedrig-Fall (`co2_close_exception`) nicht mehr
-orange, sondern **grün** darzustellen (Icon am Raumnamen UND
-Empfehlungstext/Werte-Hervorhebung), da hierbei ohnehin kein
-Handlungsbedarf besteht - orange bleibt seitdem ausschließlich Räumen
-ohne Fenster vorbehalten. Endgültige Logik damit: 🟢 (passt **oder**
-CO2-Schließen-Ausnahme) / 🟠 (Raum ohne Fenster) / 🔴 (Mismatch aus
-echtem, handlungsrelevanten Grund). Technisch: an allen drei Stellen, an
-denen bisher `no_window or co2_close_exception` gemeinsam die
-orange-Farbe auslösten, wurde `co2_close_exception` aus dieser
-Oder-Verknüpfung herausgelöst und stattdessen der grün-Bedingung
-hinzugefügt (`is_match or co2_close_exception` bzw. `highlight_ok or
-co2_close_exception`) - `no_window` allein entscheidet jetzt noch über
-Orange. Lektion: Eine als "Ausnahme von Rot" eingeführte Zwischenfarbe
-(hier: Orange für "technischer Mismatch, aber unproblematisch") ist kein
-Selbstzweck - wenn sich im Nachhinein herausstellt, dass ein Fall davon
-eigentlich näher an "alles in Ordnung" liegt als an "Achtung nötig",
-lohnt sich die Rückfrage, ob er nicht direkt in die Grün-Kategorie
-gehört, statt dauerhaft in einer Zwischenfarbe zu verbleiben, die
-ursprünglich für einen anderen, strukturell unterschiedlichen Fall
-(Raum ohne Fenster) gedacht war.
 
 **18. Die Web-Benachrichtigung hatte ein "clean notification"-Muster
 (automatisches Auflösen, sobald sich eine Empfehlung erledigt hat)
@@ -1089,112 +967,6 @@ echte Pflichtfelder bekommen `default=`, alles andere ausschließlich
 immer befolgt hatte, aber bis 0.51.3 nicht konsequent auch auf
 `_entity_marker()` übertragen wurde.
 
-**29. Der "Totzone neutral"-Fix für die Dashboard-Karte war nur für die
-Schließen-Seite vollständig umgesetzt - die Öffnen-Seite fiel weiterhin
-unbegrenzt auf den historischen `letzter_grund` zurück (reiner
-Dashboard-Karten-Fix, `card_version` 11 → 12, kein Versionsbump nötig).**
-Nutzer-Meldung (Esszimmer, Screenshot): Nachdem die CO2-/Luftfeuchtigkeits-
-Sensoren aus dem Raum entfernt worden waren (siehe Lektionen 26-28), zeigte
-die Karte weiterhin "Öffnen" mit Auslöser "Luftfeuchtigkeit" und einem
-Zeitstempel vom selben Tag - obwohl in der Werte-Tabelle darunter gar keine
-Luftfeuchtigkeits-Zeile mehr auftauchte (Attribut nicht mehr vorhanden, da
-kein Sensor mehr konfiguriert). Die Innentemperatur (22.1 °C) lag zwischen
-Schließen- (21.0 °C) und Öffnen-Schwelle (23.0 °C), CO2 (870 ppm) ebenso
-zwischen den Schwellen (800/1000 ppm) - keine der beiden verbleibenden
-Größen rechtfertigte aktuell ein "Öffnen". Ursache: `live_grund_open`
-(bestimmt den Auslöser-Code, wenn der Sensor-Zustand `on`/"Öffnen" ist)
-prüfte zwar korrekt `temp_needs_open`/`hum_needs_open`/`co2_needs_open`,
-fiel aber im `else`-Zweig unbegrenzt auf `grund_code` (den historischen,
-u. U. längst veralteten `letzter_grund`) zurück - anders als das
-strukturell identische `comfort_close` auf der Schließen-Seite, das seinen
-Rückfallwert bewusst auf die drei einzigen Fälle beschränkt, die sich
-wirklich nicht live nachrechnen lassen (`duration`/`outdoor_warmer`/
-`outdoor_wetter`, alle drei ausschließlich Schließen-Gründe, siehe README-
-Abschnitt "Hervorhebung des ausschlaggebenden Werts"). Für die Öffnen-Seite
-gibt es aber gar keinen strukturell entsprechenden Fall: Temperatur,
-Luftfeuchtigkeit und CO2 sind als Öffnen-Gründe IMMER live nachrechenbar,
-sobald der jeweilige Sensor konfiguriert ist - `grund_code` konnte dort
-also nur noch als Krücke für exakt die "Totzone"-Situation dienen, die der
-bereits früher eingeführte, in der README ausführlich dokumentierte
-Neutral-Mechanismus ("trifft weder ein Live-Check noch dieser Rückfallwert
-zu, zeigt die Karte konsequent überall neutral '–'") eigentlich verhindern
-sollte. Die README-Dokumentation selbst beschrieb das korrekte Verhalten
-bereits akkurat ("`letzter_grund` dient nur noch als Rückfallwert für die
-DREI Fälle...") - nur der Code für die Öffnen-Seite hielt sich nicht
-daran. Fix: `live_grund_open`s letzter Zweig von `grund_code` auf `''`
-geändert - Öffnen-Auslöser werden dadurch ausschließlich live berechnet,
-ganz ohne Rückfallwert, symmetrisch zur bereits korrekten Beschränkung auf
-der Schließen-Seite. Lokal mit zwei Szenarien gegengetestet (Jinja-Sandbox
-mit `StrictUndefined`, siehe Lektion 7): der gemeldete Esszimmer-Fall
-zeigt jetzt korrekt neutral (🟢, Empfehlung/Auslöser/Uhrzeit alle "–"),
-ein echter, weiterhin live zutreffender Luftfeuchtigkeits-Öffnen-Grund
-(Badezimmer-Testfall) bleibt unverändert korrekt rot/orange markiert.
-Lektion: Ein als "Totzone neutral"/"live statt historisch"-Prinzip
-eingeführter Rückfallwert-Filter (hier: `close_fallback`, beschränkt auf
-die drei nicht-live-berechenbaren Gründe) muss bei JEDER Stelle greifen,
-an der `letzter_grund` sonst noch unbegrenzt durchgereicht wird - eine
-zweite, strukturell parallele Stelle (hier: die Öffnen-Seite derselben
-`highlight_code`-Berechnung) kann denselben Bug unabhängig von der bereits
-gefixten Stelle enthalten, obwohl die dazugehörige README-Doku bereits das
-insgesamt korrekte Verhalten beschreibt - eine korrekt dokumentierte
-Absicht ist kein Beleg dafür, dass der Code sie an jeder relevanten Stelle
-auch tatsächlich umsetzt.
-
-**30. Nicht jeder "Fenster steht schon richtig, Werte aber noch außerhalb
-der Norm"-Fall ist gleich orange - bei den beiden Außenluft-Umkehr-Gründen
-ist der Zustand bereits final, nicht nur "wartend" (reiner
-Dashboard-Karten-Fix, `card_version` 12 → 13, kein Versionsbump nötig).**
-Nutzer-Frage (Badezimmer, Screenshot): Öffnen-Empfehlung wegen
-Luftfeuchtigkeit (61 % > 60 %-Schwelle), obwohl die absolute
-Luftfeuchtigkeit draußen (11,5 g/m³) höher lag als drinnen (11,1 g/m³) -
-Lüften hätte die relative Luftfeuchtigkeit also gar nicht gesenkt. Die
-Antwort ergab: Der dafür zuständige Schließen-Mechanismus
-(`close_by_humidity_outdoor_reversal`, Lektion 23) blockierte in diesem
-Fall, weil `temp_still_needed` bereits `True` war - nicht weil die
-Temperatur tatsächlich noch Lüftungsbedarf anzeigte (`open_by_temp` war
-`False`, die Innentemperatur lag klar unter der Öffnen-Schwelle), sondern
-weil sie schlicht noch nicht bis zur eigenen Schließen-Schwelle gefallen
-war. Das ist ein separates, hier nicht behobenes Verhalten (die Schutz-
-Logik wurde absichtlich 1:1 von den drei primären Schließgründen für
-`close_by_summer_outdoor`/`close_by_humidity_outdoor_reversal`
-übernommen, siehe deren Kommentare) - die zweite Nachfrage bezog sich
-aber auf einen zweiten, tatsächlich schon in Produktion beobachteten Fall
-im Büro, wo dieser Mechanismus BEREITS korrekt gegriffen hatte
-(Auslöser "Außen feuchter", Fenster schon geschlossen, Zustand passt) und
-trotzdem nur orange statt grün angezeigt wurde. Nutzer-Einschätzung dazu:
-Dieser Zustand ist bereits **endgültig**, nicht nur "wartend" - anders
-begründet als die bereits bestehende Grün-Ausnahme für CO2 (Lektion 16/17:
-niedriges CO2 ist kein Sicherheitsrisiko, daher irrelevant ob das Fenster
-überhaupt matcht), aber im Ergebnis ebenso rechtfertigend: Bei den drei
-primären Größen (Temperatur/Luftfeuchtigkeit/CO2) bezieht sich die
-Orange-Bedeutung ("Fenster passt schon, Werte aber noch außerhalb der
-Norm") auf einen INNENWERT, der sich durch die bereits erfolgte
-Fenster-Aktion irgendwann normalisieren wird ("wartend"). Bei
-"Außen wärmer"/"Außen feuchter" (`outdoor_warmer`/`outdoor_wetter`) ist
-die hervorgehobene Zelle dagegen die AUSSEN-Zelle (siehe Lektion 23) - die
-ändert sich unabhängig vom eigenen Fensterzustand, es gibt also nichts,
-"worauf" das Fenster warten würde: Bleibt es geschlossen, bleibt der
-Zustand exakt so, bis sich die Außenbedingungen von selbst ändern - kein
-Unterschied zu "sofort" vs. "in 10 Minuten". Wichtiger Unterschied zur
-CO2-Ausnahme: Die neue `outdoor_final_exception` gilt NUR, wenn das
-Fenster tatsächlich matcht (`is_match`) - anders als bei CO2 (wo Grün
-unabhängig vom Fensterzustand gilt, da Lüften trotz niedrigem CO2 nie
-schadet) verschlimmert Weiterlüften hier tatsächlich die Lage
-(Luftfeuchtigkeit/Temperatur von draußen), ein Fenster-Mismatch bei
-diesen beiden Gründen bleibt daher weiterhin korrekt **rot**, nicht grün.
-Fix: `outdoor_final_exception` (analog zu `co2_close_exception`, aber
-zusätzlich an `is_match` gebunden) ersetzt `match_icon`/`highlight_open`
-von Orange auf Grün, ausschließlich innerhalb des ohnehin schon
-vorhandenen Match-Zweigs. Lokal mit Match- und Mismatch-Fall
-gegengetestet (Jinja-Sandbox, `StrictUndefined`). Lektion: "Fenster passt
-schon, Werte noch außerhalb der Norm" ist nicht immer dasselbe
-Orange-Muster - entscheidend ist, ob die hervorgehobene Größe durch die
-bereits erfolgte Aktion selbst noch beeinflusst/normalisiert werden kann
-(Innenwert, "wartend" → Orange) oder komplett extern ist und sich ohnehin
-nicht durch das eigene Fenster ändert (Außenwert, bereits "endgültig" →
-Grün, aber nur im Match-Fall, da hier - anders als bei der CO2-Ausnahme -
-ein Mismatch tatsächlich schadet statt nur überflüssig zu sein).
-
 **31. Laufzeit-Tracking für Luftentfeuchter/Klimaanlage/Dusche - bewusst
 innerhalb von `extra_state_attributes` statt in `_evaluate()` (0.52.0).**
 Neue Dashboard-Spalte "Laufzeit" (seit wann das jeweilige Gerät
@@ -1240,48 +1012,6 @@ sonst kann leicht ein zweiter, unabhängiger Wert entstehen, der mit dem
 ersten desynchronisiert - ein reines "wo pflegen wir sonst Zeitstempel"-
 Muster (hier: `_evaluate()`) ist keine Garantie dafür, dass es für JEDEN
 neuen Zeitstempel die richtige Stelle ist.
-
-**32. Die "bereits gelöst, nicht nur wartend"-Grünfärbung eines
-Schließen-Auslösers (Lektion 30) war nur für Räume MIT Fenster
-umgesetzt - bei Räumen ohne Fenster griff sie überhaupt nicht, weil
-deren Farblogik in einem eigenen, komplett getrennten Codezweig steht
-(reiner Dashboard-Karten-Fix, `card_version` 18 → 19, kein
-Versionsbump nötig).** Nutzer-Meldung (Flur KG, kein Fenster
-konfiguriert): Auslöser "Luftfeuchtigkeit" mit bereits unter die
-Schließen-Schwelle gefallenem Wert (54,6 % < 55 %-Schwelle), Karte
-zeigte trotzdem weiterhin 🟠 statt 🟢 - obwohl genau dieser Fall bei
-einem Raum MIT Fenster durch Lektion 30 (`comfort_close_resolved_exception`)
-bereits korrekt grün würde. Ursache: Die Berechnung von `match_icon` für
-Räume ohne Fenster läuft in einer eigenen Zeile VOR dem `{% if
-window_entity %}`-Block (`'🟠 ' if no_window else '🔴 '` als reiner
-Fallback) und wusste von `comfort_close_resolved_exception` nichts - die
-Variable wurde zwar schon berechnet, aber nur innerhalb des
-Fenster-Blocks tatsächlich ausgewertet (`is_match` als zusätzliche
-Bedingung), der für fensterlose Räume nie betreten wird. Fix:
-`no_window_resolved = no_window and comfort_close_resolved_exception`
-(ohne `is_match`-Bedingung, da es dafür kein Fenster gibt) wird jetzt
-zusätzlich in die 🟢-Bedingung von sowohl `match_icon` als auch
-`highlight_open` aufgenommen - symmetrisch zur bereits bestehenden
-CO2-Ausnahme, die ja ebenfalls unabhängig vom Fensterzustand gilt.
-Dabei ergab die Rückfrage beim Nutzer eine wichtige Einschränkung, die
-über die reine Symmetrie zu Lektion 30 hinausgeht: Ist speziell
-Luftfeuchtigkeit der Auslöser UND für den Raum ein Luftentfeuchter
-konfiguriert, soll es trotzdem bei 🟠 bleiben
-(`no_window_dehum_exception`, geprüft über dieselbe `a.luftentfeuchter_an
-is defined`-Markierung wie schon in der Geräte-Tabelle) - der
-Luftfeuchtigkeitswert hängt hier eng mit dem Luftentfeuchter zusammen
-und soll bewusst sichtbar bleiben, statt in Grün zu verschwinden, auch
-wenn er die Schließen-Schwelle bereits erreicht hat. Andere
-Schließen-Gründe (Temperatur, Außen wärmer/feuchter) sind von dieser
-Ausnahme nicht betroffen, ebenso wenig Luftfeuchtigkeit in Räumen ohne
-Luftentfeuchter. Lektion: Eine Farb-/Zustandslogik, die für den
-Fenster-Fall bereits korrekt implementiert ist (Lektion 30), aber in
-einem strukturell getrennten Codezweig für einen anderen Fall (hier:
-kein Fenster, siehe bereits Lektion 17) eine eigene, parallele
-Berechnung hat, überträgt sich nicht automatisch - bei jeder neuen
-"eigentlich schon gelöst"-Ausnahme prüfen, ob sie in JEDEM Zweig
-greifen muss, der dieselbe Grundfrage (hier: Auslöser ist ein
-Schließen-Grund) unabhängig behandelt.
 
 **33. `_is_device_on()` (Lektion 19) behandelte eine komplett aus dem
 Zustandsautomaten verschwundene Geräte-Entität identisch zu einer bloß
@@ -1572,36 +1302,6 @@ auch woanders noch der Fall?") ist der zuverlässigste Weg, solche Lücken
 zu finden, weil sie nicht am Feldnamen, sondern am **Muster** der
 Formularstruktur (hier: `_tri_state_bool_selector()`/Objekt-Listen vs.
 `_override_selector()`) hängen.
-
-**39. `no_window_dehum_exception` (Lektion 32) wieder entfernt - der
-Nutzer entschied sich nach Rückfrage bewusst gegen die eigene, erst kurz
-zuvor eingeführte Ausnahme (reiner Dashboard-Karten-Fix, `card_version`
-19 → 20, kein Versionsbump nötig).** Nutzer-Frage zu einem konkreten
-Fall (Flur KG, fensterlos, Luftfeuchtigkeit 55 % = Schließen-Schwelle,
-Luftentfeuchter konfiguriert und korrekt aus): "warum geht der
-Luftentfeuchter nicht an?" (beantwortet: Schwelle korrekt erreicht,
-kein Bug) - direkt gefolgt von "warum wird der Raum dann orange
-angezeigt?". Antwort verwies auf die bestehende, bewusst so gebaute
-Ausnahme aus Lektion 32 (Luftfeuchtigkeit + konfigurierter
-Luftentfeuchter in fensterlosen Räumen bleibt 🟠 statt 🟢). Auf die
-Rückfrage, ob diese Ausnahme entfernt werden soll, antwortete der
-Nutzer "Ja" - Fix: `no_window_dehum_exception` und die zugehörige
-Sonderbehandlung in `no_window_resolved` ersatzlos entfernt, `no_window_resolved
-= no_window and comfort_close_resolved_exception` (wieder identisch zum
-ursprünglichen Symmetrie-Fix aus Lektion 32, vor der Verfeinerung).
-Fensterlose Räume mit gelöstem Luftfeuchtigkeits-Schließen-Grund zeigen
-jetzt wieder unbedingt 🟢, unabhängig davon, ob ein Luftentfeuchter
-konfiguriert ist - der Gerätezustand selbst (⚫/🔴 in der Geräte-Tabelle)
-bleibt als eigene, unabhängige Information ja ohnehin sichtbar. Lokal
-gegengetestet (Jinja-Sandbox, `StrictUndefined`): Flur-KG-Fall jetzt 🟢,
-Öffnen-Grund-Regression weiterhin 🟠, Fenster-Match-Regression weiterhin
-🟢. Lektion: Eine erst kürzlich auf Zuruf eingeführte Verfeinerung ist
-nicht in Stein gemeißelt - konfrontiert mit einem konkreten Fall, der
-sie auslöst, kann der Nutzer die ursprüngliche Entscheidung revidieren;
-die eigentliche Lektion aus 32 (dass "Aktion nötig, aber nicht über das
-Fenster" bei Geräte-Rückkopplung eine eigene Betrachtung verdienen
-könnte) bleibt als Erfahrungswert dieser Session erhalten, auch wenn die
-daraus abgeleitete Karten-Sonderregel selbst nicht von Dauer war.
 
 **40. Eine Heizungs-Erweiterung sollte laut Nutzer-Vorgabe "wie empfohlen"
 (minimal, analog zur Klimaanlage) umgesetzt werden, aber trotzdem mit
@@ -3467,23 +3167,6 @@ Einheit, Zustände, Gerätenamen); Platz bekommen so die Textspalten
 für kurze Spalten sein - kurze Inhalte gehören auf `nowrap`, damit der
 Browser den Restplatz an die langen Spalten verteilt.
 
-**69. Markdown-Karte: Räume und Gesamtliste einklappbar über verschachtelte `<details>` (Karten-Version 35, kein Versionsbump).**
-Nutzerwunsch: Räume einklappbar, rote Räume standardmäßig offen, die ganze
-Raumliste (außer der Übersichts-Tabelle) als ein Abschnitt, standardmäßig
-eingeklappt (der Nutzer entschied sich bewusst gegen "aufgeklappt"). Umsetzung:
-jeder Raum-Block ist `<details[ open]><summary><strong>Icon Raum</strong></summary>`
-(`open` nur bei 🔴), alle Blöcke liegen in einem äußeren `<details>` "Räume".
-Die Tabellen brauchen Leerzeilen um die HTML-Tags (wie bei der bestehenden
-Benachrichtigungs-Aufklappung), sonst rendert die Markdown-Karte sie nicht.
-`sep_line` entfiel (nirgends mehr verwendet). Grenze: Home Assistant
-zeichnet die Markdown-Karte bei jeder Statusänderung neu, ein von Hand
-geänderter Auf-/Zuklapp-Zustand geht dabei verloren - anders als bei der
-JS-Karte lässt sich das mit einer reinen Vorlage nicht lösen. Lokal in der
-Jinja-Sandbox (`StrictUndefined`) geprüft (Struktur, `open` nur bei Rot,
-Klammer-Balance der `<details>`); das echte Markdown-Rendering von
-verschachteltem `<details>` konnte ohne Home-Assistant-Instanz nicht
-gesehen werden.
-
 **70. Push-/Web-Benachrichtigungen zeigten nur die feste Überschrift "Lüften" - der Raum stand nur im Nachrichtentext (0.80.2).**
 Nutzer-Feedback: In der Benachrichtigung sei nur die Überschrift "Lüften" zu
 sehen, sinnvoll wäre zumindest der Raumname; auf Vorschlag "‹Überschrift› –
@@ -4032,6 +3715,8 @@ Nutzer (Screenshot): Preset-Chips, Heizungssymbol und Heizplan sollen die Farben
 
 **146. Push beim Herunterfahren: Sensorausfall hob den Halt der Totzone auf (1.22.2).**
 Nutzer (Screenshot): Bei jedem HA-Neustart kommt beim Runterfahren eine Push (Wohnzimmer: "Luftfeuchtigkeit 49 % wieder im normalen Bereich - Fenster kann geschlossen werden"). Die Attribute zeigten: Empfehlung wegen CO2 geöffnet, CO2 (519) und Feuchte (49 %) schon unter den Schließen-Grenzen, aber die Temperatur (20,2 °C, Totzone 20-23) hielt über `temp_still_needed` offen. Beim Herunterfahren meldet die Temperaturquelle (`climate.wohnzimmer`, KNX) "nicht verfügbar", der Halt fiel weg, die Feuchte schloss und pushte; nach dem Neustart kam der wiederhergestellte "an"-Zustand und schloss still wegen CO2 (`push_verlauf` wird nicht wiederhergestellt, zeigte nur das). Zwei Ursachen, beide behoben: (1) `_evaluate()` bewertet nichts mehr, sobald HA stoppt (`EVENT_HOMEASSISTANT_STOP`/`hass.is_stopping`, `_ha_stopping`); (2) der Totzonen-Halt gilt nur für eine Größe, die die Empfehlung selbst ausgelöst hat (`_open_reasons`, beim Öffnen gesetzt, später aktive Öffnen-Gründe kommen dazu, Attribut `geoeffnet_wegen` für die Wiederherstellung; unbekannt = alter Halt). Test `test_hold.py` (Auszug der Logik, 6 Fälle). Nicht an der echten Instanz geprüft; ob beim Stop noch ein Zustand geschrieben wird, zeigt der nächste Neustart. Lektion: Ein Hysterese-Halt (hier "Totzone hält offen") gehört nur der Größe, die den Zustand ausgelöst hat - sonst hängt er an irgendeiner anderen Größe und reißt beim Ausfall genau dieses Sensors ab; und beim Herunterfahren nichts mehr bewerten, weil Sensorausfälle dort normal sind.
+
+**147. Aufräumen (1.22.3).** Bestandsaufnahme der 62 Raum-Attribute: wer liest sie (Karte, Bubble-Modul, Sensoren, Diagnose, Doku)? Entfernt wurden nur `heizung_comfort_gesperrt` (doppelt zu `heizung_verhindert`), die ungenutzte Konstante `NOTIFY_METHOD_SONOS` und die reinen Markdown-Karten-Lektionen. Bewusst behalten: die drei Diagnose-Protokolle (`push_verlauf`, `dusche_verlauf`, `letzte_benachrichtigung`), die Wiederherstellungs-Attribute (`empfehlung_aktiv_seit`, `letzter_grund`, `geoeffnet_wegen`, `heizung_uebersteuerung_basis`) sowie `heizung_aufheizrate`, `heizung_vorheizzeit`, `raumstatus_gruende` (Information/Diagnose); Übersetzungen ohne Feld gibt es nicht, ungelesene alte Schlüssel in gespeicherten Einträgen (`dash_cycle` u. a.) bleiben harmlos liegen. Lektion: Vor dem Entfernen eines Attributs prüfen, wer es liest - Wiederherstellung, Diagnose und Live-Berechnung zählen als Leser (wie schon Lektion 82).
 
 ## Versionierung & Release
 
