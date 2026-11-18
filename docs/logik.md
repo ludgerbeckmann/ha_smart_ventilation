@@ -117,7 +117,10 @@ ihre (höhere) Öffnen-Schwelle fällt. Sonst würde die Empfehlung bei Werten
 zwischen den beiden Schwellen ständig hin- und herflackern (z. B. "wegen
 Temperatur schließen" und "wegen Luftfeuchtigkeit/CO2 wieder öffnen"),
 obwohl sich der eigentliche Lüftungsbedarf die ganze Zeit über nicht
-geändert hat. Einzige Ausnahme: Frost- und Hitzeschutz haben immer Vorrang.
+geändert hat. Diesen Halt in der Totzone hat nur eine Größe, die die Empfehlung
+selbst ausgelöst hat (ab 1.22.2): Wurde z. B. wegen CO2 geöffnet, hält eine
+Temperatur zwischen ihren beiden Schwellen die Empfehlung nicht mehr offen.
+Einzige Ausnahme: Frost- und Hitzeschutz haben immer Vorrang.
 
 **Konfigurierbare Priorität bei Winter-Höchstdauer:** Der Parameter
 "Luftfeuchtigkeit/CO2 haben Vorrang" (gegenüber der Winter-Höchstdauer) legt fest, wie
