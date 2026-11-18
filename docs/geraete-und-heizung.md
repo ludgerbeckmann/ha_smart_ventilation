@@ -168,8 +168,8 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   Wahl bleibt bestehen, wie bei der Anwesenheit). Das gilt auch für
   Auslöser und Zeitplan. Ist der Sensor unbekannt/nicht verfügbar, heizt der
   Raum normal weiter. `heizung_grund` zeigt "Ferien-/Werktagssensor (kein
-  Comfort)", das Attribut `heizung_comfort_gesperrt` den aktuellen Stand
-  (nur gesetzt, wenn der Raum den Sensor berücksichtigt). Die Auswertung
+  Comfort)", das Attribut `heizung_verhindert` den Wert `ferien`, solange der
+  Sensor Comfort verhindert. Die Auswertung
   läuft bei jeder Neubewertung (spätestens im 5-Minuten-Takt).
 
 - **Raumtypen (ab 1.14.0):** Im Abschnitt "Heizung" eines Raums wählen Sie
