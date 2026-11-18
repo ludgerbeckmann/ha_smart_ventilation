@@ -519,7 +519,7 @@ fehlt oder eine ältere Version enthält. Die vorherige Fassung wird einmalig al
 `/config/bubble_card/climate_status_v<alt>.yaml.bak` gesichert. Die Meldung
 "Bubble-Card-Modul climate_status angelegt/aktualisiert" steht im Log. Danach
 Browser bzw. App neu laden. Das Modul ist dann im Bubble-Card-Editor unter
-"Module" mit der Version `v4.5` zu sehen. Eigene Änderungen am Modulcode gehen
+"Module" mit der Version `v4.6` zu sehen. Eigene Änderungen am Modulcode gehen
 bei einem Update verloren, deshalb stehen alle Einstellungen in der Integration.
 Gibt es den Ordner nicht (oder liest Bubble Card die Datei nicht ein), kann der
 Modultext aus dem Integrationsordner (`bubble/climate_status.yaml`) über "Import
@@ -575,6 +575,8 @@ I Verlauf Rand zur Mitte, **J dünner Ring + Innenschein (Standard)**, K Verlauf
 **Symbol im Fenster-Button einfärben** (Standard aus): Zeichnet zusätzlich das Symbol in der Signalfarbe (Hinweis orange, Handlungsbedarf rot). Wirkt bei den Ring-, Schein- und Balken-Varianten (A-H, J, L, M, N, S, T, V), nicht bei den flächigen Varianten I, K, O, P, Q, R und U, weil das Symbol dort mit der Füllung verschwinden würde. Die Symbol-Klasse der Bubble Card ist nicht dokumentiert - bleibt das Symbol unverändert, den Selektor anpassen (Modul `climate_status`).
 
 **Fensterfarbe bei Handlungsbedarf / bei Hinweis** (Standard je "Unverändert"): Die Fläche des Fensterbuttons kommt sonst aus dem Fensterzustand (bei dir z. B. Blau aus `subbutton_typfarben`), auf dem Rot und Orange schwach wirken. Alternativ je Signal eine feste Flächenfarbe (Dunkelblau `#0D47A1`, Nachtblau `#1A2B45`, Anthrazit `#2B2F36`, Hellblau `#90CAF9`, Sehr helles Blau `#BBDEFB`, Eisblau `#E3F2FD`); ohne Signal bleibt das Ursprungsblau. Faustregel nach Kontrast: auf Rot wirken helle Töne gut (Eisblau 3,7), auf Orange dunkle (Dunkelblau 4,4). Bei den hellen Tönen wird das Symbol automatisch in der Signalfarbe gezeichnet (sonst wäre es weiß auf Hellblau schlecht lesbar); bei den flächigen Varianten I, K, O-R, U bleibt das Symbol unverändert. Wer in 1.20.0 "Farbe Fenster-Button bei Signal" gesetzt hatte: der Wert wird beim Start auf beide Felder übernommen.
+
+**Fenster geschlossen (ab 1.22.5, Modul v4.6):** Ist der Fensterkontakt geschlossen und der Button erscheint nur wegen Handlungsbedarf (z. B. "bitte öffnen"), bekommt er keine blaue Fläche, sondern die neutrale Fläche der übrigen Sub-Buttons (`--bubble-secondary-color`). Der Signalring und das Symbol bleiben in der Signalfarbe (Symbol nicht bei den flächigen Varianten I, K, O-R, U). Die blauen Flächen gelten damit nur bei offenem Fenster.
 
 **Ring-/Balkenbreite** (1-12 px, Standard 2) gilt für die Varianten mit Ring oder Balken (A, B, C, E, F, J, L, M, N, S, T, V). Die Einstellungen stehen in zwei Abschnitten: **Dashboard: Bubble-Card** (Kachel) und **Dashboard: Fenster-Button** (Signal); Vorschau der Varianten: `custom_components/ha_smart_ventilation/www/fenster-signal.png` (im Einstellungsdialog selbst lassen sich keine Bilder anzeigen); schematische Kachel: `www/bubble-card-vorschau.png` (kein Screenshot). Die Verläufe I/K
 setzen ein Hintergrundbild auf den Button; außen liegende Varianten (B, C, D, E) können vom Container
