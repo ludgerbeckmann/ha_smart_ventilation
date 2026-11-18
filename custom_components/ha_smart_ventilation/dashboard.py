@@ -70,7 +70,7 @@ MODULE_ID = "climate_status"
 MODULE_FILENAME = f"{MODULE_ID}.yaml"
 MODULE_TEMPLATE = Path(__file__).parent / "bubble" / MODULE_FILENAME
 # Muss zur "version:"-Zeile in bubble/climate_status.yaml passen (Test prüft es).
-MODULE_VERSION_LABEL = "v4.5"
+MODULE_VERSION_LABEL = "v4.6"
 
 def _num(value, default, minimum, maximum) -> float:
     try:
