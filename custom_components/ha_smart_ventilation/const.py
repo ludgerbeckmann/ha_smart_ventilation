@@ -31,13 +31,9 @@ ROOM_STATUS_KEY = "_room_status"
 ROOM_STATUS_SIGNAL = DOMAIN + "_room_status_{}"
 
 # Name des automatisch angelegten globalen Eintrags (CONF_ROOM_NAME-Wert,
-# gleichzeitig der angezeigte Entry-Titel). Seit dem Anzeigenamen-Rename auf
-# "Smart Climate" (0.59.0) - siehe __init__.py:_migrate_global_entry_title()
-# für die Migration bereits bestehender Installationen und CLAUDE.md
-# Lektion 43. LEGACY_GLOBAL_ROOM_NAME wird ausschließlich von dieser
-# Migration benötigt.
+# gleichzeitig der angezeigte Entry-Titel), seit 0.59.0 "Smart Climate"
+# (CLAUDE.md Lektion 43).
 GLOBAL_ROOM_NAME = "- Smart Climate Optionen -"
-LEGACY_GLOBAL_ROOM_NAME = "- Smart Ventilation Optionen -"
 
 CONF_ROOM_NAME = "room_name"
 # Optional: die HA-Bereich-ID (area_registry), aus der beim Anlegen der
@@ -137,7 +133,6 @@ CONF_HUMIDITY_THRESHOLD_OPEN = "humidity_threshold_open"
 CONF_HUMIDITY_THRESHOLD_CLOSE = "humidity_threshold_close"
 CONF_CO2_THRESHOLD_OPEN = "co2_threshold_open"
 CONF_CO2_THRESHOLD_CLOSE = "co2_threshold_close"
-CONF_NOTIFY_METHOD = "notify_method"
 CONF_SONOS_ENTITY = "sonos_entity"
 CONF_TTS_ENTITY = "tts_entity"
 # Optional, nur pro Raum: eine light-Entität, deren Zustand die
@@ -459,9 +454,6 @@ DEFAULT_DEVICE_MAX_RUNTIME_HIGH_SURPLUS_MINUTES = 0
 # Begrenzung wäre wirkungslos.
 CONF_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES = "device_max_runtime_cooldown_minutes"
 DEFAULT_DEVICE_MAX_RUNTIME_COOLDOWN_MINUTES = 30
-
-NOTIFY_METHOD_MOBILE = "mobile_app"
-NOTIFY_METHOD_PERSISTENT = "persistent"
 
 # Entitäten, die als Innentemperatur-Quelle ausgewählt werden können.
 # "climate" nutzt ein Attribut (siehe CONF_TEMP_ATTRIBUTE), alle anderen

@@ -18,19 +18,11 @@ from .const import (
     CONF_DASH_WINDOW_FILL_ACTION,
     CONF_DASH_WINDOW_FILL_NOTICE,
     CONF_IS_GLOBAL,
-    CONF_MOBILE_ENABLED,
-    CONF_NOTIFY_METHOD,
-    CONF_PERSISTENT_ENABLED,
-    CONF_ROOM_NAME,
     CONF_USAGE_LEARNING_DEFAULT_MIGRATED,
     CONF_USAGE_LEARNING_ENABLED,
     DASHBOARD_SIGNAL,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
-    GLOBAL_ROOM_NAME,
-    LEGACY_GLOBAL_ROOM_NAME,
-    NOTIFY_METHOD_MOBILE,
-    NOTIFY_METHOD_PERSISTENT,
     ROOM_STATUS_KEY,
     VERSION_KEY,
 )
@@ -76,72 +68,36 @@ def _create_global_settings_entry(hass: HomeAssistant) -> None:
     )
 
 
-def _migrate_legacy_notify_method(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Migriert Raum-Einträge von der historischen, einmalig beim Speichern
-    berechneten CONF_NOTIFY_METHOD-Liste (siehe Git-Historie/CLAUDE.md) auf
-    die seitdem verwendeten CONF_MOBILE_ENABLED/CONF_PERSISTENT_ENABLED-
-    Felder.
+# Schlüssel, die der Code nicht mehr liest (entfernte Felder früherer Versionen).
+# Gespeicherte Einträge behalten sie sonst für immer. "dash_window_fill" fehlt
+# hier absichtlich: _migrate_window_fill() übernimmt seinen Wert vorher.
+_OBSOLETE_KEYS = (
+    "notify_method",
+    "dash_cycle",
+    "dash_color_comfort",
+    "dash_color_standby",
+    "dash_color_eco",
+    "dash_color_protection",
+    "dash_color_summer",
+    "dash_color_hot",
+    "dash_color_warm",
+    "dash_color_cold",
+    "dash_color_cover",
+    "dash_color_tint_hint",
+    "dash_color_tint_action",
+    "heating_comfort_end_weekday",
+    "heating_comfort_end_weekend",
+    "heating_night_end_weekday",
+    "heating_night_end_weekend",
+)
 
-    Ohne diese Migration bleiben Räume, die seit jener Umstellung nie neu
-    gespeichert wurden, dauerhaft ohne aktive Benachrichtigung: _effective()
-    findet für CONF_MOBILE_ENABLED/CONF_PERSISTENT_ENABLED weder einen
-    Raum- noch einen globalen Wert (beide fehlen im alten Datenformat
-    komplett) und fällt auf den fest einprogrammierten Standard False
-    zurück - selbst wenn der Raum weiterhin ein konfiguriertes
-    Benachrichtigungsziel (mobile_targets) hat.
 
-    Läuft bei jedem Setup, ist aber nach der ersten Migration wirkungslos,
-    da CONF_NOTIFY_METHOD danach nicht mehr im Eintrag vorhanden ist.
-    """
-    if entry.data.get(CONF_IS_GLOBAL):
+def _purge_obsolete_keys(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Entfernt einmalig Schlüssel entfernter Felder aus dem Eintrag."""
+    if not any(key in entry.data for key in _OBSOLETE_KEYS):
         return
-    legacy_methods = entry.data.get(CONF_NOTIFY_METHOD)
-    if legacy_methods is None:
-        return
-
-    new_data = dict(entry.data)
-    if CONF_MOBILE_ENABLED not in new_data:
-        new_data[CONF_MOBILE_ENABLED] = NOTIFY_METHOD_MOBILE in legacy_methods
-    if CONF_PERSISTENT_ENABLED not in new_data:
-        new_data[CONF_PERSISTENT_ENABLED] = NOTIFY_METHOD_PERSISTENT in legacy_methods
-    new_data.pop(CONF_NOTIFY_METHOD, None)
-
-    _LOGGER.debug(
-        "Migriere veraltete notify_method-Liste (%s) für Raum %s auf "
-        "mobile_enabled=%s/persistent_enabled=%s",
-        legacy_methods,
-        entry.title,
-        new_data[CONF_MOBILE_ENABLED],
-        new_data[CONF_PERSISTENT_ENABLED],
-    )
+    new_data = {k: v for k, v in entry.data.items() if k not in _OBSOLETE_KEYS}
     hass.config_entries.async_update_entry(entry, data=new_data)
-
-
-def _migrate_global_entry_title(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Migriert den Titel/CONF_ROOM_NAME-Wert des automatisch angelegten
-    globalen Eintrags von der historischen Bezeichnung "- Smart Ventilation
-    Optionen -" auf die seit dem Anzeigenamen-Rename (0.59.0, siehe
-    CLAUDE.md Lektion 43) aktuelle "- Smart Climate Optionen -".
-
-    Nur der Anzeigename ändert sich - GLOBAL_SETTINGS_UNIQUE_ID (und damit
-    die entry_id) bleibt unverändert, weshalb hier eine einfache
-    async_update_entry() reicht statt eine echte Migration mit neuem
-    Eintrag zu benötigen. Ohne diesen Fix würde eine bereits bestehende
-    Installation den alten Titel dauerhaft behalten, da async_create_entry
-    den Titel nur beim allerersten Anlegen setzt (siehe Lektion 10:
-    ein Rename trifft nie automatisch bereits gespeicherte Einträge).
-    """
-    if not entry.data.get(CONF_IS_GLOBAL):
-        return
-    if entry.data.get(CONF_ROOM_NAME) != LEGACY_GLOBAL_ROOM_NAME:
-        return
-
-    new_data = dict(entry.data)
-    new_data[CONF_ROOM_NAME] = GLOBAL_ROOM_NAME
-    _LOGGER.debug("Migriere globalen Eintragstitel auf %s", GLOBAL_ROOM_NAME)
-    hass.config_entries.async_update_entry(
-        entry, title=GLOBAL_ROOM_NAME, data=new_data
-    )
 
 
 def _migrate_usage_learning_default(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -311,10 +267,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Richtet einen Raum oder die allgemeinen Einstellungen ein."""
-    _migrate_legacy_notify_method(hass, entry)
-    _migrate_global_entry_title(hass, entry)
     _migrate_usage_learning_default(hass, entry)
     _migrate_window_fill(hass, entry)
+    _purge_obsolete_keys(hass, entry)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
