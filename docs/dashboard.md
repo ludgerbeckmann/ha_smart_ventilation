@@ -431,6 +431,18 @@ testen.
 Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum in der kompakten
 Ansicht).
 
+**Gesamtübersicht im Dialog (ab 1.23.0):** In der Kopfzeile jedes Raum-Dialogs führt der Knopf mit dem
+Listen-Symbol (links neben dem Pfeil für die Standardansicht) zu einer Gesamtübersicht im selben Dialog:
+oben die Zähler Handeln/Hinweis/OK und die Außenwerte (Temperatur, Luftfeuchtigkeit, absolute
+Luftfeuchtigkeit, Taupunkt), darunter eine kompakte Zeile je Raum (Status-Symbol, Name, Fenster und
+Empfehlung, Temperatur/Luftfeuchtigkeit/CO2, Symbole für Heizung im aktuellen Modus sowie laufenden
+Luftentfeuchter, Klimaanlage und Dusche). Räume mit Handlungsbedarf stehen oben. Tippen auf eine Zeile
+öffnet den Raum-Dialog dieses Raums, der Listen-Knopf dort führt zurück. Die Räume werden automatisch
+gefunden (alle Raum-Sensoren der Integration), eine Karten-Konfiguration ist dafür nicht nötig. Damit kann
+die normale Karte aus dem Dashboard entfernt werden, sobald die Raum-Kacheln das Raum-Popup öffnen.
+Direkt öffnen lässt sich die Übersicht auch per Tipp-Aktion `fire-dom-event` mit
+`smart_climate_overview: true`.
+
 **Raum-Dialog statt Standard-more-info (ab 1.12.0):** Die Karte fängt außerdem das
 Standard-Ereignis `hass-more-info` ab: Öffnet etwas (z. B. eine Bubble-Kachel mit
 `tap_action: more-info`) die Detailansicht eines **Raum-Sensors dieser Integration**, erscheint
