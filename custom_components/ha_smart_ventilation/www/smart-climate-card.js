@@ -1500,6 +1500,99 @@ function scFindRoomEntity(hass, key) {
 
 let scRoomDialog = null;
 
+// ---------------------------------------------------------------------------
+// Gesamtübersicht (im selben Dialog wie die Raumansicht): Zähler, Außenwerte und
+// eine kompakte Zeile je Raum. Tippen auf eine Zeile öffnet den Raum-Dialog; dort
+// führt der Knopf in der Kopfzeile wieder hierher.
+// ---------------------------------------------------------------------------
+const SC_OVERVIEW_KEY = "__overview__";
+const SC_STATUS_ICON = { ok: "mdi:check-circle-outline", hinweis: "mdi:alert-circle-outline", handlungsbedarf: "mdi:alert-outline" };
+
+function scRoomIds(hass) {
+  const out = [];
+  for (const id of Object.keys(hass.states)) {
+    if (!id.startsWith("binary_sensor.")) continue;
+    const a = hass.states[id].attributes;
+    if (a && has(a, "raum") && has(a, "integration_version") && has(a, "raumstatus")) out.push(id);
+  }
+  return out;
+}
+
+// Liefert { html, worst, count } für die Übersicht.
+function scOverview(hass) {
+  const ids = scRoomIds(hass);
+  const rank = { handlungsbedarf: 0, hinweis: 1, ok: 2 };
+  ids.sort((x, y) => {
+    const ax = hass.states[x].attributes;
+    const ay = hass.states[y].attributes;
+    const d = (rank[ax.raumstatus] ?? 2) - (rank[ay.raumstatus] ?? 2);
+    return d || String(ax.raum).localeCompare(String(ay.raum));
+  });
+  const n = { ok: 0, hinweis: 0, handlungsbedarf: 0 };
+  let version = null;
+  let summer = null;
+  const outdoor = { temp: null, hum: null, abs: null, dew: null };
+  let rows = "";
+  for (const id of ids) {
+    const s = hass.states[id];
+    const a = s.attributes;
+    const st = has(rank, a.raumstatus) ? a.raumstatus : "ok";
+    n[st] += 1;
+    if (version === null) version = a.integration_version;
+    if (summer === null && has(a, "sommermodus_an")) summer = a.sommermodus_an;
+    for (const [k, attr] of [["temp", "aussentemperatur"], ["hum", "aussen_luftfeuchtigkeit"], ["abs", "aussen_absolute_luftfeuchtigkeit"], ["dew", "aussen_taupunkt"]]) {
+      if (outdoor[k] === null && has(a, attr) && a[attr] !== null) outdoor[k] = a[attr];
+    }
+    const ents = a.entitaeten || {};
+    const noWindow = has(a, "hat_fenster") && a.hat_fenster === false;
+    const w = ents.fenster && hass.states[ents.fenster] ? hass.states[ents.fenster].state : "";
+    const subs = [];
+    if (!noWindow && (w === "on" || w === "off")) subs.push(w === "on" ? "Fenster offen" : "Fenster zu");
+    const code = s.state === "on" ? (a.offene_gruende || [])[0] || "" : a.schliessgrund_live || "";
+    if (code) subs.push(s.state === "on" ? "Öffnen" : "Schließen");
+    const color = SC_STATUS_COLOR[st];
+    const vals = [];
+    if (a.innentemperatur !== undefined && a.innentemperatur !== null) vals.push(`${roundStr(a.innentemperatur, 1)} °C`);
+    if (has(a, "luftfeuchtigkeit") && a.luftfeuchtigkeit !== null) vals.push(`${roundStr(a.luftfeuchtigkeit, 0)} %`);
+    if (has(a, "co2") && a.co2 !== null) vals.push(`${roundStr(a.co2, 0)} ppm`);
+    const dev = [];
+    if (has(a, "heizung_an")) {
+      const hc = SC_HEATING_COLOR[a.heizung_modus] || SC_COLOR.grey;
+      const label = (HEATING_MODE_LABEL[a.heizung_modus] || {}).text || "Heizung";
+      dev.push(`<span class="ov-dev" style="color:${hc}" title="Heizung: ${esc(label)}"><ha-icon icon="mdi:radiator"></ha-icon></span>`);
+    }
+    if (a.luftentfeuchter_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Luftentfeuchter läuft"><ha-icon icon="mdi:air-humidifier"></ha-icon></span>`);
+    if (a.klimaanlage_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Klimaanlage läuft"><ha-icon icon="mdi:snowflake"></ha-icon></span>`);
+    if (a.duschen_erkannt === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Dusche aktiv"><ha-icon icon="mdi:shower-head"></ha-icon></span>`);
+    rows +=
+      `<div class="ov-row" data-room-id="${esc(id)}" role="button" tabindex="0">` +
+      `<span class="ov-ico" style="--c:${color}"><ha-icon icon="${SC_STATUS_ICON[st]}"></ha-icon></span>` +
+      `<span class="ov-t"><span class="ov-n">${esc(a.raum)}</span>${subs.length ? `<span class="ov-s">${esc(subs.join(" · "))}</span>` : ""}</span>` +
+      `<span class="ov-r"><span class="ov-vals">${vals.map(esc).join(" · ")}</span>${dev.length ? `<span class="ov-devs">${dev.join("")}</span>` : ""}</span>` +
+      `</div>`;
+  }
+  if (!ids.length) return { html: '<div class="sc-room-missing">Keine Räume gefunden.</div>', worst: "ok", count: 0 };
+  const cnt = (cls, label, v, color) =>
+    `<div class="ov-cnt"><i style="background:${color}"></i><b>${v}</b><span>${label}</span></div>`;
+  let head =
+    `<div class="ov-counts">${cnt("r", "Handeln", n.handlungsbedarf, SC_COLOR.red)}${cnt("o", "Hinweis", n.hinweis, SC_COLOR.orange)}${cnt("g", "OK", n.ok, SC_COLOR.green)}</div>`;
+  const tiles = [
+    ["Außen", outdoor.temp !== null ? `${roundStr(outdoor.temp, 1)} °C` : "–"],
+    ["Luftfeuchtigkeit", outdoor.hum !== null ? `${roundStr(outdoor.hum, 0)} %` : "–"],
+    ["Abs. Luftfeuchtigkeit", outdoor.abs !== null ? `${outdoor.abs} g/m³` : "–"],
+    ["Taupunkt", outdoor.dew !== null ? `${roundStr(outdoor.dew, 1)} °C` : "–"],
+  ];
+  head +=
+    `<div class="ov-sec">Außenwerte</div><div class="ov-tiles">${tiles.map(([l, v]) => `<div class="ov-tile"><span>${l}</span><b>${v}</b></div>`).join("")}</div>`;
+  const worst = n.handlungsbedarf ? "handlungsbedarf" : n.hinweis ? "hinweis" : "ok";
+  let foot = "";
+  const meta = [];
+  if (summer !== null) meta.push(summer ? "☀️ Sommermodus" : "❄️ Wintermodus");
+  if (version !== null) meta.push(`Version ${esc(version)}`);
+  if (meta.length) foot = `<div class="ov-foot">${meta.join(" · ")}</div>`;
+  return { html: `${head}<div class="ov-sec">Räume</div><div class="ov-list">${rows}</div>${foot}`, worst, count: ids.length };
+}
+
 // Eigene Thermostat-Bedienung der Heizung (Ist-Temperatur, Sollwert mit -/+,
 // Betriebsmodus und Voreinstellung) über die Standard-Dienste der climate-
 // Entität. Home Assistants eigene Thermostat-Karte blieb im Dialog leer, daher
@@ -1636,6 +1729,7 @@ function openRoomDialog(key) {
   if (!hass) return;
   scCloseRoomDialog();
 
+  const overviewMode = key === SC_OVERVIEW_KEY;
   const overlay = document.createElement("div");
   overlay.className = "sc-room-dialog";
   overlay.setAttribute("role", "dialog");
@@ -1675,6 +1769,24 @@ function openRoomDialog(key) {
     ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
     ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
+    ".sc-room-list{width:56px;height:56px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;--mdc-icon-size:24px;display:flex;align-items:center;justify-content:center}" +
+    "@media (max-width:440px){.sc-room-list{width:48px}}" +
+    ".ov{padding:0 12px 16px}" +
+    ".ov-counts{display:flex;gap:8px;margin:2px 0 4px}" +
+    ".ov-cnt{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;padding:10px 10px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)))}" +
+    ".ov-cnt i{width:9px;height:9px;border-radius:50%;flex:none}.ov-cnt b{font-size:18px;font-weight:600}.ov-cnt span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}" +
+    ".ov-sec{margin:14px 4px 6px;font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--secondary-text-color,#727272)}" +
+    ".ov-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}" +
+    "@media (min-width:520px){.ov-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}" +
+    ".ov-tile{padding:8px 12px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));display:flex;flex-direction:column;gap:2px;min-width:0}" +
+    ".ov-tile span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ov-tile b{font-size:16px;font-weight:600}" +
+    ".ov-list{border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));overflow:hidden}" +
+    ".ov-row{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-row+.ov-row{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
+    ".ov-ico{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.18);color:var(--c);--mdc-icon-size:20px}" +
+    ".ov-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}.ov-n{font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ov-s{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".ov-r{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:55%}.ov-vals{font-size:13px;white-space:nowrap}" +
+    ".ov-devs{display:flex;gap:4px;--mdc-icon-size:18px}.ov-dev{display:inline-flex}" +
+    ".ov-foot{margin:12px 4px 0;font-size:12px;color:var(--secondary-text-color,#727272);text-align:center}" +
     "</style>";
   const panel = document.createElement("div");
   panel.className = "sc-room-panel";
@@ -1693,8 +1805,17 @@ function openRoomDialog(key) {
   std.title = "Standardansicht";
   const titleEl = document.createElement("div");
   titleEl.className = "sc-room-title";
+  const listBtn = document.createElement("button");
+  listBtn.className = "sc-room-list";
+  listBtn.type = "button";
+  listBtn.setAttribute("aria-label", "Übersicht");
+  listBtn.title = "Übersicht";
+  listBtn.innerHTML = '<ha-icon icon="mdi:view-list"></ha-icon>';
   bar.appendChild(titleEl);
-  bar.appendChild(std);
+  if (!overviewMode) {
+    bar.appendChild(listBtn);
+    bar.appendChild(std);
+  }
   bar.appendChild(close);
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";
@@ -1704,7 +1825,7 @@ function openRoomDialog(key) {
   scroll.className = "sc-room-scroll";
   panel.appendChild(scroll);
 
-  const entityId = scFindRoomEntity(hass, key);
+  const entityId = overviewMode ? null : scFindRoomEntity(hass, key);
   let card = null;
   // Thermostat der Heizung liegt im Abschnitt "Raumklima" der Karte; die Karte
   // setzt dieses dauerhafte Element nach jedem Neuzeichnen in ihren Platzhalter.
@@ -1724,7 +1845,19 @@ function openRoomDialog(key) {
       ? `<span class="sc-room-ico" style="--c:${h.color}"><ha-icon icon="${h.icon || "mdi:home-outline"}"></ha-icon></span><h1>${esc(h.name)}</h1><span class="sc-room-chip" style="--c:${h.color}"><i></i><b>${esc(h.label)}</b></span>`
       : "";
   };
-  if (entityId) {
+  let ovSig = "";
+  const renderOverview = (h) => {
+    const o = scOverview(h);
+    if (o.html === ovSig) return;
+    ovSig = o.html;
+    scroll.innerHTML = `<div class="ov">${o.html}</div>`;
+    const label = o.worst === "ok" ? "Alles OK" : o.worst === "hinweis" ? "Hinweise" : "Handlungsbedarf";
+    const col = SC_STATUS_COLOR[o.worst];
+    titleEl.innerHTML = `<span class="sc-room-ico" style="--c:${col}"><ha-icon icon="mdi:view-list"></ha-icon></span><h1>Übersicht</h1><span class="sc-room-chip" style="--c:${col}"><i></i><b>${esc(label)}</b></span>`;
+  };
+  if (overviewMode) {
+    renderOverview(hass);
+  } else if (entityId) {
     card = document.createElement("smart-climate-card");
     card.setConfig({ entities: [entityId], compact_room: true });
     card._headerSink = true;
@@ -1766,6 +1899,18 @@ function openRoomDialog(key) {
   };
   document.addEventListener("keydown", onKey, true);
   close.addEventListener("click", scCloseRoomDialog);
+  listBtn.addEventListener("click", () => openRoomDialog(SC_OVERVIEW_KEY));
+  const openRow = (ev) => {
+    const row = ev.target && ev.target.closest ? ev.target.closest("[data-room-id]") : null;
+    if (row) openRoomDialog(row.dataset.roomId);
+  };
+  scroll.addEventListener("click", (ev) => { if (overviewMode) openRow(ev); });
+  scroll.addEventListener("keydown", (ev) => {
+    if (overviewMode && (ev.key === "Enter" || ev.key === " ")) {
+      ev.preventDefault();
+      openRow(ev);
+    }
+  });
   std.addEventListener("click", () => {
     scCloseRoomDialog();
     if (entityId) {
@@ -1785,6 +1930,7 @@ function openRoomDialog(key) {
   // hass sonst nur vom Dashboard).
   const timer = setInterval(() => {
     const current = root.hass;
+    if (overviewMode && current) renderOverview(current);
     if (card && current && current !== card._hass) card.hass = current;
     if (thermoCtl && current) thermoCtl.update(current);
     syncHeader();
@@ -1881,7 +2027,8 @@ if (!window.__smartClimateRoomDialog) {
   window.addEventListener("hass-more-info", scInterceptMoreInfo, true);
   window.addEventListener("ll-custom", (ev) => {
     const detail = ev && ev.detail;
-    if (detail && detail.smart_climate_room) openRoomDialog(detail.smart_climate_room);
+    if (detail && detail.smart_climate_overview) openRoomDialog(SC_OVERVIEW_KEY);
+    else if (detail && detail.smart_climate_room) openRoomDialog(detail.smart_climate_room);
   });
 }
 
