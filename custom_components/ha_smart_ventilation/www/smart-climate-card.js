@@ -1542,7 +1542,8 @@ function scRoomIds(hass) {
   return out;
 }
 
-// Liefert { html, worst, count } für die Übersicht.
+// Liefert { head, foot, rooms: [{id, html}], worst, count } für die Übersicht
+// (html = Inhalt der Zeile eines Raums ohne Rahmen).
 function scOverview(hass) {
   const ids = scRoomIds(hass);
   const rank = { handlungsbedarf: 0, hinweis: 1, ok: 2 };
@@ -1556,7 +1557,7 @@ function scOverview(hass) {
   let version = null;
   let summer = null;
   const outdoor = { temp: null, hum: null, abs: null, dew: null };
-  let rows = "";
+  const rooms = [];
   for (const id of ids) {
     const s = hass.states[id];
     const a = s.attributes;
@@ -1588,14 +1589,15 @@ function scOverview(hass) {
     if (a.luftentfeuchter_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Luftentfeuchter läuft"><ha-icon icon="mdi:air-humidifier"></ha-icon></span>`);
     if (a.klimaanlage_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Klimaanlage läuft"><ha-icon icon="mdi:snowflake"></ha-icon></span>`);
     if (a.duschen_erkannt === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Dusche aktiv"><ha-icon icon="mdi:shower-head"></ha-icon></span>`);
-    rows +=
-      `<div class="ov-row" data-room-id="${esc(id)}" role="button" tabindex="0">` +
-      `<span class="ov-ico" style="--c:${color}"><ha-icon icon="${SC_STATUS_ICON[st]}"></ha-icon></span>` +
-      `<span class="ov-t"><span class="ov-n">${esc(a.raum)}</span>${subs.length ? `<span class="ov-s">${esc(subs.join(" · "))}</span>` : ""}</span>` +
-      `<span class="ov-r"><span class="ov-vals">${vals.map(esc).join(" · ")}</span>${dev.length ? `<span class="ov-devs">${dev.join("")}</span>` : ""}</span>` +
-      `</div>`;
+    rooms.push({
+      id,
+      html:
+        `<span class="ov-ico" style="--c:${color}"><ha-icon icon="${SC_STATUS_ICON[st]}"></ha-icon></span>` +
+        `<span class="ov-t"><span class="ov-n">${esc(a.raum)}</span>${subs.length ? `<span class="ov-s">${esc(subs.join(" · "))}</span>` : ""}</span>` +
+        `<span class="ov-r"><span class="ov-vals">${vals.map(esc).join(" · ")}</span>${dev.length ? `<span class="ov-devs">${dev.join("")}</span>` : ""}</span>` +
+        `<ha-icon class="ov-chev" icon="mdi:chevron-right"></ha-icon>`,
+    });
   }
-  if (!ids.length) return { html: '<div class="sc-room-missing">Keine Räume gefunden.</div>', worst: "ok", count: 0 };
   const cnt = (cls, label, v, color) =>
     `<div class="ov-cnt"><i style="background:${color}"></i><b>${v}</b><span>${label}</span></div>`;
   let head =
@@ -1614,7 +1616,7 @@ function scOverview(hass) {
   if (summer !== null) meta.push(summer ? "☀️ Sommermodus" : "❄️ Wintermodus");
   if (version !== null) meta.push(`Version ${esc(version)}`);
   if (meta.length) foot = `<div class="ov-foot">${meta.join(" · ")}</div>`;
-  return { html: `${head}<div class="ov-sec">Räume</div><div class="ov-list">${rows}</div>${foot}`, worst, count: ids.length };
+  return { head, foot, rooms, worst, count: ids.length };
 }
 
 // Eigene Thermostat-Bedienung der Heizung (Ist-Temperatur, Sollwert mit -/+,
@@ -1737,6 +1739,7 @@ function scCloseRoomDialog() {
   if (!scRoomDialog) return;
   clearInterval(scRoomDialog.timer);
   if (scRoomDialog.thermoCtl) scRoomDialog.thermoCtl.stop();
+  if (scRoomDialog.cleanup) scRoomDialog.cleanup();
   document.removeEventListener("keydown", scRoomDialog.onKey, true);
   document.removeEventListener("wheel", scRoomDialog.onWheel, true);
   document.removeEventListener("touchstart", scRoomDialog.onLockStart, true);
@@ -1767,17 +1770,12 @@ function openRoomDialog(key) {
     ".sc-room-grip{flex:none;height:18px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
     ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
-    ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 12px 8px}" +
-    ".sc-room-bar{display:flex;align-items:stretch;justify-content:flex-end;gap:10px;padding-bottom:4px}" +
-    ".sc-room-close,.sc-room-std{width:56px;height:56px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));color:var(--primary-text-color,#000);line-height:1;cursor:pointer;flex:none;padding:0}" +
-    ".sc-room-close{font-size:22px;font-weight:600}.sc-room-std{font-size:20px}" +
-    ".sc-room-title{flex:1;min-width:0;display:flex;align-items:center;gap:12px;height:56px;box-sizing:border-box;padding:0 12px 0 8px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)))}" +
-    ".sc-room-ico{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.18);color:var(--c);--mdc-icon-size:22px}" +
-    ".sc-room-title h1{margin:0;flex:1;font-size:16px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
-    ".sc-room-chip{display:inline-flex;align-items:center;gap:6px;flex:none;border-radius:999px;border:1px solid var(--divider-color,rgba(127,127,127,.35));padding:3px 10px 3px 8px;font-size:13px;font-weight:500;color:var(--c)}" +
-    ".sc-room-chip i{width:7px;height:7px;border-radius:50%;background:var(--c);display:block}" +
-    ".sc-room-chip b{font-weight:500}" +
-    "@media (max-width:440px){.sc-room-chip b{display:none}.sc-room-chip{padding:3px 8px}.sc-room-close,.sc-room-std{width:48px}}" +
+    ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:0 8px 2px}" +
+    ".sc-room-close,.sc-room-std,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
+    ".sc-room-title{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 6px;min-height:48px}" +
+    ".sc-room-sub{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.25;color:var(--secondary-text-color,#727272);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    ".sc-room-sub i{width:7px;height:7px;border-radius:50%;background:var(--c);display:block;flex:none}.sc-room-sub b{font-weight:500;color:var(--c)}" +
+    ".sc-room-title h1{margin:0;font-size:20px;font-weight:500;line-height:1.2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
     ".sc-th{padding:0;display:flex;flex-direction:column;gap:8px}" +
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
@@ -1794,8 +1792,6 @@ function openRoomDialog(key) {
     ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
     ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
-    ".sc-room-list{width:56px;height:56px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;--mdc-icon-size:24px;display:flex;align-items:center;justify-content:center}" +
-    "@media (max-width:440px){.sc-room-list{width:48px}}" +
     ".ov{padding:0 12px 16px}" +
     ".ov-counts{display:flex;gap:8px;margin:2px 0 4px}" +
     ".ov-cnt{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;padding:10px 10px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)))}" +
@@ -1806,7 +1802,9 @@ function openRoomDialog(key) {
     ".ov-tile{padding:8px 12px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));display:flex;flex-direction:column;gap:2px;min-width:0}" +
     ".ov-tile span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ov-tile b{font-size:16px;font-weight:600}" +
     ".ov-list{border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));overflow:hidden}" +
-    ".ov-row{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-row+.ov-row{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
+    ".ov-row{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-room+.ov-room{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
+    ".ov-chev{flex:none;color:var(--secondary-text-color,#727272);transition:transform .15s ease;--mdc-icon-size:22px}.ov-room.open .ov-chev{transform:rotate(90deg)}" +
+    ".ov-body{display:none;padding:0 4px 8px}.ov-room.open .ov-body{display:block}" +
     ".ov-ico{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.18);color:var(--c);--mdc-icon-size:20px}" +
     ".ov-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}.ov-n{font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ov-s{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
     ".ov-r{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:55%}.ov-vals{font-size:13px;white-space:nowrap}" +
@@ -1830,18 +1828,19 @@ function openRoomDialog(key) {
   std.title = "Standardansicht";
   const titleEl = document.createElement("div");
   titleEl.className = "sc-room-title";
+  close.setAttribute("aria-label", "Schließen");
   const listBtn = document.createElement("button");
   listBtn.className = "sc-room-list";
   listBtn.type = "button";
   listBtn.setAttribute("aria-label", "Übersicht");
   listBtn.title = "Übersicht";
   listBtn.innerHTML = '<ha-icon icon="mdi:view-list"></ha-icon>';
+  bar.appendChild(close);
   bar.appendChild(titleEl);
   if (!overviewMode) {
     bar.appendChild(listBtn);
     bar.appendChild(std);
   }
-  bar.appendChild(close);
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";
   panel.appendChild(grip);
@@ -1867,18 +1866,87 @@ function openRoomDialog(key) {
     if (sig === headerSig) return;
     headerSig = sig;
     titleEl.innerHTML = h
-      ? `<span class="sc-room-ico" style="--c:${h.color}"><ha-icon icon="${h.icon || "mdi:home-outline"}"></ha-icon></span><h1>${esc(h.name)}</h1>`
+      ? `<div class="sc-room-sub" style="--c:${h.color}"><i></i><b>${esc(h.label)}</b></div><h1>${esc(h.name)}</h1>`
       : "";
   };
-  let ovSig = "";
+  // Übersicht: Räume als aufklappbare Abschnitte (immer nur einer offen). Die
+  // Zeilen werden einzeln aktualisiert, damit ein aufgeklappter Raum samt
+  // Thermostat beim Neuzeichnen nicht zerstört wird.
+  let ovHead = null;
+  let ovList = null;
+  let ovFoot = null;
+  let ovOpen = null;
+  const ovWraps = new Map();
+  let ovCountTxt = "";
+  const closeOv = () => {
+    if (!ovOpen) return;
+    if (ovOpen.thermoCtl) ovOpen.thermoCtl.stop();
+    ovOpen.wrap.classList.remove("open");
+    const rowEl = ovOpen.wrap.querySelector(".ov-row");
+    if (rowEl) rowEl.setAttribute("aria-expanded", "false");
+    ovOpen.body.innerHTML = "";
+    ovOpen = null;
+  };
+  const openOv = (id) => {
+    const wrap = ovWraps.get(id);
+    if (!wrap) return;
+    closeOv();
+    const h = root.hass;
+    const body = wrap.querySelector(".ov-body");
+    const c = document.createElement("smart-climate-card");
+    c.setConfig({ entities: [id], compact_room: true });
+    c._headerSink = true;
+    const st = h && h.states[id];
+    const hid = st && st.attributes.entitaeten ? st.attributes.entitaeten.heizung : null;
+    let ctl = null;
+    if (hid && h.states[hid]) {
+      const th = document.createElement("div");
+      th.className = "sc-room-thermo";
+      c._thermoEl = th;
+      ctl = scBuildThermostat(th, hid, root);
+    }
+    c.hass = h;
+    body.appendChild(c);
+    wrap.classList.add("open");
+    const rowEl = wrap.querySelector(".ov-row");
+    if (rowEl) rowEl.setAttribute("aria-expanded", "true");
+    ovOpen = { id, wrap, body, card: c, thermoCtl: ctl };
+    requestAnimationFrame(() => {
+      scroll.scrollTop += wrap.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 8;
+    });
+  };
   const renderOverview = (h) => {
     const o = scOverview(h);
-    if (o.html === ovSig) return;
-    ovSig = o.html;
-    scroll.innerHTML = `<div class="ov">${o.html}</div>`;
-    const label = o.worst === "ok" ? "Alles OK" : o.worst === "hinweis" ? "Hinweise" : "Handlungsbedarf";
-    const col = SC_STATUS_COLOR[o.worst];
-    titleEl.innerHTML = `<span class="sc-room-ico" style="--c:${col}"><ha-icon icon="mdi:view-list"></ha-icon></span><h1>Übersicht</h1><span class="sc-room-chip" style="--c:${col}"><i></i><b>${esc(label)}</b></span>`;
+    if (!ovHead) {
+      scroll.innerHTML = '<div class="ov"><div class="ov-headbox"></div><div class="ov-sec">Räume</div><div class="ov-list"></div><div class="ov-footbox"></div></div>';
+      ovHead = scroll.querySelector(".ov-headbox");
+      ovList = scroll.querySelector(".ov-list");
+      ovFoot = scroll.querySelector(".ov-footbox");
+    }
+    if (ovHead._sig !== o.head) { ovHead._sig = o.head; ovHead.innerHTML = o.head || ""; }
+    if (ovFoot._sig !== o.foot) { ovFoot._sig = o.foot; ovFoot.innerHTML = o.foot || ""; }
+    const txt = `<div class="sc-room-sub"><b style="color:inherit;font-weight:400">${o.count} ${o.count === 1 ? "Raum" : "Räume"}</b></div><h1>Übersicht</h1>`;
+    if (txt !== ovCountTxt) { ovCountTxt = txt; titleEl.innerHTML = txt; }
+    const want = o.rooms.map((r) => r.id);
+    for (const [id, w] of [...ovWraps]) {
+      if (!want.includes(id)) {
+        if (ovOpen && ovOpen.id === id) closeOv();
+        w.remove();
+        ovWraps.delete(id);
+      }
+    }
+    o.rooms.forEach((r, i) => {
+      let w = ovWraps.get(r.id);
+      if (!w) {
+        w = document.createElement("div");
+        w.className = "ov-room";
+        w.dataset.roomId = r.id;
+        w.innerHTML = '<div class="ov-row" role="button" tabindex="0" aria-expanded="false"></div><div class="ov-body"></div>';
+        ovWraps.set(r.id, w);
+      }
+      if (w._sig !== r.html) { w._sig = r.html; w.querySelector(".ov-row").innerHTML = r.html; }
+      if (ovList.children[i] !== w) ovList.insertBefore(w, ovList.children[i] || null);
+    });
   };
   if (overviewMode) {
     renderOverview(hass);
@@ -1925,15 +1993,19 @@ function openRoomDialog(key) {
   document.addEventListener("keydown", onKey, true);
   close.addEventListener("click", scCloseRoomDialog);
   listBtn.addEventListener("click", () => openRoomDialog(SC_OVERVIEW_KEY));
-  const openRow = (ev) => {
-    const row = ev.target && ev.target.closest ? ev.target.closest("[data-room-id]") : null;
-    if (row) openRoomDialog(row.dataset.roomId);
+  const toggleRow = (ev) => {
+    const rowEl = ev.target && ev.target.closest ? ev.target.closest(".ov-row") : null;
+    if (!rowEl) return;
+    const wrap = rowEl.closest(".ov-room");
+    if (!wrap) return;
+    if (ovOpen && ovOpen.id === wrap.dataset.roomId) closeOv();
+    else openOv(wrap.dataset.roomId);
   };
-  scroll.addEventListener("click", (ev) => { if (overviewMode) openRow(ev); });
+  scroll.addEventListener("click", (ev) => { if (overviewMode) toggleRow(ev); });
   scroll.addEventListener("keydown", (ev) => {
-    if (overviewMode && (ev.key === "Enter" || ev.key === " ")) {
+    if (overviewMode && (ev.key === "Enter" || ev.key === " ") && ev.target && ev.target.classList && ev.target.classList.contains("ov-row")) {
       ev.preventDefault();
-      openRow(ev);
+      toggleRow(ev);
     }
   });
   std.addEventListener("click", () => {
@@ -1955,7 +2027,13 @@ function openRoomDialog(key) {
   // hass sonst nur vom Dashboard).
   const timer = setInterval(() => {
     const current = root.hass;
-    if (overviewMode && current) renderOverview(current);
+    if (overviewMode && current) {
+      renderOverview(current);
+      if (ovOpen) {
+        if (current !== ovOpen.card._hass) ovOpen.card.hass = current;
+        if (ovOpen.thermoCtl) ovOpen.thermoCtl.update(current);
+      }
+    }
     if (card && current && current !== card._hass) card.hass = current;
     if (thermoCtl && current) thermoCtl.update(current);
     syncHeader();
@@ -2044,7 +2122,7 @@ function openRoomDialog(key) {
   document.addEventListener("wheel", onWheel, { capture: true, passive: false });
   document.addEventListener("touchstart", onLockStart, { capture: true, passive: true });
   document.addEventListener("touchmove", onLockMove, { capture: true, passive: false });
-  scRoomDialog = { overlay, thermo, thermoCtl, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
+  scRoomDialog = { overlay, thermo, thermoCtl, cleanup: closeOv, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
 }
 
 if (!window.__smartClimateRoomDialog) {
