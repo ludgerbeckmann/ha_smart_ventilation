@@ -460,7 +460,7 @@ angetippt wird (Suche, andere Karten, Logbuch), nicht für andere Entitäten. Da
 (Verlauf, Rohattribute) bleibt über den runden **↗-Knopf** neben dem Schließen-Kreuz erreichbar.
 Hat der Raum eine Heizung, steht im Abschnitt **Raumklima** (unter Temperatur, Luftfeuchtigkeit,
 Abs. Luftfeuchtigkeit und Taupunkt) eine eigene **Thermostat-Bedienung**:
-Zustand ("Leerlauf"/"Heizt"; die Ist-Temperatur steht in der Zeile "Temperatur"), der Sollwert groß mit -/+ (im Schritt der
+der Sollwert groß mit -/+ (rot, solange die Heizung heizt; die Ist-Temperatur steht in der Zeile "Temperatur"; im Schritt der
 Entität, begrenzt auf deren Min/Max; gesendet wird 0,7 s nach dem letzten Tippen), Chips für den
 Betriebsmodus und die Voreinstellung (aus den von der Entität gemeldeten `hvac_modes`/
 `preset_modes`; Dienste `climate.set_temperature`/`set_hvac_mode`/`set_preset_mode`). Home
