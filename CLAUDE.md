@@ -3734,6 +3734,8 @@ Nutzer (Screenshot): Bei jedem HA-Neustart kommt beim Runterfahren eine Push (Wo
 
 **155. Link "Standardansicht" wandert ans Ende des Raum-Popups (1.24.1).** Nutzer: Weil neben der Übersicht nun auch die Standardansicht (More-Info) als Verlinkung in der Titelzeile steht, soll sie ganz unten im Popup stehen. Umsetzung nur in der Karte: `std` ist jetzt ein Textlink in `.sc-room-stdbox` unter der Compact-Karte (nur im Raum-Modus, nicht in der Übersicht). Dashboard (außerhalb des Repos, per HA-MCP): Bubble-Card `button_action.tap_action` = `more-info` mit dem Raum-Sensor (`binary_sensor.luften_empfohlen_<raum>`), das `tap_action` der Überschrift entfernt; zuerst nur Badezimmer, Rest nach Test. Offen: ob die Bubble-Card das More-Info-Ereignis wie erwartet auslöst (Lektion 129). Lektion: Dashboard-Schreibzugriffe über HA-MCP erst nach Lesen der Best-Practice-Anleitung (Key, rotiert stündlich) und mit config_hash.
 
+**156. Standardansicht wieder als Icon oben rechts (1.24.2).** Nutzer: Der Link am Ende des Popups (Lektion 155) soll doch wieder als Icon oben rechts stehen. Umsetzung nur in der Karte: `std` (↗, 44 px, rahmenlos) hängt nach dem Listen-Knopf in der Kopfzeile, `.sc-room-stdbox` entfällt. Lektion: Eine Platzierung, die der Nutzer in Worten vorschlägt, erst am Gerät beurteilen lassen - zwei Umbauten hintereinander sind der Preis, wenn man sie ohne Vorschau umsetzt.
+
 ## Versionierung & Release
 
 - Semantic Versioning in `manifest.json` (`version`): Patch für

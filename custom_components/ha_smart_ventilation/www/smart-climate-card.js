@@ -1771,9 +1771,7 @@ function openRoomDialog(key) {
     ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
     ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:0 8px 2px}" +
-    ".sc-room-stdbox{display:flex;justify-content:center;padding:4px 12px 16px}" +
-    ".sc-room-std{background:none;border:0;padding:10px 14px;font:inherit;font-size:14px;color:var(--primary-color,#03a9f4);cursor:pointer;text-decoration:underline}" +
-    ".sc-room-close,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
+    ".sc-room-close,.sc-room-std,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
     ".sc-room-title{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 6px;min-height:48px}" +
     ".sc-room-sub{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.25;color:var(--secondary-text-color,#727272);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
     ".sc-room-sub i{width:7px;height:7px;border-radius:50%;background:var(--c);display:block;flex:none}.sc-room-sub b{font-weight:500;color:var(--c)}" +
@@ -1825,9 +1823,9 @@ function openRoomDialog(key) {
   const std = document.createElement("button");
   std.className = "sc-room-std";
   std.type = "button";
-  std.textContent = "Standardansicht";
+  std.textContent = "\u2197";
   std.setAttribute("aria-label", "Standardansicht");
-  std.title = "Standardansicht (Home-Assistant-Detailfenster)";
+  std.title = "Standardansicht";
   const titleEl = document.createElement("div");
   titleEl.className = "sc-room-title";
   close.setAttribute("aria-label", "Schließen");
@@ -1841,6 +1839,7 @@ function openRoomDialog(key) {
   bar.appendChild(titleEl);
   if (!overviewMode) {
     bar.appendChild(listBtn);
+    bar.appendChild(std);
   }
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";
@@ -1958,10 +1957,6 @@ function openRoomDialog(key) {
     if (hasHeating) card._thermoEl = thermo;
     card.hass = hass;
     scroll.appendChild(card);
-    const stdBox = document.createElement("div");
-    stdBox.className = "sc-room-stdbox";
-    stdBox.appendChild(std);
-    scroll.appendChild(stdBox);
     syncHeader();
   } else {
     const missing = document.createElement("div");
