@@ -268,7 +268,7 @@ function crCompactRoom(c) {
     }
     const rangeText = rangeOk ? `<span class="cr-s">${crFmt(o.lo)} – ${crFmt(o.hi)} ${o.unit}</span>` : "";
     const valueHtml = Number.isNaN(v) ? "–" : esc(o.valueText);
-    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}</div><span class="cr-v" style="color:${color}">${valueHtml}</span></div>`;
+    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}</div><span class="cr-v${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
   };
 
   const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
@@ -325,7 +325,7 @@ function crCompactRoom(c) {
   };
   vals += gauge({
     icon: "mdi:thermometer", label: "Temperatur", entityId: ents.innentemperatur,
-    value: tempVal, valueText: `${roundStr(tempVal, 1)} °C`, lo: c.tempLo, hi: c.tempHi, unit: "°C",
+    value: tempVal, valueText: `${roundStr(tempVal, 1)} °C`, lo: c.tempLo, hi: c.tempHi, unit: "°C", big: true,
     color: colorFor(tempVal, c.tempLo, c.tempHi, SC_COLOR.blue, SC_COLOR.red),
   });
   if (has(a, "luftfeuchtigkeit")) {
@@ -333,7 +333,7 @@ function crCompactRoom(c) {
     const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
     vals += gauge({
       icon: "mdi:water-percent", label: "Luftfeuchtigkeit", entityId: ents.luftfeuchtigkeit,
-      value: a.luftfeuchtigkeit, valueText: `${roundStr(a.luftfeuchtigkeit, 0)} %`, lo, hi, unit: "%",
+      value: a.luftfeuchtigkeit, valueText: `${roundStr(a.luftfeuchtigkeit, 0)} %`, lo, hi, unit: "%", big: true,
       color: colorFor(a.luftfeuchtigkeit, lo, hi, SC_COLOR.orange, SC_COLOR.blue),
     });
   }
@@ -415,7 +415,9 @@ function crCompactRoom(c) {
     if (has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) {
       const planBlock = planHtml(a.heizung_tagesplan);
       if (planBlock) {
-        dev += `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-p">Heizplan heute</div>${planBlock}</div></div>`;
+        const planOpen = c.planOpen === true;
+        dev += `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-planfold${planOpen ? " open" : ""}" data-plan-room="${esc(a.raum)}">` +
+          `<div class="cr-plansum" data-plan-toggle role="button" tabindex="0" aria-expanded="${planOpen}"><span class="cr-p">Heizplan</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></div>${planBlock}</div></div></div>`;
       }
     }
   }
@@ -552,6 +554,20 @@ class SmartClimateCard extends HTMLElement {
       this._content.addEventListener("click", (ev) => {
         const target = ev.target && ev.target.closest ? ev.target : null;
         if (!target) return;
+        // Heizplan: Pfeil klappt die Wechselzeiten auf/zu (Zustand je Raum).
+        const planSum = target.closest("[data-plan-toggle]");
+        if (planSum && this._planOpen) {
+          const fold = planSum.closest(".cr-planfold");
+          if (fold) {
+            const open = !fold.classList.contains("open");
+            fold.classList.toggle("open", open);
+            planSum.setAttribute("aria-expanded", String(open));
+            const room = fold.dataset.planRoom;
+            if (open) this._planOpen.add(room);
+            else this._planOpen.delete(room);
+          }
+          return;
+        }
         // Klick auf einen Wert/ein Gerät: Detailansicht (more-info) der
         // zugehörigen Entität öffnen (Standard-Ereignis von Home Assistant).
         const entityEl = target.closest("[data-entity]");
@@ -576,6 +592,8 @@ class SmartClimateCard extends HTMLElement {
     // Aufgeklappte (nicht mehr mit "..." gekürzte) Textzellen: Schlüssel
     // "<Raum>|<Zelle>". Überlebt Renders wie roomOpenState.
     if (!this._expandedCells) this._expandedCells = new Set();
+    // Räume, deren Heizplan-Legende (Wechselzeiten) im Raum-Dialog aufgeklappt ist.
+    if (!this._planOpen) this._planOpen = new Set();
     // Merkt sich je Raum den zuletzt gerenderten Status UND den aktuellen
     // Auf-/Zu-Zustand - siehe Verwendung weiter unten. Überlebt über
     // mehrere Renders hinweg (nicht Teil von innerHTML), aber nicht über
@@ -1016,6 +1034,7 @@ class SmartClimateCard extends HTMLElement {
             windowChangedTime, hasLiveReason, statusText, changedTime, highlightClass,
             reasonText: reasonCodes.map((cd) => reasonSentence(cd, s.state === "on", false)).join(" "),
             highlightTemp, highlightHum, highlightCo2, absOpenGate, tempLo, tempHi, notifyOpen,
+            planOpen: this._planOpen.has(a.raum),
             headerOut: this._headerSink ? headerOut : null,
             thermo: !!this._thermoEl,
           }),
@@ -1319,6 +1338,10 @@ class SmartClimateCard extends HTMLElement {
       .plan-t { display: inline-block; margin-right: 12px; white-space: nowrap; }
       .plan-dot { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; }
       .cr-plan .cr-t { min-width: 0; }
+      .cr-plansum { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+      .cr-planfold.open .cr-chev { transform: rotate(90deg); }
+      .cr-planfold:not(.open) .plan-times { display: none; }
+      .cr-v.cr-big { font-size: 1.6em; line-height: 1.1; }
       .cr-notify > summary { list-style: none; cursor: pointer; }
       .cr-notify > summary::-webkit-details-marker { display: none; }
       .cr-fold { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
