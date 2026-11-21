@@ -492,9 +492,9 @@ Taupunkt und absolute Luftfeuchtigkeit bleiben neutral, ein fehlender Wert bleib
 
 **Heizungsfarben (ab 1.22.1):** Preset-Chips, Heizungssymbol und Heizplan nutzen dieselben Farben wie der Ventil-Balken der Bubble-Card: Komfort `--state-climate-heat-color`, Standby `--warning-color` (gelb), Eco/Nacht `--state-climate-auto-color` (grün), Gebäudeschutz `--state-climate-cool-color`. Der aktive Preset-Chip trägt die Farbe seines Modus (erkannt am Preset-Namen des Geräts).
 
-**Heizplan heute (ab 1.22.0):** Hat ein Raum eine Heizung und ist der Heizungs-Zeitplan und/oder das
+**Heizplan (ab 1.22.0):** Hat ein Raum eine Heizung und ist der Heizungs-Zeitplan und/oder das
 Gelernte aktiv, zeigt die Karte den geplanten Tagesverlauf als Farbbalken über 0-24 Uhr - im Raum-Dialog als
-Zeile "Heizplan heute" unter der Heizung, in der normalen Karte als Zeile "Heizplan" in der Geräte-Tabelle. Die
+Zeile "Heizplan" unter der Heizung, in der normalen Karte als Zeile "Heizplan" in der Geräte-Tabelle. Die
 Farben: **Komfort** orange, **Standby** blau, **Eco (Nacht)** dunkles Blau/Violett; ein schraffierter
 Abschnitt bedeutet "kein Plan" (z. B. Stunden, die noch nicht genug gelernt sind, ohne Zeitplan). Eine
 schwarze Marke zeigt die aktuelle Uhrzeit, darunter stehen die Skala und die Wechselzeiten.
