@@ -295,7 +295,7 @@ function crCompactRoom(c) {
       title: "Fenster",
       entityId: c.windowEntity,
       sub: known ? `${open ? "geöffnet" : "geschlossen"}${c.windowChangedTime !== "–" ? ` seit ${esc(c.windowChangedTime)}` : ""}` : "unbekannt",
-      right: known ? (open ? "Offen" : "Zu") : "–",
+      right: known ? (open ? "Geöffnet" : "Geschlossen") : "–",
     });
     vent += row({
       icon: "mdi:bell-outline",
@@ -1605,7 +1605,6 @@ const SC_PRESET_LABEL = {
   comfort: "Komfort", eco: "Eco", home: "Zuhause", sleep: "Schlafen", away: "Abwesend",
   boost: "Boost", activity: "Aktivität", none: "Keine", building_protection: "Gebäudeschutz",
 };
-const SC_ACTION_LABEL = { heating: "Heizt", idle: "Leerlauf", off: "Aus", cooling: "Kühlt", drying: "Trocknet", fan: "Lüfter" };
 
 function scLabel(map, key) {
   if (has(map, key)) return map[key];
@@ -1636,11 +1635,12 @@ function scBuildThermostat(container, heatingId, root) {
     sig = next;
     const unavailable = st.state === "unavailable" || st.state === "unknown";
     let html = '<div class="sc-th">';
-    const action = a.hvac_action ? scLabel(SC_ACTION_LABEL, a.hvac_action) : scLabel(SC_HVAC_LABEL, st.state);
-    // Die Ist-Temperatur steht in der Zeile "Temperatur" darüber, hier nur Sollwert und Zustand.
-    html += `<div class="sc-th-top"><span>Heizung Soll</span><span>${unavailable ? "Nicht verfügbar" : esc(action)}</span></div>`;
+    // Die Ist-Temperatur steht in der Zeile "Temperatur" darüber; Bezeichnung und Zustand
+    // (Heizt/Leerlauf) entfallen, der Sollwert ist rot, solange die Heizung heizt.
+    const heating = a.hvac_action === "heating";
+    if (unavailable) html += '<div class="sc-th-top"><span>Heizung nicht verfügbar</span></div>';
     if (!unavailable && target !== undefined && target !== null) {
-      html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
+      html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val${heating ? " heating" : ""}">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
     }
     const chips = (list, active, kind, map) =>
       `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
@@ -1758,6 +1758,7 @@ function openRoomDialog(key) {
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
     ".sc-th-val{font-size:40px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
+    ".sc-th-val.heating{color:var(--state-climate-heat-color,var(--error-color,#f44336))}" +
     ".sc-th-val small{font-size:18px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
     ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--divider-color,#999);background:transparent;color:inherit;font-size:26px;line-height:1;cursor:pointer}" +
     ".sc-th-chips{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center}" +
