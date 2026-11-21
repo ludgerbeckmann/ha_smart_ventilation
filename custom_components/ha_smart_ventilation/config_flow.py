@@ -127,6 +127,8 @@ from .const import (
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_PRESET_MODE,
+    CONF_HEATING_IGNORE_WINDOW,
+    CONF_HEATING_WINDOW_ENTITY,
     CONF_HEATING_USE_TEMP_SOURCE,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -306,6 +308,7 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_DEHUMIDIFIER_TANK_FULL_ENTITY,
     CONF_AC_ENTITY,
     CONF_HEATING_ENTITY,
+    CONF_HEATING_WINDOW_ENTITY,
     CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_TRIGGER_ENTITY,
     CONF_USAGE_ENTITIES,
@@ -1106,6 +1109,7 @@ def _build_room_schema(
         [
             defaults.get(CONF_WINDOW_ENTITY),
             defaults.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
+            defaults.get(CONF_HEATING_WINDOW_ENTITY),
         ],
     )
     shutter_include = _area_include_entities(
@@ -1444,6 +1448,22 @@ def _build_room_schema(
                         heating_preset_night_marker: heating_preset_night_sel,
                         heating_preset_building_protection_marker: heating_preset_building_protection_sel,
                     }
+                ),
+                vol.Optional(
+                    CONF_HEATING_IGNORE_WINDOW,
+                    default=defaults.get(CONF_HEATING_IGNORE_WINDOW, False),
+                ): selector.BooleanSelector(),
+                _entity_marker(
+                    CONF_HEATING_WINDOW_ENTITY, defaults, required=False
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="binary_sensor",
+                        **(
+                            {"include_entities": window_include}
+                            if window_include
+                            else {}
+                        ),
+                    )
                 ),
                 _entity_marker(
                     CONF_HEATING_PRESENCE_ENTITIES, defaults, required=False

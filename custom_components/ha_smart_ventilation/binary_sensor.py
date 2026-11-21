@@ -108,6 +108,8 @@ from .const import (
     CONF_HEATING_STANDBY_TEMP,
     CONF_HEATING_THRESHOLD_TEMP,
     CONF_HEATING_USE_PRESET_MODE,
+    CONF_HEATING_IGNORE_WINDOW,
+    CONF_HEATING_WINDOW_ENTITY,
     CONF_HEATING_USE_TEMP_SOURCE,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_NO_WINDOW,
@@ -1252,6 +1254,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             CONF_HUMIDITY_ENTITY,
             CONF_CO2_ENTITY,
             CONF_WINDOW_ENTITY,
+            CONF_HEATING_WINDOW_ENTITY,
             CONF_POWER_ENTITY,
         ):
             value = self._config.get(key)
@@ -1864,6 +1867,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         if state is None or state.state not in ("on", "off"):
             return False
         return state.state == "on"
+
+    def _is_heating_window_open(self) -> bool:
+        """Fenster-Pause der Heizung (bestätigt "offen").
+
+        Raumoption CONF_HEATING_IGNORE_WINDOW schaltet die Pause ganz ab
+        (z. B. Hebeschiebetür, deren Kontakt auch "entriegelt" als offen
+        meldet). Ist ein eigener Heizungs-Fensterkontakt gewählt, gilt nur
+        er; sonst der normale Fensterkontakt des Raums. Unbekannt/nicht
+        verfügbar zählt wie bisher als nicht offen. Lüftungsempfehlung und
+        Anzeige nutzen weiter _is_window_confirmed_open()."""
+        if self._config.get(CONF_HEATING_IGNORE_WINDOW, False):
+            return False
+        entity_id = self._config.get(CONF_HEATING_WINDOW_ENTITY)
+        if not entity_id:
+            return self._is_window_confirmed_open()
+        state = self.hass.states.get(entity_id)
+        return state is not None and state.state == "on"
 
     def _is_heating_presence_away(self) -> bool:
         """True nur, wenn für die Heizung mindestens eine Anwesenheits-
@@ -2983,7 +3003,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Heizung aus, ohne einen Zyklus Verzögerung.
         heating_summer_mode_active = want_summer_mode
 
-        window_confirmed_open = self._is_window_confirmed_open()
+        window_confirmed_open = self._is_heating_window_open()
         heating_presence_away = self._is_heating_presence_away()
         heating_free_day = self._is_heating_comfort_blocked_by_sensor()
         heating_schedule_enabled = self._effective(CONF_HEATING_SCHEDULE_ENABLED, False)

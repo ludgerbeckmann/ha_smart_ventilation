@@ -35,7 +35,12 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   typisch. Zwei echte Pausen (Fenster offen, Sommerbetrieb aktiv - beide
   siehe unten) haben dabei immer höchste Priorität und schalten sofort auf
   **Gebäudeschutz** bzw. **Standby** (siehe unten), unabhängig von allem
-  anderen weiter unten. Abwesenheit (siehe unten) ist dagegen **keine**
+  anderen weiter unten. Die Fenster-Pause lässt sich pro Raum anpassen (ab 1.25.0,
+  Abschnitt "Heizung" im Raum-Formular): "Fenster pausiert Heizung nicht" schaltet
+  sie für den Raum ganz ab (z. B. Hebeschiebetür, deren Kontakt auch "entriegelt"
+  als offen meldet), und ein optionaler "Fensterkontakt (nur Heizung)" ersetzt für
+  die Heizung den normalen Fensterkontakt (z. B. ein zweiter Kontakt für "wirklich
+  aufgeschoben"). Lüftungsempfehlung und Anzeige bleiben unverändert. Abwesenheit (siehe unten) ist dagegen **keine**
   eigene Pause, sondern verhindert ausschließlich den Wechsel in **Comfort**
   - ein bereits anderweitig ermittelter Standby-/Nacht-/Gebäudeschutz-Modus
   bleibt davon unberührt.
