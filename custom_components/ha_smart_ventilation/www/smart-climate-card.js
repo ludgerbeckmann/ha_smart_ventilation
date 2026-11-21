@@ -1261,7 +1261,7 @@ class SmartClimateCard extends HTMLElement {
 
       /* Kompakte Raumansicht (Raum-Dialog, compact_room): Home-Assistant-Stil */
       ha-card.sc-compact { box-shadow: none; border: none; background: transparent; }
-      ha-card.sc-compact .smart-climate-card-content { padding: 14px 12px 10px; }
+      ha-card.sc-compact .smart-climate-card-content { padding: 4px 12px 10px; }
       .cr-top { display: flex; align-items: center; gap: 8px; margin: 0 4px 4px; padding-right: 40px; }
       .cr-top h1 { flex: 1; margin: 0; font-size: 1.35em; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
       .cr-hchip {
@@ -1272,9 +1272,10 @@ class SmartClimateCard extends HTMLElement {
       }
       .cr-hchip i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); display: block; }
       .cr-h {
-        margin: 12px 4px 4px; font-size: 0.78em; font-weight: 500; letter-spacing: 0.08em;
+        margin: 12px 4px 4px; font-size: 0.9em; font-weight: 500; letter-spacing: 0.08em;
         text-transform: uppercase; color: var(--secondary-text-color, #727272);
       }
+      ha-card.sc-compact .smart-climate-card-content > .cr-h:first-child { margin-top: 6px; }
       .cr-sec { background: var(--secondary-background-color, rgba(127, 127, 127, 0.08)); border-radius: 14px; padding: 0 10px; }
       .cr-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
       .cr-row:last-child { border-bottom: 0; }
@@ -1744,7 +1745,7 @@ function openRoomDialog(key) {
     ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
     ".sc-room-bar{flex:none;position:relative;z-index:2;padding:0 12px 8px}" +
-    ".sc-room-bar{display:flex;align-items:stretch;justify-content:flex-end;gap:10px;padding-bottom:8px}" +
+    ".sc-room-bar{display:flex;align-items:stretch;justify-content:flex-end;gap:10px;padding-bottom:4px}" +
     ".sc-room-close,.sc-room-std{width:56px;height:56px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));color:var(--primary-text-color,#000);line-height:1;cursor:pointer;flex:none;padding:0}" +
     ".sc-room-close{font-size:22px;font-weight:600}.sc-room-std{font-size:20px}" +
     ".sc-room-title{flex:1;min-width:0;display:flex;align-items:center;gap:12px;height:56px;box-sizing:border-box;padding:0 12px 0 8px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)))}" +
@@ -1843,7 +1844,7 @@ function openRoomDialog(key) {
     if (sig === headerSig) return;
     headerSig = sig;
     titleEl.innerHTML = h
-      ? `<span class="sc-room-ico" style="--c:${h.color}"><ha-icon icon="${h.icon || "mdi:home-outline"}"></ha-icon></span><h1>${esc(h.name)}</h1><span class="sc-room-chip" style="--c:${h.color}"><i></i><b>${esc(h.label)}</b></span>`
+      ? `<span class="sc-room-ico" style="--c:${h.color}"><ha-icon icon="${h.icon || "mdi:home-outline"}"></ha-icon></span><h1>${esc(h.name)}</h1>`
       : "";
   };
   let ovSig = "";
