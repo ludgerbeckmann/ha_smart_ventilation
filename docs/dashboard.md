@@ -437,7 +437,9 @@ oben die Zähler Handeln/Hinweis/OK und die Außenwerte (Temperatur, Luftfeuchti
 Luftfeuchtigkeit, Taupunkt), darunter eine kompakte Zeile je Raum (Status-Symbol, Name, Fenster und
 Empfehlung, Temperatur/Luftfeuchtigkeit/CO2, Symbole für Heizung im aktuellen Modus sowie laufenden
 Luftentfeuchter, Klimaanlage und Dusche). Räume mit Handlungsbedarf stehen oben. Tippen auf eine Zeile
-öffnet den Raum-Dialog dieses Raums, der Listen-Knopf dort führt zurück. Die Räume werden automatisch
+klappt den Raum auf (ab 1.24.0, mit Pfeil rechts): darunter erscheint der volle Inhalt des Raum-Dialogs
+(Raumklima mit Thermostat, Lüften, Geräte mit Heizplan, Benachrichtigungen). Es ist immer nur ein Raum
+offen; ein zweiter Tipp klappt ihn wieder zu. Die Räume werden automatisch
 gefunden (alle Raum-Sensoren der Integration), eine Karten-Konfiguration ist dafür nicht nötig. Damit kann
 die normale Karte aus dem Dashboard entfernt werden, sobald die Raum-Kacheln das Raum-Popup öffnen.
 Direkt öffnen lässt sich die Übersicht auch per Tipp-Aktion `fire-dom-event` mit
@@ -473,8 +475,10 @@ stehen in der Spalte "Status/Grund" der Geräte-Tabelle der normalen Karte. Eine
 Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "Manuelle
 Übersteuerung").
 
-**Kopfzeile und Reihenfolge (ab 1.14.3):** Der Raumname mit dem Statuschip (OK/Hinweis/Handlungsbedarf)
-steht in der Kopfzeile neben den beiden runden Knöpfen. Danach folgen die Abschnitte **Raumklima**
+**Kopfzeile und Reihenfolge (ab 1.24.0):** Schlanke Kopfzeile im Home-Assistant-Stil: links das
+Schließen-Kreuz, in der Mitte eine kleine graue Zeile mit dem Status (Punkt in Grün/Orange/Rot und
+OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos die Knöpfe für die Übersicht
+und die Standardansicht. Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Danach folgen die Abschnitte **Raumklima**
 (Messwerte plus Heizungssteuerung, statt "Messwerte"), **Lüften**, **Geräte** und **Benachrichtigungen**.
 Räume ohne Heizung zeigen im Raumklima keinen Steuerblock.
 
