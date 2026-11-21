@@ -475,6 +475,8 @@ stehen in der Spalte "Status/Grund" der Geräte-Tabelle der normalen Karte. Eine
 Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "Manuelle
 Übersteuerung").
 
+**Messbalken (ab 1.24.3):** Die Balken für Temperatur, Luftfeuchtigkeit und CO2 sind gleich lang, weil die Wertspalte rechts eine feste Breite hat.
+
 **Kopfzeile und Reihenfolge (ab 1.24.0):** Schlanke Kopfzeile im Home-Assistant-Stil: links das
 Schließen-Kreuz, in der Mitte eine kleine graue Zeile mit dem Status (Punkt in Grün/Orange/Rot und
 OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos die Knöpfe für die Übersicht und die Standardansicht (↗). Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Der Knopf ↗ öffnet das

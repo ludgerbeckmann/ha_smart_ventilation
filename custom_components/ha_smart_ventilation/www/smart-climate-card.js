@@ -268,7 +268,7 @@ function crCompactRoom(c) {
     }
     const rangeText = rangeOk ? `<span class="cr-s">${crFmt(o.lo)} – ${crFmt(o.hi)} ${o.unit}</span>` : "";
     const valueHtml = Number.isNaN(v) ? "–" : esc(o.valueText);
-    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}</div><span class="cr-v${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
+    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}</div><span class="cr-v cr-gv${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
   };
 
   const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
@@ -1342,6 +1342,8 @@ class SmartClimateCard extends HTMLElement {
       .cr-planfold.open .cr-chev { transform: rotate(90deg); }
       .cr-planfold:not(.open) .plan-times { display: none; }
       .cr-v.cr-big { font-size: 1.6em; line-height: 1.1; }
+      .cr-v.cr-gv { flex: none; width: 6.4em; text-align: right; }
+      .cr-v.cr-gv.cr-big { width: 4em; }
       .cr-notify > summary { list-style: none; cursor: pointer; }
       .cr-notify > summary::-webkit-details-marker { display: none; }
       .cr-fold { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
@@ -1764,7 +1766,7 @@ function openRoomDialog(key) {
   overlay.innerHTML =
     "<style>" +
     ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),20px) - 12px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out;will-change:transform}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),20px) - 12px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out}" +
     "@keyframes sc-up{from{transform:translateY(100%)}to{transform:none}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
     ".sc-room-grip{flex:none;height:18px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
