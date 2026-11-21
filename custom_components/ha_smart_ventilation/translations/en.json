@@ -129,7 +129,9 @@
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
               "heating_free_day_enabled": "Use holiday/workday sensor",
-              "room_type": "Room type"
+              "room_type": "Room type",
+              "heating_ignore_window": "Window does not pause heating",
+              "heating_window_entity": "Window contact (heating only)"
             },
             "data_description": {
               "heating_type": "Optional, this room only: radiators react quickly, underfloor heating is slow. With a heating type, comfort (schedule and learned times) starts the pre-heat time earlier; standby, night and building protection are not brought forward. Tip: with underfloor heating keep the standby setpoint only slightly below comfort, a deep setback hardly pays off because of the inertia. Without a value there is no pre-heating.",
@@ -148,7 +150,9 @@
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
               "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}",
-              "room_type": "Optional, this room only: the room type presets the comfort/standby/night temperature and the start times of the heating schedule (values are in \"Smart Climate options\", section \"Room types\", and can be adjusted there). A value set in this room takes precedence over the room type, the room type over the global values. With a room type only the type's start times apply (profiles it does not set are unused)."
+              "room_type": "Optional, this room only: the room type presets the comfort/standby/night temperature and the start times of the heating schedule (values are in \"Smart Climate options\", section \"Room types\", and can be adjusted there). A value set in this room takes precedence over the room type, the room type over the global values. With a room type only the type's start times apply (profiles it does not set are unused).",
+              "heating_ignore_window": "Turns off the heating pause for an open window in this room - useful e.g. for a lift-and-slide door whose contact also reports \"unlatched\" as open. Ventilation recommendation and display are unchanged. Takes precedence over the \"Window contact (heating only)\" field.",
+              "heating_window_entity": "Optional separate contact that alone decides the heating pause for an open window (e.g. \"really slid open\"). Empty = the normal window contact from the \"Window & ventilation\" section also applies to heating."
             }
           },
           "heating_schedule": {
@@ -344,7 +348,9 @@
               "heating_standby_temp": "Heating standby setpoint",
               "heating_night_temp": "Heating night setpoint",
               "heating_free_day_enabled": "Use holiday/workday sensor",
-              "room_type": "Room type"
+              "room_type": "Room type",
+              "heating_ignore_window": "Window does not pause heating",
+              "heating_window_entity": "Window contact (heating only)"
             },
             "data_description": {
               "heating_type": "Optional, this room only: radiators react quickly, underfloor heating is slow. With a heating type, comfort (schedule and learned times) starts the pre-heat time earlier; standby, night and building protection are not brought forward. Tip: with underfloor heating keep the standby setpoint only slightly below comfort, a deep setback hardly pays off because of the inertia. Without a value there is no pre-heating.",
@@ -363,7 +369,9 @@
               "heating_standby_temp": "Empty = use the value from the global settings. Setpoint for standby (standby profile of the schedule, summer mode, nobody home). Currently global: {global_heating_standby_temp}",
               "heating_night_temp": "Empty = use the value from the global settings. Setpoint applied in the night profile of the schedule (only if the heating schedule is enabled). Currently global: {global_heating_night_temp}",
               "heating_free_day_enabled": "Empty = use the global setting from \"Smart Climate Optionen\". Yes: if a holiday/workday sensor is set globally and blocks comfort, this room only heats in standby instead of comfort (night, standby and building protection stay unchanged). Currently global: {global_heating_free_day_enabled}",
-              "room_type": "Optional, this room only: the room type presets the comfort/standby/night temperature and the start times of the heating schedule (values are in \"Smart Climate options\", section \"Room types\", and can be adjusted there). A value set in this room takes precedence over the room type, the room type over the global values. With a room type only the type's start times apply (profiles it does not set are unused)."
+              "room_type": "Optional, this room only: the room type presets the comfort/standby/night temperature and the start times of the heating schedule (values are in \"Smart Climate options\", section \"Room types\", and can be adjusted there). A value set in this room takes precedence over the room type, the room type over the global values. With a room type only the type's start times apply (profiles it does not set are unused).",
+              "heating_ignore_window": "Turns off the heating pause for an open window in this room - useful e.g. for a lift-and-slide door whose contact also reports \"unlatched\" as open. Ventilation recommendation and display are unchanged. Takes precedence over the \"Window contact (heating only)\" field.",
+              "heating_window_entity": "Optional separate contact that alone decides the heating pause for an open window (e.g. \"really slid open\"). Empty = the normal window contact from the \"Window & ventilation\" section also applies to heating."
             }
           },
           "heating_schedule": {

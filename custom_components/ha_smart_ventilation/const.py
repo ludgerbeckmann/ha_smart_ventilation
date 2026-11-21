@@ -243,6 +243,10 @@ CONF_HEATING_ENTITY = "heating_entity"
 # "keine Heizung konfiguriert" behandelt (permissiv, kein Formularfehler).
 # CONF_HEATING_ENTITY selbst bleibt bei aktivem Schalter wirkungslos.
 CONF_HEATING_USE_TEMP_SOURCE = "heating_use_temp_source"
+# Fensterkontakt nur fürs Heizen (ersetzt dort den Lüftungs-Fensterkontakt) bzw.
+# Schalter, der die Heizungs-Pause bei offenem Fenster für den Raum abschaltet.
+CONF_HEATING_WINDOW_ENTITY = "heating_window_entity"
+CONF_HEATING_IGNORE_WINDOW = "heating_ignore_window"
 # Unterhalb dieser Innentemperatur wird auf den Comfort-Sollwert geschaltet;
 # ab Erreichen von CONF_HEATING_THRESHOLD_TEMP + CONF_TEMP_MARGIN (dieselbe
 # Toleranz-Marge wie bei den anderen Temperaturvergleichen) wieder auf den
