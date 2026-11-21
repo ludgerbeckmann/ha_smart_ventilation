@@ -409,7 +409,7 @@ scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog, Esc oder nach unt
 (am Griff oben oder im Inhalt, wenn er ganz oben steht).
 
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
-und Außen-Messwerte): Titel mit Status-Chip (OK/Hinweis/Handlungsbedarf), dann die Abschnitte
+und Außen-Messwerte): Titel mit Status-Symbol (Haken/Ausrufezeichen/Warndreieck in Grün/Orange/Rot), dann die Abschnitte
 **Lüften** (Fenster, Empfehlung mit Begründung), **Messwerte** (Temperatur, Luftfeuchtigkeit,
 CO2 mit Balken für den Normalbereich, darunter abs. Luftfeuchtigkeit und Taupunkt), **Geräte**
 (Luftentfeuchter, Klimaanlage, Heizung, Dusche, jeweils mit Zustand, Grund und Laufzeit - ein
