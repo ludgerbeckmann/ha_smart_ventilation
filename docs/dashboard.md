@@ -477,8 +477,10 @@ Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "
 
 **Kopfzeile und Reihenfolge (ab 1.24.0):** Schlanke Kopfzeile im Home-Assistant-Stil: links das
 Schließen-Kreuz, in der Mitte eine kleine graue Zeile mit dem Status (Punkt in Grün/Orange/Rot und
-OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos die Knöpfe für die Übersicht
-und die Standardansicht. Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Danach folgen die Abschnitte **Raumklima**
+OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos der Knopf für die Übersicht. Die Übersicht zeigt statt des Status die Raumzahl und hat keinen Knopf rechts. Der Link
+"Standardansicht" (Home-Assistant-Detailfenster des Raum-Sensors) steht ab 1.24.1 ganz unten im Raum-Popup.
+Tipp: Eine Bubble-Card kann per `button_action.tap_action: more-info` mit dem Raum-Sensor direkt dieses Popup
+öffnen. Danach folgen die Abschnitte **Raumklima**
 (Messwerte plus Heizungssteuerung, statt "Messwerte"), **Lüften**, **Geräte** und **Benachrichtigungen**.
 Räume ohne Heizung zeigen im Raumklima keinen Steuerblock.
 
