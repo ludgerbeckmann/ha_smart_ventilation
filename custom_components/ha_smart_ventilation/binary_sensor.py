@@ -3403,8 +3403,23 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         winter_conditions = outdoor_temp is not None and outdoor_temp <= winter_threshold
         open_duration_minutes = None
         if self._attr_is_on and self._open_since is not None:
+            duration_start = self._open_since
+            # Die Höchstdauer misst, wie lange das Fenster offen ist - nicht,
+            # wie lange die Empfehlung schon besteht (Lektion 159): wurde das
+            # Fenster erst nach Beginn der Empfehlung geöffnet, zählt dessen
+            # Öffnungszeit.
+            window_entity = self._config.get(CONF_WINDOW_ENTITY)
+            if window_entity and self._window_since is not None:
+                window_state = self.hass.states.get(window_entity)
+                if (
+                    window_state is not None
+                    and window_state.state == "on"
+                    and self._window_since_state == "on"
+                    and self._window_since > duration_start
+                ):
+                    duration_start = self._window_since
             open_duration_minutes = (
-                dt_util.utcnow() - self._open_since
+                dt_util.utcnow() - duration_start
             ).total_seconds() / 60
         close_by_duration = (
             self._attr_is_on
