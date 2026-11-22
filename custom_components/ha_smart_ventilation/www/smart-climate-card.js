@@ -1808,12 +1808,12 @@ function openRoomDialog(key) {
   overlay.setAttribute("aria-modal", "true");
   overlay.innerHTML =
     "<style>" +
-    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),20px) - 12px);overflow:hidden;border-radius:28px 28px 0 0;background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out}" +
+    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),20px) - 12px);overflow:hidden;border-radius:28px 28px 0 0;border-top:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 -6px 22px rgba(0,0,0,.45);background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out}" +
     "@keyframes sc-up{from{transform:translateY(100%)}to{transform:none}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
     ".sc-room-grip{flex:none;height:18px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
-    ".sc-room-grip::before{content:'';width:36px;height:4px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.5))}" +
+    ".sc-room-grip::before{content:'';width:44px;height:5px;border-radius:3px;background:var(--secondary-text-color,rgba(127,127,127,.8));opacity:.7}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
     ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:0 8px 2px}" +
     ".sc-room-close,.sc-room-std,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
@@ -1824,9 +1824,9 @@ function openRoomDialog(key) {
     ".sc-th{padding:0;display:flex;flex-direction:column;gap:8px}" +
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
-    ".sc-th-val{cursor:pointer;font-size:40px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
+    ".sc-th-val{cursor:pointer;font-size:52px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
     ".sc-th-val.heating{color:var(--state-climate-heat-color,var(--error-color,#f44336))}" +
-    ".sc-th-val small{font-size:18px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th-val small{font-size:22px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
     ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--divider-color,#999);background:transparent;color:inherit;font-size:26px;line-height:1;cursor:pointer}" +
     ".sc-th-chips{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center}" +
     ".sc-th-chips.wrap{flex-wrap:wrap;gap:8px}" +
