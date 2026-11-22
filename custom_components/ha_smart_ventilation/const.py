@@ -973,11 +973,13 @@ ROOM_TYPE_DEFAULTS = {
         21, 17, 16,
         comfort_wd="07:30:00",
         standby_wd="18:00:00", standby_we="00:00:00",
+        night_wd="19:00:00", night_we="19:00:00",
     ),
     "kitchen": _room_type_profile(
         20, 17, 16,
         comfort_wd="06:30:00", comfort_we="08:00:00",
         standby_wd="21:30:00", standby_we="22:30:00",
+        night_wd="23:00:00", night_we="23:00:00",
     ),
     "bathroom": _room_type_profile(
         23, 18, 17,

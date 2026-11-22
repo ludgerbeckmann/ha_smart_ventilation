@@ -197,8 +197,8 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   | Wohnzimmer | 21 / 18 / 17 °C | Comfort 06:30 / 08:00, Nacht 23:00 / 23:30 |
   | Schlafzimmer | 19 / 17 / 16 °C | Comfort 06:00 / 08:00, Nacht 21:30 / 22:30 |
   | Kinderzimmer | 21 / 18 / 18 °C | Comfort 06:30 / 08:00, Nacht 20:30 / 21:00 |
-  | Büro | 21 / 17 / 16 °C | Comfort 07:30 / -, Standby 18:00 / 00:00 |
-  | Küche | 20 / 17 / 16 °C | Comfort 06:30 / 08:00, Standby 21:30 / 22:30 |
+  | Büro | 21 / 17 / 16 °C | Comfort 07:30 / -, Standby 18:00 / 00:00, Nacht 19:00 / 19:00 |
+  | Küche | 20 / 17 / 16 °C | Comfort 06:30 / 08:00, Standby 21:30 / 22:30, Nacht 23:00 / 23:00 |
   | Bad | 23 / 18 / 17 °C | Comfort 06:00 / 08:00, Standby 08:00 / 10:00, Nacht 22:00 / 23:00 |
 
   **Werte anpassen:** In "Smart Climate Optionen" im Abschnitt **"Raumtypen"**
