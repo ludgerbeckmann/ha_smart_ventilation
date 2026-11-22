@@ -1640,14 +1640,26 @@ function scLabel(map, key) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+const SC_OPTIMISTIC_MS = 8000;
+
 function scBuildThermostat(container, heatingId, root) {
   let pending = null;
   let timer = null;
   let sig = "";
   let last = null;
+  // Sofortige Rückmeldung (Lektion 160): ein getipptes Preset/ein Betriebsmodus gilt
+  // sofort als aktiv, bis das Gerät es bestätigt, höchstens SC_OPTIMISTIC_MS lang.
+  const opt = { preset: null, mode: null };
+  const optTimer = { preset: null, mode: null };
+  const clearOpt = (kind) => {
+    clearTimeout(optTimer[kind]);
+    optTimer[kind] = null;
+    opt[kind] = null;
+  };
   const call = (service, data) => {
     const h = root.hass;
-    if (h && h.callService) h.callService("climate", service, Object.assign({ entity_id: heatingId }, data));
+    if (!h || !h.callService) return null;
+    return h.callService("climate", service, Object.assign({ entity_id: heatingId }, data));
   };
   const render = (hass) => {
     const st = hass && hass.states && hass.states[heatingId];
@@ -1658,7 +1670,12 @@ function scBuildThermostat(container, heatingId, root) {
     }
     const a = st.attributes || {};
     const target = pending !== null ? pending : a.temperature;
-    const next = JSON.stringify([st.state, a.current_temperature, a.temperature, a.hvac_action, a.preset_mode, a.hvac_modes, a.preset_modes, a.target_temp_step, a.min_temp, a.max_temp, pending]);
+    // Bestätigt das Gerät den angenommenen Wert, entfällt die Annahme.
+    if (opt.preset !== null && a.preset_mode === opt.preset) clearOpt("preset");
+    if (opt.mode !== null && st.state === opt.mode) clearOpt("mode");
+    const shownPreset = opt.preset !== null ? opt.preset : a.preset_mode;
+    const shownMode = opt.mode !== null ? opt.mode : st.state;
+    const next = JSON.stringify([st.state, a.current_temperature, a.temperature, a.hvac_action, a.preset_mode, a.hvac_modes, a.preset_modes, a.target_temp_step, a.min_temp, a.max_temp, pending, opt.preset, opt.mode]);
     if (next === sig) return;
     sig = next;
     const unavailable = st.state === "unavailable" || st.state === "unknown";
@@ -1674,8 +1691,8 @@ function scBuildThermostat(container, heatingId, root) {
       `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
       list.map((m) => { const mc = kind === "preset" && m === active ? SC_HEATING_COLOR[scPresetMode(m)] : ""; return `<button type="button" class="sc-th-chip${m === active ? " on" : ""}${mc ? " mc" : ""}"${mc ? ` style="--mc:${mc}"` : ""} data-th="${kind}" data-v="${esc(m)}">${esc(scLabel(map, m))}</button>`; }).join("") +
       "</div>";
-    if (!unavailable && Array.isArray(a.hvac_modes) && a.hvac_modes.length > 1) html += chips(a.hvac_modes, st.state, "mode", SC_HVAC_LABEL);
-    if (!unavailable && Array.isArray(a.preset_modes) && a.preset_modes.length > 0) html += chips(a.preset_modes, a.preset_mode, "preset", SC_PRESET_LABEL);
+    if (!unavailable && Array.isArray(a.hvac_modes) && a.hvac_modes.length > 1) html += chips(a.hvac_modes, shownMode, "mode", SC_HVAC_LABEL);
+    if (!unavailable && Array.isArray(a.preset_modes) && a.preset_modes.length > 0) html += chips(a.preset_modes, shownPreset, "preset", SC_PRESET_LABEL);
     html += "</div>";
     container.innerHTML = html;
   };
@@ -1700,14 +1717,33 @@ function scBuildThermostat(container, heatingId, root) {
         pending = null;
         call("set_temperature", { temperature: t });
       }, 700);
-    } else if (kind === "mode") {
-      call("set_hvac_mode", { hvac_mode: btn.dataset.v });
-    } else if (kind === "preset") {
-      call("set_preset_mode", { preset_mode: btn.dataset.v });
+    } else if (kind === "mode" || kind === "preset") {
+      const key = kind === "mode" ? "mode" : "preset";
+      const value = btn.dataset.v;
+      // Ein bereits aktives Preset wird bewusst erneut gesetzt: das verwirft eine von Hand
+      // geänderte Solltemperatur (Lektion 160). Nur der Betriebsmodus wird nicht wiederholt.
+      if (key === "mode" && last.state === value && opt.mode === null) return;
+      clearOpt(key);
+      opt[key] = value;
+      optTimer[key] = setTimeout(() => {
+        clearOpt(key);
+        sig = "";
+        render(root.hass);
+      }, SC_OPTIMISTIC_MS);
+      sig = "";
+      render(root.hass);
+      const res = kind === "mode" ? call("set_hvac_mode", { hvac_mode: value }) : call("set_preset_mode", { preset_mode: value });
+      if (res && typeof res.catch === "function") {
+        res.catch(() => {
+          clearOpt(key);
+          sig = "";
+          render(root.hass);
+        });
+      }
     }
   });
   render(root.hass);
-  return { update: render, stop: () => clearTimeout(timer) };
+  return { update: render, stop: () => { clearTimeout(timer); clearOpt("preset"); clearOpt("mode"); } };
 }
 
 // Eine more-info-Anfrage für einen Raum-Sensor dieser Integration öffnet statt

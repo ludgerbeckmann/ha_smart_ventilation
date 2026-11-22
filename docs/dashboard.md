@@ -465,7 +465,7 @@ Abs. Luftfeuchtigkeit und Taupunkt) eine eigene **Thermostat-Bedienung**:
 der Sollwert groß mit -/+ (rot, solange die Heizung heizt; die Ist-Temperatur steht in der Zeile "Temperatur"; im Schritt der
 Entität, begrenzt auf deren Min/Max; gesendet wird 0,7 s nach dem letzten Tippen), Chips für den
 Betriebsmodus und die Voreinstellung (aus den von der Entität gemeldeten `hvac_modes`/
-`preset_modes`; Dienste `climate.set_temperature`/`set_hvac_mode`/`set_preset_mode`). Home
+`preset_modes`; Dienste `climate.set_temperature`/`set_hvac_mode`/`set_preset_mode`). Ein getippter Chip gilt sofort als aktiv, bis das Gerät ihn bestätigt (höchstens 8 s, bei einem Fehler des Dienstaufrufs sofort zurück); ein erneutes Tippen auf das bereits aktive Preset sendet es erneut und verwirft so eine von Hand geänderte Solltemperatur. Home
 Assistants eigene Thermostat-Karte ließ sich im Dialog nicht verlässlich einbetten (blieb leer),
 einen runden Drehregler gibt es daher nicht; das Standard-Fenster der Heizung bleibt über die
 Bezeichnung "Heizung" erreichbar. Die Heizungszeile zeigt darunter Modus, Grund und **seit wann** der gewollte Modus
