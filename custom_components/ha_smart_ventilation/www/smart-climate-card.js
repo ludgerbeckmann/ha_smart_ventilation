@@ -1685,7 +1685,7 @@ function scBuildThermostat(container, heatingId, root) {
     const heating = a.hvac_action === "heating";
     if (unavailable) html += '<div class="sc-th-top"><span>Heizung nicht verfügbar</span></div>';
     if (!unavailable && target !== undefined && target !== null) {
-      html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val${heating ? " heating" : ""}">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
+      html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val${heating ? " heating" : ""}" data-th="more" role="button" aria-label="Details der Heizung">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
     }
     const chips = (list, active, kind, map) =>
       `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
@@ -1701,6 +1701,12 @@ function scBuildThermostat(container, heatingId, root) {
     if (!btn || !last) return;
     const a = last.attributes || {};
     const kind = btn.dataset.th;
+    if (kind === "more") {
+      // Tippen auf den Sollwert öffnet die Standardansicht der Heizungs-Entität; der
+      // Raum-Dialog leitet das Ereignis weiter und schließt sich dabei.
+      container.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId: heatingId }, bubbles: true, composed: true }));
+      return;
+    }
     if (kind === "minus" || kind === "plus") {
       const step = Number(a.target_temp_step) > 0 ? Number(a.target_temp_step) : 0.5;
       const cur = pending !== null ? pending : Number(a.temperature);
@@ -1782,9 +1788,10 @@ function scCloseRoomDialog() {
   document.removeEventListener("wheel", scRoomDialog.onWheel, true);
   document.removeEventListener("touchstart", scRoomDialog.onLockStart, true);
   document.removeEventListener("touchmove", scRoomDialog.onLockMove, true);
-  document.documentElement.style.overflow = scRoomDialog.prevHtmlOverflow;
-  document.body.style.overflow = scRoomDialog.prevBodyOverflow;
   scRoomDialog.overlay.remove();
+  // Scrollposition der Seite sichern wiederherstellen (Lektion 161)
+  const sp = scRoomDialog.pageScroll;
+  if (sp && (window.scrollX !== sp.x || window.scrollY !== sp.y)) window.scrollTo(sp.x, sp.y);
   scRoomDialog = null;
 }
 
@@ -1817,7 +1824,7 @@ function openRoomDialog(key) {
     ".sc-th{padding:0;display:flex;flex-direction:column;gap:8px}" +
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
     ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
-    ".sc-th-val{font-size:40px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
+    ".sc-th-val{cursor:pointer;font-size:40px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
     ".sc-th-val.heating{color:var(--state-climate-heat-color,var(--error-color,#f44336))}" +
     ".sc-th-val small{font-size:18px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
     ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--divider-color,#999);background:transparent;color:inherit;font-size:26px;line-height:1;cursor:pointer}" +
@@ -2076,11 +2083,10 @@ function openRoomDialog(key) {
     if (thermoCtl && current) thermoCtl.update(current);
     syncHeader();
   }, 2000);
-  // Seite dahinter sperren, solange der Dialog offen ist.
-  const prevHtmlOverflow = document.documentElement.style.overflow;
-  const prevBodyOverflow = document.body.style.overflow;
-  document.documentElement.style.overflow = "hidden";
-  document.body.style.overflow = "hidden";
+  // Seite dahinter sperren, solange der Dialog offen ist: nur über die Abfänger für
+  // wheel/touch (unten), nicht über overflow auf html/body - das setzte in der iOS-App
+  // die Scrollposition des Dashboards zurück (Lektion 161).
+  const pageScroll = { x: window.scrollX, y: window.scrollY };
 
   // Nach unten wegwischen: am Griff immer, im Inhalt nur wenn er oben steht.
   let startY = null;
@@ -2160,7 +2166,7 @@ function openRoomDialog(key) {
   document.addEventListener("wheel", onWheel, { capture: true, passive: false });
   document.addEventListener("touchstart", onLockStart, { capture: true, passive: true });
   document.addEventListener("touchmove", onLockMove, { capture: true, passive: false });
-  scRoomDialog = { overlay, thermo, thermoCtl, cleanup: closeOv, timer, onKey, onWheel, onLockStart, onLockMove, prevHtmlOverflow, prevBodyOverflow };
+  scRoomDialog = { overlay, thermo, thermoCtl, cleanup: closeOv, timer, onKey, onWheel, onLockStart, onLockMove, pageScroll };
 }
 
 if (!window.__smartClimateRoomDialog) {
