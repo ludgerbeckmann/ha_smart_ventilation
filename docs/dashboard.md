@@ -411,7 +411,7 @@ scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog, Esc oder nach unt
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
 und Außen-Messwerte): Titel mit Status-Symbol (Haken/Ausrufezeichen/Warndreieck in Grün/Orange/Rot), dann die Abschnitte
 **Lüften** (Fenster, Empfehlung mit Begründung), **Messwerte** (Temperatur, Luftfeuchtigkeit,
-CO2 mit Balken für den Normalbereich; der Taupunkt steht als kleine graue Zeile unter dem Balken der Temperatur,
+CO2 mit Balken für den Normalbereich; der Taupunkt steht als kleine graue Zeile (Name links, Wert rechts) unter dem Balken der Temperatur,
 die abs. Luftfeuchtigkeit unter dem der Luftfeuchtigkeit), **Geräte**
 (Luftentfeuchter, Klimaanlage, Heizung, Dusche, jeweils mit Zustand, Grund und Laufzeit - ein
 voller Wassertank steht beim Luftentfeuchter) und **Benachrichtigungen** (aufklappbar). Die
