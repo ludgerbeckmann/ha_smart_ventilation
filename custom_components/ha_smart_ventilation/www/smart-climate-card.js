@@ -1910,8 +1910,8 @@ function openRoomDialog(key) {
     return e && e.rollladen ? e.rollladen : null;
   })();
   if (!overviewMode) {
-    bar.appendChild(listBtn);
     if (shutterId) bar.appendChild(std);
+    bar.appendChild(listBtn);
   }
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";

@@ -445,7 +445,7 @@ Intern setzt der Dialog die Karten-Option `compact_room: true` (nur der Raum in 
 Ansicht).
 
 **Gesamtübersicht im Dialog (ab 1.23.0):** In der Kopfzeile jedes Raum-Dialogs führt der Knopf mit dem
-Listen-Symbol (links neben dem Rollladen-Knopf) zu einer Gesamtübersicht im selben Dialog:
+Listen-Symbol (ganz rechts in der Kopfzeile, der Rollladen-Knopf steht links davon) zu einer Gesamtübersicht im selben Dialog:
 oben die Zähler Handeln/Hinweis/OK und die Außenwerte (Temperatur, Luftfeuchtigkeit, absolute
 Luftfeuchtigkeit, Taupunkt), darunter eine kompakte Zeile je Raum (Status-Symbol, Name, Fenster und
 Empfehlung, Temperatur/Luftfeuchtigkeit/CO2, Symbole für Heizung im aktuellen Modus sowie laufenden
@@ -492,7 +492,7 @@ Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "
 
 **Kopfzeile und Reihenfolge (ab 1.24.0):** Schlanke Kopfzeile im Home-Assistant-Stil: links das
 Schließen-Kreuz, in der Mitte eine kleine graue Zeile mit dem Status (Punkt in Grün/Orange/Rot und
-OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos der Knopf für die Übersicht und, falls für den Raum ein Rollladen konfiguriert ist, ein Rollladen-Symbol. Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Der Rollladen-Knopf öffnet das Detailfenster der Rollladen-Entität. Ab 1.28.0 ist jede Zeile des Dialogs antippbar und öffnet das Detailfenster ihrer Entität (Temperatur, Luftfeuchtigkeit, CO2, Fenster, Geräte); die Zeile "Empfehlung" öffnet den Raum-Sensor (früher der Knopf ↗).
+OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos, falls für den Raum ein Rollladen konfiguriert ist, ein Rollladen-Symbol und ganz rechts der Knopf für die Übersicht. Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Der Rollladen-Knopf öffnet das Detailfenster der Rollladen-Entität. Ab 1.28.0 ist jede Zeile des Dialogs antippbar und öffnet das Detailfenster ihrer Entität (Temperatur, Luftfeuchtigkeit, CO2, Fenster, Geräte); die Zeile "Empfehlung" öffnet den Raum-Sensor (früher der Knopf ↗).
 Tipp: Eine Bubble-Card kann per `button_action.tap_action: more-info` mit dem Raum-Sensor direkt dieses Popup
 öffnen. Danach folgen die Abschnitte **Raumklima**
 (Messwerte plus Heizungssteuerung, statt "Messwerte"), **Lüften**, **Geräte** und **Benachrichtigungen**.
