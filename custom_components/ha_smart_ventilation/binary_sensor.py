@@ -242,6 +242,7 @@ from .const import (
     ROOM_STATUS_HINT,
     ROOM_STATUS_KEY,
     ROOM_STATUS_OK,
+    WINDOW_NO_NEED_GRACE_MINUTES,
     ROOM_STATUS_SIGNAL,
     SHOWER_END_HUMIDITY_DROP,
     SHOWER_END_NO_PEAK_MINUTES,
@@ -728,10 +729,70 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 and not outdoor_drier_enough_live
             ):
                 close_reason = "outdoor_wetter"
-            elif self._last_reason == "duration":
+            elif self._duration_reason_still_valid():
                 close_reason = "duration"
+            elif self._window_open_without_need(open_reasons, outdoor_temp):
+                close_reason = "no_need"
 
         return open_reasons, close_reason
+
+    def _window_open_minutes(self) -> float | None:
+        """Wie lange das Fenster aktuell ununterbrochen offen ist (Minuten),
+        aus `_window_since` (Verlaufsdatenbank/letzter Wechsel, Lektion 92).
+        None, wenn das Fenster nicht offen ist oder der Zeitpunkt unbekannt
+        ist."""
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        if not window_entity or self._window_since is None:
+            return None
+        state = self.hass.states.get(window_entity)
+        if (
+            state is None
+            or state.state != "on"
+            or self._window_since_state != "on"
+        ):
+            return None
+        return max(
+            (dt_util.utcnow() - self._window_since).total_seconds() / 60, 0.0
+        )
+
+    def _duration_reason_still_valid(self) -> bool:
+        """Der zuletzt gespeicherte Schließen-Grund "Winter-Höchstdauer"
+        (`_last_reason`) gilt nur für DAS Öffnen des Fensters, bei dem er
+        entstand. Wurde das Fenster erst NACH dem Ende der Empfehlung neu
+        geöffnet, ist er veraltet und darf nicht für das neue Öffnen
+        angezeigt werden (CLAUDE.md Lektion 166)."""
+        if self._last_reason != "duration":
+            return False
+        # Ist das Fenster inzwischen geschlossen, ist die Empfehlung erfüllt.
+        window_entity = self._config.get(CONF_WINDOW_ENTITY)
+        window_state = self.hass.states.get(window_entity) if window_entity else None
+        if window_state is not None and window_state.state == "off":
+            return False
+        if (
+            self._window_since is not None
+            and self._window_since_state == "on"
+            and self._last_state_change_at is not None
+            and self._window_since > self._last_state_change_at
+        ):
+            return False
+        return True
+
+    def _window_open_without_need(
+        self, open_reasons: list[str], outdoor_temp: float | None
+    ) -> bool:
+        """Fenster bestätigt offen, obwohl aktuell kein Öffnen-Grund besteht,
+        bei Winter-Außentemperatur (gleiche Schwelle wie die Winter-
+        Höchstdauer) und mit bekannter Öffnungszeit. Die Schonfrist
+        (WINDOW_NO_NEED_GRACE_MINUTES) unterscheidet Hinweis und
+        Handlungsbedarf, siehe _compute_room_status()."""
+        if open_reasons or outdoor_temp is None:
+            return False
+        winter_threshold = self._effective(
+            CONF_WINTER_OUTDOOR_THRESHOLD, DEFAULT_WINTER_OUTDOOR_THRESHOLD
+        )
+        if outdoor_temp > winter_threshold:
+            return False
+        return self._window_open_minutes() is not None
 
     def _compute_room_status(
         self,
@@ -790,6 +851,16 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             else:
                 status = ROOM_STATUS_ACTION
                 reasons.append("fenster_passt_nicht")
+                # Offenes Fenster ohne Lüftungsbedarf: erst nach der
+                # Schonfrist Handlungsbedarf, davor nur ein Hinweis.
+                minutes = self._window_open_minutes()
+                if (
+                    trigger == "no_need"
+                    and minutes is not None
+                    and minutes < WINDOW_NO_NEED_GRACE_MINUTES
+                ):
+                    status = ROOM_STATUS_HINT
+                    reasons = ["fenster_offen_kurz"]
 
         # Ein sonst grüner Raum wird orange, wenn ein Messwert fehlt oder ein
         # Luftentfeuchter/eine Klimaanlage läuft (rot bleibt rot, die Heizung

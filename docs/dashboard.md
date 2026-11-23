@@ -84,7 +84,19 @@ Auslöser das nicht mehr an.
 `letzter_grund` dient nur noch als **Rückfallwert** für den einen
 verbleibenden Fall, der sich nicht live nachrechnen lässt: die
 Winter-Höchstdauer (`duration` - dafür fehlen als Attribute noch die
-Winter-Schwelle, die Höchstdauer selbst und das Prioritäts-Flag).
+Winter-Schwelle, die Höchstdauer selbst und das Prioritäts-Flag). Er gilt nur,
+solange das Fenster noch offen ist und nicht erst NACH dem Ende der Empfehlung
+neu geöffnet wurde.
+
+**Offenes Fenster ohne Lüftungsbedarf:** Ist bei Winter-Außentemperatur (gleiche
+Schwelle wie die Winter-Höchstdauer) ein Fenster offen, obwohl kein Öffnen-Grund
+besteht, zeigt der Raum in den ersten **30 Minuten** nur einen **Hinweis**
+(orange, Beschriftung "Hinweis"); danach **Handlungsbedarf** (rot) mit der
+Empfehlung "Schließen". Der Grund heißt `no_need` (Attribut `schliessgrund_live`),
+die Zeit "seit" ist das Öffnen des Fensters. Das betrifft nur Anzeige und
+Raumstatus, keine Benachrichtigung. Ohne bekannte Öffnungszeit oder bei
+abgeschalteter Schließempfehlung erscheint nichts.
+
 Trifft weder ein Live-Check noch dieser Rückfallwert zu ("Totzone": z. B.
 eine Innentemperatur, die zwischen Schließen-ab- und Öffnen-ab-Schwelle
 liegt, ohne dass eine andere Größe oder Frost-/Hitzeschutz aktuell
