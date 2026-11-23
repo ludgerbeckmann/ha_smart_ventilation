@@ -914,12 +914,13 @@ CONF_ROOM_TYPE_PROFILES = "room_type_profiles"
 CONF_ROOM_TYPE_EDIT = "room_type_edit"
 ROOM_TYPE_NONE = "none"
 ROOM_TYPE_LABELS = {
-    "living": "Wohnzimmer",
+    "living": "Wohnraum",
     "bedroom": "Schlafzimmer",
     "kids": "Kinderzimmer",
     "office": "Büro",
     "kitchen": "Küche",
     "bathroom": "Bad",
+    "hallway": "Flur",
 }
 ROOM_TYPE_TEMP_KEYS = (
     CONF_HEATING_COMFORT_TEMP,
@@ -975,7 +976,6 @@ ROOM_TYPE_DEFAULTS = {
     ),
     "office": _room_type_profile(
         21, 17, 16,
-        comfort_wd="07:30:00",
         standby_wd="18:00:00", standby_we="00:00:00",
         night_wd="19:00:00", night_we="19:00:00",
     ),
@@ -989,6 +989,11 @@ ROOM_TYPE_DEFAULTS = {
         23, 18, 17,
         comfort_wd="06:00:00", standby_wd="08:00:00", night_wd="22:00:00",
         comfort_we="08:00:00", standby_we="10:00:00", night_we="23:00:00",
+    ),
+    "hallway": _room_type_profile(
+        20, 17, 16,
+        comfort_wd="06:00:00", night_wd="22:00:00",
+        comfort_we="07:30:00", night_we="22:30:00",
     ),
 }
 

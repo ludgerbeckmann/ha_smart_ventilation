@@ -178,7 +178,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   läuft bei jeder Neubewertung (spätestens im 5-Minuten-Takt).
 
 - **Raumtypen (ab 1.14.0):** Im Abschnitt "Heizung" eines Raums wählen Sie
-  einen **Raumtyp** (Wohnzimmer, Schlafzimmer, Kinderzimmer, Büro, Küche, Bad).
+  einen **Raumtyp** (Wohnraum, Schlafzimmer, Kinderzimmer, Büro, Küche, Bad, Flur).
   Der Typ belegt **Comfort-/Standby-/Nacht-Temperatur** und die **sechs
   Startzeiten** des Heizungs-Zeitplans (Werktag/Wochenende) mit
   Richtwerten vor. Rangfolge: **Raum-Override, dann Raumtyp, dann globale
@@ -194,12 +194,13 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
 
   | Raumtyp | Comfort / Standby / Nacht | Startzeiten Werktag / Wochenende |
   |---|---|---|
-  | Wohnzimmer | 21 / 18 / 17 °C | Comfort 06:30 / 08:00, Nacht 23:00 / 23:30 |
+  | Wohnraum | 21 / 18 / 17 °C | Comfort 06:30 / 08:00, Nacht 23:00 / 23:30 |
   | Schlafzimmer | 19 / 17 / 16 °C | Comfort 06:00 / 08:00, Nacht 21:30 / 22:30 |
   | Kinderzimmer | 21 / 18 / 18 °C | Comfort 06:30 / 08:00, Nacht 20:30 / 21:00 |
-  | Büro | 21 / 17 / 16 °C | Comfort 07:30 / -, Standby 18:00 / 00:00, Nacht 19:00 / 19:00 |
+  | Büro | 21 / 17 / 16 °C | Standby 18:00 / 00:00, Nacht 19:00 / 19:00 (kein Comfort-Profil, Comfort kommt über den Auslöser, z. B. Homeoffice-Schalter) |
   | Küche | 20 / 17 / 16 °C | Comfort 06:30 / 08:00, Standby 21:30 / 22:30, Nacht 23:00 / 23:00 |
   | Bad | 23 / 18 / 17 °C | Comfort 06:00 / 08:00, Standby 08:00 / 10:00, Nacht 22:00 / 23:00 |
+  | Flur | 20 / 17 / 16 °C | Comfort 06:00 / 07:30, Nacht 22:00 / 22:30 (kein Standby) |
 
   **Werte anpassen:** In "Smart Climate Optionen" im Abschnitt **"Raumtypen"**
   den Raumtyp unter "Raumtyp bearbeiten" wählen und speichern - danach öffnet
