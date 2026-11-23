@@ -325,11 +325,11 @@ function crCompactRoom(c) {
   };
   // Abgeleitete Werte stehen als kleine Zeile unter dem Balken der Größe, zu der sie gehören.
   const dewExtra = has(a, "luftfeuchtigkeit") && has(a, "taupunkt") && a.taupunkt !== null
-    ? `${named(ents.taupunkt, "Taupunkt")} <span class="nw">${roundStr(a.taupunkt, 1)}&nbsp;°C</span>` : "";
+    ? `<span>${named(ents.taupunkt, "Taupunkt")}</span><span class="nw">${roundStr(a.taupunkt, 1)}&nbsp;°C</span>` : "";
   let absExtra = "";
   if (has(a, "luftfeuchtigkeit")) {
     const absText = has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null ? `${a.absolute_luftfeuchtigkeit}&nbsp;g/m³` : "–";
-    absExtra = `${named(ents.absolute_luftfeuchtigkeit, "Abs.")} <span${c.absOpenGate ? ` style="color:${hlColor}"` : ""}>${absText}</span>`;
+    absExtra = `<span>${named(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit")}</span><span class="nw"${c.absOpenGate ? ` style="color:${hlColor}"` : ""}>${absText}</span>`;
   }
   vals += gauge({
     icon: "mdi:thermometer", label: "Temperatur", entityId: ents.innentemperatur,
@@ -1317,7 +1317,7 @@ class SmartClimateCard extends HTMLElement {
         position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; background: var(--c);
         transform: translate(-50%, -50%); border: 2px solid var(--secondary-background-color, #fff); box-sizing: content-box;
       }
-      .cr-xtra { margin-top: 1px; line-height: 1.25; }
+      .cr-xtra { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; column-gap: 8px; margin-top: 4px; padding-bottom: 2px; line-height: 1.3; }
       .cr-xtra .nw { white-space: nowrap; }
       .cr-thermo-slot { border-top: 1px solid var(--divider-color, #e0e0e0); padding: 8px 0 8px; }
       .plan { width: 100%; min-width: 0; padding: 2px 0; }
