@@ -1004,7 +1004,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             "luftentfeuchter": self._config.get(CONF_DEHUMIDIFIER_ENTITY),
             "luftentfeuchter_tank": self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
             "klimaanlage": self._config.get(CONF_AC_ENTITY),
-            "rollladen": self._config.get(CONF_SHUTTER_ENTITY),
+            "rollladen": self._area_cover_entity_id(),
             "heizung": self._get_heating_entity_id(),
             "sommermodus": self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None),
             "absolute_luftfeuchtigkeit": self._sensor_entity_id(
@@ -1630,6 +1630,41 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         return er.async_get(self.hass).async_get_entity_id(
             "sensor", DOMAIN, f"{entry_id}_{suffix}"
         )
+
+    def _area_cover_entity_id(self) -> str | None:
+        """Rollladen-Cover des Raums: ein `cover` im HA-Bereich des Raums
+        (direkt an der Entität oder über das Gerät); bei mehreren das mit dem
+        Label "Rollladen", sonst das erste. Nur für den Knopf im Popup - die
+        Klimaanlagen-Sperre (CONF_SHUTTER_ENTITY) ist etwas anderes."""
+        area_id = self._config.get("area_id")
+        if not area_id:
+            return None
+        try:
+            registry = er.async_get(self.hass)
+            entries = list(er.async_entries_for_area(registry, area_id))
+            # Entitäten ohne eigenen Bereich erben ihn vom Gerät.
+            for device in dr.async_entries_for_area(dr.async_get(self.hass), area_id):
+                entries.extend(
+                    e
+                    for e in er.async_entries_for_device(registry, device.id)
+                    if e.area_id is None
+                )
+            covers = {
+                e.entity_id: e
+                for e in entries
+                if e.domain == "cover" and not e.disabled_by
+            }.values()
+        except Exception:  # noqa: BLE001 - reine Anzeige, nie die Bewertung stören
+            return None
+        covers = list(covers)
+        if not covers:
+            return None
+        labelled = [
+            e
+            for e in covers
+            if any("rollladen" in str(label).lower() for label in (e.labels or ()))
+        ]
+        return sorted(labelled or covers, key=lambda e: e.entity_id)[0].entity_id
 
     def _global_config(self) -> dict:
         """Liefert die Daten der globalen Einstellungen (falls vorhanden)."""
