@@ -1004,6 +1004,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             "luftentfeuchter": self._config.get(CONF_DEHUMIDIFIER_ENTITY),
             "luftentfeuchter_tank": self._config.get(CONF_DEHUMIDIFIER_TANK_FULL_ENTITY),
             "klimaanlage": self._config.get(CONF_AC_ENTITY),
+            "rollladen": self._config.get(CONF_SHUTTER_ENTITY),
             "heizung": self._get_heating_entity_id(),
             "sommermodus": self._effective(CONF_SUMMER_MODE_SWITCH_ENTITY, None),
             "absolute_luftfeuchtigkeit": self._sensor_entity_id(
