@@ -23,6 +23,10 @@ ROOM_STATUS_OK = "ok"
 ROOM_STATUS_HINT = "hinweis"
 ROOM_STATUS_ACTION = "handlungsbedarf"
 ROOM_STATUS_OPTIONS = [ROOM_STATUS_OK, ROOM_STATUS_HINT, ROOM_STATUS_ACTION]
+# Schonfrist (Minuten) für ein offenes Fenster ohne Lüftungsbedarf bei Winter-
+# Außentemperatur: bis dahin nur "Hinweis" (orange), danach "Handlungsbedarf"
+# mit der Empfehlung "Schließen" (CLAUDE.md Lektion 166).
+WINDOW_NO_NEED_GRACE_MINUTES = 30
 # Schlüssel in hass.data[DOMAIN]: zuletzt berechneter Raumstatus je entry_id
 # (Zwischenspeicher für den Sensor) sowie das Dispatcher-Signal, mit dem der
 # Raum-Binärsensor dem Sensor eine Änderung meldet (kein Objektverweis

@@ -69,8 +69,8 @@ Karte und des Sensors sind dadurch immer identisch.
   Warndreieck). Eine **Farbe** liefert der Sensor nicht - die bestimmt das
   Dashboard (siehe unten).
 - Attribute: `raum`, `gruende` (Liste, was die Farbe bestimmt:
-  `fenster_passt_nicht`, `wartet_auf_normalisierung`, `kein_fenster`,
-  `keine_fensterinfo`, `messwert_fehlt`, `geraet_laeuft`), `ausloeser`
+  `fenster_passt_nicht`, `fenster_offen_kurz`, `wartet_auf_normalisierung`,
+  `kein_fenster`, `keine_fensterinfo`, `messwert_fehlt`, `geraet_laeuft`), `ausloeser`
   (aktuell zutreffende Lüftungsgründe, z. B. `temp`, `humidity`, `co2`) und
   `lueften_empfohlen`.
 - **Antippen:** Auf einem Dashboard öffnet ein Tipp auf die Entität die
@@ -114,7 +114,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `schliessgrund_live` | wie `offene_gruende`, aber für die Schließen-Seite (dort kann strukturell nur ein Grund gewinnen): `temp`/`humidity`/`co2`/`frost`/`heat`/`outdoor_warmer`/`outdoor_wetter`/`duration`, leerer String falls keiner zutrifft. Berücksichtigt bereits "Schließempfehlung deaktivieren" (reine Komfort-Gründe entfallen dann, Frost-/Hitzeschutz bleiben unberührt) |
 | `aussen_luftfeuchtigkeit` | nur vorhanden, falls global gesetzt |
 | `raumstatus` | Ampel des Raums: `ok` (🟢), `hinweis` (🟠) oder `handlungsbedarf` (🔴) - einmal hier berechnet, von der Dashboard-Karte und dem Sensor `sensor.<raum>_raumstatus` nur angezeigt (siehe "Raumstatus als Sensor") |
-| `raumstatus_gruende` | Liste der Gründe, die die Ampel bestimmen (`fenster_passt_nicht`, `wartet_auf_normalisierung`, `kein_fenster`, `keine_fensterinfo`, `messwert_fehlt`, `geraet_laeuft`) |
+| `raumstatus_gruende` | Liste der Gründe, die die Ampel bestimmen (`fenster_passt_nicht`, `fenster_offen_kurz`, `wartet_auf_normalisierung`, `kein_fenster`, `keine_fensterinfo`, `messwert_fehlt`, `geraet_laeuft`) |
 | `taupunkt` / `aussen_taupunkt` | Taupunkt in °C (Magnus-Formel), nur wenn Temperatur und Feuchte vorliegen und die Feuchte > 0 % ist - nur für die Anzeige in der JS-Karte |
 | `absolute_luftfeuchtigkeit` / `aussen_absolute_luftfeuchtigkeit` | berechnete absolute Luftfeuchtigkeit (g/m³, siehe ["Absolute vs. relative Luftfeuchtigkeit"](logik.md)) - nur vorhanden, wenn die jeweils nötigen Temperatur-/Feuchtigkeitswerte verfügbar sind. Genau diese Werte entscheiden, ob Lüften bei hoher Innen-Luftfeuchtigkeit tatsächlich empfohlen wird |
 | `empfehlung_aktiv_seit` | Zeitpunkt, seit dem "Lüften empfohlen" aktiv ist |

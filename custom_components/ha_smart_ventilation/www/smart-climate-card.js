@@ -23,6 +23,7 @@ const GRUND_TEXT = {
   duration: "Winter-Höchstdauer",
   outdoor_warmer: "Außen wärmer",
   outdoor_wetter: "Außen feuchter",
+  no_need: "Kein Lüftungsbedarf",
 };
 
 // Raumstatus (Attribut `raumstatus`) -> Ampel-Symbol.
@@ -738,18 +739,24 @@ class SmartClimateCard extends HTMLElement {
       else if (matchIcon === "🟠") orange += 1;
       else if (matchIcon === "🔴") red += 1;
 
+      // Offenes Fenster ohne Lüftungsbedarf: Farbe und Beschriftung folgen dem
+      // Raumstatus des Backends (innerhalb der Schonfrist nur Hinweis).
+      const noNeedHint = s.state === "off" && highlightCode === "no_need" && a.raumstatus === "hinweis";
       const highlightClass =
         co2CloseException || (comfortCloseResolvedException && highlightOk) || noWindowResolved
           ? "hl-green"
-          : noWindow || highlightOk
+          : noWindow || highlightOk || noNeedHint
           ? "hl-orange"
           : "hl-red";
 
-      const statusText = hasLiveReason ? (s.state === "on" ? "Öffnen" : "Schließen") : "–";
+      const statusText = hasLiveReason ? (s.state === "on" ? "Öffnen" : noNeedHint ? "Hinweis" : "Schließen") : "–";
       let changedTime = "–";
       if (hasLiveReason && a.letzter_wechsel) {
         changedTime = shortTimeStr(new Date(a.letzter_wechsel), todayStr);
       }
+      // Offenes Fenster ohne Lüftungsbedarf: "seit" meint das Öffnen des Fensters,
+      // nicht den (längst vergangenen) Wechsel der Empfehlung.
+      if (s.state === "off" && highlightCode === "no_need") changedTime = windowChangedTime;
 
       const highlightTemp = s.state === "on" ? openReasons.includes("temp") : highlightCode === "temp";
       const highlightHum = s.state === "on" ? openReasons.includes("humidity") : highlightCode === "humidity";
@@ -933,6 +940,11 @@ class SmartClimateCard extends HTMLElement {
             break;
           case "duration":
             text = "Das Fenster war im Winter schon lange geöffnet, zum Energiesparen wird geschlossen.";
+            break;
+          case "no_need":
+            text = noNeedHint
+              ? "Das Fenster ist offen, obwohl aktuell kein Lüftungsbedarf besteht. Nach 30 Minuten wird Schließen empfohlen."
+              : "Das Fenster ist schon länger offen, ohne dass Lüften nötig ist, zum Energiesparen wird Schließen empfohlen.";
             break;
           default:
             text = "";
@@ -1570,7 +1582,7 @@ function scOverview(hass) {
     const subs = [];
     if (!noWindow && (w === "on" || w === "off")) subs.push(w === "on" ? "Fenster offen" : "Fenster zu");
     const code = s.state === "on" ? (a.offene_gruende || [])[0] || "" : a.schliessgrund_live || "";
-    if (code) subs.push(s.state === "on" ? "Öffnen" : "Schließen");
+    if (code) subs.push(s.state === "on" ? "Öffnen" : code === "no_need" && st === "hinweis" ? "Fenster ohne Bedarf offen" : "Schließen");
     const color = SC_STATUS_COLOR[st];
     const vals = [];
     if (a.innentemperatur !== undefined && a.innentemperatur !== null) vals.push(`${roundStr(a.innentemperatur, 1)} °C`);
