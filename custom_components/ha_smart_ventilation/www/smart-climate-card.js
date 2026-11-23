@@ -249,7 +249,7 @@ function crCompactRoom(c) {
     let right = "";
     if (o.chip) right = `<span class="cr-chip" style="--c:${o.chipColor}">${o.chip}</span>`;
     else if (o.right) right = `<span class="cr-v"${o.rightColor ? ` style="color:${o.rightColor}"` : ""}>${o.right}</span>`;
-    return `<div class="cr-row">${icon(o.icon, o.color)}<div class="cr-t"><div class="cr-p">${named(o.entityId, o.title)}${o.titleExtra ? ` <span class="cr-s">${o.titleExtra}</span>` : ""}</div>${sub}</div>${right}</div>`;
+    return `<div class="cr-row${o.entityId ? " cr-link" : ""}"${o.entityId ? ` data-rowent="${esc(o.entityId)}"` : ""}>${icon(o.icon, o.color)}<div class="cr-t"><div class="cr-p">${named(o.entityId, o.title)}${o.titleExtra ? ` <span class="cr-s">${o.titleExtra}</span>` : ""}</div>${sub}</div>${right}</div>`;
   };
 
   // Zeile mit Normalbereich-Balken: Bereich grün hinterlegt, Punkt = aktueller Wert.
@@ -269,7 +269,7 @@ function crCompactRoom(c) {
     }
     const rangeText = rangeOk ? `<span class="cr-s">${crFmt(o.lo)} – ${crFmt(o.hi)} ${o.unit}</span>` : "";
     const valueHtml = Number.isNaN(v) ? "–" : esc(o.valueText);
-    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}${o.extra ? `<div class="cr-s cr-xtra">${o.extra}</div>` : ""}</div><span class="cr-v cr-gv${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
+    return `<div class="cr-row${o.entityId ? " cr-link" : ""}"${o.entityId ? ` data-rowent="${esc(o.entityId)}"` : ""}>${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}${o.extra ? `<div class="cr-s cr-xtra">${o.extra}</div>` : ""}</div><span class="cr-v cr-gv${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
   };
 
   const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
@@ -578,7 +578,21 @@ class SmartClimateCard extends HTMLElement {
           return;
         }
         const el = target.closest("[data-cell]");
-        if (!el || !this._expandedCells) return;
+        if (!el) {
+          // Tipp irgendwo in einer Zeile: more-info der Zeilen-Entität.
+          const rowEl = target.closest("[data-rowent]");
+          if (rowEl) {
+            this.dispatchEvent(
+              new CustomEvent("hass-more-info", {
+                bubbles: true,
+                composed: true,
+                detail: { entityId: rowEl.dataset.rowent },
+              })
+            );
+          }
+          return;
+        }
+        if (!this._expandedCells) return;
         const key = el.dataset.cell;
         if (this._expandedCells.has(key)) this._expandedCells.delete(key);
         else this._expandedCells.add(key);
@@ -1305,6 +1319,7 @@ class SmartClimateCard extends HTMLElement {
       .cr-sec { background: var(--secondary-background-color, rgba(127, 127, 127, 0.08)); border-radius: 14px; padding: 0 10px; }
       .cr-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
       .cr-row:last-child { border-bottom: 0; }
+      .cr-row.cr-link { cursor: pointer; }
       .cr-ico {
         width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center;
         color: var(--c); background: rgba(127, 127, 127, 0.18);
@@ -1874,9 +1889,9 @@ function openRoomDialog(key) {
   const std = document.createElement("button");
   std.className = "sc-room-std";
   std.type = "button";
-  std.textContent = "\u2197";
-  std.setAttribute("aria-label", "Standardansicht");
-  std.title = "Standardansicht";
+  std.innerHTML = '<ha-icon icon="mdi:window-shutter"></ha-icon>';
+  std.setAttribute("aria-label", "Rollladen");
+  std.title = "Rollladen";
   const titleEl = document.createElement("div");
   titleEl.className = "sc-room-title";
   close.setAttribute("aria-label", "Schließen");
@@ -1888,9 +1903,15 @@ function openRoomDialog(key) {
   listBtn.innerHTML = '<ha-icon icon="mdi:view-list"></ha-icon>';
   bar.appendChild(close);
   bar.appendChild(titleEl);
+  const shutterId = (() => {
+    if (overviewMode) return null;
+    const eid = scFindRoomEntity(hass, key);
+    const e = eid && hass.states[eid] && hass.states[eid].attributes.entitaeten;
+    return e && e.rollladen ? e.rollladen : null;
+  })();
   if (!overviewMode) {
     bar.appendChild(listBtn);
-    bar.appendChild(std);
+    if (shutterId) bar.appendChild(std);
   }
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";
@@ -2061,10 +2082,10 @@ function openRoomDialog(key) {
   });
   std.addEventListener("click", () => {
     scCloseRoomDialog();
-    if (entityId) {
+    if (shutterId) {
       root.dispatchEvent(
         new CustomEvent("hass-more-info", {
-          detail: { entityId, scBypass: true },
+          detail: { entityId: shutterId, scBypass: true },
           bubbles: true,
           composed: true,
         })
