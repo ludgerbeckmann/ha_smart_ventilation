@@ -268,7 +268,7 @@ function crCompactRoom(c) {
     }
     const rangeText = rangeOk ? `<span class="cr-s">${crFmt(o.lo)} – ${crFmt(o.hi)} ${o.unit}</span>` : "";
     const valueHtml = Number.isNaN(v) ? "–" : esc(o.valueText);
-    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}</div><span class="cr-v cr-gv${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
+    return `<div class="cr-row">${icon(o.icon, color)}<div class="cr-t"><div class="cr-gl"><span class="cr-p">${named(o.entityId, o.label)}</span>${rangeText}</div>${bar}${o.extra ? `<div class="cr-s cr-xtra">${o.extra}</div>` : ""}</div><span class="cr-v cr-gv${o.big ? " cr-big" : ""}" style="color:${color}">${valueHtml}</span></div>`;
   };
 
   const hlColor = SC_HL_COLOR[c.highlightClass] || SC_COLOR.orange;
@@ -323,9 +323,17 @@ function crCompactRoom(c) {
     if (Number(v) > hi) return above;
     return SC_COLOR.green;
   };
+  // Abgeleitete Werte stehen als kleine Zeile unter dem Balken der Größe, zu der sie gehören.
+  const dewExtra = has(a, "luftfeuchtigkeit") && has(a, "taupunkt") && a.taupunkt !== null
+    ? `${named(ents.taupunkt, "Taupunkt")} <span class="nw">${roundStr(a.taupunkt, 1)}&nbsp;°C</span>` : "";
+  let absExtra = "";
+  if (has(a, "luftfeuchtigkeit")) {
+    const absText = has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null ? `${a.absolute_luftfeuchtigkeit}&nbsp;g/m³` : "–";
+    absExtra = `${named(ents.absolute_luftfeuchtigkeit, "Abs.")} <span${c.absOpenGate ? ` style="color:${hlColor}"` : ""}>${absText}</span>`;
+  }
   vals += gauge({
     icon: "mdi:thermometer", label: "Temperatur", entityId: ents.innentemperatur,
-    value: tempVal, valueText: `${roundStr(tempVal, 1)} °C`, lo: c.tempLo, hi: c.tempHi, unit: "°C", big: true,
+    value: tempVal, valueText: `${roundStr(tempVal, 1)} °C`, lo: c.tempLo, hi: c.tempHi, unit: "°C", big: true, extra: dewExtra,
     color: colorFor(tempVal, c.tempLo, c.tempHi, SC_COLOR.blue, SC_COLOR.red),
   });
   if (has(a, "luftfeuchtigkeit")) {
@@ -333,7 +341,7 @@ function crCompactRoom(c) {
     const hi = Math.max(a.schwelle_feuchtigkeit_schliessen, a.schwelle_feuchtigkeit_oeffnen);
     vals += gauge({
       icon: "mdi:water-percent", label: "Luftfeuchtigkeit", entityId: ents.luftfeuchtigkeit,
-      value: a.luftfeuchtigkeit, valueText: `${roundStr(a.luftfeuchtigkeit, 0)} %`, lo, hi, unit: "%", big: true,
+      value: a.luftfeuchtigkeit, valueText: `${roundStr(a.luftfeuchtigkeit, 0)} %`, lo, hi, unit: "%", big: true, extra: absExtra,
       color: colorFor(a.luftfeuchtigkeit, lo, hi, SC_COLOR.orange, SC_COLOR.blue),
     });
   }
@@ -346,19 +354,6 @@ function crCompactRoom(c) {
       color: colorFor(a.co2, lo, hi, SC_COLOR.green, SC_COLOR.red),
     });
   }
-  const cells = [];
-  if (has(a, "luftfeuchtigkeit")) {
-    const absText = has(a, "absolute_luftfeuchtigkeit") && a.absolute_luftfeuchtigkeit !== null ? `${a.absolute_luftfeuchtigkeit} g/m³` : "–";
-    cells.push(
-      `<div class="cr-cell"><div class="cr-s">${named(ents.absolute_luftfeuchtigkeit, "Abs. Luftfeuchtigkeit")}</div><div class="cr-v"${c.absOpenGate ? ` style="color:${hlColor}"` : ""}>${absText}</div></div>`
-    );
-  }
-  if (has(a, "luftfeuchtigkeit") && has(a, "taupunkt") && a.taupunkt !== null) {
-    cells.push(
-      `<div class="cr-cell"><div class="cr-s">${named(ents.taupunkt, "Taupunkt")}</div><div class="cr-v">${roundStr(a.taupunkt, 1)} °C</div></div>`
-    );
-  }
-  if (cells.length) vals += `<div class="cr-two">${cells.join("")}</div>`;
   // Heizungssteuerung des Dialogs: Platzhalter, in den die Karte nach jedem
   // Neuzeichnen das dauerhafte Thermostat-Element wieder einsetzt.
   const thermoSlot = c.thermo ? `<div class="cr-thermo-slot"></div>` : "";
@@ -1322,9 +1317,8 @@ class SmartClimateCard extends HTMLElement {
         position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 50%; background: var(--c);
         transform: translate(-50%, -50%); border: 2px solid var(--secondary-background-color, #fff); box-sizing: content-box;
       }
-      .cr-two { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--divider-color, #e0e0e0); }
-      .cr-cell { padding: 7px 0; }
-      .cr-cell + .cr-cell { border-left: 1px solid var(--divider-color, #e0e0e0); padding-left: 10px; }
+      .cr-xtra { margin-top: 1px; line-height: 1.25; }
+      .cr-xtra .nw { white-space: nowrap; }
       .cr-thermo-slot { border-top: 1px solid var(--divider-color, #e0e0e0); padding: 8px 0 8px; }
       .plan { width: 100%; min-width: 0; padding: 2px 0; }
       .plan-wrap { position: relative; }

@@ -411,7 +411,8 @@ scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog, Esc oder nach unt
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
 und Außen-Messwerte): Titel mit Status-Symbol (Haken/Ausrufezeichen/Warndreieck in Grün/Orange/Rot), dann die Abschnitte
 **Lüften** (Fenster, Empfehlung mit Begründung), **Messwerte** (Temperatur, Luftfeuchtigkeit,
-CO2 mit Balken für den Normalbereich, darunter abs. Luftfeuchtigkeit und Taupunkt), **Geräte**
+CO2 mit Balken für den Normalbereich; der Taupunkt steht als kleine graue Zeile unter dem Balken der Temperatur,
+die abs. Luftfeuchtigkeit unter dem der Luftfeuchtigkeit), **Geräte**
 (Luftentfeuchter, Klimaanlage, Heizung, Dusche, jeweils mit Zustand, Grund und Laufzeit - ein
 voller Wassertank steht beim Luftentfeuchter) und **Benachrichtigungen** (aufklappbar). Die
 Symbole sind MDI-Symbole, die Farben kommen aus dem Theme (`--success-color`, `--warning-color`,
@@ -460,8 +461,8 @@ button_action:
 Die Kachel behält ihre Hauptentität (`climate.<raum>`). Das gilt überall, wo der Raum-Sensor
 angetippt wird (Suche, andere Karten, Logbuch), nicht für andere Entitäten. Das Standard-Fenster
 (Verlauf, Rohattribute) bleibt über den runden **↗-Knopf** neben dem Schließen-Kreuz erreichbar.
-Hat der Raum eine Heizung, steht im Abschnitt **Raumklima** (unter Temperatur, Luftfeuchtigkeit,
-Abs. Luftfeuchtigkeit und Taupunkt) eine eigene **Thermostat-Bedienung**:
+Hat der Raum eine Heizung, steht im Abschnitt **Raumklima** (unter Temperatur und Luftfeuchtigkeit
+samt deren Zusatzzeilen) eine eigene **Thermostat-Bedienung**:
 der Sollwert groß mit -/+ (rot, solange die Heizung heizt; die Ist-Temperatur steht in der Zeile "Temperatur"; im Schritt der
 Entität, begrenzt auf deren Min/Max; gesendet wird 0,7 s nach dem letzten Tippen), Chips für den
 Betriebsmodus und die Voreinstellung (aus den von der Entität gemeldeten `hvac_modes`/
