@@ -2467,7 +2467,10 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                     # als Zahlen-/Text-Felder) - der obige Merge würde einen
                     # zuvor gesetzten Wert sonst fälschlich beibehalten, siehe
                     # ROOM_OPTIONAL_ENTITY_KEYS.
-                    for key in ROOM_OPTIONAL_ENTITY_KEYS:
+                    # Auch die Zeitplan-Startzeiten (TimeSelector): ein
+                    # geleertes Feld kommt nicht als Wert an und blieb sonst
+                    # für immer im Eintrag stehen (Lektion 170).
+                    for key in (*ROOM_OPTIONAL_ENTITY_KEYS, *_HEATING_TIME_FIELD_KEYS):
                         if not defaults.get(key):
                             new_data.pop(key, None)
                     self.hass.config_entries.async_update_entry(
