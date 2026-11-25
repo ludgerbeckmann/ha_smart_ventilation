@@ -237,6 +237,7 @@ from .const import (
     DEFAULT_WINTER_OUTDOOR_THRESHOLD,
     DOMAIN,
     HEATING_MANUAL_OVERRIDE_MAX_HOURS,
+    HEATING_PRESENCE_AWAY_DELAY_MINUTES,
     GLOBAL_ENTRY_ID_KEY,
     ROOM_STATUS_ACTION,
     ROOM_STATUS_HINT,
@@ -523,6 +524,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # siehe _evaluate()) - gilt gleichermaßen für einen tatsächlich
         # niedrigen Messwert UND einen fehlenden Außensensor.
         self._frost_block_since = None
+
+        # Seit wann sind alle Heizungs-Personen ununterbrochen nicht "home"
+        # (siehe _is_heating_presence_away(); nicht wiederhergestellt).
+        self._presence_away_since = None
 
         # Rollierendes Zeitfenster (Zeitpunkt, Luftfeuchtigkeit) für die
         # Duscherkennung - siehe _update_shower_detection().
@@ -1994,22 +1999,31 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
 
     def _is_heating_presence_away(self) -> bool:
         """True nur, wenn für die Heizung mindestens eine Anwesenheits-
-        Entität konfiguriert ist UND ALLE davon bestätigt "not_home" melden.
+        Entität konfiguriert ist UND ALLE davon seit mindestens
+        HEATING_PRESENCE_AWAY_DELAY_MINUTES ununterbrochen nicht "home"
+        melden (Lektion 171).
 
-        Meldet mindestens eine "home", oder ist der Zustand einer von ihnen
-        gerade unbekannt/nicht verfügbar, wird permissiv False zurückgegeben
-        (kein Grund, die Heizung deswegen zu pausieren) - ein einzelner
-        GPS-Aussetzer eines Trackers soll nicht fälschlich die Heizung
-        abschalten. Ohne konfigurierte Entität immer False (keine
-        Auswirkung, wie bisher)."""
+        "Nicht home" ist jeder Zustand außer home - auch eine benannte Zone
+        wie Schule oder Sport (die Person steht dann im Zustand des
+        Zonennamens, nicht "not_home"). Ist der Zustand einer Entität
+        gerade unbekannt/nicht verfügbar, wird permissiv False
+        zurückgegeben (kein Grund, die Heizung deswegen zu pausieren).
+        Die Rückkehr (eine Person "home") wirkt sofort und setzt die
+        Wartezeit zurück. Ohne konfigurierte Entität immer False."""
         entities = self._config.get(CONF_HEATING_PRESENCE_ENTITIES) or []
         if not entities:
             return False
         for entity_id in entities:
             state = self.hass.states.get(entity_id)
-            if state is None or state.state != "not_home":
+            if state is None or state.state in ("home", "unknown", "unavailable"):
+                self._presence_away_since = None
                 return False
-        return True
+        now = dt_util.utcnow()
+        if self._presence_away_since is None:
+            self._presence_away_since = now
+        return now - self._presence_away_since >= timedelta(
+            minutes=HEATING_PRESENCE_AWAY_DELAY_MINUTES
+        )
 
     # ------------------------------------------------------------------
     # Nutzungserkennung (Stufe 2, CLAUDE.md Lektion 131)

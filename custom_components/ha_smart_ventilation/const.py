@@ -618,6 +618,12 @@ DEFAULT_HEATING_NIGHT_START_WEEKEND = "23:00:00"
 # Moduswechsel der Regeln erhalten, höchstens aber so viele Stunden.
 HEATING_MANUAL_OVERRIDE_MAX_HOURS = 24
 
+# Abwesenheit (Heizung): "weg" gilt erst, wenn ALLE Personen so lange
+# ununterbrochen nicht "home" sind (GPS-Rauschen: home <-> not_home im
+# Minutentakt). Die Rückkehr wirkt sofort. Bewertet wird bei der nächsten
+# Neubewertung (Personen-Wechsel oder 5-Minuten-Takt).
+HEATING_PRESENCE_AWAY_DELAY_MINUTES = 10
+
 # Übliche Heizgrenztemperatur (klassischer HVAC-Richtwert, "heating degree
 # day"-Basistemperatur) - ab einer Tages-Vorhersage von/über diesem Wert
 # bringt Heizen kaum noch Komfortgewinn. Siehe CONF_SUMMER_MODE_THRESHOLD_TEMP.
