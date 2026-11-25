@@ -415,10 +415,10 @@ tap_action:
   smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID des Binärsensors
 ```
 
-Der Dialog erscheint wie ein Bottom-Sheet am unteren Bildschirmrand (auf jeder Breite unten anliegend, am Tablet/PC bis 600 px breit und horizontal zentriert),
-mit der Dashboard-Hintergrundfarbe und unscharf abgedunkeltem Hintergrund. Die Seite dahinter
-scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog, Esc oder nach unten wegwischen
-(am Griff oben oder im Inhalt, wenn er ganz oben steht).
+Der Dialog sitzt wie die Fenster von Home Assistant am oberen Rand mit Luft darüber (ab 1.31.0; bis 600 px breit und
+horizontal zentriert, alle Ecken gerundet), mit der Dashboard-Hintergrundfarbe und unscharf abgedunkeltem Hintergrund.
+So springt die Ansicht nicht, wenn man über eine Bezeichnung in das Home-Assistant-Fenster wechselt. Die Seite dahinter
+scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog oder Esc (das Wegwischen nach unten entfällt).
 
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
 und Außen-Messwerte): Titel mit Status-Symbol (Haken/Ausrufezeichen/Warndreieck in Grün/Orange/Rot), dann die Abschnitte
@@ -451,7 +451,9 @@ Luftfeuchtigkeit, Taupunkt), darunter eine kompakte Zeile je Raum (Status-Symbol
 Empfehlung, Temperatur/Luftfeuchtigkeit/CO2, Symbole für Heizung im aktuellen Modus sowie laufenden
 Luftentfeuchter, Klimaanlage und Dusche). Räume mit Handlungsbedarf stehen oben. Tippen auf eine Zeile
 klappt den Raum auf (ab 1.24.0, mit Pfeil rechts): darunter erscheint der volle Inhalt des Raum-Dialogs
-(Raumklima mit Thermostat, Lüften, Geräte mit Heizplan, Benachrichtigungen). Es ist immer nur ein Raum
+(Raumklima mit Thermostat, Lüften, Geräte mit Heizplan, Benachrichtigungen). Jede Raumzeile zeigt
+bei Räumen mit Heizplan schon zugeklappt den Heizplan-Balken mit Jetzt-Marke und der Skala 0/6/12/18/24
+(ab 1.31.0, ohne Legende und Wechselzeiten). Es ist immer nur ein Raum
 offen; ein zweiter Tipp klappt ihn wieder zu. Die Räume werden automatisch
 gefunden (alle Raum-Sensoren der Integration), eine Karten-Konfiguration ist dafür nicht nötig. Damit kann
 die normale Karte aus dem Dashboard entfernt werden, sobald die Raum-Kacheln das Raum-Popup öffnen.
