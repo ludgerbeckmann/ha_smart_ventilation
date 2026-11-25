@@ -184,7 +184,7 @@ const SC_PLAN_COLOR = {
 };
 const PLAN_LABEL = { comfort: "Komfort", standby: "Standby", night: "Eco (Nacht)" };
 
-function planHtml(plan, now) {
+function planHtml(plan, now, compact) {
   if (!Array.isArray(plan) || !plan.length) return "";
   const segs = [];
   for (const entry of plan) {
@@ -216,7 +216,8 @@ function planHtml(plan, now) {
     `<div class="plan"><div class="plan-wrap"><div class="plan-bar">${bar}</div>` +
     `<div class="plan-now" style="left:${nowPct.toFixed(2)}%"></div></div>` +
     `<div class="plan-scale">${[0, 6, 12, 18, 24].map(tick).join("")}</div>` +
-    `<div class="plan-times">${times.join("")}</div></div>`
+    (compact ? "" : `<div class="plan-times">${times.join("")}</div>`) +
+    "</div>"
   );
 }
 
@@ -1612,13 +1613,15 @@ function scOverview(hass) {
     if (a.luftentfeuchter_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Luftentfeuchter läuft"><ha-icon icon="mdi:air-humidifier"></ha-icon></span>`);
     if (a.klimaanlage_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Klimaanlage läuft"><ha-icon icon="mdi:snowflake"></ha-icon></span>`);
     if (a.duschen_erkannt === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Dusche aktiv"><ha-icon icon="mdi:shower-head"></ha-icon></span>`);
+    const planRow = has(a, "heizung_tagesplan") ? planHtml(a.heizung_tagesplan, undefined, true) : "";
     rooms.push({
       id,
       html:
         `<span class="ov-ico" style="--c:${color}"><ha-icon icon="${SC_STATUS_ICON[st]}"></ha-icon></span>` +
         `<span class="ov-t"><span class="ov-n">${esc(a.raum)}</span>${subs.length ? `<span class="ov-s">${esc(subs.join(" · "))}</span>` : ""}</span>` +
         `<span class="ov-r"><span class="ov-vals">${vals.map(esc).join(" · ")}</span>${dev.length ? `<span class="ov-devs">${dev.join("")}</span>` : ""}</span>` +
-        `<ha-icon class="ov-chev" icon="mdi:chevron-right"></ha-icon>`,
+        `<ha-icon class="ov-chev" icon="mdi:chevron-right"></ha-icon>` +
+        (planRow ? `<span class="ov-plan">${planRow}</span>` : ""),
     });
   }
   const cnt = (cls, label, v, color) =>
@@ -1829,14 +1832,12 @@ function openRoomDialog(key) {
   overlay.setAttribute("aria-modal", "true");
   overlay.innerHTML =
     "<style>" +
-    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),20px) - 12px);overflow:hidden;border-radius:28px 28px 0 0;border-top:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 -6px 22px rgba(0,0,0,.45);background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;padding-bottom:env(safe-area-inset-bottom,0px);animation:sc-up .25s ease-out}" +
-    "@keyframes sc-up{from{transform:translateY(100%)}to{transform:none}}" +
+    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 40px) 12px calc(env(safe-area-inset-bottom,0px) + 16px);background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:100%;overflow:hidden;border-radius:28px;border:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 8px 28px rgba(0,0,0,.45);background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-down .22s ease-out}" +
+    "@keyframes sc-down{from{transform:translateY(-24px);opacity:0}to{transform:none;opacity:1}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
-    ".sc-room-grip{flex:none;height:18px;display:flex;align-items:center;justify-content:center;touch-action:none}" +
-    ".sc-room-grip::before{content:'';width:44px;height:5px;border-radius:3px;background:var(--secondary-text-color,rgba(127,127,127,.8));opacity:.7}" +
     ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
-    ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:0 8px 2px}" +
+    ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:8px 8px 2px}" +
     ".sc-room-close,.sc-room-std,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
     ".sc-room-title{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 6px;min-height:48px}" +
     ".sc-room-sub{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.25;color:var(--secondary-text-color,#727272);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -1868,7 +1869,7 @@ function openRoomDialog(key) {
     ".ov-tile{padding:8px 12px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));display:flex;flex-direction:column;gap:2px;min-width:0}" +
     ".ov-tile span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ov-tile b{font-size:16px;font-weight:600}" +
     ".ov-list{border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));overflow:hidden}" +
-    ".ov-row{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-room+.ov-room{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
+    ".ov-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-plan{flex:0 0 100%;min-width:0;margin-top:-2px}.ov-plan .plan-wrap{position:relative}.ov-plan .plan-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--divider-color,#e0e0e0)}.ov-plan .plan-seg{height:100%;min-width:0}.ov-plan .plan-none{background:repeating-linear-gradient(45deg,rgba(127,127,127,.35) 0 4px,transparent 4px 8px)}.ov-plan .plan-now{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--primary-text-color,#000)}.ov-plan .plan-scale{position:relative;height:1.1em;margin-top:2px;font-size:11px;color:var(--secondary-text-color,#727272)}.ov-plan .plan-scale span{position:absolute;transform:translateX(-50%)}.ov-room+.ov-room{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
     ".ov-chev{flex:none;color:var(--secondary-text-color,#727272);transition:transform .15s ease;--mdc-icon-size:22px}.ov-room.open .ov-chev{transform:rotate(90deg)}" +
     ".ov-body{display:none;padding:0 4px 8px}.ov-room.open .ov-body{display:block}" +
     ".ov-ico{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.18);color:var(--c);--mdc-icon-size:20px}" +
@@ -1913,9 +1914,6 @@ function openRoomDialog(key) {
     if (shutterId) bar.appendChild(std);
     bar.appendChild(listBtn);
   }
-  const grip = document.createElement("div");
-  grip.className = "sc-room-grip";
-  panel.appendChild(grip);
   panel.appendChild(bar);
   const scroll = document.createElement("div");
   scroll.className = "sc-room-scroll";
@@ -2115,54 +2113,6 @@ function openRoomDialog(key) {
   // die Scrollposition des Dashboards zurück (Lektion 161).
   const pageScroll = { x: window.scrollX, y: window.scrollY };
 
-  // Nach unten wegwischen: am Griff immer, im Inhalt nur wenn er oben steht.
-  let startY = null;
-  let dy = 0;
-  let startT = 0;
-  panel.addEventListener(
-    "touchstart",
-    (ev) => {
-      if (ev.touches.length !== 1) return;
-      const fromGrip = grip.contains(ev.target) || bar.contains(ev.target);
-      if (!fromGrip && scroll.scrollTop > 0) return;
-      startY = ev.touches[0].clientY;
-      startT = Date.now();
-      dy = 0;
-      panel.style.animation = "none";
-    },
-    { passive: true }
-  );
-  panel.addEventListener(
-    "touchmove",
-    (ev) => {
-      if (startY === null) return;
-      dy = ev.touches[0].clientY - startY;
-      if (dy <= 0) {
-        // Nach oben: normales Scrollen des Inhalts.
-        dy = 0;
-        panel.style.transform = "";
-        return;
-      }
-      if (ev.cancelable) ev.preventDefault();
-      panel.style.transform = `translateY(${dy}px)`;
-    },
-    { passive: false }
-  );
-  const endDrag = () => {
-    if (startY === null) return;
-    const fast = dy > 40 && Date.now() - startT < 250;
-    startY = null;
-    if (dy > 110 || fast) {
-      panel.style.transition = "transform .18s ease-in";
-      panel.style.transform = "translateY(100%)";
-      setTimeout(scCloseRoomDialog, 180);
-    } else {
-      panel.style.transition = "transform .18s ease-out";
-      panel.style.transform = "";
-    }
-  };
-  panel.addEventListener("touchend", endDrag);
-  panel.addEventListener("touchcancel", endDrag);
   // Seite dahinter sperren: Mausrad und Wischgesten auf Dokumentebene
   // abfangen. Home Assistant scrollt in einem eigenen inneren Container, den
   // overflow auf html/body nicht erreicht. Erlaubt ist nur das Scrollen im
@@ -2186,7 +2136,6 @@ function openRoomDialog(key) {
     const y = ev.touches[0].clientY;
     const dy = y - lockY;
     lockY = y;
-    // Nach unten ziehen am Anfang des Inhalts schließt den Dialog (oben).
     if (inScroll(ev) && canScroll(dy)) return;
     if (ev.cancelable) ev.preventDefault();
   };
