@@ -623,6 +623,9 @@ HEATING_MANUAL_OVERRIDE_MAX_HOURS = 24
 # Minutentakt). Die Rückkehr wirkt sofort. Bewertet wird bei der nächsten
 # Neubewertung (Personen-Wechsel oder 5-Minuten-Takt).
 HEATING_PRESENCE_AWAY_DELAY_MINUTES = 10
+# Fußbodenheizung (träge, Vorheizzeit 2 h): erst nach so langer Abwesenheit,
+# sonst wäre der Raum bei kurzen Wegen beim Heimkommen kalt.
+HEATING_PRESENCE_AWAY_DELAY_MINUTES_FLOOR = 60
 
 # Übliche Heizgrenztemperatur (klassischer HVAC-Richtwert, "heating degree
 # day"-Basistemperatur) - ab einer Tages-Vorhersage von/über diesem Wert

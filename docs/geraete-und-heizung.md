@@ -147,7 +147,7 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   **Abwesenheit - keine Pause, sondern ein reines Comfort-Verbot:** Sobald
   im Abschnitt "Heizung" mindestens eine
   Anwesenheits-Entität für die Heizung hinterlegt ist UND ALLE davon seit
-  mindestens 10 Minuten ununterbrochen "nicht zuhause" melden (auch eine
+  mindestens 10 Minuten (Fußbodenheizung: 60 Minuten) ununterbrochen "nicht zuhause" melden (auch eine
   benannte Zone wie Schule oder Sport zählt als nicht zuhause; die Rückkehr
   wirkt sofort), wird ein ansonsten ermittelter
   Comfort-Zielmodus auf Standby herabgestuft - ein bereits anderweitig
