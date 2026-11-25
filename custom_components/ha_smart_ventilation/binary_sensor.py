@@ -238,6 +238,8 @@ from .const import (
     DOMAIN,
     HEATING_MANUAL_OVERRIDE_MAX_HOURS,
     HEATING_PRESENCE_AWAY_DELAY_MINUTES,
+    HEATING_PRESENCE_AWAY_DELAY_MINUTES_FLOOR,
+    HEATING_TYPE_FLOOR,
     GLOBAL_ENTRY_ID_KEY,
     ROOM_STATUS_ACTION,
     ROOM_STATUS_HINT,
@@ -2000,8 +2002,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     def _is_heating_presence_away(self) -> bool:
         """True nur, wenn für die Heizung mindestens eine Anwesenheits-
         Entität konfiguriert ist UND ALLE davon seit mindestens
-        HEATING_PRESENCE_AWAY_DELAY_MINUTES ununterbrochen nicht "home"
-        melden (Lektion 171).
+        HEATING_PRESENCE_AWAY_DELAY_MINUTES (Fußbodenheizung:
+        ..._FLOOR) ununterbrochen nicht "home" melden (Lektion 171/172).
 
         "Nicht home" ist jeder Zustand außer home - auch eine benannte Zone
         wie Schule oder Sport (die Person steht dann im Zustand des
@@ -2021,9 +2023,12 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         now = dt_util.utcnow()
         if self._presence_away_since is None:
             self._presence_away_since = now
-        return now - self._presence_away_since >= timedelta(
-            minutes=HEATING_PRESENCE_AWAY_DELAY_MINUTES
+        delay = (
+            HEATING_PRESENCE_AWAY_DELAY_MINUTES_FLOOR
+            if self._config.get(CONF_HEATING_TYPE) == HEATING_TYPE_FLOOR
+            else HEATING_PRESENCE_AWAY_DELAY_MINUTES
         )
+        return now - self._presence_away_since >= timedelta(minutes=delay)
 
     # ------------------------------------------------------------------
     # Nutzungserkennung (Stufe 2, CLAUDE.md Lektion 131)
