@@ -484,13 +484,20 @@ function crCompactRoom(c) {
       sub: targets(list), right: on ? "Aktiv" : "Aus", rightColor: on ? SC_COLOR.green : SC_COLOR.grey,
     });
   };
-  html +=
-    `<h2 class="cr-h">Benachrichtigungen</h2><div class="cr-sec"><details class="cr-notify" data-notify-room="${esc(a.raum)}"${c.notifyOpen ? " open" : ""}>` +
-    `<summary class="cr-fold">${icon("mdi:bell-outline", SC_COLOR.grey)}<span class="cr-ft">Methoden und Ziele</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></summary>` +
+  const notifyRows =
     nrow("mdi:speaker", "Sprachausgabe", "sprachausgabe_aktiv", a.sprachausgabe_lautsprecher) +
     nrow("mdi:cellphone", "Push-Benachrichtigung", "app_aktiv", a.app_ziele) +
-    nrow("mdi:message-text-outline", "Persistente Benachrichtigung", "persistent_aktiv", null) +
-    `</details></div>`;
+    nrow("mdi:message-text-outline", "Persistente Benachrichtigung", "persistent_aktiv", null);
+  if (c.notifyOut) {
+    // Raum-Dialog: Die Methoden stehen im Menü der Glocke in der Kopfzeile.
+    c.notifyOut.html = notifyRows;
+  } else {
+    html +=
+      `<h2 class="cr-h">Benachrichtigungen</h2><div class="cr-sec"><details class="cr-notify" data-notify-room="${esc(a.raum)}"${c.notifyOpen ? " open" : ""}>` +
+      `<summary class="cr-fold">${icon("mdi:bell-outline", SC_COLOR.grey)}<span class="cr-ft">Methoden und Ziele</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></summary>` +
+      notifyRows +
+      `</details></div>`;
+  }
   return html;
 }
 
@@ -702,6 +709,7 @@ class SmartClimateCard extends HTMLElement {
     let summerModeEntity = "";
     const entries = [];
     const headerOut = {};
+    const notifyOut = this._notifyMenu ? {} : null;
 
     // Lange Texte (Grund, Auslöser, Ziele) werden nach 4 Zeilen automatisch mit
     // "…" gekürzt (CSS line-clamp, Wörter bleiben unverändert). Der volle Text
@@ -1100,6 +1108,7 @@ class SmartClimateCard extends HTMLElement {
             highlightTemp, highlightHum, highlightCo2, absOpenGate, tempLo, tempHi, notifyOpen,
             planOpen: this._planOpen.has(a.raum),
             headerOut: this._headerSink ? headerOut : null,
+            notifyOut,
             thermo: !!this._thermoEl,
           }),
         });
@@ -1159,6 +1168,7 @@ class SmartClimateCard extends HTMLElement {
 
     const roomsHtml = entries.map((e) => e.html).join("");
     this._compactHeader = this._headerSink && headerOut.name ? Object.assign({}, headerOut) : null;
+    this._compactNotify = notifyOut && typeof notifyOut.html === "string" ? notifyOut.html : null;
 
     // compact_room: nur der Raum, ohne Übersicht und Außen-Messwerte.
     this._content.innerHTML =
@@ -1709,6 +1719,9 @@ function scLabel(map, key) {
 
 const SC_OPTIMISTIC_MS = 8000;
 
+const SC_SVG_MINUS = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M19,13H5V11H19V13Z"/></svg>';
+const SC_SVG_PLUS = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></svg>';
+
 function scBuildThermostat(container, heatingId, root) {
   let pending = null;
   let timer = null;
@@ -1748,11 +1761,11 @@ function scBuildThermostat(container, heatingId, root) {
     const unavailable = st.state === "unavailable" || st.state === "unknown";
     let html = '<div class="sc-th">';
     // Die Ist-Temperatur steht in der Zeile "Temperatur" darüber; Bezeichnung und Zustand
-    // (Heizt/Leerlauf) entfallen, der Sollwert ist rot, solange die Heizung heizt.
+    // (Heizt/Leerlauf) entfallen; beim Heizen glüht ein Farbverlauf hinter dem Sollwert.
     const heating = a.hvac_action === "heating";
     if (unavailable) html += '<div class="sc-th-top"><span>Heizung nicht verfügbar</span></div>';
     if (!unavailable && target !== undefined && target !== null) {
-      html += `<div class="sc-th-set"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">−</button><div class="sc-th-val${heating ? " heating" : ""}" data-th="more" role="button" aria-label="Details der Heizung">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">+</button></div>`;
+      html += `<div class="sc-th-set${heating ? " heating" : ""}"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">${SC_SVG_MINUS}</button><div class="sc-th-val" data-th="more" role="button" aria-label="Details der Heizung">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">${SC_SVG_PLUS}</button></div>`;
     }
     const chips = (list, active, kind, map) =>
       `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
@@ -1876,23 +1889,31 @@ function openRoomDialog(key) {
   overlay.innerHTML =
     "<style>" +
     ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),8px));overflow:hidden;border-radius:28px 28px 0 0;border:1px solid var(--divider-color,rgba(127,127,127,.45));border-bottom:0;box-shadow:0 -6px 28px rgba(0,0,0,.45);background:var(--ha-dialog-surface-background,var(--mdc-theme-surface,var(--card-background-color,#fff)));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-up .24s ease-out}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;height:calc(100% - max(env(safe-area-inset-top,0px),8px));max-height:calc(100% - max(env(safe-area-inset-top,0px),8px));overflow:hidden;border-radius:28px 28px 0 0;border:1px solid var(--divider-color,rgba(127,127,127,.45));border-bottom:0;box-shadow:0 -6px 28px rgba(0,0,0,.45);background:var(--ha-dialog-surface-background,var(--mdc-theme-surface,var(--card-background-color,#fff)));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-up .24s ease-out}" +
     "@keyframes sc-up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
-    ".sc-room-grip{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.6));opacity:.9;pointer-events:none;z-index:3}.sc-room-scroll{padding-bottom:env(safe-area-inset-bottom,0px);overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
+    ".sc-room-grip{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.6));opacity:.9;pointer-events:none;z-index:3}.sc-room-scroll{padding-bottom:env(safe-area-inset-bottom,0px);overflow:auto;flex:1 1 auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
     ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:18px 8px 2px}" +
     ".sc-room-close,.sc-room-std,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
+    ".sc-room-bell{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;--mdc-icon-size:24px}" +
+    ".sc-room-bell.open{background:rgba(127,127,127,.2)}" +
+    ".sc-room-menu{display:none;position:absolute;right:12px;top:var(--mt,64px);z-index:6;width:min(320px,calc(100% - 24px));max-height:calc(100% - var(--mt,64px) - 16px);overflow:auto;box-sizing:border-box;padding:2px 14px;border:1px solid var(--divider-color,rgba(127,127,127,.45));border-radius:14px;background:var(--ha-dialog-surface-background,var(--mdc-theme-surface,var(--card-background-color,#fff)));box-shadow:0 8px 28px rgba(0,0,0,.5)}" +
+    ".sc-room-menu.open{display:block}" +
+    ".sc-room-menu .cr-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--divider-color,rgba(127,127,127,.35))}.sc-room-menu .cr-row:last-child{border-bottom:0}" +
+    ".sc-room-menu .cr-ico{width:32px;height:32px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:var(--c);background:rgba(127,127,127,.18);background:color-mix(in srgb,var(--c) 20%,transparent);--mdc-icon-size:20px}" +
+    ".sc-room-menu .cr-t{flex:1;min-width:0}.sc-room-menu .cr-p{font-size:15px}.sc-room-menu .cr-s{font-size:13px;color:var(--secondary-text-color,#727272)}.sc-room-menu .cr-v{font-weight:500;white-space:nowrap}.sc-room-menu [data-entity]{cursor:pointer}" +
     ".sc-room-title{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 6px;min-height:48px}" +
     ".sc-room-sub{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.25;color:var(--secondary-text-color,#727272);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
     ".sc-room-sub i{width:7px;height:7px;border-radius:50%;background:var(--c);display:block;flex:none}.sc-room-sub b{font-weight:500;color:var(--c)}" +
     ".sc-room-title h1{margin:0;font-size:20px;font-weight:500;line-height:1.2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
     ".sc-th{padding:0;display:flex;flex-direction:column;gap:8px}" +
     ".sc-th-top{display:flex;justify-content:space-between;font-size:14px;padding:0 8px;color:var(--primary-text-color,#000);opacity:.8}" +
-    ".sc-th-set{display:flex;align-items:center;justify-content:center;gap:24px}" +
+    ".sc-th-set{position:relative;display:flex;align-items:center;justify-content:center;gap:24px}" +
+    ".sc-th-set>*{position:relative;z-index:1}" +
+    ".sc-th-set.heating::before{content:\"\";position:absolute;left:-10px;right:-10px;top:-26px;bottom:-26px;z-index:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,140,58,.32) 0,rgba(255,140,58,.1) 48%,rgba(255,140,58,0) 74%);background:radial-gradient(ellipse at center,color-mix(in srgb,var(--state-climate-heat-color,#ff8c3a) 34%,transparent) 0,color-mix(in srgb,var(--state-climate-heat-color,#ff8c3a) 11%,transparent) 48%,transparent 74%)}" +
     ".sc-th-val{cursor:pointer;font-size:52px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
-    ".sc-th-val.heating{color:var(--state-climate-heat-color,var(--error-color,#f44336))}" +
     ".sc-th-val small{font-size:22px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
-    ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--divider-color,#999);background:transparent;color:inherit;font-size:26px;line-height:1;cursor:pointer}" +
+    ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--secondary-text-color,#9b9b9b);background:transparent;color:var(--secondary-text-color,#9b9b9b);padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer}" +
     ".sc-th-chips{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center}" +
     ".sc-th-chips.wrap{flex-wrap:wrap;gap:8px}" +
     ".sc-th-chip{flex:1 1 auto;min-width:0;border:1px solid var(--divider-color,#999);border-radius:16px;background:transparent;color:inherit;padding:7px 5px;font-size:clamp(10.5px,3.3vw,14px);white-space:nowrap;text-align:center;cursor:pointer}" +
@@ -1920,7 +1941,7 @@ function openRoomDialog(key) {
     ".ov-r{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:55%}.ov-vals{font-size:13px;white-space:nowrap}" +
     ".ov-devs{display:flex;gap:4px;--mdc-icon-size:18px}.ov-dev{display:inline-flex}" +
     ".ov-foot{margin:12px 4px 0;font-size:12px;color:var(--secondary-text-color,#727272);text-align:center}" +
-    "@media (min-width:451px) and (min-height:501px){.sc-room-dialog{align-items:center;padding:24px}.sc-room-panel{max-width:560px;max-height:calc(100% - 48px);border-radius:28px;border-bottom:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 12px 48px rgba(0,0,0,.5);animation:sc-fade .18s ease-out}.sc-room-grip{display:none}.sc-room-bar{padding-top:10px}.sc-room-scroll{padding-bottom:0}}" +
+    "@media (min-width:451px) and (min-height:501px){.sc-room-dialog{align-items:center;padding:24px}.sc-room-panel{max-width:560px;height:auto;max-height:calc(100% - 48px);border-radius:28px;border-bottom:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 12px 48px rgba(0,0,0,.5);animation:sc-fade .18s ease-out}.sc-room-grip{display:none}.sc-room-bar{padding-top:10px}.sc-room-scroll{padding-bottom:0}}" +
     "</style>";
   const panel = document.createElement("div");
   panel.className = "sc-room-panel";
@@ -1946,6 +1967,16 @@ function openRoomDialog(key) {
   listBtn.setAttribute("aria-label", "Übersicht");
   listBtn.title = "Übersicht";
   listBtn.innerHTML = '<ha-icon icon="mdi:home-group"></ha-icon>';
+  const bell = document.createElement("button");
+  bell.className = "sc-room-bell";
+  bell.type = "button";
+  bell.setAttribute("aria-label", "Benachrichtigungen");
+  bell.setAttribute("aria-haspopup", "true");
+  bell.title = "Benachrichtigungen";
+  bell.innerHTML = '<ha-icon icon="mdi:bell-outline"></ha-icon>';
+  const menuEl = document.createElement("div");
+  menuEl.className = "sc-room-menu";
+  menuEl.setAttribute("role", "menu");
   bar.appendChild(close);
   bar.appendChild(titleEl);
   const shutterId = (() => {
@@ -1957,11 +1988,13 @@ function openRoomDialog(key) {
   if (!overviewMode) {
     if (shutterId) bar.appendChild(std);
     bar.appendChild(listBtn);
+    bar.appendChild(bell);
   }
   const grip = document.createElement("div");
   grip.className = "sc-room-grip";
   panel.appendChild(grip);
   panel.appendChild(bar);
+  panel.appendChild(menuEl);
   const scroll = document.createElement("div");
   scroll.className = "sc-room-scroll";
   panel.appendChild(scroll);
@@ -1982,9 +2015,24 @@ function openRoomDialog(key) {
     const sig = h ? JSON.stringify(h) : "";
     if (sig === headerSig) return;
     headerSig = sig;
+    syncMenu();
     titleEl.innerHTML = h
       ? `<div class="sc-room-sub" style="--c:${h.color}"><i></i><b>${esc(h.label)}</b></div><h1>${esc(h.name)}</h1>`
       : "";
+  };
+  let notifySig = null;
+  const closeMenu = () => {
+    menuEl.classList.remove("open");
+    bell.classList.remove("open");
+    bell.setAttribute("aria-expanded", "false");
+  };
+  const syncMenu = () => {
+    const html = card && typeof card._compactNotify === "string" ? card._compactNotify : null;
+    if (html === notifySig) return;
+    notifySig = html;
+    bell.style.display = html === null ? "none" : "";
+    menuEl.innerHTML = html === null ? "" : html;
+    if (html === null) closeMenu();
   };
   // Übersicht: Räume als aufklappbare Abschnitte (immer nur einer offen). Die
   // Zeilen werden einzeln aktualisiert, damit ein aufgeklappter Raum samt
@@ -2071,6 +2119,7 @@ function openRoomDialog(key) {
     card = document.createElement("smart-climate-card");
     card.setConfig({ entities: [entityId], compact_room: true });
     card._headerSink = true;
+    card._notifyMenu = true;
     if (hasHeating) card._thermoEl = thermo;
     card.hass = hass;
     scroll.appendChild(card);
@@ -2105,10 +2154,34 @@ function openRoomDialog(key) {
   });
 
   const onKey = (ev) => {
-    if (ev.key === "Escape") scCloseRoomDialog();
+    if (ev.key !== "Escape") return;
+    // Esc schließt zuerst das offene Menü, danach das Popup.
+    if (menuEl.classList.contains("open")) { closeMenu(); ev.stopPropagation(); return; }
+    scCloseRoomDialog();
   };
   document.addEventListener("keydown", onKey, true);
   close.addEventListener("click", scCloseRoomDialog);
+  bell.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (menuEl.classList.contains("open")) { closeMenu(); return; }
+    menuEl.style.setProperty("--mt", `${bar.offsetTop + bar.offsetHeight}px`);
+    menuEl.classList.add("open");
+    bell.classList.add("open");
+    bell.setAttribute("aria-expanded", "true");
+  });
+  // Tipp außerhalb des Menüs schließt es (ein Tipp auf einen Eintrag im Menü
+  // öffnet die Standardansicht und schließt dabei das ganze Popup).
+  panel.addEventListener("click", (ev) => {
+    if (!menuEl.classList.contains("open")) return;
+    const path = ev.composedPath();
+    if (path.includes(menuEl) || path.includes(bell)) return;
+    closeMenu();
+  });
+  menuEl.addEventListener("click", (ev) => {
+    const t = ev.target && ev.target.closest ? ev.target.closest("[data-entity]") : null;
+    if (!t) return;
+    t.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId: t.dataset.entity } }));
+  });
   listBtn.addEventListener("click", () => openRoomDialog(SC_OVERVIEW_KEY));
   const toggleRow = (ev) => {
     const rowEl = ev.target && ev.target.closest ? ev.target.closest(".ov-row") : null;
@@ -2146,7 +2219,7 @@ function openRoomDialog(key) {
   let sw = null;
   const isSheet = () => !(window.matchMedia && window.matchMedia("(min-width:451px) and (min-height:501px)").matches);
   panel.addEventListener("touchstart", (ev) => {
-    if (ev.touches.length !== 1 || !isSheet()) { sw = null; return; }
+    if (ev.touches.length !== 1 || !isSheet() || ev.composedPath().includes(menuEl)) { sw = null; return; }
     const inBar = ev.composedPath().includes(bar) || ev.composedPath().includes(grip);
     sw = { y: ev.touches[0].clientY, t: Date.now(), ok: inBar || scroll.scrollTop <= 0, drag: false, dy: 0 };
   }, { passive: true });
