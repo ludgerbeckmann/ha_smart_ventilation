@@ -88,6 +88,15 @@ function shortTimeStr(date, todayStr) {
   return `${pad2(date.getDate())}.${pad2(date.getMonth() + 1)}. ${hhmm}`;
 }
 
+// Sollwert im Home-Assistant-Stil: ganze Zahl groß, Nachkommastelle und Einheit klein.
+function scSetpointHtml(value) {
+  const t = roundStr(value, 1);
+  if (t === null) return "";
+  const [whole, dec] = t.split(".");
+  const d = dec && dec !== "0" ? `<small class="sc-th-dec">.${esc(dec)}</small>` : "";
+  return `${esc(whole)}${d}<small class="sc-th-unit">&nbsp;°C</small>`;
+}
+
 function roundStr(value, decimals) {
   if (value === null || value === undefined) return null;
   const num = Number(value);
@@ -1765,7 +1774,7 @@ function scBuildThermostat(container, heatingId, root) {
     const heating = a.hvac_action === "heating";
     if (unavailable) html += '<div class="sc-th-top"><span>Heizung nicht verfügbar</span></div>';
     if (!unavailable && target !== undefined && target !== null) {
-      html += `<div class="sc-th-set${heating ? " heating" : ""}"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">${SC_SVG_MINUS}</button><div class="sc-th-val" data-th="more" role="button" aria-label="Details der Heizung">${esc(roundStr(target, 1))}<small> °C</small></div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">${SC_SVG_PLUS}</button></div>`;
+      html += `<div class="sc-th-set${heating ? " heating" : ""}"><button type="button" class="sc-th-btn" data-th="minus" aria-label="Kälter">${SC_SVG_MINUS}</button><div class="sc-th-val" data-th="more" role="button" aria-label="Details der Heizung">${scSetpointHtml(target)}</div><button type="button" class="sc-th-btn" data-th="plus" aria-label="Wärmer">${SC_SVG_PLUS}</button></div>`;
     }
     const chips = (list, active, kind, map) =>
       `<div class="sc-th-chips${list.length > 4 ? " wrap" : ""}">` +
@@ -1911,8 +1920,10 @@ function openRoomDialog(key) {
     ".sc-th-set{position:relative;display:flex;align-items:center;justify-content:center;gap:24px}" +
     ".sc-th-set>*{position:relative;z-index:1}" +
     ".sc-th-set.heating::before{content:\"\";position:absolute;left:-10px;right:-10px;top:-26px;bottom:-26px;z-index:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,140,58,.32) 0,rgba(255,140,58,.1) 48%,rgba(255,140,58,0) 74%);background:radial-gradient(ellipse at center,color-mix(in srgb,var(--state-climate-heat-color,#ff8c3a) 34%,transparent) 0,color-mix(in srgb,var(--state-climate-heat-color,#ff8c3a) 11%,transparent) 48%,transparent 74%)}" +
-    ".sc-th-val{cursor:pointer;font-size:52px;font-weight:500;line-height:1;min-width:130px;text-align:center}" +
-    ".sc-th-val small{font-size:22px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th-val{cursor:pointer;font-size:64px;font-weight:300;line-height:1;min-width:130px;text-align:center;white-space:nowrap}" +
+    ".sc-th-val small{font-size:22px;font-weight:300;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th-val .sc-th-dec{font-size:32px;color:inherit}" +
+    "@media (max-width:340px){.sc-th-set{gap:12px}}" +
     ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--secondary-text-color,#9b9b9b);background:transparent;color:var(--secondary-text-color,#9b9b9b);padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer}" +
     ".sc-th-chips{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center}" +
     ".sc-th-chips.wrap{flex-wrap:wrap;gap:8px}" +
