@@ -640,3 +640,16 @@ visibility:
 als `cover.<raum>_rollladen` abgeleitet (Ausnahme im Modul: `climate.buro` →
 `cover.rollo_buro`) oder über `climate_status: { cover_entity: ... }` an der
 Karte gesetzt.
+
+**Heizplan mit echtem Verlauf (ab 1.32.0):** Der Heizplan-Balken zeigt für die
+Zeit bis zur "jetzt"-Marke, was wirklich lief (live vom Gerät gemeldeter
+Modus, also inklusive Handeingriff, Auslöser und Fensterpause); ab jetzt
+zeigt er den Plan, leicht abgedunkelt. Wo kein Verlauf bekannt ist (z. B. vor
+dem ersten Start nach dem Update, Gerät nicht verfügbar), bleibt der Plan
+stehen. Der Verlauf gilt nur für den heutigen Tag (Attribut
+`heizung_tagesverlauf`, wird um Mitternacht zurückgesetzt).
+
+**Popup wie bei Home Assistant (ab 1.32.0):** Das Raum-Popup liegt in voller
+Breite bündig am unteren Rand, oben abgerundet, mit Griff und großem
+Schließen-Kreuz; Wegwischen nach unten (am Kopf oder im ganz oben stehenden
+Inhalt) schließt es. Die Bereiche sind nur noch mit Konturen umrandet.
