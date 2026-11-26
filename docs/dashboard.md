@@ -428,7 +428,7 @@ und Außen-Messwerte): Titel mit Status-Symbol (Haken/Ausrufezeichen/Warndreieck
 CO2 mit Balken für den Normalbereich; der Taupunkt steht als kleine graue Zeile (Name links, Wert rechts) unter dem Balken der Temperatur,
 die abs. Luftfeuchtigkeit unter dem der Luftfeuchtigkeit), **Geräte**
 (Luftentfeuchter, Klimaanlage, Heizung, Dusche, jeweils mit Zustand, Grund und Laufzeit - ein
-voller Wassertank steht beim Luftentfeuchter) und **Benachrichtigungen** (aufklappbar). Die
+voller Wassertank steht beim Luftentfeuchter). Die Benachrichtigungsmethoden stehen ab 1.33.0 nicht mehr als Abschnitt im Dialog, sondern in einem Menü hinter dem Glocken-Symbol oben rechts. Die
 Symbole sind MDI-Symbole, die Farben kommen aus dem Theme (`--success-color`, `--warning-color`,
 `--error-color`, `--info-color`). Die normale Raumansicht der Karte bleibt unverändert (Tabellen).
 Der Dialog ist nicht einklappbar; ein langer Inhalt scrollt im Dialog, das Kreuz bleibt stehen. Er schließt per Kreuz, Tippen neben den Dialog oder Esc, und
@@ -453,7 +453,7 @@ Luftfeuchtigkeit, Taupunkt), darunter eine kompakte Zeile je Raum (Status-Symbol
 Empfehlung, Temperatur/Luftfeuchtigkeit/CO2, Symbole für Heizung im aktuellen Modus sowie laufenden
 Luftentfeuchter, Klimaanlage und Dusche). Räume mit Handlungsbedarf stehen oben. Tippen auf eine Zeile
 klappt den Raum auf (ab 1.24.0, mit Pfeil rechts): darunter erscheint der volle Inhalt des Raum-Dialogs
-(Raumklima mit Thermostat, Lüften, Geräte mit Heizplan, Benachrichtigungen). Jede Raumzeile zeigt
+(Raumklima mit Thermostat, Lüften, Geräte mit Heizplan). Jede Raumzeile zeigt
 bei Räumen mit Heizplan schon zugeklappt den Heizplan-Balken mit Jetzt-Marke und der Skala 0/6/12/18/24
 (ab 1.31.0, ohne Legende und Wechselzeiten). Es ist immer nur ein Raum
 offen; ein zweiter Tipp klappt ihn wieder zu. Die Räume werden automatisch
@@ -496,10 +496,10 @@ Thermostat im Dialog zählt für die Integration als manueller Eingriff (siehe "
 
 **Kopfzeile und Reihenfolge (ab 1.24.0):** Schlanke Kopfzeile im Home-Assistant-Stil: links das
 Schließen-Kreuz, in der Mitte eine kleine graue Zeile mit dem Status (Punkt in Grün/Orange/Rot und
-OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos, falls für den Raum ein Rollladen konfiguriert ist, ein Rollladen-Symbol und ganz rechts der Knopf für die Übersicht. Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Der Rollladen-Knopf öffnet das Detailfenster des Rollladens des Raums. Den Rollladen findet die Integration automatisch: ein `cover` im selben HA-Bereich wie der Raum (direkt an der Entität oder über das Gerät; bei mehreren das mit dem Label "Rollladen"). Ohne Cover im Bereich gibt es keinen Knopf. Die Klimaanlagen-Sperre (Feld "Rollladen" im Raum) ist davon unabhängig. Ab 1.28.0 ist jede Zeile des Dialogs antippbar und öffnet das Detailfenster ihrer Entität (Temperatur, Luftfeuchtigkeit, CO2, Fenster, Geräte); die Zeile "Empfehlung" öffnet den Raum-Sensor (früher der Knopf ↗).
+OK/Hinweis/Handlungsbedarf) und darunter der Raumname, rechts rahmenlos, falls für den Raum ein Rollladen konfiguriert ist, ein Rollladen-Symbol, dann der Knopf für die Übersicht und ganz rechts die Glocke (nur im Raum, nicht in der Übersicht): sie öffnet direkt darunter ein kleines Menü mit Sprachausgabe, Push- und persistenter Benachrichtigung samt Status und Zielen (Tippen auf ein Ziel öffnet dessen Detailfenster; Esc oder Tippen daneben schließt zuerst das Menü). Die Übersicht zeigt statt des Status die Raumzahl und hat keine Knöpfe rechts. Der Rollladen-Knopf öffnet das Detailfenster des Rollladens des Raums. Den Rollladen findet die Integration automatisch: ein `cover` im selben HA-Bereich wie der Raum (direkt an der Entität oder über das Gerät; bei mehreren das mit dem Label "Rollladen"). Ohne Cover im Bereich gibt es keinen Knopf. Die Klimaanlagen-Sperre (Feld "Rollladen" im Raum) ist davon unabhängig. Ab 1.28.0 ist jede Zeile des Dialogs antippbar und öffnet das Detailfenster ihrer Entität (Temperatur, Luftfeuchtigkeit, CO2, Fenster, Geräte); die Zeile "Empfehlung" öffnet den Raum-Sensor (früher der Knopf ↗).
 Tipp: Eine Bubble-Card kann per `button_action.tap_action: more-info` mit dem Raum-Sensor direkt dieses Popup
 öffnen. Danach folgen die Abschnitte **Raumklima**
-(Messwerte plus Heizungssteuerung, statt "Messwerte"), **Lüften**, **Geräte** und **Benachrichtigungen**.
+(Messwerte plus Heizungssteuerung, statt "Messwerte"), **Lüften** und **Geräte**. Auf kleinen Bildschirmen (bis 450 px Breite oder 500 px Höhe) füllt der Dialog die Höhe bis unter die Statusleiste, auf großen ist er zentriert. Die Solltemperatur ist immer weiß; solange die Heizung heizt, glüht ein weicher Schein in der Heizungsfarbe dahinter. Plus/Minus sind dünn umrandete graue Kreise.
 Räume ohne Heizung zeigen im Raumklima keinen Steuerblock.
 
 **Layout und Farben des Dialogs (ab 1.14.1):** Das Blatt wird oben durch die Statusleiste des
