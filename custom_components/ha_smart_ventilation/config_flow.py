@@ -929,6 +929,24 @@ def _build_area_schema() -> vol.Schema:
     return vol.Schema({vol.Optional(CONF_AREA_ID): selector.AreaSelector()})
 
 
+def _room_hidden_keys(defaults: dict | None) -> set[str]:
+    """Raum-Felder, die im Formular nicht angezeigt werden (Lektion 175):
+    individuelle Zeitplan-Startzeiten und feste Vorheizzeit nur, wenn im Raum
+    ein Wert gespeichert ist (sonst genügen Raumtyp/Heizungsart), die eigene
+    Heizungs-Entität nicht, solange die Temperaturquelle als Heizung dient
+    (dann wird sie ignoriert). Gespeicherte Werte bleiben erhalten - das
+    Löschen geleerter Felder gilt nur für angezeigte Felder."""
+    defaults = defaults or {}
+    hidden: set[str] = set()
+    if not any(defaults.get(k) for k in _HEATING_TIME_FIELD_KEYS):
+        hidden.update(_HEATING_TIME_FIELD_KEYS)
+    if not defaults.get(CONF_HEATING_PREHEAT_MINUTES):
+        hidden.add(CONF_HEATING_PREHEAT_MINUTES)
+    if defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False):
+        hidden.add(CONF_HEATING_ENTITY)
+    return hidden
+
+
 def _build_room_schema(
     defaults: dict | None = None,
     area_entities: set[str] | None = None,
@@ -1060,8 +1078,11 @@ def _build_room_schema(
         yes_label="Ja – Sensor kann Comfort sperren (nur Standby)",
         no_label="Nein – Sensor nicht berücksichtigen",
     )
+    hidden_keys = _room_hidden_keys(defaults)
     time_field_markers = {
-        key: _time_override_selector(key, defaults) for key in _HEATING_TIME_FIELD_KEYS
+        key: _time_override_selector(key, defaults)
+        for key in _HEATING_TIME_FIELD_KEYS
+        if key not in hidden_keys
     }
     tts_quiet_hours_marker, tts_quiet_hours_sel = _tri_state_bool_selector(
         CONF_TTS_QUIET_HOURS_ENABLED, defaults, yes_label="Ja", no_label="Nein"
@@ -1405,16 +1426,24 @@ def _build_room_schema(
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(
-                    CONF_HEATING_PREHEAT_MINUTES,
-                    description={
-                        "suggested_value": defaults.get(CONF_HEATING_PREHEAT_MINUTES)
-                    },
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        min=0, max=360, step=5, unit_of_measurement="min",
-                    )
+                **(
+                    {}
+                    if CONF_HEATING_PREHEAT_MINUTES in hidden_keys
+                    else {
+                        vol.Optional(
+                            CONF_HEATING_PREHEAT_MINUTES,
+                            description={
+                                "suggested_value": defaults.get(
+                                    CONF_HEATING_PREHEAT_MINUTES
+                                )
+                            },
+                        ): selector.NumberSelector(
+                            selector.NumberSelectorConfig(
+                                mode=selector.NumberSelectorMode.BOX,
+                                min=0, max=360, step=5, unit_of_measurement="min",
+                            )
+                        )
+                    }
                 ),
                 vol.Optional(
                     CONF_HEATING_PREHEAT_AUTO,
@@ -1426,17 +1455,23 @@ def _build_room_schema(
                     CONF_HEATING_USE_TEMP_SOURCE,
                     default=defaults.get(CONF_HEATING_USE_TEMP_SOURCE, False),
                 ): selector.BooleanSelector(),
-                _entity_marker(
-                    CONF_HEATING_ENTITY, defaults, required=False
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=HEATING_DOMAINS,
-                        **(
-                            {"include_entities": heating_include}
-                            if heating_include
-                            else {}
-                        ),
-                    )
+                **(
+                    {}
+                    if CONF_HEATING_ENTITY in hidden_keys
+                    else {
+                        _entity_marker(
+                            CONF_HEATING_ENTITY, defaults, required=False
+                        ): selector.EntitySelector(
+                            selector.EntitySelectorConfig(
+                                domain=HEATING_DOMAINS,
+                                **(
+                                    {"include_entities": heating_include}
+                                    if heating_include
+                                    else {}
+                                ),
+                            )
+                        )
+                    }
                 ),
                 **(
                     {}
@@ -2470,7 +2505,13 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                     # Auch die Zeitplan-Startzeiten (TimeSelector): ein
                     # geleertes Feld kommt nicht als Wert an und blieb sonst
                     # für immer im Eintrag stehen (Lektion 170).
+                    # Nur Felder, die im Formular angezeigt wurden (Lektion 175):
+                    # ausgeblendete Felder fehlen immer in defaults, ihr
+                    # gespeicherter Wert muss bleiben.
+                    hidden = getattr(self, "_room_hidden_shown", set())
                     for key in (*ROOM_OPTIONAL_ENTITY_KEYS, *_HEATING_TIME_FIELD_KEYS):
+                        if key in hidden:
+                            continue
                         if not defaults.get(key):
                             new_data.pop(key, None)
                     self.hass.config_entries.async_update_entry(
@@ -2481,6 +2522,8 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                     return self.async_create_entry(title="", data={})
 
         area_entities = _entities_for_area(self.hass, self._room_filter_area_id)
+        # Merken, welche Felder dieses Formular ausblendet (siehe Speichern).
+        self._room_hidden_shown = _room_hidden_keys(defaults)
 
         return self.async_show_form(
             step_id="room",

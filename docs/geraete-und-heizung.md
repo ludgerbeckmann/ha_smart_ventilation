@@ -192,7 +192,11 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   genutzt (kein Durchfall auf die globalen Startzeiten). Ohne Raumtyp ändert
   sich nichts. Der Raumtyp wirkt nur auf Heizungs-Temperaturen und
   Zeitplan-Startzeiten (nicht auf Schwelle, Lüftungswerte oder die
-  Nutzungserkennung).
+  Nutzungserkennung). Eigene Startzeiten pro Raum werden seit 1.31.2 im
+  Raum-Formular nur noch angezeigt, wenn für den Raum bereits eine gespeichert
+  ist; neue Abweichungen laufen über den Raumtyp. Das Feld "Heizungs-Entität"
+  ist ausgeblendet, solange "Temperaturquelle auch als Heizung" aktiv ist
+  (dort wird es ignoriert). Gespeicherte Werte bleiben erhalten.
 
   | Raumtyp | Comfort / Standby / Nacht | Startzeiten Werktag / Wochenende |
   |---|---|---|
@@ -276,7 +280,8 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   (Licht/Person) wird nicht vorgeheizt. Ohne Heizungsart ändert sich nichts.
   - **Feste Vorheizzeit:** Vorbelegung **20 Min. (Heizkörper)** bzw.
     **120 Min. (Fußbodenheizung)**; im Feld "Vorheizzeit" überschreibbar
-    (leer oder 0 = Vorbelegung).
+    (leer oder 0 = Vorbelegung). Das Feld erscheint im Raum-Formular nur,
+    wenn für den Raum bereits ein Wert gespeichert ist (seit 1.31.2).
   - **Automatisch lernen (Standard an):** Die Integration misst jeden
     Aufheizlauf auf Comfort (mindestens 30 Min. und 0,5 K Anstieg, Ende bei
     Erreichen des Sollwerts; Läufe mit offenem Fenster oder manueller
