@@ -418,8 +418,8 @@ tap_action:
 Der Dialog folgt der Umschaltung der Home-Assistant-Fenster (ab 1.32.1): Auf kleinen Bildschirmen (bis 450 px Breite
 oder bis 500 px Höhe, also Handy hochkant und quer) ist er ein Sheet in voller Breite am unteren Rand, mit Griff und
 Wegwischen nach unten. Auf größeren Bildschirmen (Tablet, Desktop) erscheint er zentriert mit allen Ecken gerundet,
-höchstens 560 px breit, ohne Griff und Wegwischen. Die Umschaltung wirkt live (Drehen, Fenstergröße). Dashboard-
-Hintergrundfarbe, unscharf abgedunkelter Hintergrund; die Seite dahinter scrollt nicht mit. Schließen: Kreuz, Tippen
+höchstens 560 px breit, ohne Griff und Wegwischen. Die Umschaltung wirkt live (Drehen, Fenstergröße). Hintergrund in
+der Dialogfarbe von Home Assistant (`--ha-dialog-surface-background`, sonst Kartenfarbe), unscharf abgedunkelter Hintergrund dahinter; die Seite dahinter scrollt nicht mit. Schließen: Kreuz, Tippen
 neben den Dialog oder Esc.
 
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht

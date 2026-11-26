@@ -1344,7 +1344,7 @@ class SmartClimateCard extends HTMLElement {
 
       /* Kompakte Raumansicht (Raum-Dialog, compact_room): Home-Assistant-Stil */
       ha-card.sc-compact { box-shadow: none; border: none; background: transparent; }
-      ha-card.sc-compact .smart-climate-card-content { padding: 4px 12px 10px; }
+      ha-card.sc-compact .smart-climate-card-content { padding: 4px 20px 10px; }
       .cr-top { display: flex; align-items: center; gap: 8px; margin: 0 4px 4px; padding-right: 40px; }
       .cr-top h1 { flex: 1; margin: 0; font-size: 1.35em; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
       .cr-hchip {
@@ -1876,7 +1876,7 @@ function openRoomDialog(key) {
   overlay.innerHTML =
     "<style>" +
     ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),8px));overflow:hidden;border-radius:28px 28px 0 0;border:1px solid var(--divider-color,rgba(127,127,127,.45));border-bottom:0;box-shadow:0 -6px 28px rgba(0,0,0,.45);background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-up .24s ease-out}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),8px));overflow:hidden;border-radius:28px 28px 0 0;border:1px solid var(--divider-color,rgba(127,127,127,.45));border-bottom:0;box-shadow:0 -6px 28px rgba(0,0,0,.45);background:var(--ha-dialog-surface-background,var(--mdc-theme-surface,var(--card-background-color,#fff)));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-up .24s ease-out}" +
     "@keyframes sc-up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
     ".sc-room-grip{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.6));opacity:.9;pointer-events:none;z-index:3}.sc-room-scroll{padding-bottom:env(safe-area-inset-bottom,0px);overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
@@ -1902,7 +1902,7 @@ function openRoomDialog(key) {
     ".sc-room-thermo-fb{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 16px}" +
     ".sc-room-thermo-fb button{border:1px solid var(--divider-color,#999);border-radius:18px;background:transparent;color:inherit;padding:8px 16px;font-size:15px;cursor:pointer}" +
     ".sc-room-missing{padding:8px 16px 24px}" +
-    ".ov{padding:0 12px 16px}" +
+    ".ov{padding:0 20px 16px}" +
     ".ov-counts{display:flex;gap:8px;margin:2px 0 4px}" +
     ".ov-cnt{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;padding:10px 10px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:transparent}" +
     ".ov-cnt i{width:9px;height:9px;border-radius:50%;flex:none}.ov-cnt b{font-size:18px;font-weight:600}.ov-cnt span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}" +
@@ -1945,7 +1945,7 @@ function openRoomDialog(key) {
   listBtn.type = "button";
   listBtn.setAttribute("aria-label", "Übersicht");
   listBtn.title = "Übersicht";
-  listBtn.innerHTML = '<ha-icon icon="mdi:view-list"></ha-icon>';
+  listBtn.innerHTML = '<ha-icon icon="mdi:home-group"></ha-icon>';
   bar.appendChild(close);
   bar.appendChild(titleEl);
   const shutterId = (() => {
