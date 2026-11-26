@@ -487,6 +487,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._heating_mode_wanted: str | None = None
         self._heating_mode_since = None
         self._heating_prevented: str | None = None
+        # Tatsächlich gemeldeter Heizmodus des heutigen Tages als Liste
+        # [Startminute, Modus] (Modus "" = unbekannt), nur zur Anzeige im
+        # Heizplan (Lektion 176); wird um Mitternacht zurückgesetzt.
+        self._heating_log: list = []
+        self._heating_log_day = None
         # Nutzungserkennung (learning.py): gelernte Nutzung je Tagestyp und
         # Stunde, lokal im Store dieses Eintrags gespeichert.
         self._usage = UsageProfile()
@@ -1173,6 +1178,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             if self._heating_last_runtime_minutes is not None:
                 attrs["heizung_letzte_laufzeit"] = self._heating_last_runtime_minutes
             attrs["heizung_modus"] = heating_mode_active
+            self._log_heating_actual(heating_mode_active)
+            if self._heating_log:
+                attrs["heizung_tagesverlauf"] = [list(e) for e in self._heating_log]
+                attrs["heizung_tagesverlauf_tag"] = self._heating_log_day.isoformat()
             attrs["heizung_zieltemperatur"] = current_target
             attrs["heizung_grund"] = self._heating_reason
             attrs.update(self._usage_attributes())
@@ -1276,6 +1285,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 "building_protection",
             ):
                 self._heating_state = attrs["heizung_modus"]
+            log = attrs.get("heizung_tagesverlauf")
+            if (
+                isinstance(log, list)
+                and attrs.get("heizung_tagesverlauf_tag") == dt_util.now().date().isoformat()
+            ):
+                self._heating_log = [
+                    [int(e[0]), str(e[1])]
+                    for e in log
+                    if isinstance(e, (list, tuple)) and len(e) == 2
+                ]
+                self._heating_log_day = dt_util.now().date()
             if attrs.get("heizung_soll_modus") in (
                 "comfort",
                 "standby",
@@ -2159,6 +2179,28 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._preheating = True
             return "comfort"
         return mode
+
+    def _log_heating_actual(self, mode: str | None) -> None:
+        """Hält den live gemeldeten Heizmodus für den Heizplan-Balken fest
+        (nur bei Änderung, je Tag; "" = unbekannt). Idempotent, deshalb ohne
+        Problem direkt beim Lesen der Attribute aufrufbar (Lektion 31)."""
+        now = dt_util.now()
+        today = now.date()
+        mode_str = mode or ""
+        if self._heating_log_day != today:
+            carry = self._heating_log[-1][1] if self._heating_log else ""
+            self._heating_log_day = today
+            self._heating_log = [[0, carry]] if carry else []
+        minute = now.hour * 60 + now.minute
+        last = self._heating_log[-1] if self._heating_log else None
+        if last is not None and last[1] == mode_str:
+            return
+        if last is None and not mode_str:
+            return
+        if last is not None and last[0] == minute:
+            last[1] = mode_str
+            return
+        self._heating_log.append([minute, mode_str])
 
     def _heating_day_plan(self) -> list | None:
         """Plan der Heizungs-Modi für den ganzen heutigen Tag als Liste von

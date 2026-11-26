@@ -181,35 +181,77 @@ const SC_PLAN_COLOR = {
   comfort: SC_HEATING_COLOR.comfort,
   standby: SC_HEATING_COLOR.standby,
   night: SC_HEATING_COLOR.night,
+  building_protection: SC_HEATING_COLOR.building_protection,
 };
-const PLAN_LABEL = { comfort: "Komfort", standby: "Standby", night: "Eco (Nacht)" };
+const PLAN_LABEL = {
+  comfort: "Komfort",
+  standby: "Standby",
+  night: "Eco (Nacht)",
+  building_protection: "Gebäudeschutz",
+};
 
-function planHtml(plan, now, compact) {
-  if (!Array.isArray(plan) || !plan.length) return "";
-  const segs = [];
-  for (const entry of plan) {
+// Liste [[Startminute, Modus], ...] bereinigen und sortieren.
+function planEntries(list) {
+  const out = [];
+  if (!Array.isArray(list)) return out;
+  for (const entry of list) {
     if (!Array.isArray(entry)) continue;
     const start = Number(entry[0]);
     if (!Number.isFinite(start) || start < 0 || start >= 1440) continue;
-    segs.push([start, typeof entry[1] === "string" ? entry[1] : ""]);
+    out.push([start, typeof entry[1] === "string" ? entry[1] : ""]);
   }
-  if (!segs.length) return "";
-  segs.sort((x, y) => x[0] - y[0]);
-  if (segs[0][0] > 0) segs.unshift([0, ""]);
+  out.sort((x, y) => x[0] - y[0]);
+  return out;
+}
+
+// Modus einer sortierten Liste zur Minute t ("" = noch kein Eintrag).
+function planModeAt(entries, t) {
+  let mode = "";
+  for (const [start, m] of entries) {
+    if (start <= t) mode = m;
+    else break;
+  }
+  return mode;
+}
+
+// history (Attribut heizung_tagesverlauf): was bis jetzt wirklich lief. Bis zur
+// Jetzt-Marke gilt der echte Verlauf (volle Farbe), danach der Plan (abgedunkelt);
+// wo kein Verlauf bekannt ist, bleibt der Plan stehen.
+function planHtml(plan, now, compact, history) {
+  const planE = planEntries(plan);
+  const histE = planEntries(history).filter((e) => e[1] !== "");
+  if (!planE.length && !histE.length) return "";
+  const d = now instanceof Date ? now : new Date();
+  const nowMin = d.getHours() * 60 + d.getMinutes();
+  const hasHist = histE.length > 0;
+  const cuts = new Set([0, ...planE.map((e) => e[0]), ...planEntries(history).map((e) => e[0])]);
+  if (hasHist && nowMin > 0 && nowMin < 1440) cuts.add(nowMin);
+  const points = [...cuts].sort((x, y) => x - y);
+  const segs = [];
+  points.forEach((start, i) => {
+    const end = i + 1 < points.length ? points[i + 1] : 1440;
+    const past = hasHist && start < nowMin;
+    let mode = past ? planModeAt(planEntries(history), start) : "";
+    if (!mode) mode = planModeAt(planE, start);
+    const fut = hasHist && !past;
+    const last = segs[segs.length - 1];
+    if (last && last.mode === mode && last.fut === fut) last.end = end;
+    else segs.push({ start, end, mode, fut });
+  });
   const hhmm = (m) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
   let bar = "";
   const times = [];
-  segs.forEach(([start, mode], i) => {
-    const end = i + 1 < segs.length ? segs[i + 1][0] : 1440;
-    const known = Object.prototype.hasOwnProperty.call(SC_PLAN_COLOR, mode);
-    const label = known ? PLAN_LABEL[mode] : "kein Plan";
-    bar += `<span class="plan-seg${known ? "" : " plan-none"}" style="flex:${end - start} 0 0;${known ? `background:${SC_PLAN_COLOR[mode]}` : ""}" title="${hhmm(start)}–${end >= 1440 ? "24:00" : hhmm(end)} ${esc(label)}"></span>`;
-    if (known) {
-      times.push(`<span class="plan-t"><span class="plan-dot" style="background:${SC_PLAN_COLOR[mode]}"></span>${hhmm(start)} ${esc(label)}</span>`);
+  let lastMode = null;
+  for (const s of segs) {
+    const known = Object.prototype.hasOwnProperty.call(SC_PLAN_COLOR, s.mode);
+    const label = known ? PLAN_LABEL[s.mode] : "kein Plan";
+    bar += `<span class="plan-seg${known ? "" : " plan-none"}${s.fut ? " plan-fut" : ""}" style="flex:${s.end - s.start} 0 0;${known ? `background:${SC_PLAN_COLOR[s.mode]}` : ""}" title="${hhmm(s.start)}–${s.end >= 1440 ? "24:00" : hhmm(s.end)} ${esc(label)}"></span>`;
+    if (known && s.mode !== lastMode) {
+      times.push(`<span class="plan-t"><span class="plan-dot" style="background:${SC_PLAN_COLOR[s.mode]}"></span>${hhmm(s.start)} ${esc(label)}</span>`);
     }
-  });
-  const d = now instanceof Date ? now : new Date();
-  const nowPct = ((d.getHours() * 60 + d.getMinutes()) / 1440) * 100;
+    lastMode = s.mode;
+  }
+  const nowPct = (nowMin / 1440) * 100;
   const tick = (h) =>
     `<span style="${h === 0 ? "left:0;transform:none" : h === 24 ? "right:0;transform:none" : `left:${(h / 24) * 100}%`}">${h}</span>`;
   return (
@@ -409,8 +451,8 @@ function crCompactRoom(c) {
       clampKey: `${a.raum}|heat`,
       right: runtime(a.heizung_an, a.heizung_seit, a.heizung_letzte_laufzeit),
     });
-    if (has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) {
-      const planBlock = planHtml(a.heizung_tagesplan);
+    if ((has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) || (has(a, "heizung_tagesverlauf") && Array.isArray(a.heizung_tagesverlauf))) {
+      const planBlock = planHtml(a.heizung_tagesplan, undefined, false, a.heizung_tagesverlauf);
       if (planBlock) {
         const planOpen = c.planOpen === true;
         dev += `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-planfold${planOpen ? " open" : ""}" data-plan-room="${esc(a.raum)}">` +
@@ -878,8 +920,8 @@ class SmartClimateCard extends HTMLElement {
           grund += ` <br>(Sollstellung: ${roundStr(a.heizung_zieltemperatur, 1)} °C)`;
         }
         deviceRows += `<tr><td class="nw">${name}</td><td class="center nw">${laufzeit}</td><td>${cellDiv(`${a.raum}|heat`, grund)}</td></tr>`;
-        if (has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) {
-          const planBlock = planHtml(a.heizung_tagesplan);
+        if ((has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) || (has(a, "heizung_tagesverlauf") && Array.isArray(a.heizung_tagesverlauf))) {
+          const planBlock = planHtml(a.heizung_tagesplan, undefined, false, a.heizung_tagesverlauf);
           if (planBlock) deviceRows += `<tr><td style="white-space:nowrap">Heizplan</td><td colspan="2">${planBlock}</td></tr>`;
         }
       }
@@ -1317,7 +1359,7 @@ class SmartClimateCard extends HTMLElement {
         text-transform: uppercase; color: var(--secondary-text-color, #727272);
       }
       ha-card.sc-compact .smart-climate-card-content > .cr-h:first-child { margin-top: 6px; }
-      .cr-sec { background: var(--secondary-background-color, rgba(127, 127, 127, 0.08)); border-radius: 14px; padding: 0 10px; }
+      .cr-sec { background: transparent; border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); border-radius: 14px; padding: 0 10px; }
       .cr-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
       .cr-row:last-child { border-bottom: 0; }
       .cr-row.cr-link { cursor: pointer; }
@@ -1352,6 +1394,7 @@ class SmartClimateCard extends HTMLElement {
       .plan-wrap { position: relative; }
       .plan-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--divider-color, #e0e0e0); }
       .plan-seg { height: 100%; min-width: 0; }
+      .plan-fut { opacity: 0.6; }
       .plan-none { background: repeating-linear-gradient(45deg, rgba(127, 127, 127, 0.35) 0 4px, transparent 4px 8px); }
       .plan-now { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--primary-text-color, #000); }
       .plan-scale { position: relative; height: 1.2em; margin-top: 3px; font-size: 0.75em; color: var(--secondary-text-color, #727272); }
@@ -1613,7 +1656,7 @@ function scOverview(hass) {
     if (a.luftentfeuchter_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Luftentfeuchter läuft"><ha-icon icon="mdi:air-humidifier"></ha-icon></span>`);
     if (a.klimaanlage_an === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Klimaanlage läuft"><ha-icon icon="mdi:snowflake"></ha-icon></span>`);
     if (a.duschen_erkannt === true) dev.push(`<span class="ov-dev" style="color:${SC_COLOR.blue}" title="Dusche aktiv"><ha-icon icon="mdi:shower-head"></ha-icon></span>`);
-    const planRow = has(a, "heizung_tagesplan") ? planHtml(a.heizung_tagesplan, undefined, true) : "";
+    const planRow = has(a, "heizung_tagesplan") || has(a, "heizung_tagesverlauf") ? planHtml(a.heizung_tagesplan, undefined, true, a.heizung_tagesverlauf) : "";
     rooms.push({
       id,
       html:
@@ -1832,12 +1875,12 @@ function openRoomDialog(key) {
   overlay.setAttribute("aria-modal", "true");
   overlay.innerHTML =
     "<style>" +
-    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 40px) 12px calc(env(safe-area-inset-bottom,0px) + 16px);background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
-    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:100%;overflow:hidden;border-radius:28px;border:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 8px 28px rgba(0,0,0,.45);background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-down .22s ease-out}" +
-    "@keyframes sc-down{from{transform:translateY(-24px);opacity:0}to{transform:none;opacity:1}}" +
+    ".sc-room-dialog{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;padding:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-sizing:border-box;overscroll-behavior:contain;touch-action:none;animation:sc-fade .2s ease-out}" +
+    ".sc-room-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:600px;max-height:calc(100% - max(env(safe-area-inset-top,0px),8px));overflow:hidden;border-radius:28px 28px 0 0;border:1px solid var(--divider-color,rgba(127,127,127,.45));border-bottom:0;box-shadow:0 -6px 28px rgba(0,0,0,.45);background:var(--primary-background-color,var(--card-background-color,#fff));color:var(--primary-text-color,#000);box-sizing:border-box;animation:sc-up .24s ease-out}" +
+    "@keyframes sc-up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}" +
     "@keyframes sc-fade{from{opacity:0}to{opacity:1}}" +
-    ".sc-room-scroll{overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
-    ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:8px 8px 2px}" +
+    ".sc-room-grip{position:absolute;top:7px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--divider-color,rgba(127,127,127,.6));opacity:.9;pointer-events:none;z-index:3}.sc-room-scroll{padding-bottom:env(safe-area-inset-bottom,0px);overflow:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch}" +
+    ".sc-room-bar{flex:none;position:relative;z-index:2;display:flex;align-items:center;gap:2px;padding:18px 8px 2px}" +
     ".sc-room-close,.sc-room-std,.sc-room-list{width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--primary-text-color,#000);cursor:pointer;flex:none;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;font-size:22px;--mdc-icon-size:24px}" +
     ".sc-room-title{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;padding:0 6px;min-height:48px}" +
     ".sc-room-sub{display:flex;align-items:center;gap:6px;font-size:13px;line-height:1.25;color:var(--secondary-text-color,#727272);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -1861,15 +1904,15 @@ function openRoomDialog(key) {
     ".sc-room-missing{padding:8px 16px 24px}" +
     ".ov{padding:0 12px 16px}" +
     ".ov-counts{display:flex;gap:8px;margin:2px 0 4px}" +
-    ".ov-cnt{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;padding:10px 10px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)))}" +
+    ".ov-cnt{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;padding:10px 10px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:transparent}" +
     ".ov-cnt i{width:9px;height:9px;border-radius:50%;flex:none}.ov-cnt b{font-size:18px;font-weight:600}.ov-cnt span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}" +
     ".ov-sec{margin:14px 4px 6px;font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--secondary-text-color,#727272)}" +
     ".ov-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}" +
     "@media (min-width:520px){.ov-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}" +
-    ".ov-tile{padding:8px 12px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));display:flex;flex-direction:column;gap:2px;min-width:0}" +
+    ".ov-tile{padding:8px 12px;border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:14px;background:transparent;display:flex;flex-direction:column;gap:2px;min-width:0}" +
     ".ov-tile span{font-size:12px;color:var(--secondary-text-color,#727272);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ov-tile b{font-size:16px;font-weight:600}" +
-    ".ov-list{border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:var(--ha-card-background,var(--card-background-color,rgba(127,127,127,.12)));overflow:hidden}" +
-    ".ov-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-plan{flex:0 0 100%;min-width:0;margin-top:-2px}.ov-plan .plan-wrap{position:relative}.ov-plan .plan-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--divider-color,#e0e0e0)}.ov-plan .plan-seg{height:100%;min-width:0}.ov-plan .plan-none{background:repeating-linear-gradient(45deg,rgba(127,127,127,.35) 0 4px,transparent 4px 8px)}.ov-plan .plan-now{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--primary-text-color,#000)}.ov-plan .plan-scale{position:relative;height:1.1em;margin-top:2px;font-size:11px;color:var(--secondary-text-color,#727272)}.ov-plan .plan-scale span{position:absolute;transform:translateX(-50%)}.ov-room+.ov-room{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
+    ".ov-list{border:1px solid var(--divider-color,rgba(127,127,127,.35));border-radius:16px;background:transparent;overflow:hidden}" +
+    ".ov-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;min-height:44px}.ov-plan{flex:0 0 100%;min-width:0;margin-top:-2px}.ov-plan .plan-wrap{position:relative}.ov-plan .plan-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--divider-color,#e0e0e0)}.ov-plan .plan-seg{height:100%;min-width:0}.ov-plan .plan-fut{opacity:.6}.ov-plan .plan-none{background:repeating-linear-gradient(45deg,rgba(127,127,127,.35) 0 4px,transparent 4px 8px)}.ov-plan .plan-now{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--primary-text-color,#000)}.ov-plan .plan-scale{position:relative;height:1.1em;margin-top:2px;font-size:11px;color:var(--secondary-text-color,#727272)}.ov-plan .plan-scale span{position:absolute;transform:translateX(-50%)}.ov-room+.ov-room{border-top:1px solid var(--divider-color,rgba(127,127,127,.25))}" +
     ".ov-chev{flex:none;color:var(--secondary-text-color,#727272);transition:transform .15s ease;--mdc-icon-size:22px}.ov-room.open .ov-chev{transform:rotate(90deg)}" +
     ".ov-body{display:none;padding:0 4px 8px}.ov-room.open .ov-body{display:block}" +
     ".ov-ico{width:36px;height:36px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(127,127,127,.18);color:var(--c);--mdc-icon-size:20px}" +
@@ -1884,7 +1927,7 @@ function openRoomDialog(key) {
   close.className = "sc-room-close";
   close.type = "button";
   close.setAttribute("aria-label", "Schließen");
-  close.textContent = "✕";
+  close.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>';
   const bar = document.createElement("div");
   bar.className = "sc-room-bar";
   const std = document.createElement("button");
@@ -1914,6 +1957,9 @@ function openRoomDialog(key) {
     if (shutterId) bar.appendChild(std);
     bar.appendChild(listBtn);
   }
+  const grip = document.createElement("div");
+  grip.className = "sc-room-grip";
+  panel.appendChild(grip);
   panel.appendChild(bar);
   const scroll = document.createElement("div");
   scroll.className = "sc-room-scroll";
@@ -2093,6 +2139,43 @@ function openRoomDialog(key) {
   overlay.addEventListener("click", (ev) => {
     if (ev.target === overlay) scCloseRoomDialog();
   });
+  // Wegwischen nach unten wie bei den Home-Assistant-Fenstern: am Kopfbereich
+  // immer, im Inhalt nur, wenn er ganz oben steht. Über 110 px oder schnell
+  // schließt es, sonst federt es zurück.
+  let sw = null;
+  panel.addEventListener("touchstart", (ev) => {
+    if (ev.touches.length !== 1) { sw = null; return; }
+    const inBar = ev.composedPath().includes(bar) || ev.composedPath().includes(grip);
+    sw = { y: ev.touches[0].clientY, t: Date.now(), ok: inBar || scroll.scrollTop <= 0, drag: false, dy: 0 };
+  }, { passive: true });
+  panel.addEventListener("touchmove", (ev) => {
+    if (!sw || !sw.ok || !ev.touches.length) return;
+    const dy = ev.touches[0].clientY - sw.y;
+    if (!sw.drag && dy > 8) {
+      sw.drag = true;
+      panel.style.animation = "none";
+      panel.style.transition = "none";
+    }
+    if (!sw.drag) return;
+    sw.dy = Math.max(0, dy);
+    panel.style.transform = `translateY(${sw.dy}px)`;
+  }, { passive: true });
+  const swipeEnd = () => {
+    if (!sw || !sw.drag) { sw = null; return; }
+    const dt = Math.max(1, Date.now() - sw.t);
+    const fast = sw.dy > 40 && sw.dy / dt > 0.5;
+    const go = sw.dy > 110 || fast;
+    sw = null;
+    panel.style.transition = "transform .2s ease-out";
+    if (go) {
+      panel.style.transform = "translateY(100%)";
+      setTimeout(scCloseRoomDialog, 190);
+    } else {
+      panel.style.transform = "";
+    }
+  };
+  panel.addEventListener("touchend", swipeEnd, { passive: true });
+  panel.addEventListener("touchcancel", swipeEnd, { passive: true });
   // Bei offenem Dialog neue Zustände übernehmen (die Karte selbst bekommt
   // hass sonst nur vom Dashboard).
   const timer = setInterval(() => {
