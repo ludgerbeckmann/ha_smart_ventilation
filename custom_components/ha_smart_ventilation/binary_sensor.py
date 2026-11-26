@@ -213,6 +213,8 @@ from .const import (
     DEFAULT_TTS_MSG_OPEN_HUMIDITY,
     DEFAULT_TTS_MSG_OPEN_TEMP,
     DEFAULT_TTS_MSG_REMINDER,
+    DEFAULT_TTS_MSG_TANK_FULL,
+    TTS_PRONUNCIATION,
     DEFAULT_MSG_OPEN_CO2,
     DEFAULT_MSG_OPEN_HUMIDITY,
     DEFAULT_MSG_OPEN_TEMP,
@@ -1508,7 +1510,7 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             return
         parts: list[str] = []
         if self._tank_full_state:
-            parts.append(self._tank_full_message())
+            parts.append(self._tank_speech_message())
         recommendation = self._pending_recommendation_message()
         if recommendation:
             parts.append(recommendation)
@@ -4741,6 +4743,8 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         # Jede Ansage steht im push_verlauf (mit Anlass und Text) - sonst ist
         # nachträglich nicht erkennbar, WARUM eine Ansage kam.
         self._log_push(f"Sprachausgabe ({source or 'ohne Angabe'}): {message}")
+        for word, spoken in TTS_PRONUNCIATION.items():
+            message = message.replace(word, spoken)
         volume_percent = self._effective(CONF_TTS_VOLUME, DEFAULT_TTS_VOLUME)
         playback_mode = self._effective(CONF_TTS_PLAYBACK_MODE, DEFAULT_TTS_PLAYBACK_MODE)
 
@@ -5320,6 +5324,10 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._tank_full_state = tank_full
             await self._notify_tank_full(tank_full)
 
+    def _tank_speech_message(self) -> str:
+        """Fester Sprachtext "Wassertank voll" (ohne schwer sprechbare Wörter)."""
+        return DEFAULT_TTS_MSG_TANK_FULL.format(raum=self._config[CONF_ROOM_NAME])
+
     def _tank_full_message(self) -> str:
         """Text "Wassertank voll" (CONF_MSG_TANK_FULL) für diesen Raum."""
         room = self._config[CONF_ROOM_NAME]
@@ -5379,7 +5387,9 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 and not self._is_tts_quiet_hours_active()
                 and not self._is_tts_light_off()
             ):
-                await self._play_tts(sonos_entities, tts_entity, message, "Wassertank")
+                await self._play_tts(
+                    sonos_entities, tts_entity, self._tank_speech_message(), "Wassertank"
+                )
 
         if await self._push_to_targets(
             message,

@@ -458,9 +458,13 @@ oder "Bitte das Fenster im Büro wegen Frostgefahr wieder schließen." Das gilt
 für alle Anlässe (Öffnen wegen Temperatur/Luftfeuchtigkeit/CO2, die acht
 Schließen-Gründe, Erinnerung) und auch für die wiederholte Ansage beim
 Einschalten des Lichts. App-Push und die dauerhafte Benachrichtigung
-behalten die einstellbaren Texte mit `{wert}`/`{schwelle}`. Unverändert für
-alle Kanäle gleich bleiben die Texte für Wassertank, Fenster-Gerät-Konflikt
-und Duschdauer (diese nennt weiterhin die Minuten). Die allgemeinen
+behalten die einstellbaren Texte mit `{wert}`/`{schwelle}`. Seit 1.31.1 hat auch
+die Wassertank-Ansage einen festen Sprachtext ("Im Bad ist der Wassertank
+voll. Bitte leeren."), und "Luftentfeuchter" wird für die Sprachausgabe als
+"Luft-Entfeuchter" geschrieben (bessere Aussprache; Liste
+`TTS_PRONUNCIATION` in `const.py`). Unverändert für alle Kanäle gleich
+bleiben die Texte für Fenster-Gerät-Konflikt und Duschdauer (diese nennt
+weiterhin die Minuten). Die allgemeinen
 Sprachtexte sind nicht einstellbar; eigene Anpassungen der Texte oben wirken
 daher nur noch auf Push und persistente Benachrichtigung. Der vollständige
 gesprochene Text steht im Attribut `push_verlauf`.
