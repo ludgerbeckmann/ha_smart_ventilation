@@ -841,6 +841,14 @@ DEFAULT_TTS_MSG_CLOSE_OUTDOOR_WETTER = (
 DEFAULT_TTS_MSG_CLOSE_DEFAULT = (
     "Bitte das Fenster im {raum} wieder schließen, es ist wieder kühl genug."
 )
+DEFAULT_TTS_MSG_TANK_FULL = "Im {raum} ist der Wassertank voll. Bitte leeren."
+
+# Aussprache-Korrekturen nur für die Sprachausgabe (Teilstring-Ersetzung vor
+# dem Sprechen); Push/Web-Texte bleiben unverändert.
+TTS_PRONUNCIATION = {
+    "Luftentfeuchter": "Luft-Entfeuchter",
+    "luftentfeuchter": "luft-entfeuchter",
+}
 DEFAULT_TTS_MSG_REMINDER = (
     "Erinnerung: Das Fenster im {raum} sollte noch geöffnet sein."
 )
