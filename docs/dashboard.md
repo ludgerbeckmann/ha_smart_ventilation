@@ -415,10 +415,12 @@ tap_action:
   smart_climate_room: badezimmer   # Raumname, Slug oder Entity-ID des Binärsensors
 ```
 
-Der Dialog sitzt wie die Fenster von Home Assistant am oberen Rand mit Luft darüber (ab 1.31.0; bis 600 px breit und
-horizontal zentriert, alle Ecken gerundet), mit der Dashboard-Hintergrundfarbe und unscharf abgedunkeltem Hintergrund.
-So springt die Ansicht nicht, wenn man über eine Bezeichnung in das Home-Assistant-Fenster wechselt. Die Seite dahinter
-scrollt nicht mit. Schließen: Kreuz, Tippen neben den Dialog oder Esc (das Wegwischen nach unten entfällt).
+Der Dialog folgt der Umschaltung der Home-Assistant-Fenster (ab 1.32.1): Auf kleinen Bildschirmen (bis 450 px Breite
+oder bis 500 px Höhe, also Handy hochkant und quer) ist er ein Sheet in voller Breite am unteren Rand, mit Griff und
+Wegwischen nach unten. Auf größeren Bildschirmen (Tablet, Desktop) erscheint er zentriert mit allen Ecken gerundet,
+höchstens 560 px breit, ohne Griff und Wegwischen. Die Umschaltung wirkt live (Drehen, Fenstergröße). Dashboard-
+Hintergrundfarbe, unscharf abgedunkelter Hintergrund; die Seite dahinter scrollt nicht mit. Schließen: Kreuz, Tippen
+neben den Dialog oder Esc.
 
 Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohne Übersicht
 und Außen-Messwerte): Titel mit Status-Symbol (Haken/Ausrufezeichen/Warndreieck in Grün/Orange/Rot), dann die Abschnitte
@@ -649,7 +651,8 @@ dem ersten Start nach dem Update, Gerät nicht verfügbar), bleibt der Plan
 stehen. Der Verlauf gilt nur für den heutigen Tag (Attribut
 `heizung_tagesverlauf`, wird um Mitternacht zurückgesetzt).
 
-**Popup wie bei Home Assistant (ab 1.32.0):** Das Raum-Popup liegt in voller
-Breite bündig am unteren Rand, oben abgerundet, mit Griff und großem
-Schließen-Kreuz; Wegwischen nach unten (am Kopf oder im ganz oben stehenden
-Inhalt) schließt es. Die Bereiche sind nur noch mit Konturen umrandet.
+**Popup wie bei Home Assistant (ab 1.32.0):** Auf kleinen Bildschirmen (bis 450 px
+Breite oder 500 px Höhe) liegt das Raum-Popup in voller Breite bündig am unteren Rand,
+oben abgerundet, mit Griff und großem Schließen-Kreuz; Wegwischen nach unten (am Kopf
+oder im ganz oben stehenden Inhalt) schließt es. Auf größeren Bildschirmen (ab 1.32.1)
+steht es zentriert mit allen Ecken gerundet, ohne Griff und Wegwischen. Die Bereiche sind nur noch mit Konturen umrandet.
