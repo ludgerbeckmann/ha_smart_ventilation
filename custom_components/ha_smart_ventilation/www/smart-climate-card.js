@@ -1920,6 +1920,7 @@ function openRoomDialog(key) {
     ".ov-r{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:55%}.ov-vals{font-size:13px;white-space:nowrap}" +
     ".ov-devs{display:flex;gap:4px;--mdc-icon-size:18px}.ov-dev{display:inline-flex}" +
     ".ov-foot{margin:12px 4px 0;font-size:12px;color:var(--secondary-text-color,#727272);text-align:center}" +
+    "@media (min-width:451px) and (min-height:501px){.sc-room-dialog{align-items:center;padding:24px}.sc-room-panel{max-width:560px;max-height:calc(100% - 48px);border-radius:28px;border-bottom:1px solid var(--divider-color,rgba(127,127,127,.45));box-shadow:0 12px 48px rgba(0,0,0,.5);animation:sc-fade .18s ease-out}.sc-room-grip{display:none}.sc-room-bar{padding-top:10px}.sc-room-scroll{padding-bottom:0}}" +
     "</style>";
   const panel = document.createElement("div");
   panel.className = "sc-room-panel";
@@ -2143,8 +2144,9 @@ function openRoomDialog(key) {
   // immer, im Inhalt nur, wenn er ganz oben steht. Über 110 px oder schnell
   // schließt es, sonst federt es zurück.
   let sw = null;
+  const isSheet = () => !(window.matchMedia && window.matchMedia("(min-width:451px) and (min-height:501px)").matches);
   panel.addEventListener("touchstart", (ev) => {
-    if (ev.touches.length !== 1) { sw = null; return; }
+    if (ev.touches.length !== 1 || !isSheet()) { sw = null; return; }
     const inBar = ev.composedPath().includes(bar) || ev.composedPath().includes(grip);
     sw = { y: ev.touches[0].clientY, t: Date.now(), ok: inBar || scroll.scrollTop <= 0, drag: false, dy: 0 };
   }, { passive: true });
