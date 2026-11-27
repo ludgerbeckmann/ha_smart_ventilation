@@ -93,8 +93,7 @@ function scSetpointHtml(value) {
   const t = roundStr(value, 1);
   if (t === null) return "";
   const [whole, dec] = t.split(".");
-  const d = dec && dec !== "0" ? `<small class="sc-th-dec">.${esc(dec)}</small>` : "";
-  return `${esc(whole)}${d}<small class="sc-th-unit">&nbsp;°C</small>`;
+  return `<span class="sc-th-num">${esc(whole)}</span><span class="sc-th-side"><small class="sc-th-unit">°C</small><small class="sc-th-dec">,${esc(dec || "0")}</small></span>`;
 }
 
 function roundStr(value, decimals) {
@@ -362,7 +361,7 @@ function crCompactRoom(c) {
       chipColor: hlColor,
     });
   }
-  const ventSection = vent ? `<h2 class="cr-h">Lüften</h2><div class="cr-sec">${vent}</div>` : "";
+  const ventSection = vent ? `<div class="cr-sec">${vent}</div>` : "";
 
   // --- Messwerte ------------------------------------------------------------
   let vals = "";
@@ -410,7 +409,17 @@ function crCompactRoom(c) {
   // Heizungssteuerung des Dialogs: Platzhalter, in den die Karte nach jedem
   // Neuzeichnen das dauerhafte Thermostat-Element wieder einsetzt.
   const thermoSlot = c.thermo ? `<div class="cr-thermo-slot"></div>` : "";
-  html += `<h2 class="cr-h">Raumklima</h2><div class="cr-sec">${vals}${thermoSlot}</div>` + ventSection;
+  // Heizplan: direkt unter dem Sollwert, in derselben Karte.
+  let planRow = "";
+  if (has(a, "heizung_an") && ((has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) || (has(a, "heizung_tagesverlauf") && Array.isArray(a.heizung_tagesverlauf)))) {
+    const planBlock = planHtml(a.heizung_tagesplan, undefined, false, a.heizung_tagesverlauf);
+    if (planBlock) {
+      const planOpen = c.planOpen === true;
+      planRow = `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-planfold${planOpen ? " open" : ""}" data-plan-room="${esc(a.raum)}">` +
+        `<div class="cr-plansum" data-plan-toggle role="button" tabindex="0" aria-expanded="${planOpen}"><span class="cr-p">Heizplan</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></div>${planBlock}</div></div></div>`;
+    }
+  }
+  html += `<div class="cr-sec">${vals}${thermoSlot}${planRow}</div>` + ventSection;
 
   // --- Geräte ---------------------------------------------------------------
   const runtime = (on, since, last) => {
@@ -418,33 +427,34 @@ function crCompactRoom(c) {
     if (last !== undefined && last !== null) return fmtDuration(last);
     return "–";
   };
-  let dev = "";
+  // Kachelreihe: Symbol, Minuten und kurze Bezeichnung; der Text steht unter der
+  // Reihe und klappt per Tipp auf die Kachel auf (immer nur ein Gerät).
+  const devs = [];
+  const addDev = (d) => devs.push(d);
   if (has(a, "luftentfeuchter_an")) {
     const parts = [a.luftentfeuchter_an ? "Läuft" : "Aus"];
     if (has(a, "luftentfeuchter_grund") && a.luftentfeuchter_grund) parts.push(plainReason(a.luftentfeuchter_grund));
-    if (has(a, "luftentfeuchter_tank_fehler") && a.luftentfeuchter_tank_fehler) {
-      parts.push(`<span style="color:${SC_COLOR.red}">Tank voll</span>`);
-    }
-    dev += row({
-      icon: "mdi:air-humidifier", color: a.luftentfeuchter_an ? SC_COLOR.blue : SC_COLOR.grey,
-      title: "Luftentfeuchter", entityId: ents.luftentfeuchter, sub: parts.join(" · "),
-      clampKey: `${a.raum}|dehum`,
-      right: runtime(a.luftentfeuchter_an, a.luftentfeuchter_seit, a.luftentfeuchter_letzte_laufzeit),
+    const tank = has(a, "luftentfeuchter_tank_fehler") && a.luftentfeuchter_tank_fehler;
+    if (tank) parts.push(`<span style="color:${SC_COLOR.red}">Tank voll</span>`);
+    addDev({
+      key: "dehum", icon: "mdi:air-humidifier", color: tank ? SC_COLOR.red : a.luftentfeuchter_an ? SC_COLOR.blue : SC_COLOR.grey,
+      name: "Entfeuchter", title: "Luftentfeuchter", entityId: ents.luftentfeuchter, text: parts.join(" · "),
+      minutes: runtime(a.luftentfeuchter_an, a.luftentfeuchter_seit, a.luftentfeuchter_letzte_laufzeit),
     });
   }
   if (has(a, "klimaanlage_an")) {
     const parts = [a.klimaanlage_an ? "Läuft" : "Aus"];
     if (has(a, "klimaanlage_grund") && a.klimaanlage_grund) parts.push(plainReason(a.klimaanlage_grund));
-    dev += row({
-      icon: "mdi:air-conditioner", color: a.klimaanlage_an ? SC_COLOR.blue : SC_COLOR.grey,
-      title: "Klimaanlage", entityId: ents.klimaanlage, sub: parts.join(" · "),
-      clampKey: `${a.raum}|ac`,
-      right: runtime(a.klimaanlage_an, a.klimaanlage_seit, a.klimaanlage_letzte_laufzeit),
+    addDev({
+      key: "ac", icon: "mdi:air-conditioner", color: a.klimaanlage_an ? SC_COLOR.blue : SC_COLOR.grey,
+      name: "Klima", title: "Klimaanlage", entityId: ents.klimaanlage, text: parts.join(" · "),
+      minutes: runtime(a.klimaanlage_an, a.klimaanlage_seit, a.klimaanlage_letzte_laufzeit),
     });
   }
   if (has(a, "heizung_an")) {
     const mode = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
     const parts = [];
+    if (mode) parts.push(esc(mode.text));
     const hi = heatingInfo(a, c.todayStr);
     if (hi.since) parts.push(hi.since);
     if (has(a, "heizung_grund") && a.heizung_grund) parts.push(plainReason(a.heizung_grund));
@@ -454,20 +464,11 @@ function crCompactRoom(c) {
     if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
       parts.push(`Sollstellung ${roundStr(a.heizung_zieltemperatur, 1)} °C`);
     }
-    dev += row({
-      icon: "mdi:radiator", color: SC_HEATING_COLOR[a.heizung_modus] || (a.heizung_an ? SC_COLOR.orange : SC_COLOR.grey),
-      title: "Heizung", titleExtra: mode ? esc(mode.text) : "", entityId: ents.heizung, sub: parts.join(" · "),
-      clampKey: `${a.raum}|heat`,
-      right: runtime(a.heizung_an, a.heizung_seit, a.heizung_letzte_laufzeit),
+    addDev({
+      key: "heat", icon: "mdi:radiator", color: SC_HEATING_COLOR[a.heizung_modus] || (a.heizung_an ? SC_COLOR.orange : SC_COLOR.grey),
+      name: "Heizung", title: "Heizung", entityId: ents.heizung, text: parts.join(" · "),
+      minutes: runtime(a.heizung_an, a.heizung_seit, a.heizung_letzte_laufzeit),
     });
-    if ((has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) || (has(a, "heizung_tagesverlauf") && Array.isArray(a.heizung_tagesverlauf))) {
-      const planBlock = planHtml(a.heizung_tagesplan, undefined, false, a.heizung_tagesverlauf);
-      if (planBlock) {
-        const planOpen = c.planOpen === true;
-        dev += `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-planfold${planOpen ? " open" : ""}" data-plan-room="${esc(a.raum)}">` +
-          `<div class="cr-plansum" data-plan-toggle role="button" tabindex="0" aria-expanded="${planOpen}"><span class="cr-p">Heizplan</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></div>${planBlock}</div></div></div>`;
-      }
-    }
   }
   if (has(a, "duschen_erkannt")) {
     let sub = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "";
@@ -475,13 +476,24 @@ function crCompactRoom(c) {
       const t = `Start ${shortTimeStr(new Date(a.dusche_letzter_start), c.todayStr)}`;
       sub = a.duschen_erkannt ? `${sub} · ${t}` : `Letzter ${t}`;
     }
-    dev += row({
-      icon: "mdi:shower-head", color: a.duschen_erkannt ? SC_COLOR.blue : SC_COLOR.grey,
-      title: "Dusche", entityId: ents.dusche, sub,
-      right: runtime(a.duschen_erkannt, a.dusche_seit, a.dusche_letzte_laufzeit),
+    addDev({
+      key: "shower", icon: "mdi:shower-head", color: a.duschen_erkannt ? SC_COLOR.blue : SC_COLOR.grey,
+      name: "Dusche", title: "Dusche", entityId: ents.dusche, text: sub,
+      minutes: runtime(a.duschen_erkannt, a.dusche_seit, a.dusche_letzte_laufzeit),
     });
   }
-  if (dev) html += `<h2 class="cr-h">Geräte</h2><div class="cr-sec">${dev}</div>`;
+  if (devs.length) {
+    const openKey = c.devOpen && devs.some((d) => d.key === c.devOpen) ? c.devOpen : "";
+    const tiles = devs.map((d) =>
+      `<button type="button" class="cr-dev${openKey === d.key ? " open" : ""}" data-dev="${d.key}" aria-expanded="${openKey === d.key}" style="--c:${d.color}">` +
+      `<span class="cr-ico"><ha-icon icon="${d.icon}"></ha-icon></span><span class="cr-dv">${esc(d.minutes)}</span><span class="cr-dn">${esc(d.name)}</span></button>`
+    ).join("");
+    const details = devs.map((d) =>
+      `<div class="cr-devdetail${openKey === d.key ? " open" : ""}" data-devd="${d.key}"${d.entityId ? ` data-rowent="${esc(d.entityId)}"` : ""}>` +
+      `<span class="cr-p">${esc(d.title)}</span>${d.text ? `<div class="cr-s">${d.text}</div>` : ""}</div>`
+    ).join("");
+    html += `<div class="cr-sec cr-devsec"><div class="cr-devs" data-dev-room="${esc(a.raum)}">${tiles}</div>${details}</div>`;
+  }
 
   // --- Benachrichtigungen (aufklappbar, Zustand je Raum) ---------------------
   const targets = (list) =>
@@ -502,7 +514,7 @@ function crCompactRoom(c) {
     c.notifyOut.html = notifyRows;
   } else {
     html +=
-      `<h2 class="cr-h">Benachrichtigungen</h2><div class="cr-sec"><details class="cr-notify" data-notify-room="${esc(a.raum)}"${c.notifyOpen ? " open" : ""}>` +
+      `<div class="cr-sec"><details class="cr-notify" data-notify-room="${esc(a.raum)}"${c.notifyOpen ? " open" : ""}>` +
       `<summary class="cr-fold">${icon("mdi:bell-outline", SC_COLOR.grey)}<span class="cr-ft">Methoden und Ziele</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></summary>` +
       notifyRows +
       `</details></div>`;
@@ -623,6 +635,26 @@ class SmartClimateCard extends HTMLElement {
           }
           return;
         }
+        // Geräte-Kachel: Text darunter auf-/zuklappen (immer nur ein Gerät je Raum).
+        const tile = target.closest("[data-dev]");
+        if (tile && this._devOpen) {
+          const wrap = tile.closest("[data-dev-room]");
+          const room = wrap ? wrap.dataset.devRoom : "";
+          const key = tile.dataset.dev;
+          const open = this._devOpen.get(room) !== key;
+          if (open) this._devOpen.set(room, key);
+          else this._devOpen.delete(room);
+          const sec = tile.closest(".cr-devsec");
+          if (sec) {
+            sec.querySelectorAll("[data-dev]").forEach((t) => {
+              const on = open && t.dataset.dev === key;
+              t.classList.toggle("open", on);
+              t.setAttribute("aria-expanded", String(on));
+            });
+            sec.querySelectorAll("[data-devd]").forEach((d) => d.classList.toggle("open", open && d.dataset.devd === key));
+          }
+          return;
+        }
         // Klick auf einen Wert/ein Gerät: Detailansicht (more-info) der
         // zugehörigen Entität öffnen (Standard-Ereignis von Home Assistant).
         const entityEl = target.closest("[data-entity]");
@@ -663,6 +695,8 @@ class SmartClimateCard extends HTMLElement {
     if (!this._expandedCells) this._expandedCells = new Set();
     // Räume, deren Heizplan-Legende (Wechselzeiten) im Raum-Dialog aufgeklappt ist.
     if (!this._planOpen) this._planOpen = new Set();
+    // Aufgeklapptes Gerät der Kachelreihe je Raum (Raum -> Schlüssel).
+    if (!this._devOpen) this._devOpen = new Map();
     // Merkt sich je Raum den zuletzt gerenderten Status UND den aktuellen
     // Auf-/Zu-Zustand - siehe Verwendung weiter unten. Überlebt über
     // mehrere Renders hinweg (nicht Teil von innerHTML), aber nicht über
@@ -1116,6 +1150,7 @@ class SmartClimateCard extends HTMLElement {
             reasonText: reasonCodes.map((cd) => reasonSentence(cd, s.state === "on", false)).join(" "),
             highlightTemp, highlightHum, highlightCo2, absOpenGate, tempLo, tempHi, notifyOpen,
             planOpen: this._planOpen.has(a.raum),
+            devOpen: this._devOpen.get(a.raum),
             headerOut: this._headerSink ? headerOut : null,
             notifyOut,
             thermo: !!this._thermoEl,
@@ -1373,11 +1408,18 @@ class SmartClimateCard extends HTMLElement {
         background: color-mix(in srgb, var(--c) 18%, transparent);
       }
       .cr-hchip i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); display: block; }
-      .cr-h {
-        margin: 12px 4px 4px; font-size: 0.9em; font-weight: 500; letter-spacing: 0.08em;
-        text-transform: uppercase; color: var(--secondary-text-color, #727272);
+      .cr-sec + .cr-sec { margin-top: 8px; }
+      .cr-devs { display: flex; gap: 4px; padding: 10px 0 8px; }
+      .cr-dev {
+        flex: 1 1 0; min-width: 0; background: none; border: 0; padding: 2px 0; margin: 0; font: inherit; color: inherit;
+        cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; -webkit-tap-highlight-color: transparent;
       }
-      ha-card.sc-compact .smart-climate-card-content > .cr-h:first-child { margin-top: 6px; }
+      .cr-dev .cr-ico { width: 44px; height: 44px; --mdc-icon-size: 24px; }
+      .cr-dev.open .cr-ico { box-shadow: 0 0 0 2px var(--c); }
+      .cr-dv { font-weight: 500; white-space: nowrap; }
+      .cr-dn { font-size: 0.8em; color: var(--secondary-text-color, #727272); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cr-devdetail { display: none; border-top: 1px solid var(--divider-color, #e0e0e0); padding: 8px 2px 10px; cursor: pointer; }
+      .cr-devdetail.open { display: block; }
       .cr-sec { background: transparent; border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); border-radius: 14px; padding: 0 10px; }
       .cr-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
       .cr-row:last-child { border-bottom: 0; }
@@ -1920,9 +1962,11 @@ function openRoomDialog(key) {
     ".sc-th-set{position:relative;display:flex;align-items:center;justify-content:center;gap:24px}" +
     ".sc-th-set>*{position:relative;z-index:1}" +
     ".sc-th-set.heating::before{content:\"\";position:absolute;left:-10px;right:-10px;top:-26px;bottom:-26px;z-index:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,140,58,.32) 0,rgba(255,140,58,.1) 48%,rgba(255,140,58,0) 74%);background:radial-gradient(ellipse at center,color-mix(in srgb,var(--state-climate-heat-color,#ff8c3a) 34%,transparent) 0,color-mix(in srgb,var(--state-climate-heat-color,#ff8c3a) 11%,transparent) 48%,transparent 74%)}" +
-    ".sc-th-val{cursor:pointer;font-size:64px;font-weight:300;line-height:1;min-width:130px;text-align:center;white-space:nowrap}" +
-    ".sc-th-val small{font-size:22px;font-weight:300;color:var(--secondary-text-color,#727272)}" +
-    ".sc-th-val .sc-th-dec{font-size:32px;color:inherit}" +
+    ".sc-th-val{cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;line-height:1;min-width:130px;white-space:nowrap}" +
+    ".sc-th-num{font-size:72px;font-weight:400}" +
+    ".sc-th-side{display:flex;flex-direction:column;gap:6px;align-items:flex-start}" +
+    ".sc-th-val small{font-size:22px;font-weight:400;color:var(--secondary-text-color,#727272)}" +
+    ".sc-th-val .sc-th-dec{font-size:28px;color:inherit}" +
     "@media (max-width:340px){.sc-th-set{gap:12px}}" +
     ".sc-th-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--secondary-text-color,#9b9b9b);background:transparent;color:var(--secondary-text-color,#9b9b9b);padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer}" +
     ".sc-th-chips{display:flex;flex-wrap:nowrap;gap:5px;justify-content:center}" +
@@ -1977,7 +2021,7 @@ function openRoomDialog(key) {
   listBtn.type = "button";
   listBtn.setAttribute("aria-label", "Übersicht");
   listBtn.title = "Übersicht";
-  listBtn.innerHTML = '<ha-icon icon="mdi:home-group"></ha-icon>';
+  listBtn.innerHTML = '<ha-icon icon="mdi:floor-plan"></ha-icon>';
   const bell = document.createElement("button");
   bell.className = "sc-room-bell";
   bell.type = "button";
