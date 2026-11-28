@@ -14,17 +14,37 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.loader import async_get_integration
 
 from .const import (
+    CONF_CO2_THRESHOLD_CLOSE,
+    CONF_CO2_THRESHOLD_OPEN,
     CONF_DASH_WINDOW_FILL,
     CONF_DASH_WINDOW_FILL_ACTION,
     CONF_DASH_WINDOW_FILL_NOTICE,
+    CONF_HUMIDITY_THRESHOLD_CLOSE,
+    CONF_HUMIDITY_THRESHOLD_OPEN,
     CONF_IS_GLOBAL,
+    CONF_ROOM_TYPE,
+    CONF_ROOM_TYPE_PROFILES,
+    CONF_ROOM_TYPE_THRESHOLDS_MIGRATED,
+    CONF_TEMP_THRESHOLD_CLOSE,
+    CONF_TEMP_THRESHOLD_OPEN,
     CONF_USAGE_LEARNING_DEFAULT_MIGRATED,
     CONF_USAGE_LEARNING_ENABLED,
     DASHBOARD_SIGNAL,
+    DEFAULT_CO2_THRESHOLD_CLOSE,
+    DEFAULT_CO2_THRESHOLD_OPEN,
+    DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
+    DEFAULT_HUMIDITY_THRESHOLD_OPEN,
+    DEFAULT_TEMP_THRESHOLD_CLOSE,
+    DEFAULT_TEMP_THRESHOLD_OPEN,
     DOMAIN,
     GLOBAL_ENTRY_ID_KEY,
     ROOM_STATUS_KEY,
+    ROOM_TYPE_FALLBACK,
+    ROOM_TYPE_KEYS,
+    ROOM_TYPE_LABELS,
+    ROOM_TYPE_THRESHOLD_KEYS,
     VERSION_KEY,
+    room_type_value,
 )
 from .dashboard import async_install_bubble_module
 
@@ -129,6 +149,80 @@ def _migrate_window_fill(hass: HomeAssistant, entry: ConfigEntry) -> None:
     new_data.setdefault(CONF_DASH_WINDOW_FILL_ACTION, old)
     new_data.setdefault(CONF_DASH_WINDOW_FILL_NOTICE, old)
     hass.config_entries.async_update_entry(entry, data=new_data)
+
+
+# Bisherige globale Standardwerte der Lüftungsschwellen (für die Umstellung
+# auf Raumtypen, falls im globalen Eintrag nichts gespeichert war).
+_OLD_GLOBAL_THRESHOLD_DEFAULTS = {
+    CONF_TEMP_THRESHOLD_OPEN: DEFAULT_TEMP_THRESHOLD_OPEN,
+    CONF_TEMP_THRESHOLD_CLOSE: DEFAULT_TEMP_THRESHOLD_CLOSE,
+    CONF_HUMIDITY_THRESHOLD_OPEN: DEFAULT_HUMIDITY_THRESHOLD_OPEN,
+    CONF_HUMIDITY_THRESHOLD_CLOSE: DEFAULT_HUMIDITY_THRESHOLD_CLOSE,
+    CONF_CO2_THRESHOLD_OPEN: DEFAULT_CO2_THRESHOLD_OPEN,
+    CONF_CO2_THRESHOLD_CLOSE: DEFAULT_CO2_THRESHOLD_CLOSE,
+}
+
+
+def _same_value(a, b) -> bool:
+    if a is None or b is None:
+        return False
+    try:
+        return float(a) == float(b)
+    except (TypeError, ValueError):
+        return str(a) == str(b)
+
+
+def _migrate_room_type_thresholds(hass: HomeAssistant) -> None:
+    """Einmalige Umstellung auf Raumtypen ohne globale Ebene (1.35.0,
+    CLAUDE.md Lektion 183). Läuft in async_setup, also bevor die Einträge
+    eingerichtet werden, und braucht dafür noch die alten globalen Werte:
+
+    - Räume ohne gültigen Raumtyp bekommen "Nebenraum".
+    - Raum-Overrides werden gelöscht, wenn sie dem Wert des Raumtyps
+      entsprechen; bei den Lüftungsschwellen auch, wenn sie nur den
+      bisherigen globalen Wert wiederholten (kein bewusstes Abweichen).
+    - Der globale Eintrag verliert die vom Raumtyp übernommenen Schlüssel.
+    Der Marker im globalen Eintrag verhindert eine Wiederholung."""
+    entries = hass.config_entries.async_entries(DOMAIN)
+    global_entry = next((e for e in entries if e.data.get(CONF_IS_GLOBAL)), None)
+    if global_entry is None or global_entry.data.get(CONF_ROOM_TYPE_THRESHOLDS_MIGRATED):
+        return
+    global_data = dict(global_entry.data)
+    profiles = global_data.get(CONF_ROOM_TYPE_PROFILES)
+    for entry in entries:
+        if entry.data.get(CONF_IS_GLOBAL):
+            continue
+        data = dict(entry.data)
+        changed = False
+        room_type = data.get(CONF_ROOM_TYPE)
+        if room_type not in ROOM_TYPE_LABELS:
+            room_type = ROOM_TYPE_FALLBACK
+            data[CONF_ROOM_TYPE] = room_type
+            changed = True
+        for key in ROOM_TYPE_KEYS:
+            if data.get(key) in (None, ""):
+                continue
+            _applies, type_value = room_type_value(profiles, room_type, key)
+            redundant = _same_value(data[key], type_value)
+            if not redundant and key in ROOM_TYPE_THRESHOLD_KEYS:
+                old_global = global_data.get(key)
+                if old_global in (None, ""):
+                    old_global = _OLD_GLOBAL_THRESHOLD_DEFAULTS[key]
+                redundant = _same_value(data[key], old_global)
+            if redundant:
+                del data[key]
+                changed = True
+        if changed:
+            _LOGGER.info(
+                "Raumtyp-Umstellung für %s: %s",
+                entry.title,
+                {k: entry.data.get(k) for k in entry.data if k not in data or data[k] != entry.data[k]},
+            )
+            hass.config_entries.async_update_entry(entry, data=data)
+    for key in ROOM_TYPE_KEYS:
+        global_data.pop(key, None)
+    global_data[CONF_ROOM_TYPE_THRESHOLDS_MIGRATED] = True
+    hass.config_entries.async_update_entry(global_entry, data=global_data)
 
 
 def _get_lovelace_resources(hass: HomeAssistant):
@@ -261,6 +355,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     # Bubble-Card-Modul "climate_status" mitliefern/aktualisieren (nur wenn
     # Bubble Card Tools seinen Modul-Ordner angelegt hat).
     hass.async_create_task(async_install_bubble_module(hass))
+    _migrate_room_type_thresholds(hass)
     _create_global_settings_entry(hass)
     return True
 

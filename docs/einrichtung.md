@@ -43,9 +43,10 @@
        Temperatur-Obergrenze öffnet CO2 erst ab dem 1,5-Fachen der Schwelle)
    - **Abschnitt "Fenster & Lüften"** (Fenster, Rollladen, Normalbereich-Grenzen,
      Schutzfunktionen; die Felder mit Zahlenwerten **überschreiben** für diesen
-     Raum die allgemeinen Einstellungen - leer gelassen gilt der dort
+     Raum den Raumtyp (Normalbereich-Grenzen, seit 1.35.0) bzw. die
+     allgemeinen Einstellungen (übrige Werte) - leer gelassen gilt der dort
      hinterlegte Wert, als Orientierung zeigt der Hinweistext darunter den
-     aktuell wirksamen globalen Wert an, z. B. "Aktuell global: 23.0 °C"):
+     aktuell wirksamen Wert an, z. B. "Aktuell: Raumtyp Kinderzimmer: 24 °C"):
      - **Fensterkontakt** (optional; unterdrückt Benachrichtigungen, sobald
        das Fenster laut Sensor bereits im empfohlenen Zustand ist - siehe
        eigener Abschnitt unten; nur relevant, wenn "Dieser Raum hat kein
@@ -193,9 +194,10 @@
   im Raum-Formular ebenso, bei den Raumtypen die Temperaturen) werden dann
   ausgeblendet; gespeicherte Werte bleiben erhalten. Das Ausblenden wirkt
   beim nächsten Öffnen des Formulars.
-- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
-       **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** (nur
-       relevant, wenn oben eine Heizung hinterlegt oder die
+- **Heizungs-Schwelle (Innentemperatur)** (global) sowie
+       **Heizung Comfort-Sollwert**, **Heizung Standby-Sollwert** und
+       **Heizung Nacht-Sollwert** (seit 1.35.0 nur noch im Raum als Override,
+       sonst gilt der Raumtyp; nur relevant, wenn oben eine Heizung hinterlegt oder die
        Temperaturquelle dafür wiederverwendet wird) - jeweils Dropdown mit gängigen Vorschlagswerten,
        weiterhin frei editierbar
    - **Abschnitt "Heizungs-Zeitplan"** (Raum-Override, leer = globaler Wert):
@@ -322,9 +324,10 @@ Danach folgen sieben Abschnitte in derselben Gliederung wie im Raum-Formular
   Außenluft)
 
 **Abschnitt "Fenster & Lüften"**:
-- Der komplette Normalbereich-/Schwellenwerte-Satz (dieselben Felder wie im
-  Raum-Abschnitt "Fenster & Lüften", inklusive CO2-Schwellen, Frost-/
-  Hitzeschutz, Winter-Schwelle/-Höchstdauer) als raumweiter Standard
+- Frost-/Hitzeschutz und Winter-Schwelle/-Höchstdauer als raumweiter
+  Standard. Die Normalbereich-Grenzen (Temperatur, Luftfeuchtigkeit, CO2)
+  stehen seit 1.35.0 nicht mehr hier, sondern beim Raumtyp (Abschnitt
+  "Raumtypen")
 - **Toleranz-Marge**, **Debounce-Zeit Frostschutz** und **Luftfeuchtigkeit/CO2
   haben Vorrang** (fester Ja/Nein-Wert, Standard Ja): ebenfalls raumweiter
   Standard, pro Raum überschreibbar. Die Toleranz-Marge wirkt außer bei der
@@ -342,11 +345,11 @@ Danach folgen sieben Abschnitte in derselben Gliederung wie im Raum-Formular
   reine Raumeinstellungen)
 
 **Abschnitt "Heizung"**:
-- **Heizungs-Schwelle (Innentemperatur)**, **Heizung Comfort-Sollwert**,
-  **Heizung Standby-Sollwert** und **Heizung Nacht-Sollwert** - Dropdown
-  mit gängigen Vorschlagswerten, weiterhin frei editierbar; als raumweiter
-  Standard, pro Raum überschreibbar (die Heizungs-Entität selbst ist wie
-  Luftentfeuchter/Klimaanlage reine Raumeinstellung)
+- **Heizungs-Schwelle (Innentemperatur)** - Dropdown mit gängigen
+  Vorschlagswerten, weiterhin frei editierbar; als raumweiter Standard, pro
+  Raum überschreibbar (die Heizungs-Entität selbst ist wie
+  Luftentfeuchter/Klimaanlage reine Raumeinstellung). Comfort-/Standby-/
+  Nacht-Sollwert stehen seit 1.35.0 nur noch beim Raumtyp
 - **Presets steuern/anzeigen** (Standard Ja) + vier Preset-Namen-Felder
   (Komfort/Standby/Eco (Nacht)/Gebäudeschutz) als raumweiter Standard -
   hier Dropdown mit den acht offiziellen Home-Assistant-Standardwerten als
@@ -391,11 +394,9 @@ Danach folgen sieben Abschnitte in derselben Gliederung wie im Raum-Formular
 
 **Abschnitt "Heizungs-Zeitplan"**:
 - **Heizungs-Zeitplan aktivieren** (global immer ein fester Ja/Nein-Wert,
-  Standard Nein) sowie sechs Startzeiten (Comfort/Standby/Nacht, je
-  getrennt für Werktag und Wochenende) als raumweiter Standard - pro Raum
-  überschreibbar wie jeder andere Parameter. Neue Installationen starten mit
-  Comfort 06:00/08:00 und Nacht 22:00/23:00 (Werktag/Wochenende), Standby
-  ist leer (nicht genutzt)
+  Standard Nein). Die sechs Startzeiten (Comfort/Standby/Nacht, je Werktag
+  und Wochenende) kommen seit 1.35.0 aus dem Raumtyp (Abschnitt
+  "Raumtypen")
 
 **Abschnitt "Benachrichtigungen"**:
 - **TTS-Entität**: wird verwendet, wenn ein Raum keine eigene TTS-Entität

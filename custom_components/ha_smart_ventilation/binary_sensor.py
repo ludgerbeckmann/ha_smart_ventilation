@@ -1726,14 +1726,17 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
     def _effective(self, key: str, hardcoded_default):
         """Ermittelt den wirksamen Wert für ein überschreibbares Feld:
         1. Raum-Override (falls im Raum gesetzt), sonst
-        2. globale Einstellung (falls vorhanden und gesetzt), sonst
-        3. fest einprogrammierter Standardwert.
+        2. für die vom Raumtyp vorbelegten Werte (ROOM_TYPE_KEYS: Lüftungs-
+           schwellen, Heizungs-Temperaturen, Zeitplan-Startzeiten) der Wert
+           des Raumtyps - ohne globale Ebene (seit 1.35.0), sonst
+        3. globale Einstellung (falls vorhanden und gesetzt), sonst
+        4. fest einprogrammierter Standardwert.
         """
         room_value = self._config.get(key)
         if room_value not in (None, ""):
             return room_value
-        # Raumtyp (Lektion 132): vorbelegte Heizungs-Werte, Anpassungen
-        # stehen im globalen Eintrag. Zwischen Raum-Override und global.
+        # Raumtyp (Lektion 132/183): vorbelegte Werte, Anpassungen stehen
+        # im globalen Eintrag. Ersetzt für diese Schlüssel die globale Ebene.
         applies, type_value = room_type_value(
             self._global_config().get(CONF_ROOM_TYPE_PROFILES),
             self._config.get(CONF_ROOM_TYPE),

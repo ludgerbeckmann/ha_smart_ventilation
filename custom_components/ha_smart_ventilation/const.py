@@ -921,8 +921,11 @@ DASHBOARD_SIGNAL = "ha_smart_ventilation_dashboard_update"
 # Anpassungen des Nutzers stehen im globalen Eintrag unter
 # CONF_ROOM_TYPE_PROFILES ({Raumtyp: {Schlüssel: Wert}}, nur abweichende
 # Werte; ein leerer String bei einer Startzeit heißt "Profil nicht genutzt").
-# Auflösung: Raum-Override -> Raumtyp (angepasst, sonst Standard) -> global
-# -> Standard (siehe binary_sensor.py:_effective()).
+# Seit 1.35.0 gehören auch die Lüftungsschwellen (Temperatur/Luftfeuchtigkeit/
+# CO2, je öffnen/schließen) zum Raumtyp. Für alle ROOM_TYPE_KEYS gilt:
+# Raum-Override -> Raumtyp (angepasst, sonst Richtwert); die globale Ebene
+# entfällt. Ein Raum ohne (gültigen) Typ gilt als "Nebenraum"
+# (ROOM_TYPE_FALLBACK, siehe binary_sensor.py:_effective()).
 # ---------------------------------------------------------------------------
 CONF_ROOM_TYPE = "room_type"
 CONF_ROOM_TYPE_PROFILES = "room_type_profiles"
@@ -938,7 +941,20 @@ ROOM_TYPE_LABELS = {
     "kitchen": "Küche",
     "bathroom": "Bad",
     "hallway": "Flur",
+    "utility": "Nebenraum",
 }
+ROOM_TYPE_FALLBACK = "utility"
+# Marker im globalen Eintrag: Umstellung der Schwellen auf Raumtypen
+# (1.35.0, __init__.py:_migrate_room_type_thresholds) ist erledigt.
+CONF_ROOM_TYPE_THRESHOLDS_MIGRATED = "room_type_thresholds_migrated"
+ROOM_TYPE_THRESHOLD_KEYS = (
+    CONF_TEMP_THRESHOLD_OPEN,
+    CONF_TEMP_THRESHOLD_CLOSE,
+    CONF_HUMIDITY_THRESHOLD_OPEN,
+    CONF_HUMIDITY_THRESHOLD_CLOSE,
+    CONF_CO2_THRESHOLD_OPEN,
+    CONF_CO2_THRESHOLD_CLOSE,
+)
 ROOM_TYPE_TEMP_KEYS = (
     CONF_HEATING_COMFORT_TEMP,
     CONF_HEATING_STANDBY_TEMP,
@@ -952,15 +968,18 @@ ROOM_TYPE_START_KEYS = (
     CONF_HEATING_STANDBY_START_WEEKEND,
     CONF_HEATING_NIGHT_START_WEEKEND,
 )
-ROOM_TYPE_KEYS = ROOM_TYPE_TEMP_KEYS + ROOM_TYPE_START_KEYS
+ROOM_TYPE_KEYS = ROOM_TYPE_THRESHOLD_KEYS + ROOM_TYPE_TEMP_KEYS + ROOM_TYPE_START_KEYS
 
 
-def _room_type_profile(comfort, standby, night, **starts):
-    profile = {
+def _room_type_profile(comfort, standby, night, vent, **starts):
+    """vent = (Temp. öffnen, Temp. schließen, Feuchte öffnen, Feuchte
+    schließen, CO2 öffnen, CO2 schließen)."""
+    profile = dict(zip(ROOM_TYPE_THRESHOLD_KEYS, vent))
+    profile.update({
         CONF_HEATING_COMFORT_TEMP: comfort,
         CONF_HEATING_STANDBY_TEMP: standby,
         CONF_HEATING_NIGHT_TEMP: night,
-    }
+    })
     names = {
         "comfort_wd": CONF_HEATING_COMFORT_START_WEEKDAY,
         "standby_wd": CONF_HEATING_STANDBY_START_WEEKDAY,
@@ -975,56 +994,65 @@ def _room_type_profile(comfort, standby, night, **starts):
 
 
 # Startzeiten, die ein Raumtyp nicht nennt, gelten als "Profil nicht genutzt".
+# Lüftungsschwellen (1.35.0) nach Praxisdaten (12 Monate Sensor-Statistik):
+# Wohnraum unverändert 23/20, Bad 26 (Duschen treiben es auf 25-27 °C).
 ROOM_TYPE_DEFAULTS = {
     "living": _room_type_profile(
-        21, 18, 17,
+        21, 18, 17, (23, 20, 60, 50, 1000, 800),
         comfort_wd="06:30:00", comfort_we="08:00:00",
         night_wd="23:00:00", night_we="23:30:00",
     ),
     "bedroom": _room_type_profile(
-        19, 17, 16,
+        19, 17, 16, (22, 17, 60, 50, 1000, 800),
         comfort_wd="06:00:00", comfort_we="08:00:00",
         night_wd="21:30:00", night_we="22:30:00",
     ),
     "kids": _room_type_profile(
-        21, 18, 18,
+        21, 18, 18, (24, 18, 60, 50, 1000, 800),
         comfort_wd="06:30:00", comfort_we="08:00:00",
         night_wd="20:30:00", night_we="21:00:00",
     ),
     "office": _room_type_profile(
-        21, 17, 16,
+        21, 17, 16, (24, 19, 60, 50, 1000, 800),
         standby_wd="18:00:00", standby_we="00:00:00",
         night_wd="19:00:00", night_we="19:00:00",
     ),
     "kitchen": _room_type_profile(
-        20, 17, 16,
+        20, 17, 16, (25, 19, 60, 50, 1200, 900),
         comfort_wd="06:30:00", comfort_we="08:00:00",
         standby_wd="21:30:00", standby_we="22:30:00",
         night_wd="23:00:00", night_we="23:00:00",
     ),
     "bathroom": _room_type_profile(
-        23, 18, 17,
+        23, 18, 17, (26, 20, 60, 50, 1000, 800),
         comfort_wd="06:00:00", standby_wd="08:00:00", night_wd="22:00:00",
         comfort_we="08:00:00", standby_we="10:00:00", night_we="23:00:00",
     ),
+    # Flur 23 °C öffnen: im Flur OG schaltet diese Schwelle die Klimaanlage.
     "hallway": _room_type_profile(
-        20, 17, 16,
+        20, 17, 16, (23, 19, 60, 55, 1000, 800),
         comfort_wd="06:00:00", night_wd="22:00:00",
         comfort_we="07:30:00", night_we="22:30:00",
     ),
+    # Nebenraum (Hauswirtschafts-, Abstell-, Technikraum, Keller): kein
+    # Zeitplan, niedrige Heizwerte.
+    "utility": _room_type_profile(18, 16, 15, (26, 17, 60, 50, 1000, 800)),
 }
 
 
 def room_type_value(profiles, room_type, key):
     """(gilt, Wert) für einen vom Raumtyp vorbelegten Schlüssel.
 
-    `gilt` ist False, wenn der Raumtyp unbekannt/nicht gesetzt ist oder der
-    Schlüssel nicht zu den vom Raumtyp vorbelegten gehört (dann gilt die
-    normale Auflösung). Sonst ist der Wert die Anpassung des Nutzers, sonst
-    der Standard des Typs; bei Startzeiten ohne Wert None (Profil nicht
-    genutzt). Ein leerer String zählt als None."""
-    if room_type not in ROOM_TYPE_DEFAULTS or key not in ROOM_TYPE_KEYS:
+    `gilt` ist False, wenn der Schlüssel nicht zu den vom Raumtyp
+    vorbelegten gehört (dann gilt die normale Auflösung). Ein unbekannter
+    oder fehlender Raumtyp gilt als ROOM_TYPE_FALLBACK ("Nebenraum"). Der
+    Wert ist die Anpassung des Nutzers, sonst der Richtwert des Typs; bei
+    Startzeiten ohne Wert None (Profil nicht genutzt). Ein leerer String
+    zählt als None."""
+    if key not in ROOM_TYPE_KEYS:
         return False, None
+    if room_type not in ROOM_TYPE_DEFAULTS:
+        room_type = ROOM_TYPE_FALLBACK
     custom = (profiles or {}).get(room_type) or {}
     value = custom[key] if key in custom else ROOM_TYPE_DEFAULTS[room_type].get(key)
     return True, (None if value == "" else value)
