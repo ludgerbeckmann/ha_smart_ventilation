@@ -179,24 +179,23 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   Sensor Comfort verhindert. Die Auswertung
   läuft bei jeder Neubewertung (spätestens im 5-Minuten-Takt).
 
-- **Raumtypen (ab 1.14.0):** Im Abschnitt "Heizung" eines Raums wählen Sie
-  einen **Raumtyp** (Wohnraum, Schlafzimmer, Kinderzimmer, Büro, Küche, Bad, Flur).
-  Der Typ belegt **Comfort-/Standby-/Nacht-Temperatur** und die **sechs
-  Startzeiten** des Heizungs-Zeitplans (Werktag/Wochenende) mit
-  Richtwerten vor. Rangfolge: **Raum-Override, dann Raumtyp, dann globale
-  Einstellung, dann Standard** - ein im Raum selbst eingetragener Wert schlägt
-  den Raumtyp, der Raumtyp schlägt die globalen Werte. Nichts wird beim
+- **Raumtypen (ab 1.14.0, Lüftungsschwellen ab 1.35.0):** Im Abschnitt
+  "Heizung" eines Raums wählen Sie einen **Raumtyp** (Wohnraum, Schlafzimmer,
+  Kinderzimmer, Büro, Küche, Bad, Flur, Nebenraum) - seit 1.35.0 ist das ein
+  Pflichtfeld. Der Typ liefert die **Lüftungsschwellen** (Temperatur,
+  Luftfeuchtigkeit, CO2, je öffnen/schließen), die **Comfort-/Standby-/
+  Nacht-Temperatur** und die **sechs Startzeiten** des Heizungs-Zeitplans
+  (Werktag/Wochenende). Rangfolge: **Raum-Override, dann Raumtyp** - für diese
+  Werte gibt es seit 1.35.0 keine globale Ebene mehr. Nichts wird beim
   Speichern eingefroren: ändern Sie den Typ oder seine Werte, wirkt das auf
-  alle Räume mit diesem Typ. Mit Raumtyp gelten für die Startzeiten
+  alle Räume mit diesem Typ ohne eigenen Wert. Für die Startzeiten gelten
   ausschließlich die des Typs; ein Profil, das der Typ nicht nennt, wird nicht
-  genutzt (kein Durchfall auf die globalen Startzeiten). Ohne Raumtyp ändert
-  sich nichts. Der Raumtyp wirkt nur auf Heizungs-Temperaturen und
-  Zeitplan-Startzeiten (nicht auf Schwelle, Lüftungswerte oder die
-  Nutzungserkennung). Eigene Startzeiten pro Raum werden seit 1.31.2 im
-  Raum-Formular nur noch angezeigt, wenn für den Raum bereits eine gespeichert
-  ist; neue Abweichungen laufen über den Raumtyp. Das Feld "Heizungs-Entität"
-  ist ausgeblendet, solange "Temperaturquelle auch als Heizung" aktiv ist
-  (dort wird es ignoriert). Gespeicherte Werte bleiben erhalten.
+  genutzt. "Nebenraum" ist für Hauswirtschafts-, Abstell- und Technikräume
+  gedacht und gilt auch für einen Raum, dem (noch) kein Typ zugeordnet ist.
+  Eigene Startzeiten pro Raum werden im Raum-Formular nur noch angezeigt, wenn
+  für den Raum bereits eine gespeichert ist; neue Abweichungen laufen über den
+  Raumtyp. Das Feld "Heizungs-Entität" ist ausgeblendet, solange
+  "Temperaturquelle auch als Heizung" aktiv ist (dort wird es ignoriert).
 
   | Raumtyp | Comfort / Standby / Nacht | Startzeiten Werktag / Wochenende |
   |---|---|---|
@@ -207,11 +206,34 @@ Heizung hinterlegt werden, die automatisch gesteuert werden:
   | Küche | 20 / 17 / 16 °C | Comfort 06:30 / 08:00, Standby 21:30 / 22:30, Nacht 23:00 / 23:00 |
   | Bad | 23 / 18 / 17 °C | Comfort 06:00 / 08:00, Standby 08:00 / 10:00, Nacht 22:00 / 23:00 |
   | Flur | 20 / 17 / 16 °C | Comfort 06:00 / 07:30, Nacht 22:00 / 22:30 (kein Standby) |
+  | Nebenraum | 18 / 16 / 15 °C | keine (kein Zeitplan) |
+
+  | Raumtyp | Temperatur öffnen / schließen | Luftfeuchtigkeit öffnen / schließen | CO2 öffnen / schließen |
+  |---|---|---|---|
+  | Wohnraum | 23 / 20 °C | 60 / 50 % | 1000 / 800 ppm |
+  | Schlafzimmer | 22 / 17 °C | 60 / 50 % | 1000 / 800 ppm |
+  | Kinderzimmer | 24 / 18 °C | 60 / 50 % | 1000 / 800 ppm |
+  | Büro | 24 / 19 °C | 60 / 50 % | 1000 / 800 ppm |
+  | Küche | 25 / 19 °C | 60 / 50 % | 1200 / 900 ppm |
+  | Bad | 26 / 20 °C | 60 / 50 % | 1000 / 800 ppm |
+  | Flur | 23 / 19 °C | 60 / 55 % | 1000 / 800 ppm |
+  | Nebenraum | 26 / 17 °C | 60 / 50 % | 1000 / 800 ppm |
+
+  Die Temperatur-Obergrenze steuert auch die Klimaanlage (Flur 23 °C, damit
+  eine Klimaanlage im Flur wie bisher anspringt), die Luftfeuchtigkeits-Grenzen
+  auch den Luftentfeuchter (Flur 60/55 %). Das Bad hat 26 °C, weil Duschen den
+  Raum im Winter allein schon auf 25-27 °C bringt.
+
+  **Umstellung auf 1.35.0:** Beim ersten Start werden einmalig Räume ohne Typ
+  zu "Nebenraum", und eigene Raumwerte, die nur den Typwert oder (bei den
+  Lüftungsschwellen) den bisherigen globalen Wert wiederholten, werden
+  entfernt; bewusst abweichende Raumwerte bleiben. Die globalen Felder für
+  Schwellen, Heizungs-Temperaturen und Startzeiten entfallen.
 
   **Werte anpassen:** In "Smart Climate Optionen" im Abschnitt **"Raumtypen"**
   den Raumtyp unter "Raumtyp bearbeiten" wählen und speichern - danach öffnet
   sich ein Formular mit den Werten dieses Typs (vorbelegt mit dem aktuell
-  wirksamen Wert). Gespeichert werden nur Abweichungen vom Standard des Typs;
+  wirksamen Wert; seit 1.35.0 auch mit den Lüftungsschwellen). Gespeichert werden nur Abweichungen vom Standard des Typs;
   ein leeres Zeitfeld heißt "Profil nicht genutzt"; die Checkbox "Auf
   Standard des Typs zurücksetzen" verwirft die Anpassungen dieses Typs. Für
   weitere Typen die Einstellungen erneut öffnen. Spätere Änderungen der

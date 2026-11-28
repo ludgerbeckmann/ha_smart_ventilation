@@ -110,6 +110,9 @@ from .const import (
     CONF_USAGE_LEARNING_DEFAULT_MIGRATED,
     CONF_ROOM_TYPE_EDIT,
     ROOM_TYPE_NONE,
+    ROOM_TYPE_FALLBACK,
+    ROOM_TYPE_THRESHOLD_KEYS,
+    CONF_ROOM_TYPE_THRESHOLDS_MIGRATED,
     ROOM_TYPE_LABELS,
     ROOM_TYPE_DEFAULTS,
     ROOM_TYPE_TEMP_KEYS,
@@ -312,7 +315,6 @@ ROOM_OPTIONAL_ENTITY_KEYS = (
     CONF_HEATING_PRESENCE_ENTITIES,
     CONF_HEATING_TRIGGER_ENTITY,
     CONF_USAGE_ENTITIES,
-    CONF_ROOM_TYPE,  # SelectSelector: leer wird nicht übermittelt, siehe oben
     CONF_HEATING_TYPE,  # dito (SelectSelector)
     CONF_HEATING_PREHEAT_MINUTES,  # leer/0 = Vorbelegung der Heizungsart
     CONF_SHOWER_TEMPERATURE_ENTITY,
@@ -426,9 +428,8 @@ _TIME_FIELDS = {
 # Die sechs Startzeit-Felder des Heizungs-Zeitplans (Comfort/Standby/Nacht,
 # je Werktag und Wochenende). Anders als _TIME_FIELDS bewusst OHNE
 # Auffüllen mit Standardwerten: ein leeres Feld heißt "dieses Profil wird
-# nicht genutzt" und muss auch leer bleiben können. Die Standardwerte für
-# neue Installationen stehen in _INITIAL_HEATING_START_TIMES und werden nur
-# beim Anlegen des globalen Eintrags gesetzt (async_step_import).
+# nicht genutzt" und muss auch leer bleiben können. Seit 1.35.0 nur noch als
+# Raum-Override und beim Raumtyp, nicht mehr global.
 # Die Felder werden für die generische Platzierungs-Schleife in
 # _build_room_schema() bzw. _build_global_edit_schema() (Abschnitt
 # "Heizungs-Zeitplan") verwendet.
@@ -441,12 +442,6 @@ _HEATING_TIME_FIELD_KEYS = (
     CONF_HEATING_NIGHT_START_WEEKEND,
 )
 
-_INITIAL_HEATING_START_TIMES = {
-    CONF_HEATING_COMFORT_START_WEEKDAY: DEFAULT_HEATING_COMFORT_START_WEEKDAY,
-    CONF_HEATING_COMFORT_START_WEEKEND: DEFAULT_HEATING_COMFORT_START_WEEKEND,
-    CONF_HEATING_NIGHT_START_WEEKDAY: DEFAULT_HEATING_NIGHT_START_WEEKDAY,
-    CONF_HEATING_NIGHT_START_WEEKEND: DEFAULT_HEATING_NIGHT_START_WEEKEND,
-}
 
 
 # Die zehn Schwellenwert-/Lüftungs-Parameter des Abschnitts "Fenster &
@@ -456,13 +451,9 @@ _INITIAL_HEATING_START_TIMES = {
 # eigene Reihenfolge brauchen: Toleranz-Marge, Frostschutz-Debounce (am Ende
 # des Abschnitts), Sommermodus-Schwelle (Abschnitt Heizung), Geräte-Felder,
 # Heizungs-Sollwerte und Erinnerungsintervall.
+# Die Lüftungsschwellen (Temperatur/Luftfeuchtigkeit/CO2) stehen seit 1.35.0
+# nicht mehr hier, sondern beim Raumtyp (ROOM_TYPE_THRESHOLD_KEYS).
 _CORE_PARAMETER_KEYS = (
-    CONF_TEMP_THRESHOLD_OPEN,
-    CONF_TEMP_THRESHOLD_CLOSE,
-    CONF_HUMIDITY_THRESHOLD_OPEN,
-    CONF_HUMIDITY_THRESHOLD_CLOSE,
-    CONF_CO2_THRESHOLD_OPEN,
-    CONF_CO2_THRESHOLD_CLOSE,
     CONF_FROST_PROTECTION_TEMP,
     CONF_HEAT_PROTECTION_TEMP,
     CONF_WINTER_OUTDOOR_THRESHOLD,
@@ -694,6 +685,15 @@ def _global_config(hass) -> dict:
     return domain_data.get(global_entry_id) or {}
 
 
+def _fmt_number(value) -> str:
+    """Zahl ohne überflüssiges ".0" (23.0 -> "23", 20.5 -> "20.5")."""
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return str(int(num)) if num.is_integer() else str(num)
+
+
 def _room_override_placeholders(hass, room_type: str | None = None) -> dict[str, str]:
     """description_placeholders fürs Raum-Formular: für jedes per
     _override_selector() bzw. _tri_state_bool_selector() überschreibbare
@@ -746,15 +746,17 @@ def _room_override_placeholders(hass, room_type: str | None = None) -> dict[str,
     )
     # Raumtyp (Lektion 132): für die vom Raumtyp vorbelegten Felder steht
     # der Wert des Raumtyps statt des globalen Werts im Hinweis.
-    if room_type in ROOM_TYPE_LABELS:
-        profiles = global_data.get(CONF_ROOM_TYPE_PROFILES)
-        for key in ROOM_TYPE_KEYS:
-            _applies, value = room_type_value(profiles, room_type, key)
-            if key in ROOM_TYPE_START_KEYS:
-                text = value[:5] if value else "nicht genutzt"
-            else:
-                text = f"{value} °C"
-            placeholders[f"global_{key}"] = f"Raumtyp {ROOM_TYPE_LABELS[room_type]}: {text}"
+    # Seit 1.35.0 ohne globale Ebene; ohne gültigen Typ gilt "Nebenraum".
+    if room_type not in ROOM_TYPE_LABELS:
+        room_type = ROOM_TYPE_FALLBACK
+    profiles = global_data.get(CONF_ROOM_TYPE_PROFILES)
+    for key in ROOM_TYPE_KEYS:
+        _applies, value = room_type_value(profiles, room_type, key)
+        if key in ROOM_TYPE_START_KEYS:
+            text = value[:5] if value else "nicht genutzt"
+        else:
+            text = f"{_fmt_number(value)} {_THRESHOLD_FIELDS[key][4]}"
+        placeholders[f"global_{key}"] = f"Raumtyp {ROOM_TYPE_LABELS[room_type]}: {text}"
     return placeholders
 
 
@@ -808,6 +810,10 @@ def _apply_threshold_defaults(data: dict) -> dict:
     Einstellungen verwendet - auf Raumebene bleiben leere Felder bewusst
     leer (= 'globalen Wert nutzen')."""
     for key, (default_value, *_rest) in _THRESHOLD_FIELDS.items():
+        if key in ROOM_TYPE_KEYS:
+            # Gehört seit 1.35.0 zum Raumtyp, nicht zu den globalen Werten.
+            data.pop(key, None)
+            continue
         if data.get(key) in (None, ""):
             data[key] = default_value
     for key, default_value in _TIME_FIELDS.items():
@@ -1394,16 +1400,13 @@ def _build_room_schema(
     fields[vol.Required(SECTION_HEATING)] = section(
         vol.Schema(
             {
-                vol.Optional(
-                    CONF_ROOM_TYPE,
-                    description={
-                        "suggested_value": defaults.get(CONF_ROOM_TYPE)
-                        or ROOM_TYPE_NONE
-                    },
+                (
+                    vol.Required(CONF_ROOM_TYPE, default=defaults[CONF_ROOM_TYPE])
+                    if defaults.get(CONF_ROOM_TYPE) in ROOM_TYPE_LABELS
+                    else vol.Required(CONF_ROOM_TYPE)
                 ): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=[{"value": ROOM_TYPE_NONE, "label": "Kein Raumtyp"}]
-                        + [
+                        options=[
                             {"value": k, "label": v}
                             for k, v in ROOM_TYPE_LABELS.items()
                         ],
@@ -1869,15 +1872,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
     heating_threshold_marker, heating_threshold_sel = _threshold_selector(
         CONF_HEATING_THRESHOLD_TEMP, defaults
     )
-    heating_comfort_marker, heating_comfort_sel = _threshold_selector(
-        CONF_HEATING_COMFORT_TEMP, defaults
-    )
-    heating_standby_marker, heating_standby_sel = _threshold_selector(
-        CONF_HEATING_STANDBY_TEMP, defaults
-    )
-    heating_night_marker, heating_night_sel = _threshold_selector(
-        CONF_HEATING_NIGHT_TEMP, defaults
-    )
 
     ventilation_fields = {}
     for key in _CORE_PARAMETER_KEYS:
@@ -1939,9 +1933,6 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             )
             heating_fields[marker] = field_selector
         heating_fields[heating_threshold_marker] = heating_threshold_sel
-        heating_fields[heating_comfort_marker] = heating_comfort_sel
-        heating_fields[heating_standby_marker] = heating_standby_sel
-        heating_fields[heating_night_marker] = heating_night_sel
     heating_fields[
         _entity_marker(CONF_SUMMER_MODE_FORECAST_ENTITY, defaults, required=False)
     ] = selector.EntitySelector(
@@ -2029,9 +2020,8 @@ def _build_global_edit_schema(defaults: dict | None = None) -> vol.Schema:
             )
         ),
     }
-    for key in _HEATING_TIME_FIELD_KEYS:
-        marker, sel = _time_selector(key, defaults)
-        schedule_fields[marker] = sel
+    # Die Startzeiten stehen seit 1.35.0 nur noch beim Raumtyp (und als
+    # Raum-Override), nicht mehr global.
 
     tts_quiet_start_marker, tts_quiet_start_sel = _time_selector(
         CONF_TTS_QUIET_START, defaults
@@ -2436,7 +2426,7 @@ class SmartVentilationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 CONF_IS_GLOBAL: True,
                 CONF_ROOM_NAME: GLOBAL_ROOM_NAME,
-                **_INITIAL_HEATING_START_TIMES,
+                CONF_ROOM_TYPE_THRESHOLDS_MIGRATED: True,
             }
         )
         return self.async_create_entry(title=data[CONF_ROOM_NAME], data=data)
@@ -2561,9 +2551,6 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
                 # _apply_threshold_defaults zurückgesetzt zu werden.
                 for key in (
                     CONF_HEATING_THRESHOLD_TEMP,
-                    CONF_HEATING_COMFORT_TEMP,
-                    CONF_HEATING_STANDBY_TEMP,
-                    CONF_HEATING_NIGHT_TEMP,
                     CONF_HEATING_USE_PRESET_MODE,
                     CONF_HEATING_PRESET_COMFORT,
                     CONF_HEATING_PRESET_STANDBY,
@@ -2582,6 +2569,8 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
             # "Nein" beim nächsten Start erneut auf "Ja" gehoben).
             if current.get(CONF_USAGE_LEARNING_DEFAULT_MIGRATED):
                 flat[CONF_USAGE_LEARNING_DEFAULT_MIGRATED] = True
+            if current.get(CONF_ROOM_TYPE_THRESHOLDS_MIGRATED):
+                flat[CONF_ROOM_TYPE_THRESHOLDS_MIGRATED] = True
             # Name/Titel bleibt unverändert - im Formular nicht editierbar
             flat[CONF_ROOM_NAME] = current.get(
                 CONF_ROOM_NAME, self.config_entry.title
@@ -2624,6 +2613,13 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
             else:
                 custom: dict = {}
                 defaults_of_type = ROOM_TYPE_DEFAULTS[room_type]
+                for key in ROOM_TYPE_THRESHOLD_KEYS:
+                    value = user_input.get(key)
+                    if value in (None, ""):
+                        # Geleert: Richtwert des Typs.
+                        continue
+                    if float(value) != float(defaults_of_type[key]):
+                        custom[key] = value
                 for key in ROOM_TYPE_TEMP_KEYS:
                     value = user_input.get(key)
                     if (
@@ -2662,6 +2658,17 @@ class SmartVentilationOptionsFlow(config_entries.OptionsFlow):
             current.get(CONF_HEATING_SYSTEM, DEFAULT_HEATING_SYSTEM)
             == HEATING_SYSTEM_PRESET
         )
+        for key in ROOM_TYPE_THRESHOLD_KEYS:
+            _applies, value = room_type_value(profiles, room_type, key)
+            _default, min_v, max_v, step, unit = _THRESHOLD_FIELDS[key]
+            schema[
+                vol.Optional(key, description={"suggested_value": value})
+            ] = selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    mode=selector.NumberSelectorMode.BOX,
+                    min=min_v, max=max_v, step=step, unit_of_measurement=unit,
+                )
+            )
         for key in () if preset_system else ROOM_TYPE_TEMP_KEYS:
             _applies, value = room_type_value(profiles, room_type, key)
             schema[

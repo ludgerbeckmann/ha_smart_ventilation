@@ -9,7 +9,9 @@ Schwellenwerte, die zusammen einen **Normalbereich** aufspannen: unterhalb
 der Untergrenze (Formularfelder "Untergrenze Temperatur/Luftfeuchtigkeit/CO2
 (schließen)") wird geschlossen, oberhalb der Obergrenze (Formularfelder
 "Obergrenze ... (öffnen)") wird geöffnet, dazwischen bleibt der zuletzt gesetzte Zustand
-unverändert (Hysterese/Totzone, siehe unten). Genau diese
+unverändert (Hysterese/Totzone, siehe unten). Die Grenzen kommen seit 1.35.0
+aus dem Raumtyp des Raums (Tabelle in [Geräte und Heizung](geraete-und-heizung.md)),
+ein im Raum eingetragener Wert hat Vorrang. Genau diese
 Normalbereich-Grenzen entscheiden bei Temperatur und Luftfeuchtigkeit auch
 mit darüber, wann die Außenluft selbst als "nicht mehr hilfreich" gilt
 (Sommer-Fall/"Außen feuchter", siehe unten).
