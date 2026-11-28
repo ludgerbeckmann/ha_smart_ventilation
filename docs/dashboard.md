@@ -426,10 +426,14 @@ Der Dialog zeigt den Raum in einer kompakten Ansicht im Home-Assistant-Stil (ohn
 und Außen-Messwerte), seit 1.34.0 in drei Karten ohne Abschnittsüberschriften: (1) Temperatur und
 Luftfeuchtigkeit (jeweils mit Balken für den Normalbereich; der Taupunkt steht als kleine graue Zeile unter dem
 Balken der Temperatur, die abs. Luftfeuchtigkeit unter dem der Luftfeuchtigkeit), CO2, darunter die
-Heizungssteuerung und der Heizplan-Balken; (2) Fenster und Empfehlung mit Begründung; (3) eine Reihe
-**Geräte-Kacheln** (Luftentfeuchter, Klimaanlage, Heizung, Dusche - nur was der Raum hat) mit Symbol, Minuten
-(laufende oder letzte Laufzeit) und kurzer Bezeichnung. Ein Tipp auf eine Kachel klappt darunter den Text auf
-(Status, Grund, bei der Heizung Modus und Sollstellung; ein voller Wassertank färbt die Entfeuchter-Kachel rot),
+Heizungssteuerung, eine kurze Beschreibung der Heizung (seit wann der gewollte Modus gilt, Grund, verhinderter
+Comfort, Übersteuerung, gelernte Nutzung; auf zwei Zeilen gekürzt, Antippen klappt auf) und der Heizplan-Balken;
+rechts neben "Heizplan" steht ab 1.34.1, wie lange das Ventil heute tatsächlich geheizt hat (`hvac_action`
+"heating", ersatzweise `command_value` > 0; nicht die Zeit im Comfort-Modus); (2) Fenster und Empfehlung mit
+Begründung; (3) eine Reihe **Geräte-Kacheln** (Luftentfeuchter, Klimaanlage, Dusche - nur was der Raum hat; die
+Heizung hat ab 1.34.1 keine Kachel mehr, Presets und Sollwert zeigen Modus und Sollstellung schon) mit Symbol,
+Minuten (laufende oder letzte Laufzeit) und kurzer Bezeichnung. Ein Tipp auf eine Kachel klappt darunter den Text auf
+(Status, Grund; ein voller Wassertank färbt die Luftentfeuchter-Kachel rot),
 immer nur einer je Raum; ein Tipp auf den aufgeklappten Text öffnet das Detailfenster des Geräts. Die Benachrichtigungsmethoden stehen ab 1.33.0 nicht mehr als Abschnitt im Dialog, sondern in einem Menü hinter dem Glocken-Symbol oben rechts. Die
 Symbole sind MDI-Symbole, die Farben kommen aus dem Theme (`--success-color`, `--warning-color`,
 `--error-color`, `--info-color`). Die normale Raumansicht der Karte bleibt unverändert (Tabellen).

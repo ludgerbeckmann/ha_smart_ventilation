@@ -576,6 +576,14 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
         self._ac_last_runtime_minutes = None
         self._heating_last_runtime_minutes = None
         self._shower_last_runtime_minutes = None
+        # Heizdauer des Ventils heute (hvac_action "heating", ersatzweise
+        # command_value > 0): abgeschlossene Sekunden des Tages plus Beginn
+        # des laufenden Heizabschnitts. Nur Anzeige (Raum-Dialog); der
+        # Tageswert wird per RestoreEntity übernommen, ein laufender
+        # Abschnitt nicht (Neustart-Lücke zählt nicht).
+        self._valve_day = None
+        self._valve_seconds = 0.0
+        self._valve_since = None
         # Startzeitpunkt der zuletzt erkannten Dusche (bleibt nach dem Ende
         # stehen, anders als `_shower_on_since`) - Dashboard-Karte, Zeile
         # "Dusche" der Gerätetabelle.
@@ -1179,6 +1187,11 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                 attrs["heizung_letzte_laufzeit"] = self._heating_last_runtime_minutes
             attrs["heizung_modus"] = heating_mode_active
             self._log_heating_actual(heating_mode_active)
+            if self._track_heating_valve(heating_entity):
+                attrs["heizung_heizdauer_heute"] = int(self._valve_seconds // 60)
+                attrs["heizung_heizdauer_tag"] = self._valve_day.isoformat()
+                if self._valve_since is not None:
+                    attrs["heizung_heizt_seit"] = self._valve_since.isoformat()
             if self._heating_log:
                 attrs["heizung_tagesverlauf"] = [list(e) for e in self._heating_log]
                 attrs["heizung_tagesverlauf_tag"] = self._heating_log_day.isoformat()
@@ -1296,6 +1309,13 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
                     if isinstance(e, (list, tuple)) and len(e) == 2
                 ]
                 self._heating_log_day = dt_util.now().date()
+            valve_minutes = attrs.get("heizung_heizdauer_heute")
+            if (
+                isinstance(valve_minutes, (int, float))
+                and attrs.get("heizung_heizdauer_tag") == dt_util.now().date().isoformat()
+            ):
+                self._valve_day = dt_util.now().date()
+                self._valve_seconds = max(0.0, float(valve_minutes) * 60)
             if attrs.get("heizung_soll_modus") in (
                 "comfort",
                 "standby",
@@ -2179,6 +2199,42 @@ class SmartVentilationBinarySensor(BinarySensorEntity, RestoreEntity):
             self._preheating = True
             return "comfort"
         return mode
+
+    def _heating_valve_active(self, entity_id: str) -> bool | None:
+        """Heizt das Ventil gerade? hvac_action "heating", ersatzweise
+        command_value > 0; None = Gerät meldet nichts davon (unbekannt)."""
+        state = self.hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable"):
+            return None
+        action = state.attributes.get("hvac_action")
+        if action is not None:
+            return action == "heating"
+        value = state.attributes.get("command_value")
+        if isinstance(value, (int, float)):
+            return value > 0
+        return None
+
+    def _track_heating_valve(self, entity_id: str) -> bool:
+        """Zählt die Heizdauer des Ventils für heute (idempotent, beim Lesen
+        der Attribute aufgerufen wie _log_heating_actual). Liefert True, wenn
+        ein Tageswert anzuzeigen ist."""
+        now = dt_util.now()
+        today = now.date()
+        if self._valve_day != today:
+            midnight = dt_util.start_of_local_day(now)
+            self._valve_day = today
+            self._valve_seconds = 0.0
+            if self._valve_since is not None:
+                self._valve_since = midnight
+        active = self._heating_valve_active(entity_id)
+        if active and self._valve_since is None:
+            self._valve_since = now
+        elif not active and self._valve_since is not None:
+            self._valve_seconds += max(
+                0.0, (now - self._valve_since).total_seconds()
+            )
+            self._valve_since = None
+        return active is not None or self._valve_seconds > 0
 
     def _log_heating_actual(self, mode: str | None) -> None:
         """Hält den live gemeldeten Heizmodus für den Heizplan-Balken fest

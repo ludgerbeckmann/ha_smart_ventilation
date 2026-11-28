@@ -142,6 +142,7 @@ reinen Ein/Aus-Zustand folgende Attribute (sichtbar unter Entwicklerwerkzeuge
 | `heizung_seit` | wie `luftentfeuchter_seit`/`klimaanlage_seit` - Zeitpunkt, seit dem `heizung_an` ununterbrochen `true` ist |
 | `heizung_uebersteuert` | nur vorhanden (`true`), solange ein manueller Eingriff in Preset/Sollwert gilt (siehe "Manuelle Übersteuerung"); `heizung_uebersteuerung_seit` (Zeitpunkt) und `heizung_uebersteuerung_basis` (Regel-Zielmodus zum Zeitpunkt des Eingriffs) dienen der Wiederherstellung nach einem Neustart |
 | `heizung_letzte_laufzeit` | wie `luftentfeuchter_letzte_laufzeit`/`klimaanlage_letzte_laufzeit`, nur für die Heizung |
+| `heizung_heizdauer_heute` / `heizung_heizt_seit` | wie lange das Ventil heute geheizt hat (abgeschlossene Minuten, `hvac_action` "heating" bzw. `command_value` > 0) und Beginn des laufenden Heizabschnitts (nur während geheizt wird); `heizung_heizdauer_tag` dient der Wiederherstellung nach einem Neustart |
 | `sommermodus_an` | nur vorhanden, falls in "- Smart Climate Optionen -" ein Sommer-/Winterbetrieb-Schalter hinterlegt ist UND diese Entität aktuell im Zustandsautomaten existiert - `true`/`false`, live vom Schalter gelesen. Identisch für jeden Raum, da es sich um eine hausweite, nicht raumspezifische Einstellung handelt |
 | `hat_fenster` | nur vorhanden (mit Wert `false`), falls "Dieser Raum hat kein Fenster" aktiviert ist |
 | `sprachausgabe_aktiv`, `sprachausgabe_lautsprecher` | nur vorhanden, wenn der Raum mindestens einen Lautsprecher ausgewählt hat |
