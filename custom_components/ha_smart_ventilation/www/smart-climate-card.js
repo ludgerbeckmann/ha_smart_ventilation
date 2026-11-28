@@ -409,6 +409,31 @@ function crCompactRoom(c) {
   // Heizungssteuerung des Dialogs: Platzhalter, in den die Karte nach jedem
   // Neuzeichnen das dauerhafte Thermostat-Element wieder einsetzt.
   const thermoSlot = c.thermo ? `<div class="cr-thermo-slot"></div>` : "";
+  // Beschreibung der Heizung zwischen Presets und Heizplan (Modusname und
+  // Sollstellung zeigen Presets und Sollwert bereits).
+  let heatInfo = "";
+  if (has(a, "heizung_an")) {
+    const hi = heatingInfo(a, c.todayStr);
+    const parts = [];
+    if (hi.since) parts.push(hi.since);
+    if (has(a, "heizung_grund") && a.heizung_grund) parts.push(plainReason(a.heizung_grund));
+    if (hi.prevented) parts.push(hi.prevented);
+    if (hi.override) parts.push(hi.override);
+    if (hi.learned) parts.push(hi.learned);
+    if (parts.length) heatInfo = `<div class="cr-heatinfo">${clamp(`${a.raum}|heat`, parts.join(" · "))}</div>`;
+  }
+  // Heizdauer des Ventils heute: abgeschlossene Minuten plus laufender Abschnitt.
+  let heatDur = "";
+  if (has(a, "heizung_heizdauer_heute") && Number.isFinite(Number(a.heizung_heizdauer_heute))) {
+    let minutes = Number(a.heizung_heizdauer_heute);
+    if (has(a, "heizung_heizt_seit") && a.heizung_heizt_seit) {
+      const since = new Date(a.heizung_heizt_seit).getTime();
+      const midnight = new Date();
+      midnight.setHours(0, 0, 0, 0);
+      if (!Number.isNaN(since)) minutes += Math.max(0, (Date.now() - Math.max(since, midnight.getTime())) / 60000);
+    }
+    heatDur = `<span class="cr-heatdur">${esc(fmtDuration(minutes))} geheizt</span>`;
+  }
   // Heizplan: direkt unter dem Sollwert, in derselben Karte.
   let planRow = "";
   if (has(a, "heizung_an") && ((has(a, "heizung_tagesplan") && Array.isArray(a.heizung_tagesplan)) || (has(a, "heizung_tagesverlauf") && Array.isArray(a.heizung_tagesverlauf)))) {
@@ -416,10 +441,10 @@ function crCompactRoom(c) {
     if (planBlock) {
       const planOpen = c.planOpen === true;
       planRow = `<div class="cr-row cr-plan"><div class="cr-t"><div class="cr-planfold${planOpen ? " open" : ""}" data-plan-room="${esc(a.raum)}">` +
-        `<div class="cr-plansum" data-plan-toggle role="button" tabindex="0" aria-expanded="${planOpen}"><span class="cr-p">Heizplan</span><ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></div>${planBlock}</div></div></div>`;
+        `<div class="cr-plansum" data-plan-toggle role="button" tabindex="0" aria-expanded="${planOpen}"><span class="cr-p">Heizplan</span>${heatDur}<ha-icon class="cr-chev" icon="mdi:chevron-right"></ha-icon></div>${planBlock}</div></div></div>`;
     }
   }
-  html += `<div class="cr-sec">${vals}${thermoSlot}${planRow}</div>` + ventSection;
+  html += `<div class="cr-sec">${vals}${thermoSlot}${heatInfo}${planRow}</div>` + ventSection;
 
   // --- Geräte ---------------------------------------------------------------
   const runtime = (on, since, last) => {
@@ -438,7 +463,7 @@ function crCompactRoom(c) {
     if (tank) parts.push(`<span style="color:${SC_COLOR.red}">Tank voll</span>`);
     addDev({
       key: "dehum", icon: "mdi:air-humidifier", color: tank ? SC_COLOR.red : a.luftentfeuchter_an ? SC_COLOR.blue : SC_COLOR.grey,
-      name: "Entfeuchter", title: "Luftentfeuchter", entityId: ents.luftentfeuchter, text: parts.join(" · "),
+      name: "Luft­entfeuchter", title: "Luftentfeuchter", entityId: ents.luftentfeuchter, text: parts.join(" · "),
       minutes: runtime(a.luftentfeuchter_an, a.luftentfeuchter_seit, a.luftentfeuchter_letzte_laufzeit),
     });
   }
@@ -451,25 +476,8 @@ function crCompactRoom(c) {
       minutes: runtime(a.klimaanlage_an, a.klimaanlage_seit, a.klimaanlage_letzte_laufzeit),
     });
   }
-  if (has(a, "heizung_an")) {
-    const mode = has(a, "heizung_modus") ? HEATING_MODE_LABEL[a.heizung_modus] : undefined;
-    const parts = [];
-    if (mode) parts.push(esc(mode.text));
-    const hi = heatingInfo(a, c.todayStr);
-    if (hi.since) parts.push(hi.since);
-    if (has(a, "heizung_grund") && a.heizung_grund) parts.push(plainReason(a.heizung_grund));
-    if (hi.prevented) parts.push(hi.prevented);
-    if (hi.override) parts.push(hi.override);
-    if (hi.learned) parts.push(hi.learned);
-    if (has(a, "heizung_zieltemperatur") && a.heizung_zieltemperatur !== null) {
-      parts.push(`Sollstellung ${roundStr(a.heizung_zieltemperatur, 1)} °C`);
-    }
-    addDev({
-      key: "heat", icon: "mdi:radiator", color: SC_HEATING_COLOR[a.heizung_modus] || (a.heizung_an ? SC_COLOR.orange : SC_COLOR.grey),
-      name: "Heizung", title: "Heizung", entityId: ents.heizung, text: parts.join(" · "),
-      minutes: runtime(a.heizung_an, a.heizung_seit, a.heizung_letzte_laufzeit),
-    });
-  }
+  // Die Heizung hat keine Kachel: Presets, Sollwert, Beschreibung und Heizplan
+  // stehen schon in der ersten Karte.
   if (has(a, "duschen_erkannt")) {
     let sub = a.duschen_erkannt ? "Luftfeuchtigkeit steigt schnell" : "";
     if (has(a, "dusche_letzter_start") && a.dusche_letzter_start) {
@@ -1417,7 +1425,7 @@ class SmartClimateCard extends HTMLElement {
       .cr-dev .cr-ico { width: 44px; height: 44px; --mdc-icon-size: 24px; }
       .cr-dev.open .cr-ico { box-shadow: 0 0 0 2px var(--c); }
       .cr-dv { font-weight: 500; white-space: nowrap; }
-      .cr-dn { font-size: 0.8em; color: var(--secondary-text-color, #727272); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .cr-dn { font-size: 0.8em; color: var(--secondary-text-color, #727272); max-width: 100%; text-align: center; line-height: 1.25; hyphens: manual; overflow-wrap: normal; }
       .cr-devdetail { display: none; border-top: 1px solid var(--divider-color, #e0e0e0); padding: 8px 2px 10px; cursor: pointer; }
       .cr-devdetail.open { display: block; }
       .cr-sec { background: transparent; border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.35)); border-radius: 14px; padding: 0 10px; }
@@ -1465,6 +1473,9 @@ class SmartClimateCard extends HTMLElement {
       .plan-dot { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; }
       .cr-plan .cr-t { min-width: 0; }
       .cr-plansum { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+      .cr-heatdur { margin-left: auto; font-size: 0.85em; color: var(--secondary-text-color, #727272); white-space: nowrap; }
+      .cr-heatinfo { border-top: 1px solid var(--divider-color, #e0e0e0); padding: 7px 0; }
+      .cr-heatinfo + .cr-plan { border-top: 1px solid var(--divider-color, #e0e0e0); }
       .cr-planfold.open .cr-chev { transform: rotate(90deg); }
       .cr-planfold:not(.open) .plan-times { display: none; }
       .cr-v.cr-big { font-size: 1.6em; line-height: 1.1; }
